@@ -1,0 +1,34 @@
+.PHONY: install generate test lint \
+	config_runtime_showcase config_management_showcase \
+	flags_runtime_showcase flags_management_showcase \
+	logging_runtime_showcase logging_management_showcase
+
+install:
+	bundle install
+
+generate:
+	bash scripts/generate.sh
+
+test:
+	bundle exec rspec
+
+lint:
+	bundle exec rubocop
+
+config_runtime_showcase: install
+	bundle exec ruby examples/config_runtime_showcase.rb
+
+config_management_showcase: install
+	bundle exec ruby examples/config_management_showcase.rb
+
+flags_runtime_showcase: install
+	bundle exec ruby examples/flags_runtime_showcase.rb
+
+flags_management_showcase: install
+	bundle exec ruby examples/flags_management_showcase.rb
+
+logging_runtime_showcase: install
+	bundle exec ruby examples/logging_runtime_showcase.rb
+
+logging_management_showcase: install
+	bundle exec ruby examples/logging_management_showcase.rb

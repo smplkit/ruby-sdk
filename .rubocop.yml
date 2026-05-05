@@ -1,0 +1,163 @@
+require:
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "lib/smplkit/_generated/**/*"
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "pkg/**/*"
+    - "examples/setup/**/*"
+
+Style/Documentation:
+  Enabled: false
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+Style/HashAsLastArrayItem:
+  Enabled: false
+
+Style/MultilineBlockChain:
+  Enabled: false
+
+Style/Lambda:
+  Enabled: false
+
+Layout/LineLength:
+  Max: 120
+
+Metrics/MethodLength:
+  Max: 60
+
+Metrics/ClassLength:
+  Max: 500
+
+Metrics/ModuleLength:
+  Max: 500
+
+Metrics/AbcSize:
+  Max: 60
+
+Lint/NoReturnInBeginEndBlocks:
+  Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Max: 25
+
+Metrics/PerceivedComplexity:
+  Max: 25
+
+Metrics/ParameterLists:
+  Max: 12
+  CountKeywordArgs: false
+
+Lint/UnderscorePrefixedVariableName:
+  Enabled: false
+
+Lint/EmptyBlock:
+  Enabled: false
+
+Naming/MethodParameterName:
+  MinNameLength: 1
+  AllowedNames:
+    - id
+    - to
+    - by
+    - at
+    - on
+    - op
+    - cb
+    - fn
+    - ct
+    - r
+    - g
+    - b
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "smplkit.gemspec"
+    - "examples/**/*"
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+Naming/VariableNumber:
+  Enabled: false
+
+Naming/PredicateMethod:
+  Enabled: false
+
+Style/SingleLineMethods:
+  Enabled: false
+
+Style/MissingRespondToMissing:
+  Enabled: false
+
+Lint/MissingSuper:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/ExampleLength:
+  Max: 30
+
+RSpec/NestedGroups:
+  Max: 5
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 10
+
+RSpec/MultipleDescribes:
+  Enabled: false
+
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+RSpec/InstanceVariable:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
+
+RSpec/AnyInstance:
+  Enabled: false
+
+RSpec/ImplicitExpect:
+  Enabled: false
+
+RSpec/StubbedMock:
+  Enabled: false
+
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/ExpectInHook:
+  Enabled: false
+
+RSpec/InstanceVariable:
+  Enabled: false
+
+RSpec/IndexedLet:
+  Enabled: false
+
+RSpec/RemoveConst:
+  Enabled: false
+
+RSpec/PendingWithoutReason:
+  Enabled: false
+
+RSpec/Eq:
+  Enabled: false
