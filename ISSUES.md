@@ -35,40 +35,43 @@ If the bare `smplkit` name is ever lost on rubygems.org, fall back to
 `smplkit-sdk` per ADR-046 §2.1 — flip `spec.name` in `smplkit.gemspec`.
 The `require "smplkit"` path stays the same.
 
-## Generated client layer not yet committed
+## Generated client layer landed (2026-05-05)
 
-`lib/smplkit/_generated/` is empty in this initial commit. The wrapper layer
-talks directly to Faraday for the management endpoints it needs (CRUD on
-flags, configs, environments, etc.) using JSON:API request bodies it builds
-itself.
+All four generated trees (`app`, `config`, `flags`, `logging`) now ship
+under `lib/smplkit/_generated/`, populated automatically by the
+`smplkit/.github/actions/update-sdk` composite action when each source
+service deploys. The wrapper layer still routes its CRUD/management
+calls through hand-rolled Faraday connections in `ManagementClient` —
+swapping those for the generated `AuthenticatedClient` per service is
+the next mechanical pass.
 
-**Why deferred:** running `openapi-generator-cli` with the `ruby-faraday`
-template requires a clean Node toolchain and a careful pass through the
-generator's output (it produces a fairly large tree per service). The
-wrapper layer is structured so the switch to generated transports is a
-mechanical change (replace each `Faraday.new(...)` with the generated
-`AuthenticatedClient`).
+**Next step:** require the appropriate `lib/smplkit/_generated/<svc>/...`
+modules in `ManagementClient`, replace each `build_http(...)` with the
+generated `AuthenticatedClient`, and migrate the namespace methods to
+delegate to generated API calls (drop the hand-built JSON:API request
+bodies in `helpers.rb` files where the generator covers them).
 
-**Next step:** `make generate` (with `npx` available) and wire the four
-generated namespaces — `SmplkitGeneratedClient::App`, `::Config`, `::Flags`,
-`::Logging` — into the existing `ManagementClient` namespaces. Adjust
-`require_relative "_generated/..."` paths and rerun the spec suite.
+## Live WebSocket I/O wired (2026-05-05)
 
-## Live WebSocket I/O is in-memory only
+`Smplkit::SharedWebSocket` now hosts an `Async` reactor on a dedicated
+daemon thread and uses `async-websocket` for the underlying I/O —
+matching the Python `_ws.py` reference. Behaviors covered:
 
-`Smplkit::SharedWebSocket#start` marks the connection as `"connected"`
-without opening a real socket. Listener registration, dispatch, and the URL
-builder all work; the actual read/write loop is what's stubbed.
+- `wss://` connect with `User-Agent: smplkit-ruby-sdk/<version>`.
+- Wait for `{"type": "connected"}` handshake; surface `{"type":"error"}`
+  as a runtime error.
+- Heartbeat: server `"ping"` text → reply `"pong"`.
+- Receive loop parses each JSON message and dispatches by `event` key.
+- Reconnect with exponential backoff (1, 2, 4, 8, 16, 32, 60 s capped),
+  using the Async-aware `task.sleep` so other fibers keep moving.
+- `stop` closes the connection from the outer thread, the reader exits,
+  and the daemon thread joins (with a 2 s deadline).
 
-**Why deferred:** `async-websocket` integration needs to be tested against
-the live event gateway's protocol (User-Agent header requirement, `ping` /
-`pong` heartbeat semantics, exponential backoff). Wiring the full I/O path
-without that integration test is risky.
-
-**Next step:** add the I/O thread that wraps `Async { ... }`,
-`async-websocket`'s `WebSocket.connect`, and the receive loop. Use
-`SharedWebSocket#mark_connected!` from inside the loop after the initial
-`{"type": "connected"}` frame arrives.
+The unit specs cover URL building, listener register/dispatch/off,
+ping/pong handling, JSON event parsing, the `:no_event`/`:unparseable`
+branches, and start/stop lifecycle without standing up a real server.
+Full integration verification (handshake against the real gateway,
+backoff under flapping connections) is still a live-environment task.
 
 ## Service-context registration on init is a stub
 

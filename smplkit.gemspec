@@ -52,6 +52,9 @@ Gem::Specification.new do |spec|
   ].reject { |f| File.directory?(f) }
   spec.require_paths = ["lib"]
 
+  spec.add_dependency "async", "~> 2.39"
+  spec.add_dependency "async-http", "~> 0.95"
+  spec.add_dependency "async-websocket", "~> 0.30"
   spec.add_dependency "concurrent-ruby", "~> 1.2"
   spec.add_dependency "faraday", "~> 2.7"
   spec.add_dependency "faraday-multipart", "~> 1.0"
