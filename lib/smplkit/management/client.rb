@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require "faraday"
 require "json"
-require "concurrent"
 
 module Smplkit
   # Top-level management client. Owns the HTTP transports + CRUD APIs for
@@ -21,6 +19,13 @@ module Smplkit
   #
   # Constructable both as +Smplkit::ManagementClient.new+ (standalone) and as
   # +Smplkit::Client#manage+ (shared transports).
+  #
+  # Each namespace is wired to a generated +SmplkitGeneratedClient+ +ApiClient+
+  # under the hood — auth, request encoding, and response parsing flow through
+  # the openapi-generator-produced layer in +lib/smplkit/_generated+. The
+  # wrapper layer keeps the customer-facing domain models (+Flag+, +Config+,
+  # etc.) and converts at the boundary via the existing
+  # +<resource>_from_resource+ helpers.
   class ManagementClient
     attr_reader :contexts, :context_types, :environments, :account_settings,
                 :config, :flags, :loggers, :log_groups
@@ -39,42 +44,100 @@ module Smplkit
       Smplkit.enable_debug if cfg.debug
 
       @resolved = cfg
-      @app_http = build_http(ConfigResolution.service_url(cfg.scheme, "app", cfg.base_domain), cfg.api_key)
-      @config_http = build_http(ConfigResolution.service_url(cfg.scheme, "config", cfg.base_domain), cfg.api_key)
-      @flags_http = build_http(ConfigResolution.service_url(cfg.scheme, "flags", cfg.base_domain), cfg.api_key)
-      @logging_http = build_http(ConfigResolution.service_url(cfg.scheme, "logging", cfg.base_domain), cfg.api_key)
 
-      @contexts = ContextsNamespace.new(@app_http)
-      @context_types = ContextTypesNamespace.new(@app_http)
-      @environments = EnvironmentsNamespace.new(@app_http)
-      @account_settings = AccountSettingsNamespace.new(@app_http)
-      @config = ConfigNamespace.new(@config_http)
-      @flags = FlagsNamespace.new(@flags_http)
-      @loggers = LoggersNamespace.new(@logging_http)
-      @log_groups = LogGroupsNamespace.new(@logging_http)
+      @app_api_client = build_api_client(SmplkitGeneratedClient::App, "app", cfg)
+      @config_api_client = build_api_client(SmplkitGeneratedClient::Config, "config", cfg)
+      @flags_api_client = build_api_client(SmplkitGeneratedClient::Flags, "flags", cfg)
+      @logging_api_client = build_api_client(SmplkitGeneratedClient::Logging, "logging", cfg)
+
+      @contexts = ContextsNamespace.new(@app_api_client)
+      @context_types = ContextTypesNamespace.new(@app_api_client)
+      @environments = EnvironmentsNamespace.new(@app_api_client)
+      @account_settings = AccountSettingsNamespace.new(@app_api_client)
+      @config = ConfigNamespace.new(@config_api_client)
+      @flags = FlagsNamespace.new(@flags_api_client)
+      @loggers = LoggersNamespace.new(@logging_api_client)
+      @log_groups = LogGroupsNamespace.new(@logging_api_client)
     end
 
     def close
-      [@app_http, @config_http, @flags_http, @logging_http].each do |conn|
-        conn.close if conn.respond_to?(:close)
-      end
+      # The generated ApiClient owns Faraday connections that release on GC.
+      # No explicit shutdown is exposed; this stub keeps the API stable.
     end
 
     def _resolved = @resolved
-    def _app_http = @app_http
-    def _config_http = @config_http
-    def _flags_http = @flags_http
-    def _logging_http = @logging_http
+    def _app_http = @app_api_client
+    def _config_http = @config_api_client
+    def _flags_http = @flags_api_client
+    def _logging_http = @logging_api_client
 
     private
 
-    def build_http(base_url, api_key)
-      Faraday.new(url: base_url) do |f|
-        f.request :authorization, "Bearer", api_key
-        f.headers["Content-Type"] = "application/vnd.api+json"
-        f.headers["Accept"] = "application/vnd.api+json"
-        f.headers["User-Agent"] = "smplkit-ruby-sdk/#{Smplkit::VERSION}"
-        f.adapter Faraday.default_adapter
+    def build_api_client(generated_module, subdomain, cfg)
+      configuration = generated_module::Configuration.new
+      configuration.scheme = cfg.scheme
+      configuration.host = "#{subdomain}.#{cfg.base_domain}"
+      configuration.base_path = ""
+      configuration.access_token = cfg.api_key
+      configuration.debugging = cfg.debug
+      generated_module::ApiClient.new(configuration).tap do |client|
+        client.default_headers["User-Agent"] = "smplkit-ruby-sdk/#{Smplkit::VERSION}"
+      end
+    end
+
+    # ------------------------------------------------------------------
+    # Shared error-mapping wrapper
+    # ------------------------------------------------------------------
+
+    # Wraps a generated-API call and converts any +ApiError+ raised by the
+    # generated layer into the +Smplkit::Error+ hierarchy. Connection-level
+    # failures (no response from the server) become +Smplkit::ConnectionError+;
+    # status-coded failures route through +Errors.raise_for_status+ which
+    # emits +NotFoundError+ / +ConflictError+ / +ValidationError+ / +Error+
+    # depending on the JSON:API body.
+    module ErrorMapping
+      module_function
+
+      def call
+        yield
+      rescue StandardError => e
+        raise unless generated_api_error?(e)
+
+        raise Smplkit::ConnectionError, e.message.to_s if e.code.nil? || e.code.zero?
+
+        Smplkit::Errors.raise_for_status(e.code, e.response_body.to_s)
+        # raise_for_status only returns on 2xx; if we get here the generated
+        # layer raised on a 2xx (shouldn't happen) so re-raise the original.
+        raise
+      end
+
+      def generated_api_error?(err)
+        klass_name = err.class.name.to_s
+        klass_name.start_with?("SmplkitGeneratedClient::") && klass_name.end_with?("::ApiError")
+      end
+    end
+
+    # Deep-stringify Hash keys so resources returned by generated +to_hash+
+    # (symbol-keyed) match what the wrapper helpers expect (string-keyed).
+    module ResourceShim
+      module_function
+
+      def stringify(value)
+        case value
+        when Hash
+          value.each_with_object({}) { |(k, v), out| out[k.to_s] = stringify(v) }
+        when Array
+          value.map { |v| stringify(v) }
+        else
+          value
+        end
+      end
+
+      # Convenience: produce a string-keyed Hash from a generated model.
+      def from_model(model)
+        return {} if model.nil?
+
+        stringify(model.to_hash)
       end
     end
 
@@ -82,52 +145,9 @@ module Smplkit
     # Sub-namespaces
     # ------------------------------------------------------------------
 
-    # Shared HTTP helpers used by every namespace below.
-    #
-    # All methods are prefixed +http_+ to avoid colliding with the public
-    # +get+ / +list+ accessors on each namespace.
-    module HttpHelpers
-      private
-
-      def http_get(path)
-        response = @http.get(path)
-        Errors.raise_for_status(response.status, response.body)
-        response.body.to_s.empty? ? {} : JSON.parse(response.body)
-      end
-
-      def http_list(path)
-        body = http_get(path)
-        body["data"] || []
-      end
-
-      def http_post(path, body)
-        response = @http.post(path) do |req|
-          req.body = body.is_a?(String) ? body : JSON.generate(body)
-        end
-        Errors.raise_for_status(response.status, response.body)
-        response.body.to_s.empty? ? {} : JSON.parse(response.body)
-      end
-
-      def http_put(path, body)
-        response = @http.put(path) do |req|
-          req.body = body.is_a?(String) ? body : JSON.generate(body)
-        end
-        Errors.raise_for_status(response.status, response.body)
-        response.body.to_s.empty? ? {} : JSON.parse(response.body)
-      end
-
-      def http_delete(path)
-        response = @http.delete(path)
-        Errors.raise_for_status(response.status, response.body)
-        true
-      end
-    end
-
     class ContextsNamespace
-      include HttpHelpers
-
-      def initialize(http)
-        @http = http
+      def initialize(api_client)
+        @api = SmplkitGeneratedClient::App::ContextsApi.new(api_client)
         @buffer = Management::ContextRegistrationBuffer.new
       end
 
@@ -142,38 +162,46 @@ module Smplkit
         batch = @buffer.drain
         return if batch.empty?
 
-        body = { "data" => { "type" => "context_bulk_register", "attributes" => { "contexts" => batch } } }
-        http_post("/api/v1/contexts/bulk", body)
+        items = batch.map do |entry|
+          SmplkitGeneratedClient::App::ContextBulkItem.new(
+            type: entry["type"], key: entry["key"], attributes: entry["attributes"] || {}
+          )
+        end
+        body = SmplkitGeneratedClient::App::ContextBulkRegister.new(contexts: items)
+        ErrorMapping.call { @api.bulk_register_contexts(body) }
       rescue StandardError => e
         Smplkit.debug("registration", "context flush failed: #{e.class}: #{e.message}")
       end
 
       def list
-        list_resp = http_list("/api/v1/contexts")
-        list_resp.map { |r| context_from_resource(r) }
+        response = ErrorMapping.call { @api.list_contexts }
+        (response.data || []).map { |r| context_from_resource(ResourceShim.from_model(r)) }
       end
 
       def get(id_or_type, key = nil)
         type, ckey = split_id(id_or_type, key)
-        resource = http_get("/api/v1/contexts/#{type}:#{ckey}")
-        context_from_resource(resource["data"])
+        response = ErrorMapping.call { @api.get_context("#{type}:#{ckey}") }
+        context_from_resource(ResourceShim.from_model(response.data))
       end
 
       def delete(id_or_type, key = nil)
         type, ckey = split_id(id_or_type, key)
-        http_delete("/api/v1/contexts/#{type}:#{ckey}")
+        ErrorMapping.call { @api.delete_context("#{type}:#{ckey}") }
+        true
       end
 
       def _save_context(ctx)
-        body = {
-          "data" => {
-            "type" => "context",
-            "id" => ctx.id,
-            "attributes" => { "type" => ctx.type, "key" => ctx.key, "attributes" => ctx.attributes }.compact
-          }
-        }
-        resp = http_put("/api/v1/contexts/#{ctx.id}", body)
-        context_from_resource(resp["data"]).tap { |c| c._bind_client(self) }
+        body = SmplkitGeneratedClient::App::ContextResponse.new(
+          data: SmplkitGeneratedClient::App::ContextResource.new(
+            type: "context",
+            id: ctx.id,
+            attributes: SmplkitGeneratedClient::App::Context.new(
+              name: ctx.name, context_type: ctx.type, attributes: ctx.attributes
+            )
+          )
+        )
+        response = ErrorMapping.call { @api.update_context(ctx.id, body) }
+        context_from_resource(ResourceShim.from_model(response.data)).tap { |c| c._bind_client(self) }
       end
 
       private
@@ -192,7 +220,7 @@ module Smplkit
       def context_from_resource(resource)
         attrs = resource["attributes"] || {}
         Smplkit::Context.new(
-          attrs["type"] || resource["id"].to_s.split(":").first,
+          attrs["context_type"] || attrs["type"] || resource["id"].to_s.split(":").first,
           attrs["key"] || resource["id"].to_s.split(":", 2).last,
           attrs["attributes"] || {},
           name: attrs["name"],
@@ -203,24 +231,23 @@ module Smplkit
     end
 
     class ContextTypesNamespace
-      include HttpHelpers
-
-      def initialize(http)
-        @http = http
+      def initialize(api_client)
+        @api = SmplkitGeneratedClient::App::ContextTypesApi.new(api_client)
       end
 
       def list
-        list_resp = http_list("/api/v1/context_types")
-        list_resp.map { |r| from_resource(r) }
+        response = ErrorMapping.call { @api.list_context_types }
+        (response.data || []).map { |r| from_resource(ResourceShim.from_model(r)) }
       end
 
       def get(key)
-        resp = http_get("/api/v1/context_types/#{key}")
-        from_resource(resp["data"])
+        response = ErrorMapping.call { @api.get_context_type(key) }
+        from_resource(ResourceShim.from_model(response.data))
       end
 
       def delete(key)
-        http_delete("/api/v1/context_types/#{key}")
+        ErrorMapping.call { @api.delete_context_type(key) }
+        true
       end
 
       def new_context_type(key, name: nil, description: nil)
@@ -228,25 +255,27 @@ module Smplkit
       end
 
       def _create_context_type(ct)
-        resp = http_post("/api/v1/context_types", body_for(ct))
-        from_resource(resp["data"])
+        response = ErrorMapping.call { @api.create_context_type(body_for(ct)) }
+        from_resource(ResourceShim.from_model(response.data))
       end
 
       def _update_context_type(ct)
-        resp = http_put("/api/v1/context_types/#{ct.key}", body_for(ct))
-        from_resource(resp["data"])
+        response = ErrorMapping.call { @api.update_context_type(ct.key, body_for(ct)) }
+        from_resource(ResourceShim.from_model(response.data))
       end
 
       private
 
       def body_for(ct)
-        {
-          "data" => {
-            "type" => "context_type",
-            "id" => ct.key,
-            "attributes" => { "key" => ct.key, "name" => ct.name, "description" => ct.description }.compact
-          }
-        }
+        # ContextType server schema: name, attributes, created_at, updated_at.
+        # Customer-side +description+ is wrapper-only; not sent on the wire.
+        SmplkitGeneratedClient::App::ContextTypeResponse.new(
+          data: SmplkitGeneratedClient::App::ContextTypeResource.new(
+            type: "context_type",
+            id: ct.key,
+            attributes: SmplkitGeneratedClient::App::ContextType.new(name: ct.name)
+          )
+        )
       end
 
       def from_resource(resource)
@@ -261,24 +290,23 @@ module Smplkit
     end
 
     class EnvironmentsNamespace
-      include HttpHelpers
-
-      def initialize(http)
-        @http = http
+      def initialize(api_client)
+        @api = SmplkitGeneratedClient::App::EnvironmentsApi.new(api_client)
       end
 
       def list
-        list_resp = http_list("/api/v1/environments")
-        list_resp.map { |r| from_resource(r) }
+        response = ErrorMapping.call { @api.list_environments }
+        (response.data || []).map { |r| from_resource(ResourceShim.from_model(r)) }
       end
 
       def get(key)
-        resp = http_get("/api/v1/environments/#{key}")
-        from_resource(resp["data"])
+        response = ErrorMapping.call { @api.get_environment(key) }
+        from_resource(ResourceShim.from_model(response.data))
       end
 
       def delete(key)
-        http_delete("/api/v1/environments/#{key}")
+        ErrorMapping.call { @api.delete_environment(key) }
+        true
       end
 
       def new(key, name: nil, color: nil,
@@ -293,31 +321,31 @@ module Smplkit
       end
 
       def _create_environment(env)
-        resp = http_post("/api/v1/environments", body_for(env))
-        from_resource(resp["data"])
+        response = ErrorMapping.call { @api.create_environment(body_for(env)) }
+        from_resource(ResourceShim.from_model(response.data))
       end
 
       def _update_environment(env)
-        resp = http_put("/api/v1/environments/#{env.key}", body_for(env))
-        from_resource(resp["data"])
+        response = ErrorMapping.call { @api.update_environment(env.key, body_for(env)) }
+        from_resource(ResourceShim.from_model(response.data))
       end
 
       private
 
       def body_for(env)
-        {
-          "data" => {
-            "type" => "environment",
-            "id" => env.key,
-            "attributes" => {
-              "key" => env.key,
-              "name" => env.name,
-              "color" => env.color&.hex,
-              "classification" => env.classification,
-              "description" => env.description
-            }.compact
-          }
-        }
+        # Environment server schema: name, color, classification.
+        # Customer-side +description+ stays wrapper-only.
+        SmplkitGeneratedClient::App::EnvironmentResponse.new(
+          data: SmplkitGeneratedClient::App::EnvironmentResource.new(
+            type: "environment",
+            id: env.key,
+            attributes: SmplkitGeneratedClient::App::Environment.new(
+              name: env.name,
+              color: env.color&.hex,
+              classification: env.classification
+            )
+          )
+        )
       end
 
       def from_resource(resource)
@@ -335,41 +363,42 @@ module Smplkit
     end
 
     class AccountSettingsNamespace
-      include HttpHelpers
-
-      def initialize(http)
-        @http = http
+      def initialize(api_client)
+        @api = SmplkitGeneratedClient::App::AccountApi.new(api_client)
       end
 
       def get
-        resp = http_get("/api/v1/accounts/current/settings")
-        from_resource(resp["data"])
+        raw = ErrorMapping.call { @api.get_account_settings }
+        from_raw(raw)
       end
 
       def _update_account_settings(settings)
-        resp = http_put("/api/v1/accounts/current/settings", body_for(settings))
-        from_resource(resp["data"])
+        # The generator pulled this op without wiring a body parameter
+        # (the server accepts a free-form JSON object). The +debug_body+
+        # opt is the documented escape hatch.
+        raw = ErrorMapping.call do
+          @api.put_account_settings(debug_body: settings_body(settings))
+        end
+        from_raw(raw)
       end
 
       private
 
-      def body_for(settings)
+      def settings_body(settings)
         {
-          "data" => {
-            "type" => "account_settings",
-            "attributes" => {
-              "environment_order" => settings.environment_order,
-              "default_environment" => settings.default_environment
-            }.compact
-          }
-        }
+          "environment_order" => settings.environment_order,
+          "default_environment" => settings.default_environment
+        }.compact
       end
 
-      def from_resource(resource)
-        attrs = resource["attributes"] || {}
+      def from_raw(raw)
+        attrs = raw.respond_to?(:to_hash) ? ResourceShim.stringify(raw.to_hash) : (raw || {})
+        if attrs.is_a?(Hash) && attrs["data"].is_a?(Hash) && attrs["data"]["attributes"]
+          attrs = attrs["data"]["attributes"]
+        end
         Management::AccountSettings.new(
           self,
-          id: resource["id"],
+          id: attrs["id"],
           environment_order: attrs["environment_order"] || [],
           default_environment: attrs["default_environment"],
           updated_at: attrs["updated_at"]
@@ -378,24 +407,23 @@ module Smplkit
     end
 
     class ConfigNamespace
-      include HttpHelpers
-
-      def initialize(http)
-        @http = http
+      def initialize(api_client)
+        @api = SmplkitGeneratedClient::Config::ConfigsApi.new(api_client)
       end
 
       def list
-        list_resp = http_list("/api/v1/configs")
-        list_resp.map { |r| Smplkit::Config::Helpers.config_from_json(self, r) }
+        response = ErrorMapping.call { @api.list_configs }
+        (response.data || []).map { |r| Smplkit::Config::Helpers.config_from_json(self, ResourceShim.from_model(r)) }
       end
 
       def get(key)
-        resp = http_get("/api/v1/configs/#{key}")
-        Smplkit::Config::Helpers.config_from_json(self, resp["data"])
+        response = ErrorMapping.call { @api.get_config(key) }
+        Smplkit::Config::Helpers.config_from_json(self, ResourceShim.from_model(response.data))
       end
 
       def delete(key)
-        http_delete("/api/v1/configs/#{key}")
+        ErrorMapping.call { @api.delete_config(key) }
+        true
       end
 
       def new_config(key, name: nil, description: nil, parent: nil)
@@ -409,27 +437,22 @@ module Smplkit
       end
 
       def _create_config(config)
-        body = Smplkit::Config::Helpers.build_config_request_body(config)
-        resp = http_post("/api/v1/configs", body)
-        Smplkit::Config::Helpers.config_from_json(self, resp["data"])
+        response = ErrorMapping.call { @api.create_config(config_body(config)) }
+        Smplkit::Config::Helpers.config_from_json(self, ResourceShim.from_model(response.data))
       end
 
       def _update_config(config)
-        body = Smplkit::Config::Helpers.build_config_request_body(config)
-        resp = http_put("/api/v1/configs/#{config.key}", body)
-        Smplkit::Config::Helpers.config_from_json(self, resp["data"])
+        response = ErrorMapping.call { @api.update_config(config.key, config_body(config)) }
+        Smplkit::Config::Helpers.config_from_json(self, ResourceShim.from_model(response.data))
       end
 
       # Build the parent-chain for a given config, walking +parent_id+
       # pointers across the full config list. Mirrors the Python SDK's
       # client-side resolution — there is no server +/chain+ endpoint.
-      #
-      # Each chain entry is a Hash matching the wire shape that
-      # +Smplkit::Config::Helpers.resolve_chain+ consumes.
       def fetch_chain(target_key)
         all_configs = list
         by_key = all_configs.to_h { |c| [c.key, c] }
-        by_id  = all_configs.to_h { |c| [c.id, c] }
+        by_id = all_configs.to_h { |c| [c.id, c] }
 
         current = by_key[target_key]
         return [] unless current
@@ -450,6 +473,46 @@ module Smplkit
 
       private
 
+      def config_body(config)
+        SmplkitGeneratedClient::Config::ConfigResponse.new(
+          data: SmplkitGeneratedClient::Config::ConfigResource.new(
+            type: "config",
+            id: config.key,
+            attributes: SmplkitGeneratedClient::Config::Config.new(
+              name: config.name,
+              description: config.description,
+              parent: config.parent_id,
+              items: config_items_to_wire(config.items),
+              environments: config_envs_to_wire(config.environments)
+            )
+          )
+        )
+      end
+
+      def config_items_to_wire(items)
+        return nil if items.nil? || items.empty?
+
+        items.to_h do |item|
+          [item.name, SmplkitGeneratedClient::Config::ConfigItemDefinition.new(
+            value: item.value, type: item.type, description: item.description
+          )]
+        end
+      end
+
+      def config_envs_to_wire(environments)
+        return nil if environments.empty?
+
+        # ConfigItemOverride only carries +value+ on the wire — environment
+        # overrides override the value, not the type or description.
+        environments.each_with_object({}) do |(env_key, env_obj), out|
+          values = env_obj.values_raw.each_with_object({}) do |(k, v), inner|
+            v_hash = v.is_a?(Hash) ? v : { "value" => v }
+            inner[k] = SmplkitGeneratedClient::Config::ConfigItemOverride.new(value: v_hash["value"])
+          end
+          out[env_key] = SmplkitGeneratedClient::Config::EnvironmentOverride.new(values: values)
+        end
+      end
+
       def config_to_chain_entry(config)
         items_hash = {}
         config.items.each do |item|
@@ -469,10 +532,8 @@ module Smplkit
     end
 
     class FlagsNamespace
-      include HttpHelpers
-
-      def initialize(http)
-        @http = http
+      def initialize(api_client)
+        @api = SmplkitGeneratedClient::Flags::FlagsApi.new(api_client)
         @buffer = Management::FlagRegistrationBuffer.new
       end
 
@@ -485,24 +546,31 @@ module Smplkit
         batch = @buffer.drain
         return if batch.empty?
 
-        body = { "data" => { "type" => "flag_bulk_register", "attributes" => { "flags" => batch } } }
-        http_post("/api/v1/flags/bulk", body)
+        flag_items = batch.map do |entry|
+          SmplkitGeneratedClient::Flags::FlagBulkItem.new(
+            id: entry["id"], type: entry["type"], default: entry["default"],
+            service: entry["service"], environment: entry["environment"]
+          )
+        end
+        body = SmplkitGeneratedClient::Flags::FlagBulkRequest.new(flags: flag_items)
+        ErrorMapping.call { @api.bulk_register_flags(body) }
       rescue StandardError => e
         Smplkit.debug("registration", "flag flush failed: #{e.class}: #{e.message}")
       end
 
       def list
-        list_resp = http_list("/api/v1/flags")
-        list_resp.map { |r| flag_from_resource(r) }
+        response = ErrorMapping.call { @api.list_flags }
+        (response.data || []).map { |r| flag_from_resource(ResourceShim.from_model(r)) }
       end
 
       def get(id)
-        resp = http_get("/api/v1/flags/#{id}")
-        flag_from_resource(resp["data"])
+        response = ErrorMapping.call { @api.get_flag(id) }
+        flag_from_resource(ResourceShim.from_model(response.data))
       end
 
       def delete(id)
-        http_delete("/api/v1/flags/#{id}")
+        ErrorMapping.call { @api.delete_flag(id) }
+        true
       end
 
       def new_boolean_flag(id, default:, name: nil, description: nil, values: nil)
@@ -534,28 +602,66 @@ module Smplkit
       end
 
       def _create_flag(flag)
-        body = Smplkit::Flags::Helpers.build_flag_request_body(flag)
-        resp = http_post("/api/v1/flags", body)
-        flag_from_resource(resp["data"])
+        response = ErrorMapping.call { @api.create_flag(flag_body(flag)) }
+        flag_from_resource(ResourceShim.from_model(response.data))
       end
 
       def _update_flag(flag)
-        body = Smplkit::Flags::Helpers.build_flag_request_body(flag)
-        resp = http_put("/api/v1/flags/#{flag.id}", body)
-        flag_from_resource(resp["data"])
+        response = ErrorMapping.call { @api.update_flag(flag.id, flag_body(flag)) }
+        flag_from_resource(ResourceShim.from_model(response.data))
       end
 
       def fetch_flag(id)
-        resp = http_get("/api/v1/flags/#{id}")
-        Smplkit::Flags::Helpers.flag_dict_from_json(resp["data"])
+        response = ErrorMapping.call { @api.get_flag(id) }
+        Smplkit::Flags::Helpers.flag_dict_from_json(ResourceShim.from_model(response.data))
       end
 
       def list_flags
-        body = http_list("/api/v1/flags")
-        body.map { |r| Smplkit::Flags::Helpers.flag_dict_from_json(r) }
+        response = ErrorMapping.call { @api.list_flags }
+        (response.data || []).map { |r| Smplkit::Flags::Helpers.flag_dict_from_json(ResourceShim.from_model(r)) }
       end
 
       private
+
+      def flag_body(flag)
+        SmplkitGeneratedClient::Flags::FlagResponse.new(
+          data: SmplkitGeneratedClient::Flags::FlagResource.new(
+            type: "flag",
+            id: flag.id,
+            attributes: SmplkitGeneratedClient::Flags::Flag.new(
+              name: flag.name,
+              type: flag.type,
+              default: flag.default,
+              description: flag.description,
+              values: flag_values_to_wire(flag.values),
+              environments: flag_envs_to_wire(flag.environments)
+            )
+          )
+        )
+      end
+
+      def flag_values_to_wire(values)
+        return nil if values.nil?
+
+        values.map do |v|
+          SmplkitGeneratedClient::Flags::FlagValue.new(name: v.name, value: v.value)
+        end
+      end
+
+      def flag_envs_to_wire(environments)
+        return nil if environments.empty?
+
+        environments.each_with_object({}) do |(env_key, env_obj), out|
+          rules = env_obj.rules.map do |r|
+            SmplkitGeneratedClient::Flags::FlagRule.new(
+              logic: r.logic, value: r.value, description: r.description
+            )
+          end
+          out[env_key] = SmplkitGeneratedClient::Flags::FlagEnvironment.new(
+            enabled: env_obj.enabled, default: env_obj.default, rules: rules
+          )
+        end
+      end
 
       def flag_from_resource(resource)
         d = Smplkit::Flags::Helpers.flag_dict_from_json(resource)
@@ -577,10 +683,8 @@ module Smplkit
     end
 
     class LoggersNamespace
-      include HttpHelpers
-
-      def initialize(http)
-        @http = http
+      def initialize(api_client)
+        @api = SmplkitGeneratedClient::Logging::LoggersApi.new(api_client)
         @buffer = Management::LoggerRegistrationBuffer.new
       end
 
@@ -594,54 +698,86 @@ module Smplkit
         batch = @buffer.drain
         return if batch.empty?
 
-        body = { "data" => { "type" => "logger_bulk_register", "attributes" => { "loggers" => batch } } }
-        http_post("/api/v1/loggers/bulk", body)
+        items = batch.map do |entry|
+          SmplkitGeneratedClient::Logging::LoggerBulkItem.new(
+            id: entry["id"],
+            resolved_level: entry["resolved_level"],
+            level: entry["level"],
+            service: entry["service"],
+            environment: entry["environment"]
+          )
+        end
+        body = SmplkitGeneratedClient::Logging::LoggerBulkRequest.new(loggers: items)
+        ErrorMapping.call { @api.bulk_register_loggers(body) }
       rescue StandardError => e
         Smplkit.debug("registration", "logger flush failed: #{e.class}: #{e.message}")
       end
 
       def list
-        list_resp = http_list("/api/v1/loggers")
-        list_resp.map { |r| Smplkit::Logging::Helpers.logger_resource_to_model(self, r) }
+        response = ErrorMapping.call { @api.list_loggers }
+        (response.data || []).map do |r|
+          Smplkit::Logging::Helpers.logger_resource_to_model(self, ResourceShim.from_model(r))
+        end
       end
 
       def get(id)
         normalized = Smplkit::Logging::Normalize.normalize_logger_name(id)
-        resp = http_get("/api/v1/loggers/#{normalized}")
-        Smplkit::Logging::Helpers.logger_resource_to_model(self, resp["data"])
+        response = ErrorMapping.call { @api.get_logger(normalized) }
+        Smplkit::Logging::Helpers.logger_resource_to_model(self, ResourceShim.from_model(response.data))
       end
 
       def delete(id)
         normalized = Smplkit::Logging::Normalize.normalize_logger_name(id)
-        http_delete("/api/v1/loggers/#{normalized}")
+        ErrorMapping.call { @api.delete_logger(normalized) }
+        true
       end
 
       def _update_logger(logger)
-        body = Smplkit::Logging::Helpers.build_logger_body(logger)
-        resp = http_put("/api/v1/loggers/#{logger.id || logger.name}", body)
-        Smplkit::Logging::Helpers.logger_resource_to_model(self, resp["data"])
+        response = ErrorMapping.call { @api.update_logger(logger.id || logger.name, logger_body(logger)) }
+        Smplkit::Logging::Helpers.logger_resource_to_model(self, ResourceShim.from_model(response.data))
+      end
+
+      private
+
+      def logger_body(logger)
+        # Logger server schema: name, level, group, managed.
+        # +resolved_level+ is read-only, +service+/+environment+ are
+        # observed via bulk register, +description+ is wrapper-local.
+        SmplkitGeneratedClient::Logging::LoggerResponse.new(
+          data: SmplkitGeneratedClient::Logging::LoggerResource.new(
+            type: "logger",
+            id: logger.id,
+            attributes: SmplkitGeneratedClient::Logging::Logger.new(
+              name: logger.name,
+              level: logger.level&.to_s,
+              group: logger.log_group_id,
+              managed: logger.managed
+            )
+          )
+        )
       end
     end
 
     class LogGroupsNamespace
-      include HttpHelpers
-
-      def initialize(http)
-        @http = http
+      def initialize(api_client)
+        @api = SmplkitGeneratedClient::Logging::LogGroupsApi.new(api_client)
       end
 
       def list
-        list_resp = http_list("/api/v1/log_groups")
-        list_resp.map { |r| Smplkit::Logging::Helpers.log_group_resource_to_model(self, r) }
+        response = ErrorMapping.call { @api.list_log_groups }
+        (response.data || []).map do |r|
+          Smplkit::Logging::Helpers.log_group_resource_to_model(self, ResourceShim.from_model(r))
+        end
       end
 
       def get(key)
-        resp = http_get("/api/v1/log_groups/#{key}")
-        Smplkit::Logging::Helpers.log_group_resource_to_model(self, resp["data"])
+        response = ErrorMapping.call { @api.get_log_group(key) }
+        Smplkit::Logging::Helpers.log_group_resource_to_model(self, ResourceShim.from_model(response.data))
       end
 
       def delete(key)
-        http_delete("/api/v1/log_groups/#{key}")
+        ErrorMapping.call { @api.delete_log_group(key) }
+        true
       end
 
       def new_log_group(key, name: nil, level: nil, description: nil, parent: nil)
@@ -653,15 +789,30 @@ module Smplkit
       end
 
       def _create_log_group(group)
-        body = Smplkit::Logging::Helpers.build_log_group_body(group)
-        resp = http_post("/api/v1/log_groups", body)
-        Smplkit::Logging::Helpers.log_group_resource_to_model(self, resp["data"])
+        response = ErrorMapping.call { @api.create_log_group(log_group_body(group)) }
+        Smplkit::Logging::Helpers.log_group_resource_to_model(self, ResourceShim.from_model(response.data))
       end
 
       def _update_log_group(group)
-        body = Smplkit::Logging::Helpers.build_log_group_body(group)
-        resp = http_put("/api/v1/log_groups/#{group.key}", body)
-        Smplkit::Logging::Helpers.log_group_resource_to_model(self, resp["data"])
+        response = ErrorMapping.call { @api.update_log_group(group.key, log_group_body(group)) }
+        Smplkit::Logging::Helpers.log_group_resource_to_model(self, ResourceShim.from_model(response.data))
+      end
+
+      private
+
+      def log_group_body(group)
+        # LogGroup server schema: name, level, parent_id (no description).
+        SmplkitGeneratedClient::Logging::LogGroupResponse.new(
+          data: SmplkitGeneratedClient::Logging::LogGroupResource.new(
+            type: "log_group",
+            id: group.key,
+            attributes: SmplkitGeneratedClient::Logging::LogGroup.new(
+              name: group.name,
+              level: group.level&.to_s,
+              parent_id: group.parent_id
+            )
+          )
+        )
       end
     end
   end

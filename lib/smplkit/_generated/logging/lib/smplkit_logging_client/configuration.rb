@@ -181,7 +181,7 @@ module SmplkitGeneratedClient::Logging
       @ignore_operation_servers = false
       @inject_format = false
       @force_ending_format = false
-      @logger = defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
+      @logger = defined?(Rails) ? Rails.logger : ::Logger.new($stdout)
 
       yield(self) if block_given?
     end

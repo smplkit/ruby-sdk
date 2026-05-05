@@ -44,7 +44,7 @@ module SmplkitGeneratedClient::Flags
     def self.openapi_types
       {
         :'enabled' => :'Boolean',
-        :'default' => :'AnyOf',
+        :'default' => :'Object',
         :'rules' => :'Array<FlagRule>'
       }
     end
