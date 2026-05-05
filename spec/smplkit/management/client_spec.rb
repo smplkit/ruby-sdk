@@ -37,10 +37,10 @@ RSpec.describe Smplkit::ManagementClient do
     end
 
     it "registers and flushes flag declarations" do
-      stub_request(:post, "https://flags.smplkit.test/api/flags/v1/bulk").to_return(status: 200, body: "")
+      stub_request(:post, "https://flags.smplkit.test/api/v1/flags/bulk").to_return(status: 200, body: "")
       mgmt.flags.register(Smplkit::FlagDeclaration.new(id: "x", type: "BOOLEAN", default: false))
       mgmt.flags.flush
-      expect(WebMock).to have_requested(:post, "https://flags.smplkit.test/api/flags/v1/bulk")
+      expect(WebMock).to have_requested(:post, "https://flags.smplkit.test/api/v1/flags/bulk")
     end
 
     it "lists flags" do
@@ -49,20 +49,20 @@ RSpec.describe Smplkit::ManagementClient do
                              "attributes" => { "id" => "x", "name" => "x", "type" => "BOOLEAN",
                                                "default" => false, "environments" => {} }
                            }])
-      stub_request(:get, "https://flags.smplkit.test/api/flags/v1").to_return(status: 200, body: body)
+      stub_request(:get, "https://flags.smplkit.test/api/v1/flags").to_return(status: 200, body: body)
       flags = mgmt.flags.list
       expect(flags.length).to eq(1)
       expect(flags.first.id).to eq("x")
     end
 
     it "delete sends DELETE" do
-      stub_request(:delete, "https://flags.smplkit.test/api/flags/v1/x").to_return(status: 204, body: "")
+      stub_request(:delete, "https://flags.smplkit.test/api/v1/flags/x").to_return(status: 204, body: "")
       expect(mgmt.flags.delete("x")).to be(true)
     end
 
     it "raises NotFoundError on 404" do
       body = JSON.generate("errors" => [{ "status" => "404", "detail" => "x" }])
-      stub_request(:get, "https://flags.smplkit.test/api/flags/v1/missing")
+      stub_request(:get, "https://flags.smplkit.test/api/v1/flags/missing")
         .to_return(status: 404, body: body)
       expect { mgmt.flags.get("missing") }.to raise_error(Smplkit::NotFoundError)
     end
@@ -76,7 +76,7 @@ RSpec.describe Smplkit::ManagementClient do
     end
 
     it "split_id parses 'type:key' strings" do
-      stub_request(:get, "https://app.smplkit.test/api/contexts/v1/user:u-1")
+      stub_request(:get, "https://app.smplkit.test/api/v1/contexts/user:u-1")
         .to_return(status: 200, body: JSON.generate("data" => {
                                                       "id" => "user:u-1",
                                                       "attributes" => { "type" => "user", "key" => "u-1",

@@ -3,6 +3,7 @@
 require "json"
 require "async"
 require "async/http/endpoint"
+require "async/http/protocol/http1"
 require "async/websocket/client"
 require "concurrent"
 
@@ -172,7 +173,12 @@ module Smplkit
       @connection_status = "connecting"
       Smplkit.debug("websocket", "connecting to #{safe_url}")
 
-      endpoint = Async::HTTP::Endpoint.parse(url)
+      # Force HTTP/1.1 for the WebSocket upgrade. async-http defaults to
+      # HTTP/2 on TLS endpoints, but the smplkit event gateway speaks the
+      # classic RFC 6455 upgrade over HTTP/1.1, not the HTTP/2-tunneled
+      # variant from RFC 8441 — without this override the upgrade returns
+      # a Protocol::HTTP2::StreamError before any frame is exchanged.
+      endpoint = Async::HTTP::Endpoint.parse(url, protocol: Async::HTTP::Protocol::HTTP1)
       headers = { "user-agent" => USER_AGENT }
       connection = Async::WebSocket::Client.connect(endpoint, headers: headers)
       @connection_lock.synchronize { @connection = connection }

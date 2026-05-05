@@ -81,7 +81,10 @@ module Smplkit
 
       sections =
         begin
-          parse_ini(File.read(path))
+          # Force UTF-8 — the file may contain comments with non-ASCII bytes
+          # (em dashes, smart quotes) and the system's default external
+          # encoding is locale-dependent.
+          parse_ini(File.read(path, encoding: "UTF-8"))
         rescue StandardError
           return {}
         end

@@ -143,25 +143,25 @@ module Smplkit
         return if batch.empty?
 
         body = { "data" => { "type" => "context_bulk_register", "attributes" => { "contexts" => batch } } }
-        http_post("/api/contexts/v1/bulk", body)
+        http_post("/api/v1/contexts/bulk", body)
       rescue StandardError => e
         Smplkit.debug("registration", "context flush failed: #{e.class}: #{e.message}")
       end
 
       def list
-        list_resp = http_list("/api/contexts/v1")
+        list_resp = http_list("/api/v1/contexts")
         list_resp.map { |r| context_from_resource(r) }
       end
 
       def get(id_or_type, key = nil)
         type, ckey = split_id(id_or_type, key)
-        resource = http_get("/api/contexts/v1/#{type}:#{ckey}")
+        resource = http_get("/api/v1/contexts/#{type}:#{ckey}")
         context_from_resource(resource["data"])
       end
 
       def delete(id_or_type, key = nil)
         type, ckey = split_id(id_or_type, key)
-        http_delete("/api/contexts/v1/#{type}:#{ckey}")
+        http_delete("/api/v1/contexts/#{type}:#{ckey}")
       end
 
       def _save_context(ctx)
@@ -172,7 +172,7 @@ module Smplkit
             "attributes" => { "type" => ctx.type, "key" => ctx.key, "attributes" => ctx.attributes }.compact
           }
         }
-        resp = http_put("/api/contexts/v1/#{ctx.id}", body)
+        resp = http_put("/api/v1/contexts/#{ctx.id}", body)
         context_from_resource(resp["data"]).tap { |c| c._bind_client(self) }
       end
 
@@ -210,17 +210,17 @@ module Smplkit
       end
 
       def list
-        list_resp = http_list("/api/context_types/v1")
+        list_resp = http_list("/api/v1/context_types")
         list_resp.map { |r| from_resource(r) }
       end
 
       def get(key)
-        resp = http_get("/api/context_types/v1/#{key}")
+        resp = http_get("/api/v1/context_types/#{key}")
         from_resource(resp["data"])
       end
 
       def delete(key)
-        http_delete("/api/context_types/v1/#{key}")
+        http_delete("/api/v1/context_types/#{key}")
       end
 
       def new_context_type(key, name: nil, description: nil)
@@ -228,12 +228,12 @@ module Smplkit
       end
 
       def _create_context_type(ct)
-        resp = http_post("/api/context_types/v1", body_for(ct))
+        resp = http_post("/api/v1/context_types", body_for(ct))
         from_resource(resp["data"])
       end
 
       def _update_context_type(ct)
-        resp = http_put("/api/context_types/v1/#{ct.key}", body_for(ct))
+        resp = http_put("/api/v1/context_types/#{ct.key}", body_for(ct))
         from_resource(resp["data"])
       end
 
@@ -268,17 +268,17 @@ module Smplkit
       end
 
       def list
-        list_resp = http_list("/api/environments/v1")
+        list_resp = http_list("/api/v1/environments")
         list_resp.map { |r| from_resource(r) }
       end
 
       def get(key)
-        resp = http_get("/api/environments/v1/#{key}")
+        resp = http_get("/api/v1/environments/#{key}")
         from_resource(resp["data"])
       end
 
       def delete(key)
-        http_delete("/api/environments/v1/#{key}")
+        http_delete("/api/v1/environments/#{key}")
       end
 
       def new(key, name: nil, color: nil,
@@ -293,12 +293,12 @@ module Smplkit
       end
 
       def _create_environment(env)
-        resp = http_post("/api/environments/v1", body_for(env))
+        resp = http_post("/api/v1/environments", body_for(env))
         from_resource(resp["data"])
       end
 
       def _update_environment(env)
-        resp = http_put("/api/environments/v1/#{env.key}", body_for(env))
+        resp = http_put("/api/v1/environments/#{env.key}", body_for(env))
         from_resource(resp["data"])
       end
 
@@ -342,12 +342,12 @@ module Smplkit
       end
 
       def get
-        resp = http_get("/api/account_settings/v1")
+        resp = http_get("/api/v1/accounts/current/settings")
         from_resource(resp["data"])
       end
 
       def _update_account_settings(settings)
-        resp = http_put("/api/account_settings/v1", body_for(settings))
+        resp = http_put("/api/v1/accounts/current/settings", body_for(settings))
         from_resource(resp["data"])
       end
 
@@ -385,17 +385,17 @@ module Smplkit
       end
 
       def list
-        list_resp = http_list("/api/configs/v1")
+        list_resp = http_list("/api/v1/configs")
         list_resp.map { |r| Smplkit::Config::Helpers.config_from_json(self, r) }
       end
 
       def get(key)
-        resp = http_get("/api/configs/v1/#{key}")
+        resp = http_get("/api/v1/configs/#{key}")
         Smplkit::Config::Helpers.config_from_json(self, resp["data"])
       end
 
       def delete(key)
-        http_delete("/api/configs/v1/#{key}")
+        http_delete("/api/v1/configs/#{key}")
       end
 
       def new_config(key, name: nil, description: nil, parent: nil)
@@ -407,19 +407,61 @@ module Smplkit
 
       def _create_config(config)
         body = Smplkit::Config::Helpers.build_config_request_body(config)
-        resp = http_post("/api/configs/v1", body)
+        resp = http_post("/api/v1/configs", body)
         Smplkit::Config::Helpers.config_from_json(self, resp["data"])
       end
 
       def _update_config(config)
         body = Smplkit::Config::Helpers.build_config_request_body(config)
-        resp = http_put("/api/configs/v1/#{config.key}", body)
+        resp = http_put("/api/v1/configs/#{config.key}", body)
         Smplkit::Config::Helpers.config_from_json(self, resp["data"])
       end
 
-      def fetch_chain(key)
-        resp = http_get("/api/configs/v1/#{key}/chain")
-        (resp["data"] || []).map { |r| r["attributes"] || {} }
+      # Build the parent-chain for a given config, walking +parent_id+
+      # pointers across the full config list. Mirrors the Python SDK's
+      # client-side resolution — there is no server +/chain+ endpoint.
+      #
+      # Each chain entry is a Hash matching the wire shape that
+      # +Smplkit::Config::Helpers.resolve_chain+ consumes.
+      def fetch_chain(target_key)
+        all_configs = list
+        by_key = all_configs.to_h { |c| [c.key, c] }
+        by_id  = all_configs.to_h { |c| [c.id, c] }
+
+        current = by_key[target_key]
+        return [] unless current
+
+        chain = []
+        loop do
+          chain << config_to_chain_entry(current)
+          parent_id = current.parent_id
+          break if parent_id.nil? || parent_id == ""
+
+          parent = by_id[parent_id]
+          break unless parent
+
+          current = parent
+        end
+        chain
+      end
+
+      private
+
+      def config_to_chain_entry(config)
+        items_hash = {}
+        config.items.each do |item|
+          items_hash[item.name] = {
+            "value" => item.value,
+            "type" => item.type,
+            "description" => item.description
+          }.compact
+        end
+
+        environments = config.environments.each_with_object({}) do |(env_key, env_obj), out|
+          out[env_key] = { "values" => env_obj.values_raw }
+        end
+
+        { "id" => config.id, "items" => items_hash, "environments" => environments }
       end
     end
 
@@ -441,23 +483,23 @@ module Smplkit
         return if batch.empty?
 
         body = { "data" => { "type" => "flag_bulk_register", "attributes" => { "flags" => batch } } }
-        http_post("/api/flags/v1/bulk", body)
+        http_post("/api/v1/flags/bulk", body)
       rescue StandardError => e
         Smplkit.debug("registration", "flag flush failed: #{e.class}: #{e.message}")
       end
 
       def list
-        list_resp = http_list("/api/flags/v1")
+        list_resp = http_list("/api/v1/flags")
         list_resp.map { |r| flag_from_resource(r) }
       end
 
       def get(id)
-        resp = http_get("/api/flags/v1/#{id}")
+        resp = http_get("/api/v1/flags/#{id}")
         flag_from_resource(resp["data"])
       end
 
       def delete(id)
-        http_delete("/api/flags/v1/#{id}")
+        http_delete("/api/v1/flags/#{id}")
       end
 
       def new_boolean_flag(id, default:, name: nil, description: nil, values: nil)
@@ -490,23 +532,23 @@ module Smplkit
 
       def _create_flag(flag)
         body = Smplkit::Flags::Helpers.build_flag_request_body(flag)
-        resp = http_post("/api/flags/v1", body)
+        resp = http_post("/api/v1/flags", body)
         flag_from_resource(resp["data"])
       end
 
       def _update_flag(flag)
         body = Smplkit::Flags::Helpers.build_flag_request_body(flag)
-        resp = http_put("/api/flags/v1/#{flag.id}", body)
+        resp = http_put("/api/v1/flags/#{flag.id}", body)
         flag_from_resource(resp["data"])
       end
 
       def fetch_flag(id)
-        resp = http_get("/api/flags/v1/#{id}")
+        resp = http_get("/api/v1/flags/#{id}")
         Smplkit::Flags::Helpers.flag_dict_from_json(resp["data"])
       end
 
       def list_flags
-        body = http_list("/api/flags/v1")
+        body = http_list("/api/v1/flags")
         body.map { |r| Smplkit::Flags::Helpers.flag_dict_from_json(r) }
       end
 
@@ -550,30 +592,30 @@ module Smplkit
         return if batch.empty?
 
         body = { "data" => { "type" => "logger_bulk_register", "attributes" => { "loggers" => batch } } }
-        http_post("/api/loggers/v1/bulk", body)
+        http_post("/api/v1/loggers/bulk", body)
       rescue StandardError => e
         Smplkit.debug("registration", "logger flush failed: #{e.class}: #{e.message}")
       end
 
       def list
-        list_resp = http_list("/api/loggers/v1")
+        list_resp = http_list("/api/v1/loggers")
         list_resp.map { |r| Smplkit::Logging::Helpers.logger_resource_to_model(self, r) }
       end
 
       def get(id)
         normalized = Smplkit::Logging::Normalize.normalize_logger_name(id)
-        resp = http_get("/api/loggers/v1/#{normalized}")
+        resp = http_get("/api/v1/loggers/#{normalized}")
         Smplkit::Logging::Helpers.logger_resource_to_model(self, resp["data"])
       end
 
       def delete(id)
         normalized = Smplkit::Logging::Normalize.normalize_logger_name(id)
-        http_delete("/api/loggers/v1/#{normalized}")
+        http_delete("/api/v1/loggers/#{normalized}")
       end
 
       def _update_logger(logger)
         body = Smplkit::Logging::Helpers.build_logger_body(logger)
-        resp = http_put("/api/loggers/v1/#{logger.id || logger.name}", body)
+        resp = http_put("/api/v1/loggers/#{logger.id || logger.name}", body)
         Smplkit::Logging::Helpers.logger_resource_to_model(self, resp["data"])
       end
     end
@@ -586,17 +628,17 @@ module Smplkit
       end
 
       def list
-        list_resp = http_list("/api/log_groups/v1")
+        list_resp = http_list("/api/v1/log_groups")
         list_resp.map { |r| Smplkit::Logging::Helpers.log_group_resource_to_model(self, r) }
       end
 
       def get(key)
-        resp = http_get("/api/log_groups/v1/#{key}")
+        resp = http_get("/api/v1/log_groups/#{key}")
         Smplkit::Logging::Helpers.log_group_resource_to_model(self, resp["data"])
       end
 
       def delete(key)
-        http_delete("/api/log_groups/v1/#{key}")
+        http_delete("/api/v1/log_groups/#{key}")
       end
 
       def new_log_group(key, name: nil, level: nil, description: nil, parent: nil)
@@ -609,13 +651,13 @@ module Smplkit
 
       def _create_log_group(group)
         body = Smplkit::Logging::Helpers.build_log_group_body(group)
-        resp = http_post("/api/log_groups/v1", body)
+        resp = http_post("/api/v1/log_groups", body)
         Smplkit::Logging::Helpers.log_group_resource_to_model(self, resp["data"])
       end
 
       def _update_log_group(group)
         body = Smplkit::Logging::Helpers.build_log_group_body(group)
-        resp = http_put("/api/log_groups/v1/#{group.key}", body)
+        resp = http_put("/api/v1/log_groups/#{group.key}", body)
         Smplkit::Logging::Helpers.log_group_resource_to_model(self, resp["data"])
       end
     end

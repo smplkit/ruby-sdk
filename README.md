@@ -77,7 +77,14 @@ Two adapters ship at launch (per ADR-046 §2.3):
 | `stdlib-logger`   | Ruby stdlib `Logger` (and Rails via `ActiveSupport::Logger`)            |
 | `semantic-logger` | The [`semantic_logger` gem](https://github.com/reidmorrison/semantic_logger) |
 
-Custom adapters subclass `Smplkit::Logging::Adapters::Base`.
+Both are auto-loaded by `install` when the corresponding framework is available. To support an additional framework, subclass `Smplkit::Logging::Adapters::Base` and implement the five contract methods (`name`, `discover`, `apply_level`, `install_hook`, `uninstall_hook`), then register before `install`:
+
+```ruby
+client.logging.register_adapter(MyFrameworkAdapter.new)
+client.logging.install
+```
+
+Calling `register_adapter` disables auto-loading — only the adapters you register are used.
 
 ## Rails integration
 
