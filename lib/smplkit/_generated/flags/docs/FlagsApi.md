@@ -1,0 +1,436 @@
+# SmplkitGeneratedClient::Flags::FlagsApi
+
+All URIs are relative to *http://localhost*
+
+| Method | HTTP request | Description |
+| ------ | ------------ | ----------- |
+| [**bulk_register_flags**](FlagsApi.md#bulk_register_flags) | **POST** /api/v1/flags/bulk | Bulk Register Flags |
+| [**create_flag**](FlagsApi.md#create_flag) | **POST** /api/v1/flags | Create Flag |
+| [**delete_flag**](FlagsApi.md#delete_flag) | **DELETE** /api/v1/flags/{id} | Delete Flag |
+| [**get_flag**](FlagsApi.md#get_flag) | **GET** /api/v1/flags/{id} | Get Flag |
+| [**list_flags**](FlagsApi.md#list_flags) | **GET** /api/v1/flags | List Flags |
+| [**update_flag**](FlagsApi.md#update_flag) | **PUT** /api/v1/flags/{id} | Update Flag |
+
+
+## bulk_register_flags
+
+> <FlagBulkResponse> bulk_register_flags(flag_bulk_request)
+
+Bulk Register Flags
+
+Register flags discovered by an SDK. Creates new flags or updates source observations on existing ones.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_flags_client'
+# setup authorization
+SmplkitGeneratedClient::Flags.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
+flag_bulk_request = SmplkitGeneratedClient::Flags::FlagBulkRequest.new({flags: [SmplkitGeneratedClient::Flags::FlagBulkItem.new({id: 'id_example', type: 'type_example', default: 3.56})]}) # FlagBulkRequest | 
+
+begin
+  # Bulk Register Flags
+  result = api_instance.bulk_register_flags(flag_bulk_request)
+  p result
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->bulk_register_flags: #{e}"
+end
+```
+
+#### Using the bulk_register_flags_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<FlagBulkResponse>, Integer, Hash)> bulk_register_flags_with_http_info(flag_bulk_request)
+
+```ruby
+begin
+  # Bulk Register Flags
+  data, status_code, headers = api_instance.bulk_register_flags_with_http_info(flag_bulk_request)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <FlagBulkResponse>
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->bulk_register_flags_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **flag_bulk_request** | [**FlagBulkRequest**](FlagBulkRequest.md) |  |  |
+
+### Return type
+
+[**FlagBulkResponse**](FlagBulkResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: application/vnd.api+json
+- **Accept**: application/vnd.api+json
+
+
+## create_flag
+
+> <FlagResponse> create_flag(flag_response)
+
+Create Flag
+
+Create a new feature flag. The caller provides the id (key) in the request body.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_flags_client'
+# setup authorization
+SmplkitGeneratedClient::Flags.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
+flag_response = SmplkitGeneratedClient::Flags::FlagResponse.new({data: SmplkitGeneratedClient::Flags::FlagResource.new({type: 'flag', attributes: SmplkitGeneratedClient::Flags::Flag.new({name: 'name_example', type: 'type_example', default: 3.56})})}) # FlagResponse | 
+
+begin
+  # Create Flag
+  result = api_instance.create_flag(flag_response)
+  p result
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->create_flag: #{e}"
+end
+```
+
+#### Using the create_flag_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<FlagResponse>, Integer, Hash)> create_flag_with_http_info(flag_response)
+
+```ruby
+begin
+  # Create Flag
+  data, status_code, headers = api_instance.create_flag_with_http_info(flag_response)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <FlagResponse>
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->create_flag_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **flag_response** | [**FlagResponse**](FlagResponse.md) |  |  |
+
+### Return type
+
+[**FlagResponse**](FlagResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: application/vnd.api+json
+- **Accept**: application/vnd.api+json
+
+
+## delete_flag
+
+> delete_flag(id)
+
+Delete Flag
+
+Delete a feature flag by its key.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_flags_client'
+# setup authorization
+SmplkitGeneratedClient::Flags.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
+id = 'id_example' # String | 
+
+begin
+  # Delete Flag
+  api_instance.delete_flag(id)
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->delete_flag: #{e}"
+end
+```
+
+#### Using the delete_flag_with_http_info variant
+
+This returns an Array which contains the response data (`nil` in this case), status code and headers.
+
+> <Array(nil, Integer, Hash)> delete_flag_with_http_info(id)
+
+```ruby
+begin
+  # Delete Flag
+  data, status_code, headers = api_instance.delete_flag_with_http_info(id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => nil
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->delete_flag_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **id** | **String** |  |  |
+
+### Return type
+
+nil (empty response body)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: Not defined
+
+
+## get_flag
+
+> <FlagResponse> get_flag(id)
+
+Get Flag
+
+Return a feature flag by its key.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_flags_client'
+# setup authorization
+SmplkitGeneratedClient::Flags.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
+id = 'id_example' # String | 
+
+begin
+  # Get Flag
+  result = api_instance.get_flag(id)
+  p result
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->get_flag: #{e}"
+end
+```
+
+#### Using the get_flag_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<FlagResponse>, Integer, Hash)> get_flag_with_http_info(id)
+
+```ruby
+begin
+  # Get Flag
+  data, status_code, headers = api_instance.get_flag_with_http_info(id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <FlagResponse>
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->get_flag_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **id** | **String** |  |  |
+
+### Return type
+
+[**FlagResponse**](FlagResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/vnd.api+json
+
+
+## list_flags
+
+> <FlagListResponse> list_flags(opts)
+
+List Flags
+
+List all feature flags for the authenticated account.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_flags_client'
+# setup authorization
+SmplkitGeneratedClient::Flags.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
+opts = {
+  filter_type: 'filter_type_example', # String | 
+  filter_managed: true, # Boolean | 
+  filter_references_context: 'filter_references_context_example', # String | Return flags whose rules reference this context instance. Format: {type}:{key}
+  filter_references_context_type: 'filter_references_context_type_example' # String | Return flags whose rules reference any attribute of the given context type.
+}
+
+begin
+  # List Flags
+  result = api_instance.list_flags(opts)
+  p result
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->list_flags: #{e}"
+end
+```
+
+#### Using the list_flags_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<FlagListResponse>, Integer, Hash)> list_flags_with_http_info(opts)
+
+```ruby
+begin
+  # List Flags
+  data, status_code, headers = api_instance.list_flags_with_http_info(opts)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <FlagListResponse>
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->list_flags_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **filter_type** | **String** |  | [optional] |
+| **filter_managed** | **Boolean** |  | [optional] |
+| **filter_references_context** | **String** | Return flags whose rules reference this context instance. Format: {type}:{key} | [optional] |
+| **filter_references_context_type** | **String** | Return flags whose rules reference any attribute of the given context type. | [optional] |
+
+### Return type
+
+[**FlagListResponse**](FlagListResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/vnd.api+json
+
+
+## update_flag
+
+> <FlagResponse> update_flag(id, flag_response)
+
+Update Flag
+
+Replace a feature flag entirely.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_flags_client'
+# setup authorization
+SmplkitGeneratedClient::Flags.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
+id = 'id_example' # String | 
+flag_response = SmplkitGeneratedClient::Flags::FlagResponse.new({data: SmplkitGeneratedClient::Flags::FlagResource.new({type: 'flag', attributes: SmplkitGeneratedClient::Flags::Flag.new({name: 'name_example', type: 'type_example', default: 3.56})})}) # FlagResponse | 
+
+begin
+  # Update Flag
+  result = api_instance.update_flag(id, flag_response)
+  p result
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->update_flag: #{e}"
+end
+```
+
+#### Using the update_flag_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<FlagResponse>, Integer, Hash)> update_flag_with_http_info(id, flag_response)
+
+```ruby
+begin
+  # Update Flag
+  data, status_code, headers = api_instance.update_flag_with_http_info(id, flag_response)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <FlagResponse>
+rescue SmplkitGeneratedClient::Flags::ApiError => e
+  puts "Error when calling FlagsApi->update_flag_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **id** | **String** |  |  |
+| **flag_response** | [**FlagResponse**](FlagResponse.md) |  |  |
+
+### Return type
+
+[**FlagResponse**](FlagResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: application/vnd.api+json
+- **Accept**: application/vnd.api+json
+
