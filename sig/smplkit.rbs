@@ -1,0 +1,141 @@
+# Top-level RBS signatures for the smplkit Ruby SDK.
+#
+# Per ADR-046 §2.8, sigs ship alongside the gem in +sig/+ for IDE/LSP
+# autocompletion and Steep type-checking. Per-class sigs that go beyond
+# the public surface declared here are deferred — see ISSUES.md.
+
+module Smplkit
+  VERSION: String
+
+  def self.debug: (String, String) -> void
+  def self.enable_debug: () -> void
+  def self.set_request_context: (Array[Context]) -> ContextScope
+  def self.request_context: () -> Array[Context]
+  def self.configure_for_rails: (untyped) -> Client
+
+  class Client
+    def self.open: (**untyped) { (Client) -> void } -> void
+    def initialize: (?api_key: String?, ?environment: String?, ?service: String?,
+                     ?profile: String?, ?base_domain: String?, ?scheme: String?,
+                     ?debug: bool?, ?telemetry: bool?) -> void
+    def manage: () -> ManagementClient
+    def config: () -> Config::ConfigClient
+    def flags: () -> Flags::FlagsClient
+    def logging: () -> Logging::LoggingClient
+    def wait_until_ready: (?timeout: Float) -> void
+    def set_context: (Array[Context]) ?{ (ContextScope) -> void } -> ContextScope?
+    def close: () -> void
+  end
+
+  class ManagementClient
+    def initialize: (?api_key: String?, ?base_domain: String?, ?scheme: String?,
+                     ?profile: String?, ?debug: bool?) -> void
+    def contexts: () -> ManagementClient::ContextsNamespace
+    def context_types: () -> ManagementClient::ContextTypesNamespace
+    def environments: () -> ManagementClient::EnvironmentsNamespace
+    def account_settings: () -> ManagementClient::AccountSettingsNamespace
+    def config: () -> ManagementClient::ConfigNamespace
+    def flags: () -> ManagementClient::FlagsNamespace
+    def loggers: () -> ManagementClient::LoggersNamespace
+    def log_groups: () -> ManagementClient::LogGroupsNamespace
+    def close: () -> void
+  end
+
+  class Context
+    attr_reader type: String
+    attr_reader key: String
+    attr_reader attributes: Hash[String, untyped]
+    attr_accessor name: String?
+    def initialize: (String, String, ?Hash[String | Symbol, untyped]?,
+                     ?name: String?, **untyped) -> void
+    def id: () -> String
+    def save: () -> Context
+    alias save! save
+    def delete: () -> void
+    alias delete! delete
+  end
+
+  class ContextScope
+    def call: () { (ContextScope) -> void } -> void
+    def exit: () -> void
+  end
+
+  module Op
+    EQ: String
+    NEQ: String
+    LT: String
+    LTE: String
+    GT: String
+    GTE: String
+    IN: String
+    CONTAINS: String
+    ALL: Array[String]
+  end
+
+  class Rule
+    def initialize: (String, environment: String) -> void
+    def when: (*untyped) -> Rule
+    def serve: (untyped) -> Hash[String, untyped]
+  end
+
+  class FlagDeclaration
+    attr_reader id: String
+    attr_reader type: String
+    attr_reader default: untyped
+    attr_reader service: String?
+    attr_reader environment: String?
+    def initialize: (id: String, type: String, default: untyped,
+                     ?service: String?, ?environment: String?) -> void
+  end
+
+  class LogLevel
+    include Comparable
+    attr_reader name: String
+    attr_reader ordinal: Integer
+
+    TRACE: LogLevel
+    DEBUG: LogLevel
+    INFO: LogLevel
+    WARN: LogLevel
+    ERROR: LogLevel
+    FATAL: LogLevel
+    SILENT: LogLevel
+    ALL: Array[LogLevel]
+    NAMES: Array[String]
+
+    def self.from_string: (String | Symbol) -> LogLevel
+    def self.coerce: (LogLevel | String) -> LogLevel
+  end
+
+  class Error < StandardError
+    attr_reader errors: Array[ApiErrorDetail]
+    attr_reader status_code: Integer?
+    def initialize: (?String?, ?errors: Array[ApiErrorDetail]?, ?status_code: Integer?) -> void
+  end
+
+  class ConnectionError < Error
+  end
+
+  class TimeoutError < Error
+  end
+
+  class NotFoundError < Error
+  end
+
+  class ConflictError < Error
+  end
+
+  class ValidationError < Error
+  end
+
+  class ApiErrorDetail
+    attr_reader status: String?
+    attr_reader title: String?
+    attr_reader detail: String?
+    attr_reader source: Hash[untyped, untyped]
+    def initialize: (?status: String?, ?title: String?, ?detail: String?,
+                     ?source: Hash[untyped, untyped]?) -> void
+    def to_h: () -> Hash[String, untyped]
+    def to_json: (*untyped) -> String
+  end
+end
