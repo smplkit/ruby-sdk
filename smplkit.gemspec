@@ -2,9 +2,30 @@
 
 require_relative "lib/smplkit/version"
 
+# Derive the gem version at build time. We do not stamp version numbers into
+# source files — the canonical version is the most recent +vX.Y.Z+ git tag
+# created by +sdk-release-prepare+. Resolution order:
+#
+#   1. +SMPLKIT_GEM_VERSION+ env var (set by the release workflow from
+#      +steps.prep.outputs.version+ — covers manual_version dispatches and
+#      cases where the tag isn't fetched).
+#   2. The most recent +v*+ git tag in the working checkout.
+#   3. +Smplkit::VERSION+ from +lib/smplkit/version.rb+ (only used for
+#      local development — fresh-fork or pre-release checkouts that
+#      legitimately have no tags).
+gem_version_for_build = lambda do
+  env_override = ENV.fetch("SMPLKIT_GEM_VERSION", "").strip
+  next env_override.sub(/\Av/, "") unless env_override.empty?
+
+  git_tag = `git describe --tags --abbrev=0 --match "v*" 2>/dev/null`.to_s.strip
+  next git_tag.sub(/\Av/, "") if git_tag.match?(/\Av\d+\.\d+\.\d+/)
+
+  Smplkit::VERSION
+end
+
 Gem::Specification.new do |spec|
   spec.name = "smplkit"
-  spec.version = Smplkit::VERSION
+  spec.version = gem_version_for_build.call
   spec.authors = ["Smpl Solutions LLC"]
   spec.email = ["support@smplkit.com"]
 

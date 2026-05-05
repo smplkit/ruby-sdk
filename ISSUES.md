@@ -5,36 +5,33 @@ implementation so it surfaces on the next look. Anything here that hasn't
 been resolved when the SDK reaches feature parity with Python should be
 addressed before a 1.0 release.
 
-## RubyGems trusted-publisher needs to be configured (manual step)
+## Yank `smplkit-0.0.0` from rubygems.org
 
-CI's first release run completed every step except the final
-`rubygems/release-gem@v1` upload, which exits with:
+The initial release pipeline pushed `smplkit-0.0.0.gem` because Bundler
+built the gem from `Smplkit::VERSION` (still hardcoded to `"0.0.0"` per
+the "version lives in the tag, not the source" rule). The gemspec now
+derives its version from `git describe --tags` at build time, so future
+releases ship with the version that matches the GitHub release tag.
 
-> No trusted publisher configured for this workflow found on
-> https://rubygems.org for audience rubygems.org
+The `0.0.0` artifact on rubygems.org should be yanked manually:
 
-This matches the implementation prompt's note that the `production`
-GitHub environment + the rubygems.org trusted-publisher entry are a
-one-time manual setup on Mike's end. Steps:
+```bash
+gem yank smplkit -v 0.0.0
+```
 
-1. Sign into rubygems.org under the smplkit org account.
-2. Either reserve the `smplkit` gem name first (push the locally-built
-   `smplkit-1.0.0.gem` once with an API key) or create a "pending
-   trusted publisher" entry directly. Per
-   https://guides.rubygems.org/trusted-publishing/ pending publishers
-   are the supported flow for first-time publishes via OIDC.
-3. Configure the trusted publisher with:
-   - Repository: `smplkit/ruby-sdk`
-   - Workflow: `ci-cd.yml`
-   - Environment: `production`
-4. Re-run the failed release job (or push any new commit to `main`).
+Requires owner-level RubyGems access. Not destructive — yanked versions
+remain reachable for explicit installs but no longer satisfy version
+ranges.
 
-Side effect of the failure: GitHub release `v1.0.0` and the corresponding
-git tag are already created and pushed by `sdk-release-prepare`. They are
-fine; the workflow is idempotent and will pick up where it left off after
-the trusted publisher exists.
+## RubyGems trusted-publisher (one-time setup, completed)
 
-If the bare `smplkit` name is already taken on rubygems.org, fall back to
+Configured 2026-05-05 for:
+
+- Repository: `smplkit/ruby-sdk`
+- Workflow: `ci-cd.yml`
+- Environment: `production`
+
+If the bare `smplkit` name is ever lost on rubygems.org, fall back to
 `smplkit-sdk` per ADR-046 §2.1 — flip `spec.name` in `smplkit.gemspec`.
 The `require "smplkit"` path stays the same.
 
