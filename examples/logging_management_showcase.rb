@@ -23,12 +23,14 @@ begin
   app_group.save
   puts "Created log group: #{app_group.key}"
 
+  # Log groups are currently flat — the platform does not support nested
+  # groups in this version, so this second group sits alongside +app_group+
+  # rather than under it.
   db_group = manage.log_groups.new_log_group(
     "showcase-service.db",
     name: "Showcase Service / DB",
     level: Smplkit::LogLevel::WARN,
-    description: "Database-related loggers",
-    parent: app_group
+    description: "Database-related loggers"
   )
   db_group.save
   puts "Created log group: #{db_group.key}"

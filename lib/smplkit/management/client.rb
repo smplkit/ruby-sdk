@@ -400,8 +400,11 @@ module Smplkit
 
       def new_config(key, name: nil, description: nil, parent: nil)
         Smplkit::Config::Config.new(
-          self, key: key, name: name, description: description,
-                parent_id: parent.is_a?(Smplkit::Config::Config) ? parent.key : parent
+          self,
+          key: key,
+          name: name || Smplkit::Helpers.key_to_display_name(key),
+          description: description,
+          parent_id: parent.is_a?(Smplkit::Config::Config) ? parent.key : parent
         )
       end
 

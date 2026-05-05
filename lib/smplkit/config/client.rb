@@ -157,11 +157,21 @@ module Smplkit
 
       def typed_get(item_key, default, config_key)
         snapshot = config_key ? resolve(config_key) : merged_snapshot
-        keys = item_key.to_s.split(".")
-        value = keys.reduce(snapshot) do |scope, k|
-          break default unless scope.is_a?(Hash)
+        key = item_key.to_s
+        # Items live under flat dotted keys (e.g. +"api.host"+ — not nested
+        # +api → host+). Match Python's +current_values.get(key)+ behavior.
+        value = snapshot[key]
+        if value.nil? && snapshot.is_a?(Hash)
+          # Fallback: support callers that constructed an explicitly-nested
+          # snapshot (rare — typed model bindings only).
+          parts = key.split(".")
+          if parts.length > 1
+            value = parts.reduce(snapshot) do |scope, k|
+              break nil unless scope.is_a?(Hash)
 
-          scope[k]
+              scope[k]
+            end
+          end
         end
         return default if value.nil?
 

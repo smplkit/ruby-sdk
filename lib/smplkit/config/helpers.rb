@@ -32,7 +32,7 @@ module Smplkit
           key: attrs["key"] || resource["id"],
           name: attrs["name"],
           description: attrs["description"],
-          parent_id: attrs["parent_id"],
+          parent_id: attrs["parent"] || attrs["parent_id"],
           items: items,
           environments: environments,
           created_at: attrs["created_at"],
@@ -54,11 +54,12 @@ module Smplkit
           out[env] = { "values" => env_obj.values_raw }
         end
 
+        # The Config schema (per the OpenAPI spec) does not include +key+ in
+        # attributes — the resource +id+ carries the customer-facing key.
         attributes = {
-          "key" => config.key,
           "name" => config.name,
           "description" => config.description,
-          "parent_id" => config.parent_id,
+          "parent" => config.parent_id,
           "items" => items,
           "environments" => environments
         }.compact
