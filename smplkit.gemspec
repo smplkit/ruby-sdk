@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
                      "with runtime evaluation, live updates, and management operations."
   spec.homepage = "https://www.smplkit.com"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.3"
+  spec.required_ruby_version = ">= 3.1"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/smplkit/ruby-sdk"
@@ -52,9 +52,9 @@ Gem::Specification.new do |spec|
   ].reject { |f| File.directory?(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "async", "~> 2.39"
-  spec.add_dependency "async-http", "~> 0.95"
-  spec.add_dependency "async-websocket", "~> 0.30"
+  spec.add_dependency "async", ">= 2.6", "< 3"
+  spec.add_dependency "async-http", ">= 0.79", "< 1"
+  spec.add_dependency "async-websocket", ">= 0.26", "< 1"
   spec.add_dependency "concurrent-ruby", "~> 1.2"
   spec.add_dependency "faraday", "~> 2.7"
   spec.add_dependency "faraday-multipart", "~> 1.0"

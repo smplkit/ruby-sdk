@@ -6,7 +6,7 @@ module Smplkit
     #
     # Lives in +Flag#values+. Frozen — author values via +Flag#add_value+ /
     # +Flag#remove_value+ / +Flag#clear_values+.
-    FlagValue = Data.define(:name, :value)
+    FlagValue = Struct.new(:name, :value, keyword_init: true)
 
     # A single targeting rule on a +Flag+.
     #

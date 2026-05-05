@@ -28,12 +28,14 @@ module Smplkit
       "telemetry" => true
     }.freeze
 
-    ResolvedConfig = Data.define(
-      :api_key, :base_domain, :scheme, :environment, :service, :debug, :telemetry
+    ResolvedConfig = Struct.new(
+      :api_key, :base_domain, :scheme, :environment, :service, :debug, :telemetry,
+      keyword_init: true
     )
 
-    ResolvedManagementConfig = Data.define(
-      :api_key, :base_domain, :scheme, :debug
+    ResolvedManagementConfig = Struct.new(
+      :api_key, :base_domain, :scheme, :debug,
+      keyword_init: true
     )
 
     module_function

@@ -31,8 +31,8 @@ module Smplkit
     attr_reader :manage, :config, :flags, :logging
 
     # Construct, yield to the block, and close on exit.
-    def self.open(**)
-      client = new(**)
+    def self.open(**kwargs)
+      client = new(**kwargs)
       begin
         yield client
       ensure

@@ -32,9 +32,9 @@ The Ruby SDK's wrapper layer aims for high coverage. The `_generated/` tree is e
 
 ## Ruby version policy
 
-Minimum supported Ruby: **3.3** (3.2 reached EOL on 2026-03-31). Development uses 3.4 (latest stable). CI runs the full test suite against every supported minor on every push.
+Minimum supported Ruby: **3.1**. Development uses 3.4 (latest stable). CI runs the full test suite against every supported minor (3.1, 3.2, 3.3, 3.4) on every push.
 
-Do not use Ruby features introduced after 3.3 unless guarded.
+Do not use Ruby features introduced after 3.1 unless guarded. Specifically: `Data.define` (3.2+) is off-limits — use `Struct.new(keyword_init: true)` instead.
 
 ## Package naming
 

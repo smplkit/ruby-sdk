@@ -23,8 +23,8 @@ module Smplkit
       h
     end
 
-    def to_json(*)
-      JSON.generate(to_h, *)
+    def to_json(*args)
+      JSON.generate(to_h, *args)
     end
   end
 
