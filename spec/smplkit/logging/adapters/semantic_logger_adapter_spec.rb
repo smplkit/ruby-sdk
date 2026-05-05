@@ -38,12 +38,40 @@ RSpec.describe Smplkit::Logging::Adapters::SemanticLoggerAdapter do
     expect { adapter.apply_level("nope", Smplkit::LogLevel::DEBUG) }.not_to raise_error
   end
 
-  it "install_hook + uninstall_hook accept a block and toggle internal state" do
-    seen = []
-    adapter.install_hook { |name, _e, level| seen << [name, level] }
+  it "install_hook registers the adapter and marks it active" do
+    adapter.install_hook { |_name, _e, _eff| }
     expect(adapter.instance_variable_get(:@uninstalled)).to be(false)
+    expect(described_class.adapters).to include(adapter)
+  ensure
+    adapter.uninstall_hook
+  end
+
+  it "uninstall_hook marks the adapter inactive and removes it from the registry" do
+    adapter.install_hook { |_name, _e, _eff| }
     adapter.uninstall_hook
     expect(adapter.instance_variable_get(:@uninstalled)).to be(true)
+    expect(described_class.adapters).not_to include(adapter)
+  end
+
+  it "install_hook intercepts new SemanticLogger::Logger creation" do
+    seen = []
+    adapter.install_hook { |name, _e, _eff| seen << name }
+
+    SemanticLogger::Logger.new("hook.test.semantic")
+
+    expect(seen).to include("hook.test.semantic")
+  ensure
+    adapter.uninstall_hook
+  end
+
+  it "hook does not fire after uninstall_hook" do
+    seen = []
+    adapter.install_hook { |name, _e, _eff| seen << name }
+    adapter.uninstall_hook
+
+    SemanticLogger::Logger.new("hook.test.after.uninstall")
+
+    expect(seen).to be_empty
   end
 end
 
