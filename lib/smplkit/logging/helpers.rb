@@ -38,32 +38,6 @@ module Smplkit
           updated_at: attrs["updated_at"]
         )
       end
-
-      def build_logger_body(logger)
-        attributes = {
-          "name" => logger.name,
-          "resolved_level" => logger.resolved_level&.to_s,
-          "level" => logger.level&.to_s,
-          "service" => logger.service,
-          "environment" => logger.environment,
-          "log_group_id" => logger.log_group_id,
-          "managed" => logger.managed,
-          "description" => logger.description
-        }.compact
-        { "data" => { "type" => "logger", "id" => logger.id, "attributes" => attributes } }
-      end
-
-      def build_log_group_body(group)
-        attributes = {
-          "key" => group.key,
-          "name" => group.name,
-          "level" => group.level&.to_s,
-          "description" => group.description,
-          "parent_id" => group.parent_id,
-          "environments" => group.environments
-        }.compact
-        { "data" => { "type" => "log_group", "id" => group.key, "attributes" => attributes } }
-      end
     end
   end
 end

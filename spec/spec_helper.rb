@@ -6,15 +6,17 @@ SimpleCov.start do
   add_filter "/lib/smplkit/_generated/"
   add_filter "/examples/"
   add_filter "/vendor/"
+  # Rails-only adjacent files: only meaningful inside a Rails process.
+  # Excluded from the wrapper-coverage gate so the SDK doesn't have to
+  # boot Rails to test them.
   add_filter "/lib/smplkit/railtie.rb"
   add_filter "/lib/smplkit/generators/"
-  add_filter "/lib/smplkit/ws.rb"
-  # Wrapper-layer floor. The standing target per the user's CLAUDE.md is
-  # 100% on SDK wrappers; this floor is a regression guard while the
-  # heavier paths (Client construction, save-cycle helpers, ManagementClient
-  # CRUD against live servers) gain spec coverage. Never lower without
-  # checking with Mike — only raise.
-  minimum_coverage 75
+  # 100% wrapper-layer line coverage is the standing target per
+  # ~/.claude/CLAUDE.md and is enforced here. Use +# :nocov:+ blocks
+  # for genuinely-unreachable code (e.g. live-only background-thread
+  # bodies) — never lower this floor.
+  enable_coverage :line
+  minimum_coverage line: 100
 end
 
 require "smplkit"

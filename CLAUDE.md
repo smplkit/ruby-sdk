@@ -49,6 +49,10 @@ If RubyGems rejects the bare `smplkit` name on first publish, the gemspec falls 
 - Publishes to RubyGems via OIDC trusted publishing (`rubygems/release-gem@v1`).
 - Pre-launch SDK commit lockdown: every commit lands as `fix:` (no `feat:` or `BREAKING CHANGE:` until the lockdown is lifted by Mike).
 
-## Initial release scope
+## Coverage gate
 
-The first Ruby SDK release ships the wrapper layer's public surface (Client, ManagementClient, Flags, Config, Logging, adapters, Railtie). Some components are intentionally stubbed pending follow-up work — see `ISSUES.md` for the deferred-work list.
+CI fails the build if wrapper-layer line coverage is below 100% (set in `spec/spec_helper.rb`). The `_generated/`, Railtie, and Rails generator files are excluded from the gate. Use `# :nocov:` block markers sparingly for genuinely-unreachable defensive code; never lower the floor.
+
+## Publishing — version comes from the tag
+
+The gemspec derives the gem version at build time from `git describe --tags --abbrev=0` (with `SMPLKIT_GEM_VERSION` env-var override for the manual_version dispatch path). `lib/smplkit/version.rb` stays at `"0.0.0"` and is only used as a local-dev fallback. `sdk-release-prepare` creates the canonical tag; `rake release` is overridden in the `Rakefile` to skip Bundler's `git tag` step (the tag is already pushed) and just push the gem.

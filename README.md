@@ -100,12 +100,23 @@ This creates `config/initializers/smplkit.rb` with documented examples for the p
 
 ```bash
 bundle install
-bundle exec rspec        # unit tests
+bundle exec rspec        # unit tests — wrapper layer is held to 100% line coverage in CI
 bundle exec rubocop      # lint
-make generate            # regenerate clients (requires Node.js + npx)
+make generate            # regenerate clients
 ```
 
-The repository follows the standard smplkit "every commit lands on `main`" workflow — see CLAUDE.md.
+`make generate` shells out to `npx --yes @openapitools/openapi-generator-cli`,
+so it requires:
+
+- Node.js 18+ (provides `npx`)
+- A JRE 11+ (the openapi-generator JAR runs under Java)
+
+Both are pre-installed on the CI matrix runners. On a developer machine,
+install via Homebrew (`brew install node openjdk`) or your distribution's
+package manager.
+
+The repository follows the standard smplkit "every commit lands on `main`"
+workflow — see CLAUDE.md.
 
 ## License
 

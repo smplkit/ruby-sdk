@@ -144,6 +144,15 @@ RSpec/StubbedMock:
 RSpec/VerifiedDoubles:
   Enabled: false
 
+RSpec/SubjectStub:
+  Enabled: false
+
+RSpec/NoExpectationExample:
+  Enabled: false
+
+RSpec/DescribeClass:
+  Enabled: false
+
 RSpec/ExpectInHook:
   Enabled: false
 

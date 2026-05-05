@@ -40,32 +40,6 @@ module Smplkit
         )
       end
 
-      def build_config_request_body(config)
-        items = {}
-        config.items.each do |item|
-          items[item.name] = {
-            "value" => item.value,
-            "type" => item.type,
-            "description" => item.description
-          }.compact
-        end
-
-        environments = config.environments.each_with_object({}) do |(env, env_obj), out|
-          out[env] = { "values" => env_obj.values_raw }
-        end
-
-        # The Config schema (per the OpenAPI spec) does not include +key+ in
-        # attributes — the resource +id+ carries the customer-facing key.
-        attributes = {
-          "name" => config.name,
-          "description" => config.description,
-          "parent" => config.parent_id,
-          "items" => items,
-          "environments" => environments
-        }.compact
-        { "data" => { "type" => "config", "id" => config.key, "attributes" => attributes } }
-      end
-
       # Deep-merge two Hashes, with +override+ winning. Mirrors the Python
       # +deep_merge+ helper used by the resolver.
       def deep_merge(base, override)

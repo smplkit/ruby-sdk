@@ -4,11 +4,9 @@
 #
 #   make generate
 #
-# This requires npx (Node.js) on PATH so `openapi-generator-cli` can run.
-# The wrapper layer (lib/smplkit/*.rb except this directory) is hand-crafted
-# and expects the generated client modules under
-# +SmplkitGeneratedClient::App+, +::Config+, +::Flags+, and +::Logging+.
-#
-# The initial Ruby SDK release ships without prebuilt generated clients —
-# the wrapper layer talks directly to Faraday until the generator output is
-# wired in. See ISSUES.md.
+# This requires Node.js (`npx`) and a JRE on PATH so the
+# `openapi-generator-cli` JAR can run. The wrapper layer in
+# `lib/smplkit/*.rb` (everything outside this directory) is hand-crafted
+# and routes every CRUD/management call through the generated
+# `SmplkitGeneratedClient::App / ::Config / ::Flags / ::Logging` modules
+# at runtime — see `ManagementClient` for the wiring.

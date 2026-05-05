@@ -102,7 +102,11 @@ module Smplkit
 
         return unless @adapters.empty?
 
+        # :nocov: defensive log — unreachable in practice because stdlib
+        # +Logger+ is always present, so +StdlibLoggerAdapter+ is always
+        # constructible.
         Smplkit.debug("registration", "no logging adapters loaded; runtime features disabled")
+        # :nocov:
       end
 
       def observe_logger(_adapter, raw_name, level)

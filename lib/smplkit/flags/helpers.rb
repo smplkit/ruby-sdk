@@ -47,30 +47,6 @@ module Smplkit
           rules: rules
         )
       end
-
-      # Build the JSON body for a Flag create/update request.
-      def build_flag_request_body(flag)
-        environments = flag.environments.each_with_object({}) do |(env_key, env), out|
-          out[env_key] = {
-            "enabled" => env.enabled,
-            "default" => env.default,
-            "rules" => env.rules.map { |r| { "logic" => r.logic, "value" => r.value, "description" => r.description } }
-          }
-        end
-
-        attributes = {
-          "id" => flag.id,
-          "name" => flag.name,
-          "type" => flag.type,
-          "default" => flag.default,
-          "description" => flag.description,
-          "environments" => environments
-        }
-        values = flag.values
-        attributes["values"] = values.map { |v| { "name" => v.name, "value" => v.value } } if values
-
-        { "data" => { "type" => "flag", "id" => flag.id, "attributes" => attributes.compact } }
-      end
     end
   end
 end

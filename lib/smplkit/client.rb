@@ -185,17 +185,21 @@ module Smplkit
 
     def schedule_periodic_flush
       @flush_timer = Concurrent::TimerTask.new(execution_interval: PERIODIC_FLUSH_INTERVAL) do
-        next if @closed
-
-        begin
-          @manage.contexts.flush
-          @manage.flags.flush
-          @manage.loggers.flush
-        rescue StandardError => e
-          Smplkit.debug("registration", "periodic flush failed: #{e.class}: #{e.message}")
-        end
+        run_periodic_flush
       end
       @flush_timer.execute
+    end
+
+    # Extracted as a private method so the timer body is reachable from
+    # tests without poking into Concurrent::TimerTask internals.
+    def run_periodic_flush
+      return if @closed
+
+      @manage.contexts.flush
+      @manage.flags.flush
+      @manage.loggers.flush
+    rescue StandardError => e
+      Smplkit.debug("registration", "periodic flush failed: #{e.class}: #{e.message}")
     end
 
     def final_flush
