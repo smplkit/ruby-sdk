@@ -1,0 +1,1293 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "smplkit Flags API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/flags": {
+      "post": {
+        "tags": [
+          "Flags"
+        ],
+        "summary": "Create Flag",
+        "description": "Create a new feature flag. The caller provides the id (key) in the request body.",
+        "operationId": "create_flag",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagResponse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Flags"
+        ],
+        "summary": "List Flags",
+        "description": "List all feature flags for the authenticated account.",
+        "operationId": "list_flags",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "filter[type]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filter[Type]"
+            }
+          },
+          {
+            "name": "filter[managed]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filter[Managed]"
+            }
+          },
+          {
+            "name": "filter[references_context]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Return flags whose rules reference this context instance. Format: {type}:{key}",
+              "title": "Filter[References Context]"
+            },
+            "description": "Return flags whose rules reference this context instance. Format: {type}:{key}"
+          },
+          {
+            "name": "filter[references_context_type]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Return flags whose rules reference any attribute of the given context type.",
+              "title": "Filter[References Context Type]"
+            },
+            "description": "Return flags whose rules reference any attribute of the given context type."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flags/{id}": {
+      "get": {
+        "tags": [
+          "Flags"
+        ],
+        "summary": "Get Flag",
+        "description": "Return a feature flag by its key.",
+        "operationId": "get_flag",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Flags"
+        ],
+        "summary": "Update Flag",
+        "description": "Replace a feature flag entirely.",
+        "operationId": "update_flag",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagResponse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Flags"
+        ],
+        "summary": "Delete Flag",
+        "description": "Delete a feature flag by its key.",
+        "operationId": "delete_flag",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/flags/bulk": {
+      "post": {
+        "tags": [
+          "Flags"
+        ],
+        "summary": "Bulk Register Flags",
+        "description": "Register flags discovered by an SDK. Creates new flags or updates source observations on existing ones.",
+        "operationId": "bulk_register_flags",
+        "requestBody": {
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagBulkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagBulkResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/flags/{id}/sources": {
+      "get": {
+        "tags": [
+          "Flag Sources"
+        ],
+        "summary": "List Flag Sources",
+        "description": "List all sources (service/environment observations) for a specific flag.",
+        "operationId": "list_flag_sources",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagSourceListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flag_sources": {
+      "get": {
+        "tags": [
+          "Flag Sources"
+        ],
+        "summary": "List All Flag Sources",
+        "description": "List all flag sources across all flags. Optionally filter by environment or service.",
+        "operationId": "list_all_flag_sources",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "filter[environment]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filter[Environment]"
+            }
+          },
+          {
+            "name": "filter[service]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filter[Service]"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagSourceListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/functions/remove_references/actions/execute": {
+      "post": {
+        "tags": [
+          "Functions"
+        ],
+        "summary": "Execute Remove References",
+        "description": "Bulk-remove context references from flag rules.\n\nTraverses every flag in the account, removes rules that reference the\nspecified context, and emits a single flags_changed event when done.",
+        "operationId": "remove_references",
+        "requestBody": {
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveReferencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveReferencesResultEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/usage": {
+      "get": {
+        "tags": [
+          "Usage"
+        ],
+        "summary": "List Flags Usage",
+        "description": "Return current resource usage counts for the authenticated account.",
+        "operationId": "list_flags_usage",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "filter[period]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filter[Period]"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current usage for the authenticated account",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid filter[period] parameter"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Flag": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Human-readable display name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Value type: STRING, BOOLEAN, NUMERIC, or JSON"
+          },
+          "default": {
+            "title": "Default",
+            "description": "Default value; must reference a value in the values array (constrained) or match the flag type (unconstrained)"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FlagValue"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Values",
+            "description": "Ordered set of allowed values (constrained), or null (unconstrained)"
+          },
+          "environments": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FlagEnvironment"
+            },
+            "type": "object",
+            "title": "Environments"
+          },
+          "managed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Managed",
+            "description": "True if admin-managed, false if auto-discovered"
+          },
+          "sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sources",
+            "readOnly": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "readOnly": true
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "default"
+        ],
+        "title": "Flag",
+        "example": {
+          "created_at": "2026-03-27T10:00:00Z",
+          "default": false,
+          "description": "Enable dark mode for the application UI",
+          "environments": {
+            "production": {
+              "default": false,
+              "enabled": true,
+              "rules": [
+                {
+                  "description": "Beta users get dark mode",
+                  "logic": {
+                    "attribute": "beta",
+                    "op": "eq",
+                    "value": true
+                  },
+                  "value": true
+                }
+              ]
+            },
+            "staging": {
+              "default": true,
+              "enabled": true,
+              "rules": []
+            }
+          },
+          "managed": true,
+          "name": "Dark Mode",
+          "type": "BOOLEAN",
+          "updated_at": "2026-03-27T10:00:00Z",
+          "values": [
+            {
+              "name": "on",
+              "value": true
+            },
+            {
+              "name": "off",
+              "value": false
+            }
+          ]
+        }
+      },
+      "FlagBulkItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Flag key as declared in code"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Flag type: BOOLEAN, STRING, NUMERIC, or JSON"
+          },
+          "default": {
+            "title": "Default",
+            "description": "Default value declared in code"
+          },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service",
+            "description": "Service that declared this flag"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment",
+            "description": "Environment where observed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "default"
+        ],
+        "title": "FlagBulkItem",
+        "example": {
+          "default": false,
+          "environment": "production",
+          "id": "dark-mode",
+          "service": "api-gateway",
+          "type": "BOOLEAN"
+        }
+      },
+      "FlagBulkRequest": {
+        "properties": {
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/FlagBulkItem"
+            },
+            "type": "array",
+            "title": "Flags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flags"
+        ],
+        "title": "FlagBulkRequest",
+        "example": {
+          "flags": [
+            {
+              "default": false,
+              "environment": "production",
+              "id": "dark-mode",
+              "service": "api-gateway",
+              "type": "BOOLEAN"
+            },
+            {
+              "default": 3,
+              "environment": "production",
+              "id": "max-retries",
+              "service": "api-gateway",
+              "type": "NUMERIC"
+            }
+          ]
+        }
+      },
+      "FlagBulkResponse": {
+        "properties": {
+          "registered": {
+            "type": "integer",
+            "title": "Registered"
+          }
+        },
+        "type": "object",
+        "required": [
+          "registered"
+        ],
+        "title": "FlagBulkResponse",
+        "example": {
+          "registered": 5
+        }
+      },
+      "FlagEnvironment": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "default": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/FlagRule"
+            },
+            "type": "array",
+            "title": "Rules"
+          }
+        },
+        "type": "object",
+        "title": "FlagEnvironment"
+      },
+      "FlagListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FlagResource"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "FlagListResponse"
+      },
+      "FlagResource": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "const": "flag",
+            "title": "Type"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/Flag"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "attributes"
+        ],
+        "title": "FlagResource",
+        "example": {
+          "attributes": {
+            "created_at": "2026-03-27T10:00:00Z",
+            "default": false,
+            "description": "Enable dark mode for the application UI",
+            "environments": {
+              "production": {
+                "default": false,
+                "enabled": true,
+                "rules": [
+                  {
+                    "description": "Beta users get dark mode",
+                    "logic": {
+                      "attribute": "beta",
+                      "op": "eq",
+                      "value": true
+                    },
+                    "value": true
+                  }
+                ]
+              }
+            },
+            "managed": true,
+            "name": "Dark Mode",
+            "type": "BOOLEAN",
+            "updated_at": "2026-03-27T10:00:00Z",
+            "values": [
+              {
+                "name": "on",
+                "value": true
+              },
+              {
+                "name": "off",
+                "value": false
+              }
+            ]
+          },
+          "id": "dark-mode",
+          "type": "flag"
+        }
+      },
+      "FlagResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FlagResource"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "FlagResponse"
+      },
+      "FlagRule": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "logic": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Logic"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "logic",
+          "value"
+        ],
+        "title": "FlagRule"
+      },
+      "FlagSource": {
+        "properties": {
+          "service": {
+            "type": "string",
+            "title": "Service",
+            "readOnly": true
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "readOnly": true
+          },
+          "first_observed": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Observed",
+            "readOnly": true
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen",
+            "readOnly": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "readOnly": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "readOnly": true
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "title": "FlagSource",
+        "example": {
+          "created_at": "2026-04-17T10:00:00Z",
+          "data": {
+            "default": true,
+            "type": "BOOLEAN"
+          },
+          "environment": "production",
+          "first_observed": "2026-04-17T10:00:00Z",
+          "last_seen": "2026-04-17T15:30:00Z",
+          "service": "api-gateway",
+          "updated_at": "2026-04-17T15:30:00Z"
+        }
+      },
+      "FlagSourceListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FlagSourceResource"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "FlagSourceListResponse"
+      },
+      "FlagSourceResource": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "const": "flag_source",
+            "title": "Type"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/FlagSource"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "attributes"
+        ],
+        "title": "FlagSourceResource",
+        "example": {
+          "attributes": {
+            "created_at": "2026-04-17T10:00:00Z",
+            "data": {
+              "default": true,
+              "type": "BOOLEAN"
+            },
+            "environment": "production",
+            "first_observed": "2026-04-17T10:00:00Z",
+            "last_seen": "2026-04-17T15:30:00Z",
+            "service": "api-gateway",
+            "updated_at": "2026-04-17T15:30:00Z"
+          },
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "type": "flag_source"
+        }
+      },
+      "FlagValue": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "FlagValue"
+      },
+      "ManualReviewItem": {
+        "properties": {
+          "flag": {
+            "type": "string",
+            "title": "Flag"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "rule_index": {
+            "type": "integer",
+            "title": "Rule Index"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flag",
+          "environment",
+          "rule_index",
+          "reason"
+        ],
+        "title": "ManualReviewItem"
+      },
+      "RemoveReferencesAttributes": {
+        "properties": {
+          "flags_modified": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags Modified"
+          },
+          "rules_removed": {
+            "type": "integer",
+            "title": "Rules Removed"
+          },
+          "rules_needing_manual_review": {
+            "items": {
+              "$ref": "#/components/schemas/ManualReviewItem"
+            },
+            "type": "array",
+            "title": "Rules Needing Manual Review"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flags_modified",
+          "rules_removed",
+          "rules_needing_manual_review"
+        ],
+        "title": "RemoveReferencesAttributes"
+      },
+      "RemoveReferencesRequest": {
+        "properties": {
+          "context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "context_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Type"
+          }
+        },
+        "type": "object",
+        "title": "RemoveReferencesRequest"
+      },
+      "RemoveReferencesResultEnvelope": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RemoveReferencesResultResource"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "RemoveReferencesResultEnvelope"
+      },
+      "RemoveReferencesResultResource": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "remove_references_result",
+            "title": "Type",
+            "default": "remove_references_result"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/RemoveReferencesAttributes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "attributes"
+        ],
+        "title": "RemoveReferencesResultResource",
+        "example": {
+          "attributes": {
+            "flags_modified": [
+              "checkout-v2",
+              "banner-color"
+            ],
+            "rules_needing_manual_review": [
+              {
+                "environment": "production",
+                "flag": "pricing-tier",
+                "reason": "Context reference inside an AND expression \u2014 removing would broaden the rule",
+                "rule_index": 2
+              }
+            ],
+            "rules_removed": 3
+          },
+          "type": "remove_references_result"
+        }
+      },
+      "UsageAttributes": {
+        "properties": {
+          "limit_key": {
+            "type": "string",
+            "title": "Limit Key"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "value": {
+            "type": "integer",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "limit_key",
+          "period",
+          "value"
+        ],
+        "title": "UsageAttributes"
+      },
+      "UsageListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/UsageResource"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "UsageListResponse",
+        "example": {
+          "data": [
+            {
+              "attributes": {
+                "limit_key": "flags.items",
+                "period": "current",
+                "value": 5
+              },
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "type": "usage"
+            }
+          ]
+        }
+      },
+      "UsageResource": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "const": "usage",
+            "title": "Type"
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/UsageAttributes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "attributes"
+        ],
+        "title": "UsageResource",
+        "example": {
+          "attributes": {
+            "limit_key": "flags.items",
+            "period": "current",
+            "value": 5
+          },
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "type": "usage"
+        }
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Flags"
+    },
+    {
+      "name": "Flag Sources"
+    }
+  ]
+}

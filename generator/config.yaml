@@ -1,0 +1,7 @@
+gemName: smplkit-generated-client
+moduleName: SmplkitGeneratedClient
+gemVersion: "0.0.0"
+gemHomepage: "https://github.com/smplkit/ruby-sdk"
+library: faraday
+hideGenerationTimestamp: true
+useAutoload: false
