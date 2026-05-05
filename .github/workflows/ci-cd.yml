@@ -91,6 +91,19 @@ jobs:
           ruby-version: "3.4"
           bundler-cache: true
 
+      - name: Stamp Smplkit::VERSION
+        if: steps.prep.outputs.released == 'true'
+        env:
+          VERSION: ${{ steps.prep.outputs.version }}
+        run: |
+          # sdk-release-prepare creates the GitHub release/tag but does not
+          # write the version into language-specific files. Bundler builds
+          # smplkit-X.Y.Z.gem from Smplkit::VERSION; without this stamp
+          # every release ships as smplkit-0.0.0.gem.
+          sed -i.bak -E "s/^([[:space:]]*VERSION[[:space:]]*=[[:space:]]*)\".*\"/\\1\"${VERSION}\"/" lib/smplkit/version.rb
+          rm -f lib/smplkit/version.rb.bak
+          grep VERSION lib/smplkit/version.rb
+
       - name: Build gem
         if: steps.prep.outputs.released == 'true'
         run: gem build smplkit.gemspec
