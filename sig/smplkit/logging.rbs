@@ -1,0 +1,92 @@
+module Smplkit
+  module Logging
+    class LoggerSource
+      attr_reader name: String
+      attr_reader resolved_level: Smplkit::LogLevel
+      attr_reader level: Smplkit::LogLevel?
+      attr_reader service: String?
+      attr_reader environment: String?
+      def self.new: (name: String, resolved_level: Smplkit::LogLevel,
+                     ?level: Smplkit::LogLevel?, ?service: String?,
+                     ?environment: String?) -> LoggerSource
+    end
+
+    class SmplLogger
+      attr_accessor id: String?
+      attr_accessor name: String
+      attr_accessor resolved_level: Smplkit::LogLevel?
+      attr_accessor level: Smplkit::LogLevel?
+      attr_accessor service: String?
+      attr_accessor environment: String?
+      attr_accessor log_group_id: String?
+      attr_accessor managed: bool
+      attr_accessor description: String?
+      attr_accessor created_at: untyped
+      attr_accessor updated_at: untyped
+      def managed?: () -> bool
+      def save: () -> SmplLogger
+      alias save! save
+      def delete: () -> void
+      alias delete! delete
+    end
+
+    class SmplLogGroup
+      attr_accessor id: String?
+      attr_accessor key: String
+      attr_accessor name: String?
+      attr_accessor level: Smplkit::LogLevel?
+      attr_accessor description: String?
+      attr_accessor parent_id: String?
+      attr_accessor environments: Hash[String, untyped]
+      def save: () -> SmplLogGroup
+      alias save! save
+      def delete: () -> void
+      alias delete! delete
+    end
+
+    class LoggingClient
+      def install: () -> LoggingClient
+      alias start install
+      def register_adapter: (Adapters::Base) -> LoggingClient
+      def adapters: () -> Array[Adapters::Base]
+      def get: (String) -> SmplLogger
+      def list: () -> Array[SmplLogger]
+      def delete: (String) -> bool
+      def on_change: (?String?) { (untyped) -> void } -> Proc
+    end
+
+    module Adapters
+      class Base
+        def name: () -> String
+        def discover: () -> Array[[String, Smplkit::LogLevel?, Smplkit::LogLevel]]
+        def apply_level: (String, Smplkit::LogLevel) -> void
+        def install_hook: () { (String, Smplkit::LogLevel?, Smplkit::LogLevel) -> void } -> void
+        def uninstall_hook: () -> void
+      end
+
+      class StdlibLoggerAdapter < Base
+        def track: (String, untyped) -> void
+      end
+
+      class SemanticLoggerAdapter < Base
+        def track: (String, untyped) -> void
+      end
+    end
+
+    module Levels
+      def self.smpl_level_to_stdlib: (Smplkit::LogLevel) -> Integer
+      def self.stdlib_level_to_smpl: (Integer?) -> Smplkit::LogLevel
+      def self.semantic_level_to_smpl: (Symbol?) -> Smplkit::LogLevel
+      def self.smpl_level_to_semantic: (Smplkit::LogLevel) -> Symbol
+    end
+
+    module Normalize
+      def self.normalize_logger_name: (String) -> String
+    end
+  end
+
+  LoggerSource: singleton(Logging::LoggerSource)
+  StdlibLoggerAdapter: singleton(Logging::Adapters::StdlibLoggerAdapter)
+  SemanticLoggerAdapter: singleton(Logging::Adapters::SemanticLoggerAdapter)
+  LoggingAdapter: singleton(Logging::Adapters::Base)
+end

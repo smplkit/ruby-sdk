@@ -1,0 +1,78 @@
+module Smplkit
+  module Config
+    module ItemType
+      STRING: String
+      NUMBER: String
+      BOOLEAN: String
+      JSON: String
+      ALL: Array[String]
+    end
+
+    class ConfigItem
+      attr_accessor name: String
+      attr_accessor value: untyped
+      attr_accessor type: String
+      attr_accessor description: String?
+      def initialize: (name: String, value: untyped, type: String, ?description: String?) -> void
+      def to_h: () -> Hash[String, untyped]
+    end
+
+    class ConfigEnvironment
+      def initialize: (?values: Hash[String, untyped]?) -> void
+      def values: () -> Hash[String, untyped]
+      def values_raw: () -> Hash[String, Hash[String, untyped]]
+    end
+
+    class Config
+      attr_accessor id: String?
+      attr_accessor key: String
+      attr_accessor name: String?
+      attr_accessor description: String?
+      attr_accessor parent_id: String?
+      attr_accessor created_at: untyped
+      attr_accessor updated_at: untyped
+
+      def items: () -> Array[ConfigItem]
+      def environments: () -> Hash[String, ConfigEnvironment]
+      def set_string: (String, String, ?environment: String?, ?description: String?) -> Config
+      def set_number: (String, (Integer | Float), ?environment: String?, ?description: String?) -> Config
+      def set_boolean: (String, bool, ?environment: String?, ?description: String?) -> Config
+      def set_json: (String, untyped, ?environment: String?, ?description: String?) -> Config
+      def remove_item: (String, ?environment: String?) -> Config
+      def save: () -> Config
+      alias save! save
+      def delete: () -> void
+      alias delete! delete
+    end
+
+    class ConfigChangeEvent
+      attr_reader key: String
+      attr_reader source: String
+      attr_reader deleted: bool
+      def deleted?: () -> bool
+    end
+
+    class LiveConfigProxy
+      def get: (String?, ?untyped) -> untyped
+      def []: (String) -> untyped
+      def to_h: () -> Hash[String, untyped]
+      def refresh: () -> LiveConfigProxy
+    end
+
+    class ConfigClient
+      def start: () -> void
+      def get: (String, ?untyped?) -> untyped
+      def get_string: (String, ?default: String?, ?config: String?) -> String?
+      def get_number: (String, ?default: untyped, ?config: String?) -> untyped
+      def get_boolean: (String, ?default: bool?, ?config: String?) -> bool
+      def get_json: (String, ?default: untyped, ?config: String?) -> untyped
+      def live: (String) -> LiveConfigProxy
+      def on_change: (?String?) { (ConfigChangeEvent) -> void } -> Proc
+      def refresh: () -> void
+    end
+  end
+
+  ConfigItem: singleton(Config::ConfigItem)
+  ConfigEnvironment: singleton(Config::ConfigEnvironment)
+  ItemType: singleton(Config::ItemType)
+end

@@ -1,0 +1,123 @@
+module Smplkit
+  module Management
+    module EnvironmentClassification
+      STANDARD: String
+      AD_HOC: String
+      ALL: Array[String]
+    end
+
+    class Color
+      attr_reader hex: String
+      def initialize: (String) -> void
+      def self.rgb: (Integer, Integer, Integer) -> Color
+    end
+
+    class Environment
+      attr_accessor id: String?
+      attr_accessor key: String
+      attr_accessor name: String?
+      attr_accessor color: Color?
+      attr_accessor classification: String
+      attr_accessor description: String?
+      attr_accessor created_at: untyped
+      attr_accessor updated_at: untyped
+      def save: () -> Environment
+      alias save! save
+      def delete: () -> void
+      alias delete! delete
+    end
+
+    class ContextType
+      attr_accessor id: String?
+      attr_accessor key: String
+      attr_accessor name: String?
+      attr_accessor description: String?
+      def save: () -> ContextType
+      alias save! save
+      def delete: () -> void
+      alias delete! delete
+    end
+
+    class AccountSettings
+      attr_accessor id: String?
+      attr_accessor environment_order: Array[String]
+      attr_accessor default_environment: String?
+      attr_accessor updated_at: untyped
+      def save: () -> AccountSettings
+      alias save! save
+    end
+  end
+
+  Color: singleton(Management::Color)
+  EnvironmentClassification: singleton(Management::EnvironmentClassification)
+
+  class ManagementClient
+    class ContextsNamespace
+      def register: (Array[Smplkit::Context]?) -> void
+      def flush: () -> void
+      def list: () -> Array[Smplkit::Context]
+      def get: (String, ?String?) -> Smplkit::Context
+      def delete: (String, ?String?) -> bool
+    end
+
+    class ContextTypesNamespace
+      def list: () -> Array[Management::ContextType]
+      def get: (String) -> Management::ContextType
+      def delete: (String) -> bool
+      def new_context_type: (String, ?name: String?, ?description: String?) -> Management::ContextType
+    end
+
+    class EnvironmentsNamespace
+      def list: () -> Array[Management::Environment]
+      def get: (String) -> Management::Environment
+      def delete: (String) -> bool
+      def new: (String, ?name: String?, ?color: (String | Management::Color)?,
+                ?classification: String, ?description: String?) -> Management::Environment
+    end
+
+    class AccountSettingsNamespace
+      def get: () -> Management::AccountSettings
+    end
+
+    class ConfigNamespace
+      def list: () -> Array[Smplkit::Config::Config]
+      def get: (String) -> Smplkit::Config::Config
+      def delete: (String) -> bool
+      def new_config: (String, ?name: String?, ?description: String?,
+                       ?parent: (String | Smplkit::Config::Config)?) -> Smplkit::Config::Config
+      def fetch_chain: (String) -> Array[Hash[String, untyped]]
+    end
+
+    class FlagsNamespace
+      def register: (Smplkit::FlagDeclaration) -> void
+      def flush: () -> void
+      def list: () -> Array[Smplkit::Flags::Flag]
+      def get: (String) -> Smplkit::Flags::Flag
+      def delete: (String) -> bool
+      def new_boolean_flag: (String, default: bool, ?name: String?,
+                             ?description: String?, ?values: Array[Smplkit::Flags::FlagValue]?) -> Smplkit::Flags::BooleanFlag
+      def new_string_flag: (String, default: String, ?name: String?,
+                            ?description: String?, ?values: Array[Smplkit::Flags::FlagValue]?) -> Smplkit::Flags::StringFlag
+      def new_number_flag: (String, default: (Integer | Float), ?name: String?,
+                            ?description: String?, ?values: Array[Smplkit::Flags::FlagValue]?) -> Smplkit::Flags::NumberFlag
+      def new_json_flag: (String, default: untyped, ?name: String?,
+                          ?description: String?, ?values: Array[Smplkit::Flags::FlagValue]?) -> Smplkit::Flags::JsonFlag
+    end
+
+    class LoggersNamespace
+      def register: (Smplkit::LoggerSource | Array[Smplkit::LoggerSource]) -> void
+      def flush: () -> void
+      def list: () -> Array[Smplkit::Logging::SmplLogger]
+      def get: (String) -> Smplkit::Logging::SmplLogger
+      def delete: (String) -> bool
+    end
+
+    class LogGroupsNamespace
+      def list: () -> Array[Smplkit::Logging::SmplLogGroup]
+      def get: (String) -> Smplkit::Logging::SmplLogGroup
+      def delete: (String) -> bool
+      def new_log_group: (String, ?name: String?, ?level: untyped, ?description: String?,
+                          ?parent: (String | Smplkit::Logging::SmplLogGroup)?) -> Smplkit::Logging::SmplLogGroup
+    end
+  end
+end

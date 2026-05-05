@@ -206,13 +206,18 @@ module Smplkit
       end
     end
 
-    def register_service_context(_mgmt, _env, _svc, _app_url)
-      # No-op stub: bulk-registers the service + environment with the platform.
-      # Wired up via the contexts buffer once the generated client layer is
-      # committed. Until then, the in-process buffer captures these and the
-      # next periodic flush attempts to send them.
+    def register_service_context(mgmt, env, svc, app_url)
+      # Bulk-register the environment + service as +Smplkit::Context+
+      # instances on the platform so they show up in the Console alongside
+      # any user-provided contexts. The buffer dedupes on +(type, key)+, so
+      # this is safe to call on every client construction.
+      contexts = []
+      contexts << Smplkit::Context.new("environment", env) if env
+      contexts << Smplkit::Context.new("service", svc, name: svc) if svc
+      mgmt.contexts.register(contexts)
+      mgmt.contexts.flush
     rescue StandardError => e
-      Smplkit.debug("lifecycle", "register service context failed: #{e.class}: #{e.message}")
+      Smplkit.debug("lifecycle", "register service context failed (app: #{app_url}): #{e.class}: #{e.message}")
     end
   end
 end

@@ -1,0 +1,93 @@
+module Smplkit
+  module Flags
+    class FlagValue
+      attr_reader name: String
+      attr_reader value: untyped
+      def self.new: (name: String, value: untyped) -> FlagValue
+    end
+
+    class FlagRule
+      attr_reader logic: Hash[String, untyped]
+      attr_reader value: untyped
+      attr_reader description: String?
+      def self.new: (logic: Hash[String, untyped], ?value: untyped, ?description: String?) -> FlagRule
+    end
+
+    class FlagEnvironment
+      attr_reader enabled: bool
+      attr_reader default: untyped
+      attr_reader rules: Array[FlagRule]
+      def enabled?: () -> bool
+      def with: (**untyped) -> FlagEnvironment
+    end
+
+    class Flag
+      attr_accessor id: String?
+      attr_accessor name: String
+      attr_accessor type: String
+      attr_accessor default: untyped
+      attr_accessor description: String?
+      attr_accessor created_at: untyped
+      attr_accessor updated_at: untyped
+
+      def values: () -> Array[FlagValue]?
+      def environments: () -> Hash[String, FlagEnvironment]
+      def add_rule: (Hash[String, untyped]) -> Flag
+      def enable_rules: (?environment: String?) -> Flag
+      def disable_rules: (?environment: String?) -> Flag
+      def clear_rules: (?environment: String?) -> Flag
+      def set_default: (untyped, environment: String) -> Flag
+      def clear_default: (environment: String) -> Flag
+      def add_value: (FlagValue) -> Flag
+      def remove_value: (String) -> Flag
+      def clear_values: () -> Flag
+      def save: () -> Flag
+      alias save! save
+      def delete: () -> void
+      alias delete! delete
+    end
+
+    class BooleanFlag < Flag
+      def get: (?context: Array[Smplkit::Context]?) -> bool
+    end
+
+    class StringFlag < Flag
+      def get: (?context: Array[Smplkit::Context]?) -> String
+    end
+
+    class NumberFlag < Flag
+      def get: (?context: Array[Smplkit::Context]?) -> (Integer | Float)
+    end
+
+    class JsonFlag < Flag
+      def get: (?context: Array[Smplkit::Context]?) -> untyped
+    end
+
+    class FlagChangeEvent
+      attr_reader id: String
+      attr_reader source: String
+      attr_reader deleted: bool
+      def deleted?: () -> bool
+    end
+
+    class FlagStats
+      attr_reader cache_hits: Integer
+      attr_reader cache_misses: Integer
+    end
+
+    class FlagsClient
+      def boolean_flag: (String, default: bool) -> BooleanFlag
+      def string_flag: (String, default: String) -> StringFlag
+      def number_flag: (String, default: (Integer | Float)) -> NumberFlag
+      def json_flag: (String, default: untyped) -> JsonFlag
+      def start: () -> void
+      def refresh: () -> void
+      def stats: () -> FlagStats
+      def on_change: (?String?) { (FlagChangeEvent) -> void } -> Proc
+    end
+  end
+
+  FlagValue: singleton(Flags::FlagValue)
+  FlagRule: singleton(Flags::FlagRule)
+  FlagEnvironment: singleton(Flags::FlagEnvironment)
+end
