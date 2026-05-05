@@ -90,14 +90,16 @@ module Smplkit
     def stop
       Smplkit.debug("websocket", "stopping shared WebSocket")
       @closed = true
-      @connection_status = "disconnected"
       close_active_connection
       thread = @ws_thread
       @ws_thread = nil
-      return unless thread
-
-      thread.join(2.0)
-      thread.kill if thread.alive?
+      if thread
+        thread.join(2.0)
+        thread.kill if thread.alive?
+      end
+      # Set authoritatively after the thread is dead so a racing connect
+      # call (which also sets "connecting") cannot clobber this value.
+      @connection_status = "disconnected"
     end
 
     # ----- URL builder ----------------------------------------------
@@ -169,6 +171,8 @@ module Smplkit
     end
 
     def connect(task)
+      return if @closed
+
       url = build_ws_url
       @connection_status = "connecting"
       Smplkit.debug("websocket", "connecting to #{safe_url}")
