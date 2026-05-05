@@ -24,4 +24,12 @@ RSpec.configure do |config|
   config.after do
     Thread.current[Smplkit::RequestContext::KEY] = nil
   end
+
+  # The StdlibLoggerAdapter prepends a permanent module onto ::Logger to catch
+  # new-logger creation. The hook persists across examples; clear the active
+  # adapter list between examples so prior tests' adapters can't fire on
+  # later tests' Logger.new calls.
+  config.after do
+    Smplkit::Logging::Adapters::StdlibLoggerAdapter.adapters.clear
+  end
 end
