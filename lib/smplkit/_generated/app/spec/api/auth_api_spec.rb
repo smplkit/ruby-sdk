@@ -39,6 +39,7 @@ describe 'AuthApi' do
   # @param [Hash] opts the optional parameters
   # @option opts [String] :mode 
   # @option opts [String] :source 
+  # @option opts [String] :entry_point 
   # @return [nil]
   describe 'begin_oidc_login test' do
     it 'should work' do

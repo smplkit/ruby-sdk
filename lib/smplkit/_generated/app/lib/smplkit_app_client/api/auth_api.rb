@@ -25,6 +25,7 @@ module SmplkitGeneratedClient::App
     # @param [Hash] opts the optional parameters
     # @option opts [String] :mode  (default to 'signin')
     # @option opts [String] :source 
+    # @option opts [String] :entry_point 
     # @return [nil]
     def begin_oidc_login(provider, opts = {})
       begin_oidc_login_with_http_info(provider, opts)
@@ -37,6 +38,7 @@ module SmplkitGeneratedClient::App
     # @param [Hash] opts the optional parameters
     # @option opts [String] :mode  (default to 'signin')
     # @option opts [String] :source 
+    # @option opts [String] :entry_point 
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers
     def begin_oidc_login_with_http_info(provider, opts = {})
       if @api_client.config.debugging
@@ -53,6 +55,7 @@ module SmplkitGeneratedClient::App
       query_params = opts[:query_params] || {}
       query_params[:'mode'] = opts[:'mode'] if !opts[:'mode'].nil?
       query_params[:'source'] = opts[:'source'] if !opts[:'source'].nil?
+      query_params[:'entry_point'] = opts[:'entry_point'] if !opts[:'entry_point'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

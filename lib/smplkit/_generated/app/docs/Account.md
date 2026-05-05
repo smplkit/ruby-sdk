@@ -11,6 +11,8 @@
 | **created_at** | **Time** |  | [optional][readonly] |
 | **deleted_at** | **Time** |  | [optional][readonly] |
 | **product_subscriptions** | **Hash&lt;String, Object&gt;** |  | [optional][readonly] |
+| **entry_point** | **String** | Registration entry point (from account.data) | [optional][readonly] |
+| **show_sample_data** | **Boolean** | Whether sample data is active (from account.settings) | [optional][readonly] |
 
 ## Example
 
@@ -24,7 +26,9 @@ instance = SmplkitGeneratedClient::App::Account.new(
   expires_at: null,
   created_at: null,
   deleted_at: null,
-  product_subscriptions: null
+  product_subscriptions: null,
+  entry_point: null,
+  show_sample_data: null
 )
 ```
 

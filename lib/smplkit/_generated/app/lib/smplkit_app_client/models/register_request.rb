@@ -19,11 +19,37 @@ module SmplkitGeneratedClient::App
 
     attr_accessor :password
 
+    # Registration entry point. Allowed: login, get_started, live_demo, unknown. Defaults to unknown when omitted.
+    attr_accessor :entry_point
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'email' => :'email',
-        :'password' => :'password'
+        :'password' => :'password',
+        :'entry_point' => :'entry_point'
       }
     end
 
@@ -41,13 +67,15 @@ module SmplkitGeneratedClient::App
     def self.openapi_types
       {
         :'email' => :'String',
-        :'password' => :'String'
+        :'password' => :'String',
+        :'entry_point' => :'String'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'entry_point'
       ])
     end
 
@@ -77,6 +105,10 @@ module SmplkitGeneratedClient::App
         self.password = attributes[:'password']
       else
         self.password = nil
+      end
+
+      if attributes.key?(:'entry_point')
+        self.entry_point = attributes[:'entry_point']
       end
     end
 
@@ -112,6 +144,8 @@ module SmplkitGeneratedClient::App
       return false if @password.nil?
       return false if @password.to_s.length > 128
       return false if @password.to_s.length < 8
+      entry_point_validator = EnumAttributeValidator.new('String', ["login", "get_started", "live_demo", "unknown"])
+      return false unless entry_point_validator.valid?(@entry_point)
       true
     end
 
@@ -143,13 +177,24 @@ module SmplkitGeneratedClient::App
       @password = password
     end
 
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] entry_point Object to be assigned
+    def entry_point=(entry_point)
+      validator = EnumAttributeValidator.new('String', ["login", "get_started", "live_demo", "unknown"])
+      unless validator.valid?(entry_point)
+        fail ArgumentError, "invalid value for \"entry_point\", must be one of #{validator.allowable_values}."
+      end
+      @entry_point = entry_point
+    end
+
     # Checks equality by comparing each attribute.
     # @param [Object] Object to be compared
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
           email == o.email &&
-          password == o.password
+          password == o.password &&
+          entry_point == o.entry_point
     end
 
     # @see the `==` method
@@ -161,7 +206,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [email, password].hash
+      [email, password, entry_point].hash
     end
 
     # Builds the object from hash
