@@ -1,0 +1,111 @@
+name: CI/CD
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      manual_version:
+        description: "Force version"
+        required: false
+        default: ""
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      - name: Lint
+        run: bundle exec rubocop
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-version: ["3.3", "3.4"]
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true
+
+      - name: Test
+        run: bundle exec rspec
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  ci-gate:
+    if: always()
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: smplkit/.github-public/actions/ci-gate@main
+        with:
+          needs: ${{ toJson(needs) }}
+
+  release:
+    needs: [ci-gate]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - id: prep
+        uses: smplkit/.github-public/actions/sdk-release-prepare@main
+        with:
+          manual_version: ${{ github.event.inputs.manual_version }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: ruby/setup-ruby@v1
+        if: steps.prep.outputs.released == 'true'
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      - name: Build gem
+        if: steps.prep.outputs.released == 'true'
+        run: gem build smplkit.gemspec
+
+      - name: Publish to RubyGems
+        if: steps.prep.outputs.released == 'true'
+        uses: rubygems/release-gem@v1
+
+      - name: Summary
+        run: |
+          echo "## Publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.prep.outputs.released }}" = "true" ]; then
+            echo "**Version:** v${{ steps.prep.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Published to RubyGems:** yes" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No release warranted by commits since last release." >> "$GITHUB_STEP_SUMMARY"
+          fi
