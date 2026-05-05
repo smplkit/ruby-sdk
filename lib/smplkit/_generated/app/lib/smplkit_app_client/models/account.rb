@@ -29,6 +29,12 @@ module SmplkitGeneratedClient::App
 
     attr_accessor :product_subscriptions
 
+    # Registration entry point (from account.data)
+    attr_accessor :entry_point
+
+    # Whether sample data is active (from account.settings)
+    attr_accessor :show_sample_data
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
@@ -38,7 +44,9 @@ module SmplkitGeneratedClient::App
         :'expires_at' => :'expires_at',
         :'created_at' => :'created_at',
         :'deleted_at' => :'deleted_at',
-        :'product_subscriptions' => :'product_subscriptions'
+        :'product_subscriptions' => :'product_subscriptions',
+        :'entry_point' => :'entry_point',
+        :'show_sample_data' => :'show_sample_data'
       }
     end
 
@@ -61,7 +69,9 @@ module SmplkitGeneratedClient::App
         :'expires_at' => :'Time',
         :'created_at' => :'Time',
         :'deleted_at' => :'Time',
-        :'product_subscriptions' => :'Hash<String, Object>'
+        :'product_subscriptions' => :'Hash<String, Object>',
+        :'entry_point' => :'String',
+        :'show_sample_data' => :'Boolean'
       }
     end
 
@@ -71,7 +81,9 @@ module SmplkitGeneratedClient::App
         :'expires_at',
         :'created_at',
         :'deleted_at',
-        :'product_subscriptions'
+        :'product_subscriptions',
+        :'entry_point',
+        :'show_sample_data'
       ])
     end
 
@@ -125,6 +137,14 @@ module SmplkitGeneratedClient::App
         if (value = attributes[:'product_subscriptions']).is_a?(Hash)
           self.product_subscriptions = value
         end
+      end
+
+      if attributes.key?(:'entry_point')
+        self.entry_point = attributes[:'entry_point']
+      end
+
+      if attributes.key?(:'show_sample_data')
+        self.show_sample_data = attributes[:'show_sample_data']
       end
     end
 
@@ -202,7 +222,9 @@ module SmplkitGeneratedClient::App
           expires_at == o.expires_at &&
           created_at == o.created_at &&
           deleted_at == o.deleted_at &&
-          product_subscriptions == o.product_subscriptions
+          product_subscriptions == o.product_subscriptions &&
+          entry_point == o.entry_point &&
+          show_sample_data == o.show_sample_data
     end
 
     # @see the `==` method
@@ -214,7 +236,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, key, has_stripe_customer, expires_at, created_at, deleted_at, product_subscriptions].hash
+      [name, key, has_stripe_customer, expires_at, created_at, deleted_at, product_subscriptions, entry_point, show_sample_data].hash
     end
 
     # Builds the object from hash

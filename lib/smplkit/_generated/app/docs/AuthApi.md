@@ -30,7 +30,8 @@ api_instance = SmplkitGeneratedClient::App::AuthApi.new
 provider = SmplkitGeneratedClient::App::OidcProvider::GOOGLE # OidcProvider | 
 opts = {
   mode: 'mode_example', # String | 
-  source: 'source_example' # String | 
+  source: 'source_example', # String | 
+  entry_point: 'entry_point_example' # String | 
 }
 
 begin
@@ -66,6 +67,7 @@ end
 | **provider** | [**OidcProvider**](.md) |  |  |
 | **mode** | **String** |  | [optional][default to &#39;signin&#39;] |
 | **source** | **String** |  | [optional] |
+| **entry_point** | **String** |  | [optional] |
 
 ### Return type
 
