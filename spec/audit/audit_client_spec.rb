@@ -2,6 +2,8 @@
 
 require "spec_helper"
 
+# rubocop:disable RSpec/ExpectOutput, Layout/LineLength, RSpec/ExampleLength
+
 RSpec.describe Smplkit::Audit::AuditClient do
   let(:base_url) { "https://audit.example.com" }
   let(:api_key) { "sk_api_test" }
@@ -80,8 +82,8 @@ RSpec.describe Smplkit::Audit::AuditClient do
 
     it "passes Idempotency-Key as a request header" do
       stub = stub_request(:post, "#{base_url}/api/v1/events")
-        .with(headers: { "Idempotency-Key" => "key-abc" })
-        .to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
+             .with(headers: { "Idempotency-Key" => "key-abc" })
+             .to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
         client.events.create(
@@ -187,7 +189,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
         links: { next: "/api/v1/events?page[size]=1&page[after]=tok-xyz" }
       }.to_json
       stub_request(:get, "#{base_url}/api/v1/events").with(query: hash_including({}))
-        .to_return(status: 200, body: list_body, headers: { "Content-Type" => "application/vnd.api+json" })
+                                                     .to_return(status: 200, body: list_body, headers: { "Content-Type" => "application/vnd.api+json" })
 
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
@@ -206,7 +208,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
         links: { next: "/api/v1/events?page[size]=1&page[after]=tok-xyz&extra=junk" }
       }.to_json
       stub_request(:get, "#{base_url}/api/v1/events").with(query: hash_including({}))
-        .to_return(status: 200, body: list_body, headers: { "Content-Type" => "application/vnd.api+json" })
+                                                     .to_return(status: 200, body: list_body, headers: { "Content-Type" => "application/vnd.api+json" })
 
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
@@ -220,7 +222,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
     it "returns nil next_cursor on the last page" do
       list_body = { data: [], meta: { page_size: 50 } }.to_json
       stub_request(:get, "#{base_url}/api/v1/events").with(query: hash_including({}))
-        .to_return(status: 200, body: list_body, headers: { "Content-Type" => "application/vnd.api+json" })
+                                                     .to_return(status: 200, body: list_body, headers: { "Content-Type" => "application/vnd.api+json" })
 
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
@@ -259,3 +261,4 @@ RSpec.describe Smplkit::Audit::AuditClient do
     end
   end
 end
+# rubocop:enable RSpec/ExpectOutput, Layout/LineLength, RSpec/ExampleLength

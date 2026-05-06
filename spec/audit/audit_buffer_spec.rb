@@ -2,10 +2,16 @@
 
 require "spec_helper"
 
+# These tests intentionally mutate $stderr to silence the buffer's
+# warn-on-overflow / warn-on-permanent-failure noise; the rubocop rule
+# isn't well-suited here because the goal is suppression, not assertion.
+# rubocop:disable RSpec/ExpectOutput
+
 RSpec.describe Smplkit::Audit::EventBuffer do
   let(:fake_api) do
     Class.new do
       attr_accessor :statuses, :calls
+
       def initialize
         @calls = 0
         @statuses = []
@@ -14,9 +20,8 @@ RSpec.describe Smplkit::Audit::EventBuffer do
       def create_event(_body, _opts = {})
         @calls += 1
         status = @statuses.shift || 201
-        if status >= 300
-          raise SmplkitGeneratedClient::Audit::ApiError.new(code: status, message: "test")
-        end
+        raise SmplkitGeneratedClient::Audit::ApiError.new(code: status, message: "test") if status >= 300
+
         true
       end
     end.new
@@ -66,9 +71,7 @@ RSpec.describe Smplkit::Audit::EventBuffer do
       fake_api.statuses = [503, 503, 201]
       buf.enqueue(body, nil)
       deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5.0
-      until fake_api.calls >= 3 || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
-        sleep 0.05
-      end
+      sleep 0.05 until fake_api.calls >= 3 || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
       buf.close
       expect(fake_api.calls).to be >= 3
     end
@@ -95,9 +98,7 @@ RSpec.describe Smplkit::Audit::EventBuffer do
       fake_api.statuses = [503, 503, 503, 503, 503]
       buf.enqueue(body, nil)
       deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5.0
-      until fake_api.calls >= 3 || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
-        sleep 0.05
-      end
+      sleep 0.05 until fake_api.calls >= 3 || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
       buf.close
       $stderr = original_stderr
       expect(fake_api.calls).to be >= 3
@@ -106,6 +107,7 @@ RSpec.describe Smplkit::Audit::EventBuffer do
     it "treats raised non-ApiError exceptions as transient" do
       class_with_raise = Class.new do
         attr_accessor :calls
+
         def initialize
           @calls = 0
         end
@@ -122,9 +124,7 @@ RSpec.describe Smplkit::Audit::EventBuffer do
       buf = described_class.new(class_with_raise)
       buf.enqueue(body, nil)
       deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5.0
-      until class_with_raise.calls >= 2 || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
-        sleep 0.05
-      end
+      sleep 0.05 until class_with_raise.calls >= 2 || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
       buf.close
       expect(class_with_raise.calls).to be >= 2
     end
@@ -152,3 +152,4 @@ RSpec.describe Smplkit::Audit::EventBuffer do
     end
   end
 end
+# rubocop:enable RSpec/ExpectOutput

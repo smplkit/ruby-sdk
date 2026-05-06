@@ -125,6 +125,7 @@ module Smplkit
 
       def handle_outcome(item, status)
         return nil if status >= 200 && status < 300
+
         if status >= 400 && status < 500 && status != 429
           warn "[smplkit.audit] permanent failure status=#{status}; event dropped"
           return nil
@@ -151,6 +152,7 @@ module Smplkit
           super
         end
       end
+      private_constant :PendingEvent
     end
   end
 end
