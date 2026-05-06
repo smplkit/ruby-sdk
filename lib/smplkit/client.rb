@@ -42,7 +42,7 @@ module Smplkit
       end
     end
 
-    def initialize(api_key: nil, environment: nil, service: nil, profile: nil,
+    def initialize(api_key: nil, environment: nil, service: nil, profile: nil, # rubocop:disable Metrics/AbcSize
                    base_domain: nil, scheme: nil, debug: nil, telemetry: nil)
       cfg = ConfigResolution.resolve_config(
         profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme,

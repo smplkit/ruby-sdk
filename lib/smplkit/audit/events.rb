@@ -69,10 +69,10 @@ module Smplkit
         resp = @api.list_events(opts)
         events = (resp.data || []).map { |r| AuditEvent.from_resource(r) }
         next_cursor = nil
-        if resp.links && resp.links._next && resp.links._next.is_a?(String)
+        if resp.links&._next.is_a?(String)
           next_link = resp.links._next
           if (idx = next_link.index("page[after]="))
-            next_cursor = next_link[idx + "page[after]=".length..]
+            next_cursor = next_link[(idx + "page[after]=".length)..]
             if (amp = next_cursor.index("&"))
               next_cursor = next_cursor[0...amp]
             end

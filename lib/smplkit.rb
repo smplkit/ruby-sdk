@@ -27,7 +27,8 @@ end
 module SmplkitGeneratedClient # rubocop:disable Style/OneClassPerFile
 end
 
-%w[smplkit_app_client smplkit_audit_client smplkit_config_client smplkit_flags_client smplkit_logging_client].each do |gem_lib|
+%w[smplkit_app_client smplkit_audit_client smplkit_config_client smplkit_flags_client
+   smplkit_logging_client].each do |gem_lib|
   require gem_lib
 rescue LoadError
   # Generated tree may be intentionally absent in development snapshots —
