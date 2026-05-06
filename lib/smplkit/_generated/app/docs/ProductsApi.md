@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Products
 
-Return all flag-enabled products with their plans and limits.
+Return all flag-enabled products with their plans, limits, and marketing content.
 
 ### Examples
 

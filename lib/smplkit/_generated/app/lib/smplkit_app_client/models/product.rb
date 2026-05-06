@@ -19,6 +19,10 @@ module SmplkitGeneratedClient::App
 
     attr_accessor :description
 
+    attr_accessor :tagline
+
+    attr_accessor :features
+
     attr_accessor :coming_soon
 
     attr_accessor :limits
@@ -30,6 +34,8 @@ module SmplkitGeneratedClient::App
       {
         :'display_name' => :'display_name',
         :'description' => :'description',
+        :'tagline' => :'tagline',
+        :'features' => :'features',
         :'coming_soon' => :'coming_soon',
         :'limits' => :'limits',
         :'plans' => :'plans'
@@ -51,6 +57,8 @@ module SmplkitGeneratedClient::App
       {
         :'display_name' => :'String',
         :'description' => :'String',
+        :'tagline' => :'String',
+        :'features' => :'Array<String>',
         :'coming_soon' => :'Boolean',
         :'limits' => :'Hash<String, LimitDefinition>',
         :'plans' => :'Hash<String, PlanDefinition>'
@@ -60,6 +68,7 @@ module SmplkitGeneratedClient::App
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'tagline',
       ])
     end
 
@@ -89,6 +98,16 @@ module SmplkitGeneratedClient::App
         self.description = attributes[:'description']
       else
         self.description = nil
+      end
+
+      if attributes.key?(:'tagline')
+        self.tagline = attributes[:'tagline']
+      end
+
+      if attributes.key?(:'features')
+        if (value = attributes[:'features']).is_a?(Array)
+          self.features = value
+        end
       end
 
       if attributes.key?(:'coming_soon')
@@ -196,6 +215,8 @@ module SmplkitGeneratedClient::App
       self.class == o.class &&
           display_name == o.display_name &&
           description == o.description &&
+          tagline == o.tagline &&
+          features == o.features &&
           coming_soon == o.coming_soon &&
           limits == o.limits &&
           plans == o.plans
@@ -210,7 +231,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [display_name, description, coming_soon, limits, plans].hash
+      [display_name, description, tagline, features, coming_soon, limits, plans].hash
     end
 
     # Builds the object from hash
