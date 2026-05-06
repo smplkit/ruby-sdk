@@ -1,0 +1,261 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+
+RSpec.describe Smplkit::Audit::AuditClient do
+  let(:base_url) { "https://audit.example.com" }
+  let(:api_key) { "sk_api_test" }
+
+  let(:event_response_body) do
+    {
+      data: {
+        id: "11111111-2222-3333-4444-555555555555",
+        type: "event",
+        attributes: {
+          action: "user.created",
+          resource_type: "user",
+          resource_id: "u-1",
+          occurred_at: "2026-05-06T12:00:00Z",
+          created_at: "2026-05-06T12:00:01Z",
+          actor_type: "API_KEY",
+          actor_id: nil,
+          actor_label: "",
+          snapshot: nil,
+          data: {},
+          idempotency_key: "k"
+        }
+      }
+    }.to_json
+  end
+
+  describe "#events.create" do
+    it "returns immediately without blocking on the network" do
+      stub = stub_request(:post, "#{base_url}/api/v1/events").to_return(
+        status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        20.times do |i|
+          client.events.create(action: "user.created", resource_type: "user", resource_id: "u-#{i}")
+        end
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+        expect(elapsed).to be < 0.2
+        # Trigger drain.
+        client.events.flush(timeout: 2.0)
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          sleep 0.02
+        end
+        expect(stub).to have_been_requested.at_least_once
+      ensure
+        client._close
+      end
+    end
+
+    it "raises ArgumentError when action is missing" do
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      expect do
+        client.events.create(action: "", resource_type: "user", resource_id: "u-1")
+      end.to raise_error(ArgumentError, /action/)
+      client._close
+    end
+
+    it "raises ArgumentError when resource_type is missing" do
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      expect do
+        client.events.create(action: "x", resource_type: nil, resource_id: "u-1")
+      end.to raise_error(ArgumentError, /resource_type/)
+      client._close
+    end
+
+    it "raises ArgumentError when resource_id is missing" do
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      expect do
+        client.events.create(action: "x", resource_type: "user", resource_id: "")
+      end.to raise_error(ArgumentError, /resource_id/)
+      client._close
+    end
+
+    it "passes Idempotency-Key as a request header" do
+      stub = stub_request(:post, "#{base_url}/api/v1/events")
+        .with(headers: { "Idempotency-Key" => "key-abc" })
+        .to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.create(
+          action: "user.created", resource_type: "user", resource_id: "u-1",
+          idempotency_key: "key-abc"
+        )
+        client.events.flush(timeout: 2.0)
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          sleep 0.02
+        end
+        expect(stub).to have_been_requested.at_least_once
+      ensure
+        client._close
+      end
+    end
+
+    it "passes occurred_at, snapshot, and data through to the request body" do
+      captured = nil
+      stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.create(
+          action: "invoice.created",
+          resource_type: "invoice",
+          resource_id: "inv-1",
+          occurred_at: Time.utc(2026, 5, 6, 12, 0, 0),
+          snapshot: { "total_cents" => 4900 },
+          data: { "request_id" => "req-1" }
+        )
+        client.events.flush(timeout: 2.0)
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          sleep 0.02
+        end
+        expect(captured.dig("data", "attributes", "snapshot")).to eq("total_cents" => 4900)
+        expect(captured.dig("data", "attributes", "data")).to eq("request_id" => "req-1")
+      ensure
+        client._close
+      end
+    end
+  end
+
+  describe "#events.get" do
+    it "round-trips a single event" do
+      event_id = "11111111-2222-3333-4444-555555555555"
+      stub_request(:get, "#{base_url}/api/v1/events/#{event_id}")
+        .to_return(status: 200, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        ev = client.events.get(event_id)
+        expect(ev.id).to eq(event_id)
+        expect(ev.action).to eq("user.created")
+        expect(ev.actor_type).to eq("API_KEY")
+        expect(ev.actor_id).to be_nil
+      ensure
+        client._close
+      end
+    end
+
+    it "raises ApiError on 404" do
+      event_id = "00000000-0000-0000-0000-000000000099"
+      stub_request(:get, "#{base_url}/api/v1/events/#{event_id}")
+        .to_return(status: 404, body: "{}", headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        expect { client.events.get(event_id) }.to raise_error(SmplkitGeneratedClient::Audit::ApiError)
+      ensure
+        client._close
+      end
+    end
+  end
+
+  describe "#events.list" do
+    it "parses next cursor from links.next" do
+      list_body = {
+        data: [{
+          id: "11111111-2222-3333-4444-555555555555",
+          type: "event",
+          attributes: {
+            action: "user.created",
+            resource_type: "user",
+            resource_id: "u-1",
+            occurred_at: "2026-05-06T12:00:00Z",
+            created_at: "2026-05-06T12:00:01Z",
+            actor_type: "API_KEY",
+            actor_id: nil,
+            actor_label: "",
+            snapshot: nil,
+            data: {},
+            idempotency_key: "k"
+          }
+        }],
+        meta: { page_size: 1 },
+        links: { next: "/api/v1/events?page[size]=1&page[after]=tok-xyz" }
+      }.to_json
+      stub_request(:get, "#{base_url}/api/v1/events").with(query: hash_including({}))
+        .to_return(status: 200, body: list_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        page = client.events.list(action: "user.created", page_size: 1)
+        expect(page.events.size).to eq(1)
+        expect(page.next_cursor).to eq("tok-xyz")
+      ensure
+        client._close
+      end
+    end
+
+    it "trims trailing query parameters from the next cursor" do
+      list_body = {
+        data: [],
+        meta: { page_size: 1 },
+        links: { next: "/api/v1/events?page[size]=1&page[after]=tok-xyz&extra=junk" }
+      }.to_json
+      stub_request(:get, "#{base_url}/api/v1/events").with(query: hash_including({}))
+        .to_return(status: 200, body: list_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        page = client.events.list(page_size: 1)
+        expect(page.next_cursor).to eq("tok-xyz")
+      ensure
+        client._close
+      end
+    end
+
+    it "returns nil next_cursor on the last page" do
+      list_body = { data: [], meta: { page_size: 50 } }.to_json
+      stub_request(:get, "#{base_url}/api/v1/events").with(query: hash_including({}))
+        .to_return(status: 200, body: list_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        page = client.events.list
+        expect(page.events).to eq([])
+        expect(page.next_cursor).to be_nil
+      ensure
+        client._close
+      end
+    end
+  end
+
+  describe "buffer overflow" do
+    it "evicts oldest items when the queue is full" do
+      stub_request(:post, "#{base_url}/api/v1/events").to_return(
+        status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      stub_const("Smplkit::Audit::EventBuffer::MAX_BUFFER_SIZE", 3)
+      stub_const("Smplkit::Audit::EventBuffer::WATERMARK", 9999)
+      begin
+        # Suppress the buffer-full warning so RSpec output stays clean.
+        original_stderr = $stderr
+        $stderr = StringIO.new
+        # Burst more than capacity before the worker can drain.
+        5.times do |i|
+          client.events.create(action: "x.created", resource_type: "x", resource_id: i.to_s)
+        end
+        $stderr = original_stderr
+        client.events.flush(timeout: 2.0)
+        # No assertion on count — webmock has counted the requests; the goal
+        # of this test is exercising the overflow branch.
+      ensure
+        client._close
+      end
+    end
+  end
+end

@@ -16,7 +16,7 @@ require_relative "smplkit/version"
 # +lib/smplkit/_generated/<svc>/lib+ uses internal +require+ paths like
 # +smplkit_<svc>_client/api_client+, so the directory has to be on
 # +$LOAD_PATH+ before its top-level entry is required.
-%w[app config flags logging].each do |svc|
+%w[app audit config flags logging].each do |svc|
   generated_lib = File.expand_path("smplkit/_generated/#{svc}/lib", __dir__)
   $LOAD_PATH.unshift(generated_lib) if File.directory?(generated_lib)
 end
@@ -27,7 +27,7 @@ end
 module SmplkitGeneratedClient # rubocop:disable Style/OneClassPerFile
 end
 
-%w[smplkit_app_client smplkit_config_client smplkit_flags_client smplkit_logging_client].each do |gem_lib|
+%w[smplkit_app_client smplkit_audit_client smplkit_config_client smplkit_flags_client smplkit_logging_client].each do |gem_lib|
   require gem_lib
 rescue LoadError
   # Generated tree may be intentionally absent in development snapshots —
@@ -61,6 +61,9 @@ require_relative "smplkit/management/types"
 require_relative "smplkit/management/models"
 require_relative "smplkit/management/buffer"
 require_relative "smplkit/management/client"
+require_relative "smplkit/audit/buffer"
+require_relative "smplkit/audit/events"
+require_relative "smplkit/audit/client"
 require_relative "smplkit/client"
 
 require_relative "smplkit/railtie" if defined?(Rails::Railtie)

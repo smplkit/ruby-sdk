@@ -2,6 +2,8 @@
 
 require "concurrent"
 
+require "smplkit/audit/client"
+
 module Smplkit
   # Synchronous entry point for the smplkit SDK.
   #
@@ -28,7 +30,7 @@ module Smplkit
   class Client
     PERIODIC_FLUSH_INTERVAL = 60.0
 
-    attr_reader :manage, :config, :flags, :logging
+    attr_reader :manage, :config, :flags, :logging, :audit
 
     # Construct, yield to the block, and close on exit.
     def self.open(**kwargs)
@@ -70,6 +72,7 @@ module Smplkit
       app_url = ConfigResolution.service_url(cfg.scheme, "app", cfg.base_domain)
       flags_url = ConfigResolution.service_url(cfg.scheme, "flags", cfg.base_domain)
       logging_url = ConfigResolution.service_url(cfg.scheme, "logging", cfg.base_domain)
+      audit_url = ConfigResolution.service_url(cfg.scheme, "audit", cfg.base_domain)
       @app_base_url = app_url
 
       @metrics = if cfg.telemetry
@@ -84,6 +87,7 @@ module Smplkit
                                             flags_base_url: flags_url, app_base_url: app_url)
       @logging = Logging::LoggingClient.new(self, manage: @manage, metrics: @metrics,
                                                   logging_base_url: logging_url, app_base_url: app_url)
+      @audit = Audit::AuditClient.new(api_key: cfg.api_key, base_url: audit_url)
 
       @closed = false
       schedule_periodic_flush
@@ -153,6 +157,7 @@ module Smplkit
       @logging._close
       @flags._close
       @config._close
+      @audit._close
       @ws_manager&.stop
       @ws_manager = nil
       @manage.close
