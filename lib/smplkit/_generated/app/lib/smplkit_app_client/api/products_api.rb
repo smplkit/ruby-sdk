@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::App
       @api_client = api_client
     end
     # List Products
-    # Return all flag-enabled products with their plans and limits.
+    # Return all flag-enabled products with their plans, limits, and marketing content.
     # @param [Hash] opts the optional parameters
     # @return [ProductListResponse]
     def list_products(opts = {})
@@ -29,7 +29,7 @@ module SmplkitGeneratedClient::App
     end
 
     # List Products
-    # Return all flag-enabled products with their plans and limits.
+    # Return all flag-enabled products with their plans, limits, and marketing content.
     # @param [Hash] opts the optional parameters
     # @return [Array<(ProductListResponse, Integer, Hash)>] ProductListResponse data, response status code and response headers
     def list_products_with_http_info(opts = {})

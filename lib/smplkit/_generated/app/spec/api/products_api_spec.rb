@@ -34,7 +34,7 @@ describe 'ProductsApi' do
 
   # unit tests for list_products
   # List Products
-  # Return all flag-enabled products with their plans and limits.
+  # Return all flag-enabled products with their plans, limits, and marketing content.
   # @param [Hash] opts the optional parameters
   # @return [ProductListResponse]
   describe 'list_products test' do
