@@ -13,7 +13,6 @@ require "smplkit"
 
 # create the client
 Smplkit::Client.open(environment: "production", service: "showcase-service") do |client|
-
   # record an event
   some_resource_id = "showcase-#{SecureRandom.hex(4)}"
   client.audit.events.record(
