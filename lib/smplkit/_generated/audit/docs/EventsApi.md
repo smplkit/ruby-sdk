@@ -1,86 +1,12 @@
-# SmplkitGeneratedClient::Audit::DefaultApi
+# SmplkitGeneratedClient::Audit::EventsApi
 
 All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 | ------ | ------------ | ----------- |
-| [**create_event**](DefaultApi.md#create_event) | **POST** /api/v1/events | Create Event |
-| [**get_event**](DefaultApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event |
-| [**list_events**](DefaultApi.md#list_events) | **GET** /api/v1/events | List Events |
-| [**list_usage**](DefaultApi.md#list_usage) | **GET** /api/v1/usage | List Usage |
-
-
-## create_event
-
-> <EventResponse> create_event(event_response, opts)
-
-Create Event
-
-Record an audit event for the authenticated account.  Returns ``201 Created`` on first write, ``200 OK`` if the request was a duplicate (matched by ``Idempotency-Key`` or auto-derived key).  Customers may not emit events whose ``resource_type`` starts with ``smpl.`` — that namespace is reserved for smplkit-emitted events about platform resources.
-
-### Examples
-
-```ruby
-require 'time'
-require 'smplkit_audit_client'
-# setup authorization
-SmplkitGeneratedClient::Audit.configure do |config|
-  # Configure Bearer authorization: HTTPBearer
-  config.access_token = 'YOUR_BEARER_TOKEN'
-end
-
-api_instance = SmplkitGeneratedClient::Audit::DefaultApi.new
-event_response = SmplkitGeneratedClient::Audit::EventResponse.new({data: SmplkitGeneratedClient::Audit::EventResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Event.new({action: 'action_example', resource_type: 'resource_type_example', resource_id: 'resource_id_example'})})}) # EventResponse | 
-opts = {
-  idempotency_key: 'idempotency_key_example' # String | 
-}
-
-begin
-  # Create Event
-  result = api_instance.create_event(event_response, opts)
-  p result
-rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling DefaultApi->create_event: #{e}"
-end
-```
-
-#### Using the create_event_with_http_info variant
-
-This returns an Array which contains the response data, status code and headers.
-
-> <Array(<EventResponse>, Integer, Hash)> create_event_with_http_info(event_response, opts)
-
-```ruby
-begin
-  # Create Event
-  data, status_code, headers = api_instance.create_event_with_http_info(event_response, opts)
-  p status_code # => 2xx
-  p headers # => { ... }
-  p data # => <EventResponse>
-rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling DefaultApi->create_event_with_http_info: #{e}"
-end
-```
-
-### Parameters
-
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **event_response** | [**EventResponse**](EventResponse.md) |  |  |
-| **idempotency_key** | **String** |  | [optional] |
-
-### Return type
-
-[**EventResponse**](EventResponse.md)
-
-### Authorization
-
-[HTTPBearer](../README.md#HTTPBearer)
-
-### HTTP request headers
-
-- **Content-Type**: application/vnd.api+json
-- **Accept**: application/vnd.api+json
+| [**get_event**](EventsApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event |
+| [**list_events**](EventsApi.md#list_events) | **GET** /api/v1/events | List Events |
+| [**record_event**](EventsApi.md#record_event) | **POST** /api/v1/events | Record Event |
 
 
 ## get_event
@@ -102,7 +28,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
   config.access_token = 'YOUR_BEARER_TOKEN'
 end
 
-api_instance = SmplkitGeneratedClient::Audit::DefaultApi.new
+api_instance = SmplkitGeneratedClient::Audit::EventsApi.new
 event_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
 
 begin
@@ -110,7 +36,7 @@ begin
   result = api_instance.get_event(event_id)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling DefaultApi->get_event: #{e}"
+  puts "Error when calling EventsApi->get_event: #{e}"
 end
 ```
 
@@ -128,7 +54,7 @@ begin
   p headers # => { ... }
   p data # => <EventResponse>
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling DefaultApi->get_event_with_http_info: #{e}"
+  puts "Error when calling EventsApi->get_event_with_http_info: #{e}"
 end
 ```
 
@@ -171,7 +97,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
   config.access_token = 'YOUR_BEARER_TOKEN'
 end
 
-api_instance = SmplkitGeneratedClient::Audit::DefaultApi.new
+api_instance = SmplkitGeneratedClient::Audit::EventsApi.new
 opts = {
   filter_occurred_at: 'filter_occurred_at_example', # String | 
   filter_actor_type: 'filter_actor_type_example', # String | 
@@ -188,7 +114,7 @@ begin
   result = api_instance.list_events(opts)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling DefaultApi->list_events: #{e}"
+  puts "Error when calling EventsApi->list_events: #{e}"
 end
 ```
 
@@ -206,7 +132,7 @@ begin
   p headers # => { ... }
   p data # => <EventListResponse>
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling DefaultApi->list_events_with_http_info: #{e}"
+  puts "Error when calling EventsApi->list_events_with_http_info: #{e}"
 end
 ```
 
@@ -237,13 +163,13 @@ end
 - **Accept**: application/vnd.api+json
 
 
-## list_usage
+## record_event
 
-> <UsageResponse> list_usage(filter_period)
+> <EventResponse> record_event(event_response, opts)
 
-List Usage
+Record Event
 
-Current-period usage and quota for the audit product.  Only ``filter[period]=current`` is supported; historical usage is a follow-up.
+Record an audit event for the authenticated account.  Returns ``201 Created`` on first write, ``200 OK`` if the request was a duplicate (matched by ``Idempotency-Key`` or auto-derived key).  Customers may not emit events whose ``resource_type`` starts with ``smpl.`` — that namespace is reserved for smplkit-emitted events about platform resources.
 
 ### Examples
 
@@ -256,33 +182,36 @@ SmplkitGeneratedClient::Audit.configure do |config|
   config.access_token = 'YOUR_BEARER_TOKEN'
 end
 
-api_instance = SmplkitGeneratedClient::Audit::DefaultApi.new
-filter_period = 'filter_period_example' # String | 
+api_instance = SmplkitGeneratedClient::Audit::EventsApi.new
+event_response = SmplkitGeneratedClient::Audit::EventResponse.new({data: SmplkitGeneratedClient::Audit::EventResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Event.new({action: 'action_example', resource_type: 'resource_type_example', resource_id: 'resource_id_example'})})}) # EventResponse | 
+opts = {
+  idempotency_key: 'idempotency_key_example' # String | 
+}
 
 begin
-  # List Usage
-  result = api_instance.list_usage(filter_period)
+  # Record Event
+  result = api_instance.record_event(event_response, opts)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling DefaultApi->list_usage: #{e}"
+  puts "Error when calling EventsApi->record_event: #{e}"
 end
 ```
 
-#### Using the list_usage_with_http_info variant
+#### Using the record_event_with_http_info variant
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<UsageResponse>, Integer, Hash)> list_usage_with_http_info(filter_period)
+> <Array(<EventResponse>, Integer, Hash)> record_event_with_http_info(event_response, opts)
 
 ```ruby
 begin
-  # List Usage
-  data, status_code, headers = api_instance.list_usage_with_http_info(filter_period)
+  # Record Event
+  data, status_code, headers = api_instance.record_event_with_http_info(event_response, opts)
   p status_code # => 2xx
   p headers # => { ... }
-  p data # => <UsageResponse>
+  p data # => <EventResponse>
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling DefaultApi->list_usage_with_http_info: #{e}"
+  puts "Error when calling EventsApi->record_event_with_http_info: #{e}"
 end
 ```
 
@@ -290,11 +219,12 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **filter_period** | **String** |  |  |
+| **event_response** | [**EventResponse**](EventResponse.md) |  |  |
+| **idempotency_key** | **String** |  | [optional] |
 
 ### Return type
 
-[**UsageResponse**](UsageResponse.md)
+[**EventResponse**](EventResponse.md)
 
 ### Authorization
 
@@ -302,6 +232,6 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/vnd.api+json
 - **Accept**: application/vnd.api+json
 

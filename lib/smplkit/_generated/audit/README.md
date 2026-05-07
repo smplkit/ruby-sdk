@@ -67,18 +67,15 @@ SmplkitGeneratedClient::Audit.configure do |config|
   config.configure_faraday_connection { |connection| 'YOUR CONNECTION CONFIG PROC' }
 end
 
-api_instance = SmplkitGeneratedClient::Audit::DefaultApi.new
-event_response = SmplkitGeneratedClient::Audit::EventResponse.new({data: SmplkitGeneratedClient::Audit::EventResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Event.new({action: 'action_example', resource_type: 'resource_type_example', resource_id: 'resource_id_example'})})}) # EventResponse | 
-opts = {
-  idempotency_key: 'idempotency_key_example' # String | 
-}
+api_instance = SmplkitGeneratedClient::Audit::EventsApi.new
+event_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
 
 begin
-  #Create Event
-  result = api_instance.create_event(event_response, opts)
+  #Get Event
+  result = api_instance.get_event(event_id)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Exception when calling DefaultApi->create_event: #{e}"
+  puts "Exception when calling EventsApi->get_event: #{e}"
 end
 
 ```
@@ -89,10 +86,10 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*SmplkitGeneratedClient::Audit::DefaultApi* | [**create_event**](docs/DefaultApi.md#create_event) | **POST** /api/v1/events | Create Event
-*SmplkitGeneratedClient::Audit::DefaultApi* | [**get_event**](docs/DefaultApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event
-*SmplkitGeneratedClient::Audit::DefaultApi* | [**list_events**](docs/DefaultApi.md#list_events) | **GET** /api/v1/events | List Events
-*SmplkitGeneratedClient::Audit::DefaultApi* | [**list_usage**](docs/DefaultApi.md#list_usage) | **GET** /api/v1/usage | List Usage
+*SmplkitGeneratedClient::Audit::EventsApi* | [**get_event**](docs/EventsApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event
+*SmplkitGeneratedClient::Audit::EventsApi* | [**list_events**](docs/EventsApi.md#list_events) | **GET** /api/v1/events | List Events
+*SmplkitGeneratedClient::Audit::EventsApi* | [**record_event**](docs/EventsApi.md#record_event) | **POST** /api/v1/events | Record Event
+*SmplkitGeneratedClient::Audit::UsageApi* | [**list_usage**](docs/UsageApi.md#list_usage) | **GET** /api/v1/usage | List Usage
 
 
 ## Documentation for Models
