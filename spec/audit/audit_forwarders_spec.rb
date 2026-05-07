@@ -2,8 +2,6 @@
 
 require "spec_helper"
 
-# rubocop:disable RSpec/ExpectOutput, Layout/LineLength, RSpec/ExampleLength, RSpec/NestedGroups, Metrics/ClassLength
-
 RSpec.describe Smplkit::Audit::Forwarders do
   let(:base_url) { "https://audit.example.com" }
   let(:api_key) { "sk_api_test" }
@@ -11,6 +9,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
   let(:delivery_id) { "22222222-3333-4444-5555-666666666666" }
 
   let(:client) { Smplkit::Audit::AuditClient.new(api_key: api_key, base_url: base_url) }
+
   after { client._close }
 
   def forwarder_resource(name: "Datadog production", slug: "datadog_production", enabled: true)
@@ -89,7 +88,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
         data: [forwarder_resource(name: "B", slug: "b")],
         meta: { page_size: 1 }
       }.to_json
-      stub_request(:get, /#{base_url}\/api\/v1\/forwarders\b/).to_return(
+      stub_request(:get, %r{#{base_url}/api/v1/forwarders\b}).to_return(
         { status: 200, body: page1, headers: { "Content-Type" => "application/vnd.api+json" } },
         { status: 200, body: page2, headers: { "Content-Type" => "application/vnd.api+json" } }
       )
@@ -100,7 +99,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
     end
 
     it "returns empty list and nil cursor on empty data" do
-      stub_request(:get, /#{base_url}\/api\/v1\/forwarders\b/).to_return(
+      stub_request(:get, %r{#{base_url}/api/v1/forwarders\b}).to_return(
         status: 200, body: { data: [], meta: { page_size: 1 } }.to_json,
         headers: { "Content-Type" => "application/vnd.api+json" }
       )
@@ -142,7 +141,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
 
   describe "deliveries" do
     it "lists deliveries with status filter" do
-      stub_request(:get, /#{base_url}\/api\/v1\/forwarders\/#{fwd_id}\/deliveries\b/).to_return(
+      stub_request(:get, %r{#{base_url}/api/v1/forwarders/#{fwd_id}/deliveries\b}).to_return(
         status: 200,
         body: { data: [delivery_resource], meta: { page_size: 1 } }.to_json,
         headers: { "Content-Type" => "application/vnd.api+json" }
@@ -155,7 +154,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
     end
 
     it "returns empty list when no deliveries" do
-      stub_request(:get, /#{base_url}\/api\/v1\/forwarders\/#{fwd_id}\/deliveries\b/).to_return(
+      stub_request(:get, %r{#{base_url}/api/v1/forwarders/#{fwd_id}/deliveries\b}).to_return(
         status: 200, body: { data: [], meta: { page_size: 1 } }.to_json,
         headers: { "Content-Type" => "application/vnd.api+json" }
       )
@@ -236,6 +235,7 @@ end
 RSpec.describe Smplkit::Audit::Functions do
   let(:base_url) { "https://audit.example.com" }
   let(:client) { Smplkit::Audit::AuditClient.new(api_key: "sk_api_test", base_url: base_url) }
+
   after { client._close }
 
   describe "test_forwarder.actions.execute" do
@@ -303,14 +303,10 @@ RSpec.describe "Smplkit::Audit::Events do_not_forward kwarg" do
       )
       client.events.flush(timeout: 2.0)
       deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
-      until captured || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
-        sleep 0.02
-      end
+      sleep 0.02 until captured || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
     ensure
       client._close
     end
     expect(captured).to include('"do_not_forward":true')
   end
 end
-
-# rubocop:enable RSpec/ExpectOutput, Layout/LineLength, RSpec/ExampleLength, RSpec/NestedGroups, Metrics/ClassLength

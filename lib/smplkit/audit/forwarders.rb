@@ -140,6 +140,8 @@ module Smplkit
 
     HttpHeader = Struct.new(:name, :value, keyword_init: true)
 
+    # rubocop:disable Lint/StructNewOverride -- ``:method`` matches the
+    # API attribute and shadowing Struct#method is the expected ergonomics.
     ForwarderHttp = Struct.new(:method, :url, :headers, :body, :success_status, keyword_init: true) do
       def initialize(method: "POST", url: "", headers: nil, body: nil, success_status: "2xx")
         super(method: method, url: url, headers: headers || [], body: body, success_status: success_status)
@@ -151,8 +153,12 @@ module Smplkit
           method: h.method,
           url: h.url,
           headers: (h.headers || []).map do |hdr|
-            name, value = hdr.is_a?(Hash) ? [hdr[:name] || hdr["name"],
-                                             hdr[:value] || hdr["value"]] : [hdr.name, hdr.value]
+            name, value = if hdr.is_a?(Hash)
+                            [hdr[:name] || hdr["name"],
+                             hdr[:value] || hdr["value"]]
+                          else
+                            [hdr.name, hdr.value]
+                          end
             SmplkitGeneratedClient::Audit::HttpHeader.new(name: name, value: value)
           end,
           body: h.body,
@@ -172,7 +178,10 @@ module Smplkit
         )
       end
     end
+    # rubocop:enable Lint/StructNewOverride
 
+    # rubocop:disable Lint/StructNewOverride -- ``:filter`` matches the
+    # API attribute and shadowing Struct#filter is the expected ergonomics.
     Forwarder = Struct.new(
       :id, :name, :slug, :forwarder_type, :enabled,
       :filter, :transform, :http, :data,
@@ -186,7 +195,7 @@ module Smplkit
           name: a.name,
           slug: a.slug,
           forwarder_type: a.forwarder_type,
-          enabled: a.enabled.nil? ? true : a.enabled,
+          enabled: a.enabled.nil? || a.enabled,
           filter: a.filter,
           transform: a.transform,
           http: ForwarderHttp.from_wire(a.http),
@@ -198,6 +207,7 @@ module Smplkit
         )
       end
     end
+    # rubocop:enable Lint/StructNewOverride
 
     ListForwardersPage = Struct.new(:forwarders, :next_cursor)
 
