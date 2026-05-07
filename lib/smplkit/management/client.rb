@@ -72,9 +72,9 @@ module Smplkit
     def _flags_http = @flags_api_client
     def _logging_http = @logging_api_client
 
-    private
-
     SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
+
+    private
 
     def build_api_client(generated_module, subdomain, cfg)
       configuration = generated_module::Configuration.new

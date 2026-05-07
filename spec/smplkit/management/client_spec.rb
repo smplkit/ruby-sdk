@@ -47,12 +47,12 @@ RSpec.describe Smplkit::ManagementClient do
 
     it "SDK-owned headers cannot be overridden via extra_headers" do
       client = described_class.from_resolved(resolved,
-                                              extra_headers: {
-                                                "Authorization" => "Bearer overridden",
-                                                "Content-Type" => "text/plain",
-                                                "User-Agent" => "rogue",
-                                                "X-Passthrough" => "yes"
-                                              })
+                                             extra_headers: {
+                                               "Authorization" => "Bearer overridden",
+                                               "Content-Type" => "text/plain",
+                                               "User-Agent" => "rogue",
+                                               "X-Passthrough" => "yes"
+                                             })
       # SDK-owned headers kept intact
       expect(client._flags_http.default_headers["Authorization"]).not_to eq("Bearer overridden")
       expect(client._flags_http.default_headers["User-Agent"]).to eq("smplkit-ruby-sdk/#{Smplkit::VERSION}")
