@@ -264,7 +264,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       # silently fell through and the server returned every event in the
       # account.
       captured_uri = nil
-      stub_request(:get, /#{Regexp.escape(base_url)}\/api\/v1\/events/)
+      stub_request(:get, %r{#{Regexp.escape(base_url)}/api/v1/events})
         .with do |req|
           captured_uri = req.uri.to_s
           true
