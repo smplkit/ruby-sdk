@@ -5,7 +5,6 @@ All URIs are relative to *http://localhost*
 | Method | HTTP request | Description |
 | ------ | ------------ | ----------- |
 | [**cancel_subscription**](BillingApi.md#cancel_subscription) | **POST** /api/v1/subscriptions/{id}/actions/cancel | Cancel Subscription |
-| [**create_bundle**](BillingApi.md#create_bundle) | **POST** /api/v1/bundles | Create Bundle Subscription |
 | [**create_payment_method**](BillingApi.md#create_payment_method) | **POST** /api/v1/payment_methods | Add Payment Method |
 | [**create_subscription**](BillingApi.md#create_subscription) | **POST** /api/v1/subscriptions | Create Subscription |
 | [**delete_payment_method**](BillingApi.md#delete_payment_method) | **DELETE** /api/v1/payment_methods/{id} | Delete Payment Method |
@@ -13,7 +12,6 @@ All URIs are relative to *http://localhost*
 | [**execute_setup_intent**](BillingApi.md#execute_setup_intent) | **POST** /api/v1/functions/setup_intent/actions/execute | Execute Setup Intent |
 | [**get_invoice**](BillingApi.md#get_invoice) | **GET** /api/v1/invoices/{invoice_id} | Get Invoice |
 | [**get_payment_method**](BillingApi.md#get_payment_method) | **GET** /api/v1/payment_methods/{id} | Get Payment Method |
-| [**list_bundles**](BillingApi.md#list_bundles) | **GET** /api/v1/bundles | List Bundles |
 | [**list_invoices**](BillingApi.md#list_invoices) | **GET** /api/v1/invoices | List Invoices |
 | [**list_payment_methods**](BillingApi.md#list_payment_methods) | **GET** /api/v1/payment_methods | List Payment Methods |
 | [**list_subscriptions**](BillingApi.md#list_subscriptions) | **GET** /api/v1/subscriptions | List Subscriptions |
@@ -90,75 +88,6 @@ end
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: application/vnd.api+json
-
-
-## create_bundle
-
-> <BundleResponse> create_bundle(create_bundle_body)
-
-Create Bundle Subscription
-
-Create a bundle subscription covering all three products at a shared plan tier.
-
-### Examples
-
-```ruby
-require 'time'
-require 'smplkit_app_client'
-# setup authorization
-SmplkitGeneratedClient::App.configure do |config|
-  # Configure Bearer authorization: HTTPBearer
-  config.access_token = 'YOUR_BEARER_TOKEN'
-end
-
-api_instance = SmplkitGeneratedClient::App::BillingApi.new
-create_bundle_body = SmplkitGeneratedClient::App::CreateBundleBody.new({data: SmplkitGeneratedClient::App::CreateBundleData.new({type: 'bundle', attributes: SmplkitGeneratedClient::App::CreateBundleAttributes.new({bundle: 'bundle_example'})})}) # CreateBundleBody | 
-
-begin
-  # Create Bundle Subscription
-  result = api_instance.create_bundle(create_bundle_body)
-  p result
-rescue SmplkitGeneratedClient::App::ApiError => e
-  puts "Error when calling BillingApi->create_bundle: #{e}"
-end
-```
-
-#### Using the create_bundle_with_http_info variant
-
-This returns an Array which contains the response data, status code and headers.
-
-> <Array(<BundleResponse>, Integer, Hash)> create_bundle_with_http_info(create_bundle_body)
-
-```ruby
-begin
-  # Create Bundle Subscription
-  data, status_code, headers = api_instance.create_bundle_with_http_info(create_bundle_body)
-  p status_code # => 2xx
-  p headers # => { ... }
-  p data # => <BundleResponse>
-rescue SmplkitGeneratedClient::App::ApiError => e
-  puts "Error when calling BillingApi->create_bundle_with_http_info: #{e}"
-end
-```
-
-### Parameters
-
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **create_bundle_body** | [**CreateBundleBody**](CreateBundleBody.md) |  |  |
-
-### Return type
-
-[**BundleResponse**](BundleResponse.md)
-
-### Authorization
-
-[HTTPBearer](../README.md#HTTPBearer)
-
-### HTTP request headers
-
-- **Content-Type**: application/vnd.api+json
 - **Accept**: application/vnd.api+json
 
 
@@ -636,67 +565,6 @@ end
 ### Authorization
 
 [HTTPBearer](../README.md#HTTPBearer)
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: application/vnd.api+json
-
-
-## list_bundles
-
-> <BundleListResponse> list_bundles
-
-List Bundles
-
-Return all bundle definitions as JSON:API resources. Public, unauthenticated.
-
-### Examples
-
-```ruby
-require 'time'
-require 'smplkit_app_client'
-
-api_instance = SmplkitGeneratedClient::App::BillingApi.new
-
-begin
-  # List Bundles
-  result = api_instance.list_bundles
-  p result
-rescue SmplkitGeneratedClient::App::ApiError => e
-  puts "Error when calling BillingApi->list_bundles: #{e}"
-end
-```
-
-#### Using the list_bundles_with_http_info variant
-
-This returns an Array which contains the response data, status code and headers.
-
-> <Array(<BundleListResponse>, Integer, Hash)> list_bundles_with_http_info
-
-```ruby
-begin
-  # List Bundles
-  data, status_code, headers = api_instance.list_bundles_with_http_info
-  p status_code # => 2xx
-  p headers # => { ... }
-  p data # => <BundleListResponse>
-rescue SmplkitGeneratedClient::App::ApiError => e
-  puts "Error when calling BillingApi->list_bundles_with_http_info: #{e}"
-end
-```
-
-### Parameters
-
-This endpoint does not need any parameter.
-
-### Return type
-
-[**BundleListResponse**](BundleListResponse.md)
-
-### Authorization
-
-No authorization required
 
 ### HTTP request headers
 

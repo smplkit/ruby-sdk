@@ -105,7 +105,6 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::AuthApi* | [**resend_verification**](docs/AuthApi.md#resend_verification) | **POST** /api/v1/auth/resend-verification | Resend Verification Email
 *SmplkitGeneratedClient::App::AuthApi* | [**verify_email**](docs/AuthApi.md#verify_email) | **POST** /api/v1/auth/verify-email | Verify Email
 *SmplkitGeneratedClient::App::BillingApi* | [**cancel_subscription**](docs/BillingApi.md#cancel_subscription) | **POST** /api/v1/subscriptions/{id}/actions/cancel | Cancel Subscription
-*SmplkitGeneratedClient::App::BillingApi* | [**create_bundle**](docs/BillingApi.md#create_bundle) | **POST** /api/v1/bundles | Create Bundle Subscription
 *SmplkitGeneratedClient::App::BillingApi* | [**create_payment_method**](docs/BillingApi.md#create_payment_method) | **POST** /api/v1/payment_methods | Add Payment Method
 *SmplkitGeneratedClient::App::BillingApi* | [**create_subscription**](docs/BillingApi.md#create_subscription) | **POST** /api/v1/subscriptions | Create Subscription
 *SmplkitGeneratedClient::App::BillingApi* | [**delete_payment_method**](docs/BillingApi.md#delete_payment_method) | **DELETE** /api/v1/payment_methods/{id} | Delete Payment Method
@@ -113,7 +112,6 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::BillingApi* | [**execute_setup_intent**](docs/BillingApi.md#execute_setup_intent) | **POST** /api/v1/functions/setup_intent/actions/execute | Execute Setup Intent
 *SmplkitGeneratedClient::App::BillingApi* | [**get_invoice**](docs/BillingApi.md#get_invoice) | **GET** /api/v1/invoices/{invoice_id} | Get Invoice
 *SmplkitGeneratedClient::App::BillingApi* | [**get_payment_method**](docs/BillingApi.md#get_payment_method) | **GET** /api/v1/payment_methods/{id} | Get Payment Method
-*SmplkitGeneratedClient::App::BillingApi* | [**list_bundles**](docs/BillingApi.md#list_bundles) | **GET** /api/v1/bundles | List Bundles
 *SmplkitGeneratedClient::App::BillingApi* | [**list_invoices**](docs/BillingApi.md#list_invoices) | **GET** /api/v1/invoices | List Invoices
 *SmplkitGeneratedClient::App::BillingApi* | [**list_payment_methods**](docs/BillingApi.md#list_payment_methods) | **GET** /api/v1/payment_methods | List Payment Methods
 *SmplkitGeneratedClient::App::BillingApi* | [**list_subscriptions**](docs/BillingApi.md#list_subscriptions) | **GET** /api/v1/subscriptions | List Subscriptions
@@ -180,12 +178,6 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::ApiKeyResource](docs/ApiKeyResource.md)
  - [SmplkitGeneratedClient::App::ApiKeyResponse](docs/ApiKeyResponse.md)
  - [SmplkitGeneratedClient::App::AuthTokenResponse](docs/AuthTokenResponse.md)
- - [SmplkitGeneratedClient::App::BundleAttributes](docs/BundleAttributes.md)
- - [SmplkitGeneratedClient::App::BundleListResponse](docs/BundleListResponse.md)
- - [SmplkitGeneratedClient::App::BundleResource](docs/BundleResource.md)
- - [SmplkitGeneratedClient::App::BundleResponse](docs/BundleResponse.md)
- - [SmplkitGeneratedClient::App::CatalogBundleAttributes](docs/CatalogBundleAttributes.md)
- - [SmplkitGeneratedClient::App::CatalogBundleResource](docs/CatalogBundleResource.md)
  - [SmplkitGeneratedClient::App::ContactTopic](docs/ContactTopic.md)
  - [SmplkitGeneratedClient::App::Context](docs/Context.md)
  - [SmplkitGeneratedClient::App::ContextBatchResponse](docs/ContextBatchResponse.md)
@@ -198,9 +190,6 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::ContextTypeListResponse](docs/ContextTypeListResponse.md)
  - [SmplkitGeneratedClient::App::ContextTypeResource](docs/ContextTypeResource.md)
  - [SmplkitGeneratedClient::App::ContextTypeResponse](docs/ContextTypeResponse.md)
- - [SmplkitGeneratedClient::App::CreateBundleAttributes](docs/CreateBundleAttributes.md)
- - [SmplkitGeneratedClient::App::CreateBundleBody](docs/CreateBundleBody.md)
- - [SmplkitGeneratedClient::App::CreateBundleData](docs/CreateBundleData.md)
  - [SmplkitGeneratedClient::App::CreateSubscriptionAttributes](docs/CreateSubscriptionAttributes.md)
  - [SmplkitGeneratedClient::App::CreateSubscriptionBody](docs/CreateSubscriptionBody.md)
  - [SmplkitGeneratedClient::App::CreateSubscriptionData](docs/CreateSubscriptionData.md)
@@ -235,6 +224,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::MetricRollupAttributes](docs/MetricRollupAttributes.md)
  - [SmplkitGeneratedClient::App::MetricRollupListResponse](docs/MetricRollupListResponse.md)
  - [SmplkitGeneratedClient::App::MetricRollupResource](docs/MetricRollupResource.md)
+ - [SmplkitGeneratedClient::App::NextTierMeta](docs/NextTierMeta.md)
  - [SmplkitGeneratedClient::App::OidcProvider](docs/OidcProvider.md)
  - [SmplkitGeneratedClient::App::PageMeta](docs/PageMeta.md)
  - [SmplkitGeneratedClient::App::PaymentMethod](docs/PaymentMethod.md)
@@ -258,6 +248,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::SetupIntentResource](docs/SetupIntentResource.md)
  - [SmplkitGeneratedClient::App::SetupIntentResponse](docs/SetupIntentResponse.md)
  - [SmplkitGeneratedClient::App::SubscriptionAttributes](docs/SubscriptionAttributes.md)
+ - [SmplkitGeneratedClient::App::SubscriptionListMeta](docs/SubscriptionListMeta.md)
  - [SmplkitGeneratedClient::App::SubscriptionListResponse](docs/SubscriptionListResponse.md)
  - [SmplkitGeneratedClient::App::SubscriptionResource](docs/SubscriptionResource.md)
  - [SmplkitGeneratedClient::App::SubscriptionResponse](docs/SubscriptionResponse.md)

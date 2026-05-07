@@ -44,18 +44,6 @@ describe 'BillingApi' do
     end
   end
 
-  # unit tests for create_bundle
-  # Create Bundle Subscription
-  # Create a bundle subscription covering all three products at a shared plan tier.
-  # @param create_bundle_body 
-  # @param [Hash] opts the optional parameters
-  # @return [BundleResponse]
-  describe 'create_bundle test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
   # unit tests for create_payment_method
   # Add Payment Method
   # Register a Stripe payment method (&#x60;&#x60;pm_...&#x60;&#x60;) as a persistent resource. The frontend obtains the Stripe ID via SetupIntent + Stripe Elements, then POSTs it here. Body shape and server behavior per ADR-044 §5.1.
@@ -135,17 +123,6 @@ describe 'BillingApi' do
   # @param [Hash] opts the optional parameters
   # @return [PaymentMethodResponse]
   describe 'get_payment_method test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  # unit tests for list_bundles
-  # List Bundles
-  # Return all bundle definitions as JSON:API resources. Public, unauthenticated.
-  # @param [Hash] opts the optional parameters
-  # @return [BundleListResponse]
-  describe 'list_bundles test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

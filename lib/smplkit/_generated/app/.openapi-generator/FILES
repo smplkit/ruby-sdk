@@ -23,12 +23,6 @@ docs/ApiKeyResponse.md
 docs/AuthApi.md
 docs/AuthTokenResponse.md
 docs/BillingApi.md
-docs/BundleAttributes.md
-docs/BundleListResponse.md
-docs/BundleResource.md
-docs/BundleResponse.md
-docs/CatalogBundleAttributes.md
-docs/CatalogBundleResource.md
 docs/ContactTopic.md
 docs/Context.md
 docs/ContextBatchResponse.md
@@ -43,9 +37,6 @@ docs/ContextTypeResource.md
 docs/ContextTypeResponse.md
 docs/ContextTypesApi.md
 docs/ContextsApi.md
-docs/CreateBundleAttributes.md
-docs/CreateBundleBody.md
-docs/CreateBundleData.md
 docs/CreateSubscriptionAttributes.md
 docs/CreateSubscriptionBody.md
 docs/CreateSubscriptionData.md
@@ -85,6 +76,7 @@ docs/MetricRollupAttributes.md
 docs/MetricRollupListResponse.md
 docs/MetricRollupResource.md
 docs/MetricsApi.md
+docs/NextTierMeta.md
 docs/OidcProvider.md
 docs/PageMeta.md
 docs/PaymentMethod.md
@@ -111,6 +103,7 @@ docs/SetupIntentAttributes.md
 docs/SetupIntentResource.md
 docs/SetupIntentResponse.md
 docs/SubscriptionAttributes.md
+docs/SubscriptionListMeta.md
 docs/SubscriptionListResponse.md
 docs/SubscriptionResource.md
 docs/SubscriptionResponse.md
@@ -155,12 +148,6 @@ lib/smplkit_app_client/models/api_key_list_response.rb
 lib/smplkit_app_client/models/api_key_resource.rb
 lib/smplkit_app_client/models/api_key_response.rb
 lib/smplkit_app_client/models/auth_token_response.rb
-lib/smplkit_app_client/models/bundle_attributes.rb
-lib/smplkit_app_client/models/bundle_list_response.rb
-lib/smplkit_app_client/models/bundle_resource.rb
-lib/smplkit_app_client/models/bundle_response.rb
-lib/smplkit_app_client/models/catalog_bundle_attributes.rb
-lib/smplkit_app_client/models/catalog_bundle_resource.rb
 lib/smplkit_app_client/models/contact_topic.rb
 lib/smplkit_app_client/models/context.rb
 lib/smplkit_app_client/models/context_batch_response.rb
@@ -173,9 +160,6 @@ lib/smplkit_app_client/models/context_type.rb
 lib/smplkit_app_client/models/context_type_list_response.rb
 lib/smplkit_app_client/models/context_type_resource.rb
 lib/smplkit_app_client/models/context_type_response.rb
-lib/smplkit_app_client/models/create_bundle_attributes.rb
-lib/smplkit_app_client/models/create_bundle_body.rb
-lib/smplkit_app_client/models/create_bundle_data.rb
 lib/smplkit_app_client/models/create_subscription_attributes.rb
 lib/smplkit_app_client/models/create_subscription_body.rb
 lib/smplkit_app_client/models/create_subscription_data.rb
@@ -210,6 +194,7 @@ lib/smplkit_app_client/models/metric_resource.rb
 lib/smplkit_app_client/models/metric_rollup_attributes.rb
 lib/smplkit_app_client/models/metric_rollup_list_response.rb
 lib/smplkit_app_client/models/metric_rollup_resource.rb
+lib/smplkit_app_client/models/next_tier_meta.rb
 lib/smplkit_app_client/models/oidc_provider.rb
 lib/smplkit_app_client/models/page_meta.rb
 lib/smplkit_app_client/models/payment_method.rb
@@ -233,6 +218,7 @@ lib/smplkit_app_client/models/setup_intent_attributes.rb
 lib/smplkit_app_client/models/setup_intent_resource.rb
 lib/smplkit_app_client/models/setup_intent_response.rb
 lib/smplkit_app_client/models/subscription_attributes.rb
+lib/smplkit_app_client/models/subscription_list_meta.rb
 lib/smplkit_app_client/models/subscription_list_response.rb
 lib/smplkit_app_client/models/subscription_resource.rb
 lib/smplkit_app_client/models/subscription_response.rb
@@ -272,12 +258,6 @@ spec/models/api_key_resource_spec.rb
 spec/models/api_key_response_spec.rb
 spec/models/api_key_spec.rb
 spec/models/auth_token_response_spec.rb
-spec/models/bundle_attributes_spec.rb
-spec/models/bundle_list_response_spec.rb
-spec/models/bundle_resource_spec.rb
-spec/models/bundle_response_spec.rb
-spec/models/catalog_bundle_attributes_spec.rb
-spec/models/catalog_bundle_resource_spec.rb
 spec/models/contact_topic_spec.rb
 spec/models/context_batch_response_spec.rb
 spec/models/context_bulk_item_spec.rb
@@ -290,9 +270,6 @@ spec/models/context_type_list_response_spec.rb
 spec/models/context_type_resource_spec.rb
 spec/models/context_type_response_spec.rb
 spec/models/context_type_spec.rb
-spec/models/create_bundle_attributes_spec.rb
-spec/models/create_bundle_body_spec.rb
-spec/models/create_bundle_data_spec.rb
 spec/models/create_subscription_attributes_spec.rb
 spec/models/create_subscription_body_spec.rb
 spec/models/create_subscription_data_spec.rb
@@ -327,6 +304,7 @@ spec/models/metric_resource_spec.rb
 spec/models/metric_rollup_attributes_spec.rb
 spec/models/metric_rollup_list_response_spec.rb
 spec/models/metric_rollup_resource_spec.rb
+spec/models/next_tier_meta_spec.rb
 spec/models/oidc_provider_spec.rb
 spec/models/page_meta_spec.rb
 spec/models/payment_method_list_response_spec.rb
@@ -350,6 +328,7 @@ spec/models/setup_intent_attributes_spec.rb
 spec/models/setup_intent_resource_spec.rb
 spec/models/setup_intent_response_spec.rb
 spec/models/subscription_attributes_spec.rb
+spec/models/subscription_list_meta_spec.rb
 spec/models/subscription_list_response_spec.rb
 spec/models/subscription_resource_spec.rb
 spec/models/subscription_response_spec.rb

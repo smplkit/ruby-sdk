@@ -25,8 +25,6 @@ module SmplkitGeneratedClient::App
 
     attr_accessor :stripe_managed
 
-    attr_accessor :bundle
-
     attr_accessor :current_period_end
 
     attr_accessor :client_secret
@@ -39,7 +37,6 @@ module SmplkitGeneratedClient::App
         :'status' => :'status',
         :'comped' => :'comped',
         :'stripe_managed' => :'stripe_managed',
-        :'bundle' => :'bundle',
         :'current_period_end' => :'current_period_end',
         :'client_secret' => :'client_secret'
       }
@@ -63,7 +60,6 @@ module SmplkitGeneratedClient::App
         :'status' => :'String',
         :'comped' => :'Boolean',
         :'stripe_managed' => :'Boolean',
-        :'bundle' => :'String',
         :'current_period_end' => :'String',
         :'client_secret' => :'String'
       }
@@ -73,7 +69,6 @@ module SmplkitGeneratedClient::App
     def self.openapi_nullable
       Set.new([
         :'status',
-        :'bundle',
         :'current_period_end',
         :'client_secret'
       ])
@@ -121,10 +116,6 @@ module SmplkitGeneratedClient::App
         self.stripe_managed = attributes[:'stripe_managed']
       else
         self.stripe_managed = nil
-      end
-
-      if attributes.key?(:'bundle')
-        self.bundle = attributes[:'bundle']
       end
 
       if attributes.key?(:'current_period_end')
@@ -221,7 +212,6 @@ module SmplkitGeneratedClient::App
           status == o.status &&
           comped == o.comped &&
           stripe_managed == o.stripe_managed &&
-          bundle == o.bundle &&
           current_period_end == o.current_period_end &&
           client_secret == o.client_secret
     end
@@ -235,7 +225,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [product, plan, status, comped, stripe_managed, bundle, current_period_end, client_secret].hash
+      [product, plan, status, comped, stripe_managed, current_period_end, client_secret].hash
     end
 
     # Builds the object from hash
