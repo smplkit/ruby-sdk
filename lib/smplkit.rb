@@ -64,6 +64,8 @@ require_relative "smplkit/management/buffer"
 require_relative "smplkit/management/client"
 require_relative "smplkit/audit/buffer"
 require_relative "smplkit/audit/events"
+require_relative "smplkit/audit/forwarders"
+require_relative "smplkit/audit/functions"
 require_relative "smplkit/audit/client"
 require_relative "smplkit/client"
 

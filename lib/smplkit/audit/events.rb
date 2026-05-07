@@ -19,7 +19,8 @@ module Smplkit
       # with +smpl.+ are rejected by the server with a 403 (the buffer
       # logs and drops permanent failures).
       def record(action:, resource_type:, resource_id:,
-                 occurred_at: nil, snapshot: nil, data: nil, idempotency_key: nil)
+                 occurred_at: nil, snapshot: nil, data: nil, idempotency_key: nil,
+                 do_not_forward: false)
         raise ArgumentError, "action is required" if action.nil? || action.to_s.empty?
         raise ArgumentError, "resource_type is required" if resource_type.nil? || resource_type.to_s.empty?
         raise ArgumentError, "resource_id is required" if resource_id.nil? || resource_id.to_s.empty?
@@ -45,7 +46,8 @@ module Smplkit
           resource_id: resource_id,
           occurred_at: normalized_occurred_at,
           snapshot: snapshot,
-          data: data || {}
+          data: data || {},
+          do_not_forward: do_not_forward
         )
         resource = SmplkitGeneratedClient::Audit::EventResource.new(
           id: "",
@@ -117,7 +119,7 @@ module Smplkit
       :id, :action, :resource_type, :resource_id,
       :occurred_at, :created_at,
       :actor_type, :actor_id, :actor_label,
-      :snapshot, :data, :idempotency_key,
+      :snapshot, :data, :idempotency_key, :do_not_forward,
       keyword_init: true
     ) do
       def self.from_resource(resource)
@@ -134,7 +136,8 @@ module Smplkit
           actor_label: attrs.actor_label,
           snapshot: attrs.snapshot,
           data: attrs.data || {},
-          idempotency_key: attrs.idempotency_key
+          idempotency_key: attrs.idempotency_key,
+          do_not_forward: attrs.do_not_forward || false
         )
       end
     end
