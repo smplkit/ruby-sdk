@@ -89,6 +89,15 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Audit::EventsApi* | [**get_event**](docs/EventsApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event
 *SmplkitGeneratedClient::Audit::EventsApi* | [**list_events**](docs/EventsApi.md#list_events) | **GET** /api/v1/events | List Events
 *SmplkitGeneratedClient::Audit::EventsApi* | [**record_event**](docs/EventsApi.md#record_event) | **POST** /api/v1/events | Record Event
+*SmplkitGeneratedClient::Audit::ForwardersApi* | [**create_forwarder**](docs/ForwardersApi.md#create_forwarder) | **POST** /api/v1/forwarders | Create Forwarder
+*SmplkitGeneratedClient::Audit::ForwardersApi* | [**delete_forwarder**](docs/ForwardersApi.md#delete_forwarder) | **DELETE** /api/v1/forwarders/{forwarder_id} | Delete Forwarder
+*SmplkitGeneratedClient::Audit::ForwardersApi* | [**execute_test_forwarder**](docs/ForwardersApi.md#execute_test_forwarder) | **POST** /api/v1/functions/test_forwarder/actions/execute | Execute Test Forwarder
+*SmplkitGeneratedClient::Audit::ForwardersApi* | [**get_forwarder**](docs/ForwardersApi.md#get_forwarder) | **GET** /api/v1/forwarders/{forwarder_id} | Get Forwarder
+*SmplkitGeneratedClient::Audit::ForwardersApi* | [**list_forwarder_deliveries**](docs/ForwardersApi.md#list_forwarder_deliveries) | **GET** /api/v1/forwarders/{forwarder_id}/deliveries | List Forwarder Deliveries
+*SmplkitGeneratedClient::Audit::ForwardersApi* | [**list_forwarders**](docs/ForwardersApi.md#list_forwarders) | **GET** /api/v1/forwarders | List Forwarders
+*SmplkitGeneratedClient::Audit::ForwardersApi* | [**retry_failed_forwarder_deliveries**](docs/ForwardersApi.md#retry_failed_forwarder_deliveries) | **POST** /api/v1/forwarders/{forwarder_id}/actions/retry_failed_deliveries | Retry Failed Forwarder Deliveries
+*SmplkitGeneratedClient::Audit::ForwardersApi* | [**retry_forwarder_delivery**](docs/ForwardersApi.md#retry_forwarder_delivery) | **POST** /api/v1/forwarders/{forwarder_id}/deliveries/{delivery_id}/actions/retry | Retry Forwarder Delivery
+*SmplkitGeneratedClient::Audit::ForwardersApi* | [**update_forwarder**](docs/ForwardersApi.md#update_forwarder) | **PUT** /api/v1/forwarders/{forwarder_id} | Update Forwarder
 *SmplkitGeneratedClient::Audit::UsageApi* | [**list_usage**](docs/UsageApi.md#list_usage) | **GET** /api/v1/usage | List Usage
 
 
@@ -100,6 +109,22 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::EventListResponse](docs/EventListResponse.md)
  - [SmplkitGeneratedClient::Audit::EventResource](docs/EventResource.md)
  - [SmplkitGeneratedClient::Audit::EventResponse](docs/EventResponse.md)
+ - [SmplkitGeneratedClient::Audit::Forwarder](docs/Forwarder.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderDelivery](docs/ForwarderDelivery.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderDeliveryListResponse](docs/ForwarderDeliveryListResponse.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderDeliveryResource](docs/ForwarderDeliveryResource.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderDeliveryResponse](docs/ForwarderDeliveryResponse.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderHttp](docs/ForwarderHttp.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderListLinks](docs/ForwarderListLinks.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderListMeta](docs/ForwarderListMeta.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderListResponse](docs/ForwarderListResponse.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderResource](docs/ForwarderResource.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderResponse](docs/ForwarderResponse.md)
+ - [SmplkitGeneratedClient::Audit::HttpHeader](docs/HttpHeader.md)
+ - [SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary](docs/RetryFailedDeliveriesSummary.md)
+ - [SmplkitGeneratedClient::Audit::SuccessStatus](docs/SuccessStatus.md)
+ - [SmplkitGeneratedClient::Audit::TestForwarderRequest](docs/TestForwarderRequest.md)
+ - [SmplkitGeneratedClient::Audit::TestForwarderResponse](docs/TestForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::UsageResource](docs/UsageResource.md)
  - [SmplkitGeneratedClient::Audit::UsageResponse](docs/UsageResponse.md)
 

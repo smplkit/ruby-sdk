@@ -28,6 +28,9 @@ module SmplkitGeneratedClient::Audit
 
     attr_accessor :data
 
+    # When true, this event is recorded normally but is not forwarded to any configured SIEM forwarder. A forwarder_delivery row with status=skipped_do_not_forward is recorded for each enabled forwarder so the skip is visible in the delivery log.
+    attr_accessor :do_not_forward
+
     attr_accessor :created_at
 
     attr_accessor :actor_type
@@ -47,6 +50,7 @@ module SmplkitGeneratedClient::Audit
         :'occurred_at' => :'occurred_at',
         :'snapshot' => :'snapshot',
         :'data' => :'data',
+        :'do_not_forward' => :'do_not_forward',
         :'created_at' => :'created_at',
         :'actor_type' => :'actor_type',
         :'actor_id' => :'actor_id',
@@ -74,6 +78,7 @@ module SmplkitGeneratedClient::Audit
         :'occurred_at' => :'Time',
         :'snapshot' => :'Hash<String, Object>',
         :'data' => :'Hash<String, Object>',
+        :'do_not_forward' => :'Boolean',
         :'created_at' => :'Time',
         :'actor_type' => :'String',
         :'actor_id' => :'String',
@@ -143,6 +148,12 @@ module SmplkitGeneratedClient::Audit
         if (value = attributes[:'data']).is_a?(Hash)
           self.data = value
         end
+      end
+
+      if attributes.key?(:'do_not_forward')
+        self.do_not_forward = attributes[:'do_not_forward']
+      else
+        self.do_not_forward = false
       end
 
       if attributes.key?(:'created_at')
@@ -264,6 +275,7 @@ module SmplkitGeneratedClient::Audit
           occurred_at == o.occurred_at &&
           snapshot == o.snapshot &&
           data == o.data &&
+          do_not_forward == o.do_not_forward &&
           created_at == o.created_at &&
           actor_type == o.actor_type &&
           actor_id == o.actor_id &&
@@ -280,7 +292,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [action, resource_type, resource_id, occurred_at, snapshot, data, created_at, actor_type, actor_id, actor_label, idempotency_key].hash
+      [action, resource_type, resource_id, occurred_at, snapshot, data, do_not_forward, created_at, actor_type, actor_id, actor_label, idempotency_key].hash
     end
 
     # Builds the object from hash
