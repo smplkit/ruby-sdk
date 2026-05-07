@@ -10,13 +10,19 @@ module Smplkit
     class AuditClient
       attr_reader :events, :forwarders, :functions
 
-      def initialize(api_key:, base_url:, timeout: 10.0)
+      SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
+
+      def initialize(api_key:, base_url:, timeout: 10.0, extra_headers: nil)
         cfg = SmplkitGeneratedClient::Audit::Configuration.new
         cfg.host = URI.parse(base_url).host
         cfg.scheme = URI.parse(base_url).scheme
         cfg.access_token = api_key
         cfg.timeout = timeout
         api_client = SmplkitGeneratedClient::Audit::ApiClient.new(cfg)
+        api_client.default_headers["User-Agent"] = "smplkit-ruby-sdk/#{Smplkit::VERSION}"
+        extra_headers&.each do |k, v|
+          api_client.default_headers[k] = v unless SDK_OWNED_HEADERS.include?(k.downcase)
+        end
         events_api = SmplkitGeneratedClient::Audit::EventsApi.new(api_client)
         forwarders_api = SmplkitGeneratedClient::Audit::ForwardersApi.new(api_client)
         @events = Events.new(events_api)

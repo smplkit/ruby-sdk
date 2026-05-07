@@ -67,6 +67,12 @@ RSpec.describe Smplkit::Client do
     end
   end
 
+  it "stores and exposes extra_headers via _extra_headers" do
+    with_client(extra_headers: { "X-Custom" => "hello" }) do |client|
+      expect(client._extra_headers).to eq({ "X-Custom" => "hello" })
+    end
+  end
+
   it "_ensure_ws lazily constructs and starts the SharedWebSocket once" do
     with_client do |client|
       ws1 = client._ensure_ws

@@ -30,12 +30,12 @@ module Smplkit
     attr_reader :contexts, :context_types, :environments, :account_settings,
                 :config, :flags, :loggers, :log_groups
 
-    def self.from_resolved(resolved)
-      new(_resolved: resolved)
+    def self.from_resolved(resolved, extra_headers: nil)
+      new(_resolved: resolved, extra_headers: extra_headers)
     end
 
     def initialize(api_key: nil, base_domain: nil, scheme: nil, profile: nil,
-                   debug: nil, _resolved: nil)
+                   debug: nil, _resolved: nil, extra_headers: nil)
       cfg = _resolved ||
             ConfigResolution.resolve_management_config(
               api_key: api_key, base_domain: base_domain, scheme: scheme,
@@ -45,6 +45,7 @@ module Smplkit
 
       @resolved = cfg
 
+      @extra_headers = extra_headers
       @app_api_client = build_api_client(SmplkitGeneratedClient::App, "app", cfg)
       @config_api_client = build_api_client(SmplkitGeneratedClient::Config, "config", cfg)
       @flags_api_client = build_api_client(SmplkitGeneratedClient::Flags, "flags", cfg)
@@ -73,6 +74,8 @@ module Smplkit
 
     private
 
+    SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
+
     def build_api_client(generated_module, subdomain, cfg)
       configuration = generated_module::Configuration.new
       configuration.scheme = cfg.scheme
@@ -82,6 +85,9 @@ module Smplkit
       configuration.debugging = cfg.debug
       generated_module::ApiClient.new(configuration).tap do |client|
         client.default_headers["User-Agent"] = "smplkit-ruby-sdk/#{Smplkit::VERSION}"
+        @extra_headers&.each do |k, v|
+          client.default_headers[k] = v unless SDK_OWNED_HEADERS.include?(k.downcase)
+        end
       end
     end
 

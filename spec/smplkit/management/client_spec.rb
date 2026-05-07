@@ -36,6 +36,31 @@ RSpec.describe Smplkit::ManagementClient do
     expect(mgmt._flags_http.default_headers["User-Agent"]).to eq("smplkit-ruby-sdk/#{Smplkit::VERSION}")
   end
 
+  describe "extra_headers" do
+    it "applies extra headers to every generated ApiClient" do
+      client = described_class.from_resolved(resolved, extra_headers: { "X-Custom" => "hello" })
+      expect(client._app_http.default_headers["X-Custom"]).to eq("hello")
+      expect(client._flags_http.default_headers["X-Custom"]).to eq("hello")
+      expect(client._config_http.default_headers["X-Custom"]).to eq("hello")
+      expect(client._logging_http.default_headers["X-Custom"]).to eq("hello")
+    end
+
+    it "SDK-owned headers cannot be overridden via extra_headers" do
+      client = described_class.from_resolved(resolved,
+                                              extra_headers: {
+                                                "Authorization" => "Bearer overridden",
+                                                "Content-Type" => "text/plain",
+                                                "User-Agent" => "rogue",
+                                                "X-Passthrough" => "yes"
+                                              })
+      # SDK-owned headers kept intact
+      expect(client._flags_http.default_headers["Authorization"]).not_to eq("Bearer overridden")
+      expect(client._flags_http.default_headers["User-Agent"]).to eq("smplkit-ruby-sdk/#{Smplkit::VERSION}")
+      # Non-SDK header passes through
+      expect(client._flags_http.default_headers["X-Passthrough"]).to eq("yes")
+    end
+  end
+
   describe "FlagsNamespace" do
     it "creates typed flag handles" do
       bool = mgmt.flags.new_boolean_flag("checkout-v2", default: false)

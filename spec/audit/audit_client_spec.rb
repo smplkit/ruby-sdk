@@ -353,5 +353,38 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
   end
+
+  describe "extra_headers" do
+    it "applies extra headers to requests" do
+      stub_request(:post, "#{base_url}/api/v1/events")
+        .to_return(status: 201, body: event_response_body,
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+      client = described_class.new(api_key: api_key, base_url: base_url,
+                                   extra_headers: { "X-Custom" => "hello" })
+      begin
+        api_client = client.events.instance_variable_get(:@api).api_client
+        expect(api_client.default_headers["X-Custom"]).to eq("hello")
+      ensure
+        client._close
+      end
+    end
+
+    it "SDK-owned headers cannot be overridden via extra_headers" do
+      client = described_class.new(api_key: api_key, base_url: base_url,
+                                   extra_headers: {
+                                     "Authorization" => "Bearer overridden",
+                                     "User-Agent" => "rogue",
+                                     "X-Pass" => "yes"
+                                   })
+      begin
+        api_client = client.events.instance_variable_get(:@api).api_client
+        expect(api_client.default_headers["Authorization"]).not_to eq("Bearer overridden")
+        expect(api_client.default_headers["User-Agent"]).to eq("smplkit-ruby-sdk/#{Smplkit::VERSION}")
+        expect(api_client.default_headers["X-Pass"]).to eq("yes")
+      ensure
+        client._close
+      end
+    end
+  end
 end
 # rubocop:enable RSpec/ExpectOutput, Layout/LineLength, RSpec/ExampleLength

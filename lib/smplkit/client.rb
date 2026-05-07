@@ -43,7 +43,8 @@ module Smplkit
     end
 
     def initialize(api_key: nil, environment: nil, service: nil, profile: nil, # rubocop:disable Metrics/AbcSize
-                   base_domain: nil, scheme: nil, debug: nil, telemetry: nil)
+                   base_domain: nil, scheme: nil, debug: nil, telemetry: nil,
+                   extra_headers: nil)
       cfg = ConfigResolution.resolve_config(
         profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme,
         environment: environment, service: service, debug: debug, telemetry: telemetry
@@ -67,7 +68,8 @@ module Smplkit
       mgmt_cfg = ConfigResolution::ResolvedManagementConfig.new(
         api_key: cfg.api_key, base_domain: cfg.base_domain, scheme: cfg.scheme, debug: cfg.debug
       )
-      @manage = ManagementClient.from_resolved(mgmt_cfg)
+      @extra_headers = extra_headers
+      @manage = ManagementClient.from_resolved(mgmt_cfg, extra_headers: extra_headers)
 
       app_url = ConfigResolution.service_url(cfg.scheme, "app", cfg.base_domain)
       flags_url = ConfigResolution.service_url(cfg.scheme, "flags", cfg.base_domain)
@@ -87,7 +89,8 @@ module Smplkit
                                             flags_base_url: flags_url, app_base_url: app_url)
       @logging = Logging::LoggingClient.new(self, manage: @manage, metrics: @metrics,
                                                   logging_base_url: logging_url, app_base_url: app_url)
-      @audit = Audit::AuditClient.new(api_key: cfg.api_key, base_url: audit_url)
+      @audit = Audit::AuditClient.new(api_key: cfg.api_key, base_url: audit_url,
+                                       extra_headers: extra_headers)
 
       @closed = false
       schedule_periodic_flush
@@ -170,6 +173,7 @@ module Smplkit
     def _api_key = @api_key
     def _app_base_url = @app_base_url
     def _metrics = @metrics
+    def _extra_headers = @extra_headers
 
     def _ensure_ws
       @_ensure_ws ||= begin
