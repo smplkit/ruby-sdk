@@ -25,6 +25,13 @@ module Smplkit
         @cond = ConditionVariable.new
         @closed = false
         @dropped_count = 0
+        # +@in_flight+ is the number of items the worker has shifted off
+        # the queue but not yet finished POSTing. +#flush+ must wait on
+        # both queue empty AND in_flight == 0 — otherwise it can return
+        # while a just-shifted item is still in the middle of its HTTP
+        # round-trip, and an immediately following +list+ call would
+        # miss the event.
+        @in_flight = 0
         @worker = Thread.new { run }
         @worker.report_on_exception = false
       end
@@ -49,8 +56,8 @@ module Smplkit
       def flush(timeout: 5.0)
         deadline = monotonic_now + timeout
         loop do
-          empty = @mutex.synchronize { @queue.empty? }
-          return if empty
+          idle = @mutex.synchronize { @queue.empty? && @in_flight.zero? }
+          return if idle
 
           if monotonic_now >= deadline
             warn "[smplkit.audit] flush timed out (timeout=#{timeout}s)"
@@ -102,12 +109,13 @@ module Smplkit
             return if head.next_retry_at && head.next_retry_at > monotonic_now
 
             item = @queue.shift
+            @in_flight += 1
           end
 
           status = 0
           begin
             opts = item.idempotency_key ? { idempotency_key: item.idempotency_key } : {}
-            @api.create_event(item.body, opts)
+            @api.record_event(item.body, opts)
             status = 201
           rescue SmplkitGeneratedClient::Audit::ApiError => e
             status = e.code || 0
@@ -116,10 +124,11 @@ module Smplkit
           end
 
           requeue = handle_outcome(item, status)
-          if requeue
-            @mutex.synchronize { @queue.unshift(requeue) }
-            return
+          @mutex.synchronize do
+            @in_flight -= 1
+            @queue.unshift(requeue) if requeue
           end
+          return if requeue
         end
       end
 

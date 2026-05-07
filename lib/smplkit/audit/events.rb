@@ -18,7 +18,7 @@ module Smplkit
       # Customer attempts to record events with +resource_type+ starting
       # with +smpl.+ are rejected by the server with a 403 (the buffer
       # logs and drops permanent failures).
-      def create(action:, resource_type:, resource_id:,
+      def record(action:, resource_type:, resource_id:,
                  occurred_at: nil, snapshot: nil, data: nil, idempotency_key: nil)
         raise ArgumentError, "action is required" if action.nil? || action.to_s.empty?
         raise ArgumentError, "resource_type is required" if resource_type.nil? || resource_type.to_s.empty?

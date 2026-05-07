@@ -30,7 +30,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
     }.to_json
   end
 
-  describe "#events.create" do
+  describe "#events.record" do
     it "returns immediately without blocking on the network" do
       stub = stub_request(:post, "#{base_url}/api/v1/events").to_return(
         status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" }
@@ -39,7 +39,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       begin
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         20.times do |i|
-          client.events.create(action: "user.created", resource_type: "user", resource_id: "u-#{i}")
+          client.events.record(action: "user.created", resource_type: "user", resource_id: "u-#{i}")
         end
         elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
         expect(elapsed).to be < 0.2
@@ -59,7 +59,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
     it "raises ArgumentError when action is missing" do
       client = described_class.new(api_key: api_key, base_url: base_url)
       expect do
-        client.events.create(action: "", resource_type: "user", resource_id: "u-1")
+        client.events.record(action: "", resource_type: "user", resource_id: "u-1")
       end.to raise_error(ArgumentError, /action/)
       client._close
     end
@@ -67,7 +67,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
     it "raises ArgumentError when resource_type is missing" do
       client = described_class.new(api_key: api_key, base_url: base_url)
       expect do
-        client.events.create(action: "x", resource_type: nil, resource_id: "u-1")
+        client.events.record(action: "x", resource_type: nil, resource_id: "u-1")
       end.to raise_error(ArgumentError, /resource_type/)
       client._close
     end
@@ -75,7 +75,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
     it "raises ArgumentError when resource_id is missing" do
       client = described_class.new(api_key: api_key, base_url: base_url)
       expect do
-        client.events.create(action: "x", resource_type: "user", resource_id: "")
+        client.events.record(action: "x", resource_type: "user", resource_id: "")
       end.to raise_error(ArgumentError, /resource_id/)
       client._close
     end
@@ -86,7 +86,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
              .to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
-        client.events.create(
+        client.events.record(
           action: "user.created", resource_type: "user", resource_id: "u-1",
           idempotency_key: "key-abc"
         )
@@ -114,7 +114,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
 
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
-        client.events.create(action: "invoice.updated", resource_type: "invoice", resource_id: "inv-1")
+        client.events.record(action: "invoice.updated", resource_type: "invoice", resource_id: "inv-1")
         client.events.flush(timeout: 2.0)
         deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
         until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
@@ -140,7 +140,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
 
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
-        client.events.create(
+        client.events.record(
           action: "invoice.created",
           resource_type: "invoice",
           resource_id: "inv-1",
@@ -167,7 +167,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
 
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
-        client.events.create(
+        client.events.record(
           action: "invoice.created",
           resource_type: "invoice",
           resource_id: "inv-1",
@@ -342,7 +342,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
         $stderr = StringIO.new
         # Burst more than capacity before the worker can drain.
         5.times do |i|
-          client.events.create(action: "x.created", resource_type: "x", resource_id: i.to_s)
+          client.events.record(action: "x.created", resource_type: "x", resource_id: i.to_s)
         end
         $stderr = original_stderr
         client.events.flush(timeout: 2.0)

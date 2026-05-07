@@ -17,7 +17,7 @@ RSpec.describe Smplkit::Audit::EventBuffer do
         @statuses = []
       end
 
-      def create_event(_body, _opts = {})
+      def record_event(_body, _opts = {})
         @calls += 1
         status = @statuses.shift || 201
         raise SmplkitGeneratedClient::Audit::ApiError.new(code: status, message: "test") if status >= 300
@@ -112,7 +112,7 @@ RSpec.describe Smplkit::Audit::EventBuffer do
           @calls = 0
         end
 
-        def create_event(_body, _opts = {})
+        def record_event(_body, _opts = {})
           @calls += 1
           raise StandardError, "simulated network error" if @calls == 1
 
@@ -133,7 +133,7 @@ RSpec.describe Smplkit::Audit::EventBuffer do
   describe "#flush" do
     it "warns when the deadline elapses with items still pending" do
       slow_api = Class.new do
-        def create_event(_body, _opts = {})
+        def record_event(_body, _opts = {})
           # Always return transient so the buffer requeues with backoff.
           raise SmplkitGeneratedClient::Audit::ApiError.new(code: 503, message: "test")
         end

@@ -17,7 +17,7 @@ module Smplkit
         cfg.access_token = api_key
         cfg.timeout = timeout
         api_client = SmplkitGeneratedClient::Audit::ApiClient.new(cfg)
-        api = SmplkitGeneratedClient::Audit::DefaultApi.new(api_client)
+        api = SmplkitGeneratedClient::Audit::EventsApi.new(api_client)
         @events = Events.new(api)
       end
 
