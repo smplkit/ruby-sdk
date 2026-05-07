@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # The destination HTTP request shape stored encrypted on a forwarder.  ``success_status`` is either a single integer status (e.g. ``200``) or a class string like ``\"2xx\"``. Anything outside the matched set is treated as a delivery failure.
+  # The destination HTTP request shape stored encrypted on a forwarder.  ``success_status`` is a string: either a single status code (e.g. ``\"200\"``, ``\"204\"``) or a class (e.g. ``\"2xx\"``, ``\"3xx\"``). The string-only contract is intentional — a Pydantic ``int | str`` union confused several SDK code generators (Java in particular wrote the default ``\"2xx\"`` unquoted into a typed enum). String covers both shapes universally with a single wire type.
   class ForwarderHttp < ApiModelBase
     attr_accessor :method
 
@@ -54,7 +54,7 @@ module SmplkitGeneratedClient::Audit
         :'url' => :'String',
         :'headers' => :'Array<HttpHeader>',
         :'body' => :'String',
-        :'success_status' => :'SuccessStatus'
+        :'success_status' => :'String'
       }
     end
 
@@ -105,6 +105,8 @@ module SmplkitGeneratedClient::Audit
 
       if attributes.key?(:'success_status')
         self.success_status = attributes[:'success_status']
+      else
+        self.success_status = '2xx'
       end
     end
 
@@ -129,6 +131,10 @@ module SmplkitGeneratedClient::Audit
         invalid_properties.push('invalid value for "body", the character length must be smaller than or equal to 65536.')
       end
 
+      if !@success_status.nil? && @success_status.to_s.length > 3
+        invalid_properties.push('invalid value for "success_status", the character length must be smaller than or equal to 3.')
+      end
+
       invalid_properties
     end
 
@@ -140,6 +146,7 @@ module SmplkitGeneratedClient::Audit
       return false if @url.to_s.length > 2048
       return false if @url.to_s.length < 1
       return false if !@body.nil? && @body.to_s.length > 65536
+      return false if !@success_status.nil? && @success_status.to_s.length > 3
       true
     end
 
@@ -169,6 +176,20 @@ module SmplkitGeneratedClient::Audit
       end
 
       @body = body
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] success_status Value to be assigned
+    def success_status=(success_status)
+      if success_status.nil?
+        fail ArgumentError, 'success_status cannot be nil'
+      end
+
+      if success_status.to_s.length > 3
+        fail ArgumentError, 'invalid value for "success_status", the character length must be smaller than or equal to 3.'
+      end
+
+      @success_status = success_status
     end
 
     # Checks equality by comparing each attribute.

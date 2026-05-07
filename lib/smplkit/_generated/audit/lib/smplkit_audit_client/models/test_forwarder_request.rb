@@ -57,7 +57,7 @@ module SmplkitGeneratedClient::Audit
         :'url' => :'String',
         :'headers' => :'Array<HttpHeader>',
         :'body' => :'String',
-        :'success_status' => :'SuccessStatus',
+        :'success_status' => :'String',
         :'timeout_ms' => :'Integer'
       }
     end
@@ -110,6 +110,8 @@ module SmplkitGeneratedClient::Audit
 
       if attributes.key?(:'success_status')
         self.success_status = attributes[:'success_status']
+      else
+        self.success_status = '2xx'
       end
 
       if attributes.key?(:'timeout_ms')
@@ -138,6 +140,10 @@ module SmplkitGeneratedClient::Audit
         invalid_properties.push('invalid value for "body", the character length must be smaller than or equal to 65536.')
       end
 
+      if !@success_status.nil? && @success_status.to_s.length > 3
+        invalid_properties.push('invalid value for "success_status", the character length must be smaller than or equal to 3.')
+      end
+
       if !@timeout_ms.nil? && @timeout_ms > 30000
         invalid_properties.push('invalid value for "timeout_ms", must be smaller than or equal to 30000.')
       end
@@ -157,6 +163,7 @@ module SmplkitGeneratedClient::Audit
       return false if @url.to_s.length > 2048
       return false if @url.to_s.length < 1
       return false if !@body.nil? && @body.to_s.length > 65536
+      return false if !@success_status.nil? && @success_status.to_s.length > 3
       return false if !@timeout_ms.nil? && @timeout_ms > 30000
       return false if !@timeout_ms.nil? && @timeout_ms < 1
       true
@@ -188,6 +195,20 @@ module SmplkitGeneratedClient::Audit
       end
 
       @body = body
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] success_status Value to be assigned
+    def success_status=(success_status)
+      if success_status.nil?
+        fail ArgumentError, 'success_status cannot be nil'
+      end
+
+      if success_status.to_s.length > 3
+        fail ArgumentError, 'invalid value for "success_status", the character length must be smaller than or equal to 3.'
+      end
+
+      @success_status = success_status
     end
 
     # Custom attribute writer method with validation
