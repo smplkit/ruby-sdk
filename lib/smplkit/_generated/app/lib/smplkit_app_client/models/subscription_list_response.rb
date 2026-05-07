@@ -17,10 +17,13 @@ module SmplkitGeneratedClient::App
   class SubscriptionListResponse < ApiModelBase
     attr_accessor :data
 
+    attr_accessor :meta
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'data' => :'data'
+        :'data' => :'data',
+        :'meta' => :'meta'
       }
     end
 
@@ -37,7 +40,8 @@ module SmplkitGeneratedClient::App
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'data' => :'Array<SubscriptionResource>'
+        :'data' => :'Array<SubscriptionResource>',
+        :'meta' => :'SubscriptionListMeta'
       }
     end
 
@@ -69,6 +73,10 @@ module SmplkitGeneratedClient::App
         end
       else
         self.data = nil
+      end
+
+      if attributes.key?(:'meta')
+        self.meta = attributes[:'meta']
       end
     end
 
@@ -107,7 +115,8 @@ module SmplkitGeneratedClient::App
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          data == o.data
+          data == o.data &&
+          meta == o.meta
     end
 
     # @see the `==` method
@@ -119,7 +128,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [data].hash
+      [data, meta].hash
     end
 
     # Builds the object from hash

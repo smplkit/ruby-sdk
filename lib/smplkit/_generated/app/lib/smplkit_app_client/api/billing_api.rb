@@ -82,74 +82,6 @@ module SmplkitGeneratedClient::App
       return data, status_code, headers
     end
 
-    # Create Bundle Subscription
-    # Create a bundle subscription covering all three products at a shared plan tier.
-    # @param create_bundle_body [CreateBundleBody] 
-    # @param [Hash] opts the optional parameters
-    # @return [BundleResponse]
-    def create_bundle(create_bundle_body, opts = {})
-      data, _status_code, _headers = create_bundle_with_http_info(create_bundle_body, opts)
-      data
-    end
-
-    # Create Bundle Subscription
-    # Create a bundle subscription covering all three products at a shared plan tier.
-    # @param create_bundle_body [CreateBundleBody] 
-    # @param [Hash] opts the optional parameters
-    # @return [Array<(BundleResponse, Integer, Hash)>] BundleResponse data, response status code and response headers
-    def create_bundle_with_http_info(create_bundle_body, opts = {})
-      if @api_client.config.debugging
-        @api_client.config.logger.debug 'Calling API: BillingApi.create_bundle ...'
-      end
-      # verify the required parameter 'create_bundle_body' is set
-      if @api_client.config.client_side_validation && create_bundle_body.nil?
-        fail ArgumentError, "Missing the required parameter 'create_bundle_body' when calling BillingApi.create_bundle"
-      end
-      # resource path
-      local_var_path = '/api/v1/bundles'
-
-      # query parameters
-      query_params = opts[:query_params] || {}
-
-      # header parameters
-      header_params = opts[:header_params] || {}
-      # HTTP header 'Accept' (if needed)
-      header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
-      # HTTP header 'Content-Type'
-      content_type = @api_client.select_header_content_type(['application/vnd.api+json'])
-      if !content_type.nil?
-          header_params['Content-Type'] = content_type
-      end
-
-      # form parameters
-      form_params = opts[:form_params] || {}
-
-      # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(create_bundle_body)
-
-      # return_type
-      return_type = opts[:debug_return_type] || 'BundleResponse'
-
-      # auth_names
-      auth_names = opts[:debug_auth_names] || ['HTTPBearer']
-
-      new_options = opts.merge(
-        :operation => :"BillingApi.create_bundle",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
-      )
-
-      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
-      if @api_client.config.debugging
-        @api_client.config.logger.debug "API called: BillingApi#create_bundle\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
-      end
-      return data, status_code, headers
-    end
-
     # Add Payment Method
     # Register a Stripe payment method (``pm_...``) as a persistent resource. The frontend obtains the Stripe ID via SetupIntent + Stripe Elements, then POSTs it here. Body shape and server behavior per ADR-044 §5.1.
     # @param add_payment_method_body [AddPaymentMethodBody] 
@@ -602,63 +534,6 @@ module SmplkitGeneratedClient::App
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: BillingApi#get_payment_method\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
-      end
-      return data, status_code, headers
-    end
-
-    # List Bundles
-    # Return all bundle definitions as JSON:API resources. Public, unauthenticated.
-    # @param [Hash] opts the optional parameters
-    # @return [BundleListResponse]
-    def list_bundles(opts = {})
-      data, _status_code, _headers = list_bundles_with_http_info(opts)
-      data
-    end
-
-    # List Bundles
-    # Return all bundle definitions as JSON:API resources. Public, unauthenticated.
-    # @param [Hash] opts the optional parameters
-    # @return [Array<(BundleListResponse, Integer, Hash)>] BundleListResponse data, response status code and response headers
-    def list_bundles_with_http_info(opts = {})
-      if @api_client.config.debugging
-        @api_client.config.logger.debug 'Calling API: BillingApi.list_bundles ...'
-      end
-      # resource path
-      local_var_path = '/api/v1/bundles'
-
-      # query parameters
-      query_params = opts[:query_params] || {}
-
-      # header parameters
-      header_params = opts[:header_params] || {}
-      # HTTP header 'Accept' (if needed)
-      header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
-
-      # form parameters
-      form_params = opts[:form_params] || {}
-
-      # http body (model)
-      post_body = opts[:debug_body]
-
-      # return_type
-      return_type = opts[:debug_return_type] || 'BundleListResponse'
-
-      # auth_names
-      auth_names = opts[:debug_auth_names] || []
-
-      new_options = opts.merge(
-        :operation => :"BillingApi.list_bundles",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
-      )
-
-      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
-      if @api_client.config.debugging
-        @api_client.config.logger.debug "API called: BillingApi#list_bundles\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

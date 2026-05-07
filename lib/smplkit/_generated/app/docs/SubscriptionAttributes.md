@@ -9,7 +9,6 @@
 | **status** | **String** |  | [optional] |
 | **comped** | **Boolean** |  |  |
 | **stripe_managed** | **Boolean** |  |  |
-| **bundle** | **String** |  | [optional] |
 | **current_period_end** | **String** |  | [optional] |
 | **client_secret** | **String** |  | [optional] |
 
@@ -24,7 +23,6 @@ instance = SmplkitGeneratedClient::App::SubscriptionAttributes.new(
   status: null,
   comped: null,
   stripe_managed: null,
-  bundle: null,
   current_period_end: null,
   client_secret: null
 )
