@@ -24,13 +24,28 @@ module Smplkit
         raise ArgumentError, "resource_type is required" if resource_type.nil? || resource_type.to_s.empty?
         raise ArgumentError, "resource_id is required" if resource_id.nil? || resource_id.to_s.empty?
 
+        # Pydantic validation on the server expects an ISO-8601 string
+        # for ``occurred_at`` — Ruby's ``Time#to_s`` (which is what the
+        # generated client falls back to during JSON serialization)
+        # emits ``"2026-05-07 04:43:23 UTC"`` and trips the gate. Coerce
+        # Time/DateTime to ``.iso8601`` here so end users can pass the
+        # native Ruby type.
+        normalized_occurred_at = if occurred_at.respond_to?(:iso8601)
+                                   occurred_at.iso8601
+                                 else
+                                   occurred_at
+                                 end
+
+        # Server-side validation also rejects ``data: null`` (the field
+        # is required-non-null in the OpenAPI schema). Always default to
+        # an empty hash so users who omit ``data:`` don't trip the gate.
         attrs = SmplkitGeneratedClient::Audit::Event.new(
           action: action,
           resource_type: resource_type,
           resource_id: resource_id,
-          occurred_at: occurred_at,
+          occurred_at: normalized_occurred_at,
           snapshot: snapshot,
-          data: data
+          data: data || {}
         )
         resource = SmplkitGeneratedClient::Audit::EventResource.new(
           id: "",
@@ -56,15 +71,20 @@ module Smplkit
       def list(action: nil, resource_type: nil, resource_id: nil,
                actor_type: nil, actor_id: nil, occurred_at_range: nil,
                page_size: nil, page_after: nil)
+        # Generated client opts use snake_case keys that internally map
+        # to the JSON:API ``filter[*]`` / ``page[*]`` query-string format
+        # (see default_api.rb#list_events_with_http_info). Without the
+        # underscores these silently fall through and the filters never
+        # reach the server.
         opts = {}
-        opts[:filteraction] = action if action
-        opts[:filterresource_type] = resource_type if resource_type
-        opts[:filterresource_id] = resource_id if resource_id
-        opts[:filteractor_type] = actor_type if actor_type
-        opts[:filteractor_id] = actor_id if actor_id
-        opts[:filteroccurred_at] = occurred_at_range if occurred_at_range
-        opts[:pagesize] = page_size if page_size
-        opts[:pageafter] = page_after if page_after
+        opts[:filter_action] = action if action
+        opts[:filter_resource_type] = resource_type if resource_type
+        opts[:filter_resource_id] = resource_id if resource_id
+        opts[:filter_actor_type] = actor_type if actor_type
+        opts[:filter_actor_id] = actor_id if actor_id
+        opts[:filter_occurred_at] = occurred_at_range if occurred_at_range
+        opts[:page_size] = page_size if page_size
+        opts[:page_after] = page_after if page_after
 
         resp = @api.list_events(opts)
         events = (resp.data || []).map { |r| AuditEvent.from_resource(r) }

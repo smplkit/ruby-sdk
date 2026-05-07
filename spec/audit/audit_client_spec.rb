@@ -102,6 +102,62 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
 
+    it "defaults the data attribute to {} on the wire when omitted" do
+      # Regression: server-side Pydantic validation on /api/v1/events
+      # rejects "data": null with HTTP 400 (the schema requires a dict).
+      # The wrapper must coerce nil to {} before sending.
+      captured = nil
+      stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.create(action: "invoice.updated", resource_type: "invoice", resource_id: "inv-1")
+        client.events.flush(timeout: 2.0)
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          sleep 0.02
+        end
+        expect(captured.dig("data", "attributes", "data")).to eq({})
+      ensure
+        client._close
+      end
+    end
+
+    it "serializes Time#occurred_at as an ISO-8601 string" do
+      # Regression: Ruby's Time#to_s emits "2026-05-06 12:00:00 UTC" which
+      # the server rejects ("unexpected extra characters at the end of
+      # the input") because it expects an ISO-8601 datetime. The wrapper
+      # must call .iso8601 before passing through the generated client.
+      captured = nil
+      stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.create(
+          action: "invoice.created",
+          resource_type: "invoice",
+          resource_id: "inv-1",
+          occurred_at: Time.utc(2026, 5, 6, 12, 0, 0)
+        )
+        client.events.flush(timeout: 2.0)
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          sleep 0.02
+        end
+        expect(captured.dig("data", "attributes", "occurred_at")).to eq("2026-05-06T12:00:00Z")
+      ensure
+        client._close
+      end
+    end
+
     it "passes occurred_at, snapshot, and data through to the request body" do
       captured = nil
       stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
@@ -196,6 +252,43 @@ RSpec.describe Smplkit::Audit::AuditClient do
         page = client.events.list(action: "user.created", page_size: 1)
         expect(page.events.size).to eq(1)
         expect(page.next_cursor).to eq("tok-xyz")
+      ensure
+        client._close
+      end
+    end
+
+    it "translates wrapper kwargs to the generated client's snake_case opts" do
+      # Regression: the wrapper used to pass :filteraction / :filterresource_id
+      # / :pagesize etc. (no underscore) — the generated client only honors
+      # :filter_action / :filter_resource_id / :page_size, so the filters
+      # silently fell through and the server returned every event in the
+      # account.
+      captured_uri = nil
+      stub_request(:get, /#{Regexp.escape(base_url)}\/api\/v1\/events/)
+        .with do |req|
+          captured_uri = req.uri.to_s
+          true
+        end
+        .to_return(status: 200, body: { data: [], meta: { page_size: 50 } }.to_json,
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.list(
+          action: "user.created",
+          resource_type: "user",
+          resource_id: "u-1",
+          actor_type: "USER",
+          page_size: 25,
+          page_after: "cursor-abc"
+        )
+        # Faraday percent-encodes the brackets; assert against the encoded form.
+        expect(captured_uri).to include("filter%5Baction%5D=user.created")
+        expect(captured_uri).to include("filter%5Bresource_type%5D=user")
+        expect(captured_uri).to include("filter%5Bresource_id%5D=u-1")
+        expect(captured_uri).to include("filter%5Bactor_type%5D=USER")
+        expect(captured_uri).to include("page%5Bsize%5D=25")
+        expect(captured_uri).to include("page%5Bafter%5D=cursor-abc")
       ensure
         client._close
       end
