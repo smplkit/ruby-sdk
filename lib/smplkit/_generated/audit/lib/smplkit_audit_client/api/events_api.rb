@@ -13,83 +13,12 @@ Generator version: 7.22.0
 require 'cgi'
 
 module SmplkitGeneratedClient::Audit
-  class DefaultApi
+  class EventsApi
     attr_accessor :api_client
 
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
-    # Create Event
-    # Record an audit event for the authenticated account.  Returns ``201 Created`` on first write, ``200 OK`` if the request was a duplicate (matched by ``Idempotency-Key`` or auto-derived key).  Customers may not emit events whose ``resource_type`` starts with ``smpl.`` — that namespace is reserved for smplkit-emitted events about platform resources.
-    # @param event_response [EventResponse] 
-    # @param [Hash] opts the optional parameters
-    # @option opts [String] :idempotency_key 
-    # @return [EventResponse]
-    def create_event(event_response, opts = {})
-      data, _status_code, _headers = create_event_with_http_info(event_response, opts)
-      data
-    end
-
-    # Create Event
-    # Record an audit event for the authenticated account.  Returns &#x60;&#x60;201 Created&#x60;&#x60; on first write, &#x60;&#x60;200 OK&#x60;&#x60; if the request was a duplicate (matched by &#x60;&#x60;Idempotency-Key&#x60;&#x60; or auto-derived key).  Customers may not emit events whose &#x60;&#x60;resource_type&#x60;&#x60; starts with &#x60;&#x60;smpl.&#x60;&#x60; — that namespace is reserved for smplkit-emitted events about platform resources.
-    # @param event_response [EventResponse] 
-    # @param [Hash] opts the optional parameters
-    # @option opts [String] :idempotency_key 
-    # @return [Array<(EventResponse, Integer, Hash)>] EventResponse data, response status code and response headers
-    def create_event_with_http_info(event_response, opts = {})
-      if @api_client.config.debugging
-        @api_client.config.logger.debug 'Calling API: DefaultApi.create_event ...'
-      end
-      # verify the required parameter 'event_response' is set
-      if @api_client.config.client_side_validation && event_response.nil?
-        fail ArgumentError, "Missing the required parameter 'event_response' when calling DefaultApi.create_event"
-      end
-      # resource path
-      local_var_path = '/api/v1/events'
-
-      # query parameters
-      query_params = opts[:query_params] || {}
-
-      # header parameters
-      header_params = opts[:header_params] || {}
-      # HTTP header 'Accept' (if needed)
-      header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
-      # HTTP header 'Content-Type'
-      content_type = @api_client.select_header_content_type(['application/vnd.api+json'])
-      if !content_type.nil?
-          header_params['Content-Type'] = content_type
-      end
-      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
-
-      # form parameters
-      form_params = opts[:form_params] || {}
-
-      # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(event_response)
-
-      # return_type
-      return_type = opts[:debug_return_type] || 'EventResponse'
-
-      # auth_names
-      auth_names = opts[:debug_auth_names] || ['HTTPBearer']
-
-      new_options = opts.merge(
-        :operation => :"DefaultApi.create_event",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
-      )
-
-      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
-      if @api_client.config.debugging
-        @api_client.config.logger.debug "API called: DefaultApi#create_event\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
-      end
-      return data, status_code, headers
-    end
-
     # Get Event
     # Retrieve a single audit event by id.  Returns 404 if no event with that id exists in the caller's account — RLS enforces tenant isolation; this endpoint never leaks the existence of another tenant's event.
     # @param event_id [String] 
@@ -107,11 +36,11 @@ module SmplkitGeneratedClient::Audit
     # @return [Array<(EventResponse, Integer, Hash)>] EventResponse data, response status code and response headers
     def get_event_with_http_info(event_id, opts = {})
       if @api_client.config.debugging
-        @api_client.config.logger.debug 'Calling API: DefaultApi.get_event ...'
+        @api_client.config.logger.debug 'Calling API: EventsApi.get_event ...'
       end
       # verify the required parameter 'event_id' is set
       if @api_client.config.client_side_validation && event_id.nil?
-        fail ArgumentError, "Missing the required parameter 'event_id' when calling DefaultApi.get_event"
+        fail ArgumentError, "Missing the required parameter 'event_id' when calling EventsApi.get_event"
       end
       # resource path
       local_var_path = '/api/v1/events/{event_id}'.sub('{event_id}', CGI.escape(event_id.to_s))
@@ -137,7 +66,7 @@ module SmplkitGeneratedClient::Audit
       auth_names = opts[:debug_auth_names] || ['HTTPBearer']
 
       new_options = opts.merge(
-        :operation => :"DefaultApi.get_event",
+        :operation => :"EventsApi.get_event",
         :header_params => header_params,
         :query_params => query_params,
         :form_params => form_params,
@@ -148,7 +77,7 @@ module SmplkitGeneratedClient::Audit
 
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
-        @api_client.config.logger.debug "API called: DefaultApi#get_event\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+        @api_client.config.logger.debug "API called: EventsApi#get_event\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end
@@ -184,10 +113,10 @@ module SmplkitGeneratedClient::Audit
     # @return [Array<(EventListResponse, Integer, Hash)>] EventListResponse data, response status code and response headers
     def list_events_with_http_info(opts = {})
       if @api_client.config.debugging
-        @api_client.config.logger.debug 'Calling API: DefaultApi.list_events ...'
+        @api_client.config.logger.debug 'Calling API: EventsApi.list_events ...'
       end
       if @api_client.config.client_side_validation && !opts[:'page_size'].nil? && opts[:'page_size'] < 1
-        fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling DefaultApi.list_events, must be greater than or equal to 1.'
+        fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling EventsApi.list_events, must be greater than or equal to 1.'
       end
 
       # resource path
@@ -222,7 +151,7 @@ module SmplkitGeneratedClient::Audit
       auth_names = opts[:debug_auth_names] || ['HTTPBearer']
 
       new_options = opts.merge(
-        :operation => :"DefaultApi.list_events",
+        :operation => :"EventsApi.list_events",
         :header_params => header_params,
         :query_params => query_params,
         :form_params => form_params,
@@ -233,60 +162,67 @@ module SmplkitGeneratedClient::Audit
 
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
-        @api_client.config.logger.debug "API called: DefaultApi#list_events\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+        @api_client.config.logger.debug "API called: EventsApi#list_events\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end
 
-    # List Usage
-    # Current-period usage and quota for the audit product.  Only ``filter[period]=current`` is supported; historical usage is a follow-up.
-    # @param filter_period [String] 
+    # Record Event
+    # Record an audit event for the authenticated account.  Returns ``201 Created`` on first write, ``200 OK`` if the request was a duplicate (matched by ``Idempotency-Key`` or auto-derived key).  Customers may not emit events whose ``resource_type`` starts with ``smpl.`` — that namespace is reserved for smplkit-emitted events about platform resources.
+    # @param event_response [EventResponse] 
     # @param [Hash] opts the optional parameters
-    # @return [UsageResponse]
-    def list_usage(filter_period, opts = {})
-      data, _status_code, _headers = list_usage_with_http_info(filter_period, opts)
+    # @option opts [String] :idempotency_key 
+    # @return [EventResponse]
+    def record_event(event_response, opts = {})
+      data, _status_code, _headers = record_event_with_http_info(event_response, opts)
       data
     end
 
-    # List Usage
-    # Current-period usage and quota for the audit product.  Only &#x60;&#x60;filter[period]&#x3D;current&#x60;&#x60; is supported; historical usage is a follow-up.
-    # @param filter_period [String] 
+    # Record Event
+    # Record an audit event for the authenticated account.  Returns &#x60;&#x60;201 Created&#x60;&#x60; on first write, &#x60;&#x60;200 OK&#x60;&#x60; if the request was a duplicate (matched by &#x60;&#x60;Idempotency-Key&#x60;&#x60; or auto-derived key).  Customers may not emit events whose &#x60;&#x60;resource_type&#x60;&#x60; starts with &#x60;&#x60;smpl.&#x60;&#x60; — that namespace is reserved for smplkit-emitted events about platform resources.
+    # @param event_response [EventResponse] 
     # @param [Hash] opts the optional parameters
-    # @return [Array<(UsageResponse, Integer, Hash)>] UsageResponse data, response status code and response headers
-    def list_usage_with_http_info(filter_period, opts = {})
+    # @option opts [String] :idempotency_key 
+    # @return [Array<(EventResponse, Integer, Hash)>] EventResponse data, response status code and response headers
+    def record_event_with_http_info(event_response, opts = {})
       if @api_client.config.debugging
-        @api_client.config.logger.debug 'Calling API: DefaultApi.list_usage ...'
+        @api_client.config.logger.debug 'Calling API: EventsApi.record_event ...'
       end
-      # verify the required parameter 'filter_period' is set
-      if @api_client.config.client_side_validation && filter_period.nil?
-        fail ArgumentError, "Missing the required parameter 'filter_period' when calling DefaultApi.list_usage"
+      # verify the required parameter 'event_response' is set
+      if @api_client.config.client_side_validation && event_response.nil?
+        fail ArgumentError, "Missing the required parameter 'event_response' when calling EventsApi.record_event"
       end
       # resource path
-      local_var_path = '/api/v1/usage'
+      local_var_path = '/api/v1/events'
 
       # query parameters
       query_params = opts[:query_params] || {}
-      query_params[:'filter[period]'] = filter_period
 
       # header parameters
       header_params = opts[:header_params] || {}
       # HTTP header 'Accept' (if needed)
       header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/vnd.api+json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
 
       # form parameters
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body]
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(event_response)
 
       # return_type
-      return_type = opts[:debug_return_type] || 'UsageResponse'
+      return_type = opts[:debug_return_type] || 'EventResponse'
 
       # auth_names
       auth_names = opts[:debug_auth_names] || ['HTTPBearer']
 
       new_options = opts.merge(
-        :operation => :"DefaultApi.list_usage",
+        :operation => :"EventsApi.record_event",
         :header_params => header_params,
         :query_params => query_params,
         :form_params => form_params,
@@ -295,9 +231,9 @@ module SmplkitGeneratedClient::Audit
         :return_type => return_type
       )
 
-      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
       if @api_client.config.debugging
-        @api_client.config.logger.debug "API called: DefaultApi#list_usage\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+        @api_client.config.logger.debug "API called: EventsApi#record_event\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

@@ -28,7 +28,8 @@ require 'smplkit_audit_client/models/usage_resource'
 require 'smplkit_audit_client/models/usage_response'
 
 # APIs
-require 'smplkit_audit_client/api/default_api'
+require 'smplkit_audit_client/api/events_api'
+require 'smplkit_audit_client/api/usage_api'
 
 module SmplkitGeneratedClient::Audit
   class << self
