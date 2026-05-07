@@ -8,7 +8,7 @@
 | **url** | **String** |  |  |
 | **headers** | [**Array&lt;HttpHeader&gt;**](HttpHeader.md) |  | [optional] |
 | **body** | **String** |  | [optional] |
-| **success_status** | [**SuccessStatus**](SuccessStatus.md) |  | [optional] |
+| **success_status** | **String** |  | [optional][default to &#39;2xx&#39;] |
 | **timeout_ms** | **Integer** |  | [optional] |
 
 ## Example

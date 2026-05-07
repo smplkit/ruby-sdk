@@ -28,7 +28,6 @@ docs/ForwarderResponse.md
 docs/ForwardersApi.md
 docs/HttpHeader.md
 docs/RetryFailedDeliveriesSummary.md
-docs/SuccessStatus.md
 docs/TestForwarderRequest.md
 docs/TestForwarderResponse.md
 docs/UsageApi.md
@@ -62,7 +61,6 @@ lib/smplkit_audit_client/models/forwarder_resource.rb
 lib/smplkit_audit_client/models/forwarder_response.rb
 lib/smplkit_audit_client/models/http_header.rb
 lib/smplkit_audit_client/models/retry_failed_deliveries_summary.rb
-lib/smplkit_audit_client/models/success_status.rb
 lib/smplkit_audit_client/models/test_forwarder_request.rb
 lib/smplkit_audit_client/models/test_forwarder_response.rb
 lib/smplkit_audit_client/models/usage_resource.rb
@@ -91,7 +89,6 @@ spec/models/forwarder_response_spec.rb
 spec/models/forwarder_spec.rb
 spec/models/http_header_spec.rb
 spec/models/retry_failed_deliveries_summary_spec.rb
-spec/models/success_status_spec.rb
 spec/models/test_forwarder_request_spec.rb
 spec/models/test_forwarder_response_spec.rb
 spec/models/usage_resource_spec.rb

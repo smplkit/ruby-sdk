@@ -122,7 +122,6 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::ForwarderResponse](docs/ForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::HttpHeader](docs/HttpHeader.md)
  - [SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary](docs/RetryFailedDeliveriesSummary.md)
- - [SmplkitGeneratedClient::Audit::SuccessStatus](docs/SuccessStatus.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderRequest](docs/TestForwarderRequest.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderResponse](docs/TestForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::UsageResource](docs/UsageResource.md)
