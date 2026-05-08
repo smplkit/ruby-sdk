@@ -70,7 +70,7 @@ describe 'ForwardersApi' do
 
   # unit tests for get_forwarder
   # Get Forwarder
-  # Retrieve a single forwarder by id.  Returns 404 if no forwarder with that id exists in the caller&#39;s account, including if the forwarder is soft-deleted. Header values in the response are always redacted regardless of caller permission.
+  # Retrieve a single forwarder by id.  Returns 404 if no forwarder with that id exists in the caller&#39;s account, including if the forwarder is soft-deleted. Header values in the response are returned in plaintext so callers can perform a GET-modify-PUT round-trip without re-entering secrets (ADR-014). The persisted &#x60;&#x60;forwarder_delivery.request&#x60;&#x60; log column is what keeps redaction; that read path is unaffected by this route.
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
   # @return [ForwarderResponse]
@@ -138,7 +138,7 @@ describe 'ForwardersApi' do
 
   # unit tests for update_forwarder
   # Update Forwarder
-  # Full-replace update. PUT semantics — every field is overwritten.  The header values must be re-supplied; the GET path redacts them, but a PUT body that contains &#x60;&#x60;\&quot;&lt;redacted&gt;\&quot;&#x60;&#x60; would persist that literal. Customers must round-trip the actual secret back. This is the standard get-mutate-put pattern (see CLAUDE.md \&quot;Updating Resources via the API\&quot;); the SDK helpers track the un-redacted secret client-side so customers don&#39;t usually need to re-enter it.
+  # Full-replace update. PUT semantics — every field is overwritten.  The GET path returns plaintext header values, so the standard get-mutate-put round-trip (ADR-014) preserves secrets without any extra work from the caller: GET, change one field, PUT the result.
   # @param forwarder_id 
   # @param forwarder_response 
   # @param [Hash] opts the optional parameters

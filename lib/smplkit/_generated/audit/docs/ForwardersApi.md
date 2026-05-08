@@ -227,7 +227,7 @@ end
 
 Get Forwarder
 
-Retrieve a single forwarder by id.  Returns 404 if no forwarder with that id exists in the caller's account, including if the forwarder is soft-deleted. Header values in the response are always redacted regardless of caller permission.
+Retrieve a single forwarder by id.  Returns 404 if no forwarder with that id exists in the caller's account, including if the forwarder is soft-deleted. Header values in the response are returned in plaintext so callers can perform a GET-modify-PUT round-trip without re-entering secrets (ADR-014). The persisted ``forwarder_delivery.request`` log column is what keeps redaction; that read path is unaffected by this route.
 
 ### Examples
 
@@ -592,7 +592,7 @@ end
 
 Update Forwarder
 
-Full-replace update. PUT semantics — every field is overwritten.  The header values must be re-supplied; the GET path redacts them, but a PUT body that contains ``\"<redacted>\"`` would persist that literal. Customers must round-trip the actual secret back. This is the standard get-mutate-put pattern (see CLAUDE.md \"Updating Resources via the API\"); the SDK helpers track the un-redacted secret client-side so customers don't usually need to re-enter it.
+Full-replace update. PUT semantics — every field is overwritten.  The GET path returns plaintext header values, so the standard get-mutate-put round-trip (ADR-014) preserves secrets without any extra work from the caller: GET, change one field, PUT the result.
 
 ### Examples
 
