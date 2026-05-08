@@ -8,7 +8,6 @@
 | **resource_type** | **String** |  |  |
 | **resource_id** | **String** |  |  |
 | **occurred_at** | **Time** |  | [optional] |
-| **snapshot** | **Hash&lt;String, Object&gt;** |  | [optional] |
 | **data** | **Hash&lt;String, Object&gt;** |  | [optional] |
 | **do_not_forward** | **Boolean** | When true, this event is recorded normally but is not forwarded to any configured SIEM forwarder. A forwarder_delivery row with status&#x3D;skipped_do_not_forward is recorded for each enabled forwarder so the skip is visible in the delivery log. | [optional][default to false] |
 | **created_at** | **Time** |  | [optional][readonly] |
@@ -27,7 +26,6 @@ instance = SmplkitGeneratedClient::Audit::Event.new(
   resource_type: null,
   resource_id: null,
   occurred_at: null,
-  snapshot: null,
   data: null,
   do_not_forward: null,
   created_at: null,

@@ -158,7 +158,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
 
-    it "passes occurred_at, snapshot, and data through to the request body" do
+    it "nests snapshot inside data on the request body" do
       captured = nil
       stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
         captured = JSON.parse(req.body)
@@ -172,8 +172,10 @@ RSpec.describe Smplkit::Audit::AuditClient do
           resource_type: "invoice",
           resource_id: "inv-1",
           occurred_at: Time.utc(2026, 5, 6, 12, 0, 0),
-          snapshot: { "total_cents" => 4900 },
-          data: { "request_id" => "req-1" }
+          data: {
+            "snapshot" => { "total_cents" => 4900 },
+            "request_id" => "req-1"
+          }
         )
         client.events.flush(timeout: 2.0)
         deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
@@ -181,8 +183,12 @@ RSpec.describe Smplkit::Audit::AuditClient do
               || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
           sleep 0.02
         end
-        expect(captured.dig("data", "attributes", "snapshot")).to eq("total_cents" => 4900)
-        expect(captured.dig("data", "attributes", "data")).to eq("request_id" => "req-1")
+        attrs = captured.dig("data", "attributes")
+        expect(attrs).not_to have_key("snapshot")
+        expect(attrs["data"]).to eq(
+          "snapshot" => { "total_cents" => 4900 },
+          "request_id" => "req-1"
+        )
       ensure
         client._close
       end
