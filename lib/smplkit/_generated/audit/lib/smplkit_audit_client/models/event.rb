@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # Public-facing event resource.  Attribute set on POST /api/v1/events:     - action (required)     - resource_type (required)     - resource_id (required)     - occurred_at (optional; defaults to ``created_at``)     - snapshot (optional)     - data (optional; defaults to ``{}``)  Attribute set on GET responses includes everything above plus the server-populated fields: ``created_at``, ``actor_type``, ``actor_id``, ``actor_label``, ``idempotency_key``.
+  # Public-facing event resource.  Attribute set on POST /api/v1/events:     - action (required)     - resource_type (required)     - resource_id (required)     - occurred_at (optional; defaults to ``created_at``)     - data (optional; defaults to ``{}``)  There is no top-level ``snapshot`` attribute. Customers wishing to record a resource snapshot place it inside ``data`` -- smplkit's internal convention nests it at ``data.snapshot``, but customers may follow their own convention.  Attribute set on GET responses includes everything above plus the server-populated fields: ``created_at``, ``actor_type``, ``actor_id``, ``actor_label``, ``idempotency_key``.
   class Event < ApiModelBase
     attr_accessor :action
 
@@ -23,8 +23,6 @@ module SmplkitGeneratedClient::Audit
     attr_accessor :resource_id
 
     attr_accessor :occurred_at
-
-    attr_accessor :snapshot
 
     attr_accessor :data
 
@@ -48,7 +46,6 @@ module SmplkitGeneratedClient::Audit
         :'resource_type' => :'resource_type',
         :'resource_id' => :'resource_id',
         :'occurred_at' => :'occurred_at',
-        :'snapshot' => :'snapshot',
         :'data' => :'data',
         :'do_not_forward' => :'do_not_forward',
         :'created_at' => :'created_at',
@@ -76,7 +73,6 @@ module SmplkitGeneratedClient::Audit
         :'resource_type' => :'String',
         :'resource_id' => :'String',
         :'occurred_at' => :'Time',
-        :'snapshot' => :'Hash<String, Object>',
         :'data' => :'Hash<String, Object>',
         :'do_not_forward' => :'Boolean',
         :'created_at' => :'Time',
@@ -91,7 +87,6 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_nullable
       Set.new([
         :'occurred_at',
-        :'snapshot',
         :'created_at',
         :'actor_type',
         :'actor_id',
@@ -136,12 +131,6 @@ module SmplkitGeneratedClient::Audit
 
       if attributes.key?(:'occurred_at')
         self.occurred_at = attributes[:'occurred_at']
-      end
-
-      if attributes.key?(:'snapshot')
-        if (value = attributes[:'snapshot']).is_a?(Hash)
-          self.snapshot = value
-        end
       end
 
       if attributes.key?(:'data')
@@ -273,7 +262,6 @@ module SmplkitGeneratedClient::Audit
           resource_type == o.resource_type &&
           resource_id == o.resource_id &&
           occurred_at == o.occurred_at &&
-          snapshot == o.snapshot &&
           data == o.data &&
           do_not_forward == o.do_not_forward &&
           created_at == o.created_at &&
@@ -292,7 +280,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [action, resource_type, resource_id, occurred_at, snapshot, data, do_not_forward, created_at, actor_type, actor_id, actor_label, idempotency_key].hash
+      [action, resource_type, resource_id, occurred_at, data, do_not_forward, created_at, actor_type, actor_id, actor_label, idempotency_key].hash
     end
 
     # Builds the object from hash
