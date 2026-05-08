@@ -119,6 +119,26 @@ RSpec.describe Smplkit::Audit::Forwarders do
       expect(fwd.name).to eq("Datadog production")
     end
 
+    it "returns forwarder filter and data with string keys at every depth" do
+      # Regression: same symbolize_names issue as Event.data; Forwarder.filter
+      # and Forwarder.data are also Hash<String, Object> fields.
+      resource = forwarder_resource.merge(
+        attributes: forwarder_resource[:attributes].merge(
+          filter: { "==" => [{ "var" => "resource_type" }, "invoice"] },
+          data: { "team" => { "name" => "platform" } }
+        )
+      )
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200, body: { data: resource }.to_json,
+        headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      fwd = client.forwarders.get(fwd_id)
+      expect(fwd.filter.keys).to all(be_a(String))
+      expect(fwd.filter["=="].first.keys).to all(be_a(String))
+      expect(fwd.filter["=="].first["var"]).to eq("resource_type")
+      expect(fwd.data["team"]["name"]).to eq("platform")
+    end
+
     it "issues PUT on update" do
       put_stub = stub_request(:put, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
         status: 200, body: { data: forwarder_resource(name: "Renamed", slug: "renamed") }.to_json,
@@ -151,6 +171,27 @@ RSpec.describe Smplkit::Audit::Forwarders do
                 created_at_range: "[2020-01-01T00:00:00Z,*)", page_size: 1
       )
       expect(page.deliveries.first.status).to eq("succeeded")
+    end
+
+    it "returns delivery request with string keys at every depth" do
+      # Regression: ForwarderDelivery.request is Hash<String, Object>; nested
+      # objects were symbol-keyed before the deep_stringify_keys fix.
+      resource = delivery_resource.merge(
+        attributes: delivery_resource[:attributes].merge(
+          request: { "method" => "POST", "headers" => [{ "name" => "X-K", "value" => "v" }] }
+        )
+      )
+      stub_request(:get, %r{#{base_url}/api/v1/forwarders/#{fwd_id}/deliveries\b}).to_return(
+        status: 200,
+        body: { data: [resource], meta: { page_size: 1 } }.to_json,
+        headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      page = client.forwarders.deliveries.list(fwd_id)
+      req = page.deliveries.first.request
+      expect(req.keys).to all(be_a(String))
+      expect(req["method"]).to eq("POST")
+      expect(req["headers"].first.keys).to all(be_a(String))
+      expect(req["headers"].first["name"]).to eq("X-K")
     end
 
     it "returns empty list when no deliveries" do

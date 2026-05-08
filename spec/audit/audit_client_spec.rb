@@ -213,6 +213,43 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
 
+    it "returns ev.data with string keys at every depth" do
+      # Regression: the generated client parses JSON with symbolize_names: true,
+      # then converts only the outer data keys back to strings while leaving
+      # nested values symbol-keyed. ev.data["snapshot"]["currency"] must work;
+      # ev.data["snapshot"][:currency] must NOT be the only usable form.
+      event_id = "11111111-2222-3333-4444-555555555555"
+      body = {
+        data: {
+          id: event_id, type: "event",
+          attributes: {
+            action: "invoice.created", resource_type: "invoice", resource_id: "inv-1",
+            occurred_at: "2026-05-06T12:00:00Z", created_at: "2026-05-06T12:00:01Z",
+            actor_type: "API_KEY", actor_id: nil, actor_label: "",
+            data: { "snapshot" => { "currency" => "USD", "total_cents" => 4900 },
+                    "request_id" => "e2e-req" },
+            idempotency_key: "k"
+          }
+        }
+      }.to_json
+      stub_request(:get, "#{base_url}/api/v1/events/#{event_id}")
+        .to_return(status: 200, body: body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        ev = client.events.get(event_id)
+        expect(ev.data.keys).to all(be_a(String))
+        expect(ev.data["snapshot"]).to be_a(Hash)
+        expect(ev.data["snapshot"].keys).to all(be_a(String))
+        expect(ev.data["snapshot"]["currency"]).to eq("USD")
+        expect(ev.data["snapshot"]["total_cents"]).to eq(4900)
+        expect(ev.data["request_id"]).to eq("e2e-req")
+        expect(ev.data["snapshot"][:currency]).to be_nil
+      ensure
+        client._close
+      end
+    end
+
     it "raises ApiError on 404" do
       event_id = "00000000-0000-0000-0000-000000000099"
       stub_request(:get, "#{base_url}/api/v1/events/#{event_id}")

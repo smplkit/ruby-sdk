@@ -129,14 +129,7 @@ module Smplkit
       module_function
 
       def stringify(value)
-        case value
-        when Hash
-          value.each_with_object({}) { |(k, v), out| out[k.to_s] = stringify(v) }
-        when Array
-          value.map { |v| stringify(v) }
-        else
-          value
-        end
+        Smplkit::Helpers.deep_stringify_keys(value)
       end
 
       # Convenience: produce a string-keyed Hash from a generated model.

@@ -133,7 +133,7 @@ module Smplkit
           actor_type: attrs.actor_type,
           actor_id: attrs.actor_id,
           actor_label: attrs.actor_label,
-          data: attrs.data || {},
+          data: Smplkit::Helpers.deep_stringify_keys(attrs.data || {}),
           idempotency_key: attrs.idempotency_key,
           do_not_forward: attrs.do_not_forward || false
         )
