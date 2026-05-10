@@ -67,15 +67,19 @@ SmplkitGeneratedClient::Audit.configure do |config|
   config.configure_faraday_connection { |connection| 'YOUR CONNECTION CONFIG PROC' }
 end
 
-api_instance = SmplkitGeneratedClient::Audit::EventsApi.new
-event_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
+api_instance = SmplkitGeneratedClient::Audit::ActionsApi.new
+opts = {
+  filter_resource_type: 'filter_resource_type_example', # String | 
+  page_size: 56, # Integer | 
+  page_after: 'page_after_example' # String | 
+}
 
 begin
-  #Get Event
-  result = api_instance.get_event(event_id)
+  #List Actions
+  result = api_instance.list_actions(opts)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Exception when calling EventsApi->get_event: #{e}"
+  puts "Exception when calling ActionsApi->list_actions: #{e}"
 end
 
 ```
@@ -86,6 +90,8 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*SmplkitGeneratedClient::Audit::ActionsApi* | [**list_actions**](docs/ActionsApi.md#list_actions) | **GET** /api/v1/actions | List Actions
+*SmplkitGeneratedClient::Audit::ActionsApi* | [**list_resource_types**](docs/ActionsApi.md#list_resource_types) | **GET** /api/v1/resource_types | List Resource Types
 *SmplkitGeneratedClient::Audit::EventsApi* | [**get_event**](docs/EventsApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event
 *SmplkitGeneratedClient::Audit::EventsApi* | [**list_events**](docs/EventsApi.md#list_events) | **GET** /api/v1/events | List Events
 *SmplkitGeneratedClient::Audit::EventsApi* | [**record_event**](docs/EventsApi.md#record_event) | **POST** /api/v1/events | Record Event
@@ -98,11 +104,19 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**retry_failed_forwarder_deliveries**](docs/ForwardersApi.md#retry_failed_forwarder_deliveries) | **POST** /api/v1/forwarders/{forwarder_id}/actions/retry_failed_deliveries | Retry Failed Forwarder Deliveries
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**retry_forwarder_delivery**](docs/ForwardersApi.md#retry_forwarder_delivery) | **POST** /api/v1/forwarders/{forwarder_id}/deliveries/{delivery_id}/actions/retry | Retry Forwarder Delivery
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**update_forwarder**](docs/ForwardersApi.md#update_forwarder) | **PUT** /api/v1/forwarders/{forwarder_id} | Update Forwarder
+*SmplkitGeneratedClient::Audit::FunctionsApi* | [**execute_wipe**](docs/FunctionsApi.md#execute_wipe) | **POST** /api/v1/functions/wipe/actions/execute | Execute Wipe
+*SmplkitGeneratedClient::Audit::ResourceTypesApi* | [**list_actions**](docs/ResourceTypesApi.md#list_actions) | **GET** /api/v1/actions | List Actions
+*SmplkitGeneratedClient::Audit::ResourceTypesApi* | [**list_resource_types**](docs/ResourceTypesApi.md#list_resource_types) | **GET** /api/v1/resource_types | List Resource Types
 *SmplkitGeneratedClient::Audit::UsageApi* | [**list_usage**](docs/UsageApi.md#list_usage) | **GET** /api/v1/usage | List Usage
 
 
 ## Documentation for Models
 
+ - [SmplkitGeneratedClient::Audit::ActionAttributes](docs/ActionAttributes.md)
+ - [SmplkitGeneratedClient::Audit::ActionListLinks](docs/ActionListLinks.md)
+ - [SmplkitGeneratedClient::Audit::ActionListMeta](docs/ActionListMeta.md)
+ - [SmplkitGeneratedClient::Audit::ActionListResponse](docs/ActionListResponse.md)
+ - [SmplkitGeneratedClient::Audit::ActionResource](docs/ActionResource.md)
  - [SmplkitGeneratedClient::Audit::Event](docs/Event.md)
  - [SmplkitGeneratedClient::Audit::EventListLinks](docs/EventListLinks.md)
  - [SmplkitGeneratedClient::Audit::EventListMeta](docs/EventListMeta.md)
@@ -121,12 +135,19 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::ForwarderResource](docs/ForwarderResource.md)
  - [SmplkitGeneratedClient::Audit::ForwarderResponse](docs/ForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::HttpHeader](docs/HttpHeader.md)
+ - [SmplkitGeneratedClient::Audit::ResourceTypeAttributes](docs/ResourceTypeAttributes.md)
+ - [SmplkitGeneratedClient::Audit::ResourceTypeListLinks](docs/ResourceTypeListLinks.md)
+ - [SmplkitGeneratedClient::Audit::ResourceTypeListMeta](docs/ResourceTypeListMeta.md)
+ - [SmplkitGeneratedClient::Audit::ResourceTypeListResponse](docs/ResourceTypeListResponse.md)
+ - [SmplkitGeneratedClient::Audit::ResourceTypeResource](docs/ResourceTypeResource.md)
  - [SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary](docs/RetryFailedDeliveriesSummary.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderRequest](docs/TestForwarderRequest.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderResponse](docs/TestForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::UsageAttributes](docs/UsageAttributes.md)
  - [SmplkitGeneratedClient::Audit::UsageResource](docs/UsageResource.md)
  - [SmplkitGeneratedClient::Audit::UsageResponse](docs/UsageResponse.md)
+ - [SmplkitGeneratedClient::Audit::WipeResponse](docs/WipeResponse.md)
+ - [SmplkitGeneratedClient::Audit::WipeTablesSummary](docs/WipeTablesSummary.md)
 
 
 ## Documentation for Authorization
