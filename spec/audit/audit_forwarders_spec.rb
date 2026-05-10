@@ -351,3 +351,93 @@ RSpec.describe "Smplkit::Audit::Events do_not_forward kwarg" do
     expect(captured).to include('"do_not_forward":true')
   end
 end
+
+RSpec.describe Smplkit::Audit::ForwarderType do
+  it "lists every spec value in VALUES" do
+    expect(described_class::VALUES).to eq(%w[
+      http datadog splunk_hec sumo_logic new_relic honeycomb elastic
+    ])
+  end
+
+  it "exposes each value as a SCREAMING_SNAKE_CASE constant" do
+    expect(described_class::HTTP).to eq("http")
+    expect(described_class::DATADOG).to eq("datadog")
+    expect(described_class::SPLUNK_HEC).to eq("splunk_hec")
+    expect(described_class::SUMO_LOGIC).to eq("sumo_logic")
+    expect(described_class::NEW_RELIC).to eq("new_relic")
+    expect(described_class::HONEYCOMB).to eq("honeycomb")
+    expect(described_class::ELASTIC).to eq("elastic")
+  end
+
+  describe ".coerce" do
+    it "passes through valid wire-format strings" do
+      expect(described_class.coerce("http")).to eq("http")
+      expect(described_class.coerce("datadog")).to eq("datadog")
+    end
+
+    it "passes through the published constants (which are strings)" do
+      expect(described_class.coerce(described_class::SPLUNK_HEC)).to eq("splunk_hec")
+    end
+
+    it "preserves nil so optional params remain optional" do
+      expect(described_class.coerce(nil)).to be_nil
+    end
+
+    it "raises ArgumentError on an unknown value" do
+      expect { described_class.coerce("s3") }
+        .to raise_error(ArgumentError, /Unknown ForwarderType/)
+    end
+
+    it "raises ArgumentError on the wrong case" do
+      expect { described_class.coerce("HTTP") }
+        .to raise_error(ArgumentError, /Unknown ForwarderType/)
+    end
+  end
+
+  describe "wrapper integration" do
+    let(:base_url) { "https://audit.example.com" }
+    let(:client) { Smplkit::Audit::AuditClient.new(api_key: "sk_api_test", base_url: base_url) }
+
+    it "rejects an invalid forwarder_type at the wrapper before any HTTP" do
+      # No stub — if the wrapper made a request, WebMock would raise a
+      # very different error. ArgumentError = the validation fired first.
+      expect do
+        client.forwarders.create(
+          name: "x", forwarder_type: "definitely-not-a-real-type",
+          http: Smplkit::Audit::ForwarderHttp.new(url: "https://x")
+        )
+      end.to raise_error(ArgumentError, /Unknown ForwarderType/)
+    end
+
+    it "rejects an invalid forwarder_type on list before any HTTP" do
+      expect do
+        client.forwarders.list(forwarder_type: "definitely-not-a-real-type")
+      end.to raise_error(ArgumentError, /Unknown ForwarderType/)
+    end
+
+    it "accepts a valid published constant on create" do
+      stub_request(:post, "#{base_url}/api/v1/forwarders").to_return(
+        status: 201,
+        body: {
+          data: {
+            id: SecureRandom.uuid, type: "forwarder",
+            attributes: {
+              name: "n", slug: "n", forwarder_type: "datadog", enabled: true,
+              filter: nil, transform: nil,
+              http: { method: "POST", url: "u",
+                      headers: [], body: nil, success_status: "2xx" },
+              data: {}, created_at: Time.now.utc.iso8601,
+              updated_at: Time.now.utc.iso8601, deleted_at: nil, version: 1
+            }
+          }
+        }.to_json,
+        headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      fwd = client.forwarders.create(
+        name: "n", forwarder_type: Smplkit::Audit::ForwarderType::DATADOG,
+        http: Smplkit::Audit::ForwarderHttp.new(url: "u")
+      )
+      expect(fwd.forwarder_type).to eq("datadog")
+    end
+  end
+end

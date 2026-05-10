@@ -2,6 +2,39 @@
 
 module Smplkit
   module Audit
+    # Public-facing enum for SIEM streaming destination types.
+    #
+    # Mirrors the +ForwarderType+ enum the audit OpenAPI spec emits
+    # (ADR-047 §2.12). Customers pass these constants — or any string
+    # in {VALUES} — to {Forwarders#create} / {Forwarders#update} /
+    # {Forwarders#list}. The wrapper validates membership before
+    # round-tripping to the wire.
+    module ForwarderType
+      HTTP = "http"
+      DATADOG = "datadog"
+      SPLUNK_HEC = "splunk_hec"
+      SUMO_LOGIC = "sumo_logic"
+      NEW_RELIC = "new_relic"
+      HONEYCOMB = "honeycomb"
+      ELASTIC = "elastic"
+
+      # Every supported value, in spec order. Useful for membership
+      # checks, dropdown population, or test parametrization.
+      VALUES = [HTTP, DATADOG, SPLUNK_HEC, SUMO_LOGIC, NEW_RELIC, HONEYCOMB, ELASTIC].freeze
+
+      # Coerce +value+ to a known wire-format slug, or raise ArgumentError.
+      # Strings round-trip transparently; nil passes through.
+      def self.coerce(value)
+        return nil if value.nil?
+
+        s = value.to_s
+        return s if VALUES.include?(s)
+
+        raise ArgumentError,
+              "Unknown ForwarderType #{value.inspect}; expected one of #{VALUES.inspect}"
+      end
+    end
+
     # SIEM streaming forwarders for the authenticated account.
     #
     # Pro tier only — every method here raises a wrapped 402
@@ -17,14 +50,15 @@ module Smplkit
 
       def create(name:, forwarder_type:, http:, enabled: true,
                  filter: nil, transform: nil, data: nil)
-        body = wrap_forwarder(nil, name, forwarder_type, http, enabled, filter, transform, data)
+        body = wrap_forwarder(nil, name, ForwarderType.coerce(forwarder_type),
+                              http, enabled, filter, transform, data)
         resp = @api.create_forwarder(body)
         Forwarder.from_resource(resp.data)
       end
 
       def list(forwarder_type: nil, enabled: nil, page_size: nil, page_after: nil)
         opts = {}
-        opts[:filter_forwarder_type] = forwarder_type if forwarder_type
+        opts[:filter_forwarder_type] = ForwarderType.coerce(forwarder_type) if forwarder_type
         opts[:filter_enabled] = enabled unless enabled.nil?
         opts[:page_size] = page_size if page_size
         opts[:page_after] = page_after if page_after
@@ -40,7 +74,8 @@ module Smplkit
 
       def update(forwarder_id, name:, forwarder_type:, http:, enabled: true,
                  filter: nil, transform: nil, data: nil)
-        body = wrap_forwarder(forwarder_id, name, forwarder_type, http, enabled, filter, transform, data)
+        body = wrap_forwarder(forwarder_id, name, ForwarderType.coerce(forwarder_type),
+                              http, enabled, filter, transform, data)
         resp = @api.update_forwarder(forwarder_id, body)
         Forwarder.from_resource(resp.data)
       end
