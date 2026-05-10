@@ -355,8 +355,8 @@ end
 RSpec.describe Smplkit::Audit::ForwarderType do
   it "lists every spec value in VALUES" do
     expect(described_class::VALUES).to eq(%w[
-      http datadog splunk_hec sumo_logic new_relic honeycomb elastic
-    ])
+                                            http datadog splunk_hec sumo_logic new_relic honeycomb elastic
+                                          ])
   end
 
   it "exposes each value as a SCREAMING_SNAKE_CASE constant" do
