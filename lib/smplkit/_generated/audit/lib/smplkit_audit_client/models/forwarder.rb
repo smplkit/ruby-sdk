@@ -40,6 +40,28 @@ module SmplkitGeneratedClient::Audit
 
     attr_accessor :data
 
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
@@ -72,7 +94,7 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_types
       {
         :'name' => :'String',
-        :'forwarder_type' => :'String',
+        :'forwarder_type' => :'ForwarderType',
         :'enabled' => :'Boolean',
         :'filter' => :'Hash<String, Object>',
         :'transform' => :'String',
@@ -197,10 +219,6 @@ module SmplkitGeneratedClient::Audit
         invalid_properties.push('invalid value for "forwarder_type", forwarder_type cannot be nil.')
       end
 
-      if @forwarder_type.to_s.length < 1
-        invalid_properties.push('invalid value for "forwarder_type", the character length must be greater than or equal to 1.')
-      end
-
       if !@transform.nil? && @transform.to_s.length > 16384
         invalid_properties.push('invalid value for "transform", the character length must be smaller than or equal to 16384.')
       end
@@ -220,7 +238,6 @@ module SmplkitGeneratedClient::Audit
       return false if @name.to_s.length > 200
       return false if @name.to_s.length < 1
       return false if @forwarder_type.nil?
-      return false if @forwarder_type.to_s.length < 1
       return false if !@transform.nil? && @transform.to_s.length > 16384
       return false if @http.nil?
       true
@@ -249,10 +266,6 @@ module SmplkitGeneratedClient::Audit
     def forwarder_type=(forwarder_type)
       if forwarder_type.nil?
         fail ArgumentError, 'forwarder_type cannot be nil'
-      end
-
-      if forwarder_type.to_s.length < 1
-        fail ArgumentError, 'invalid value for "forwarder_type", the character length must be greater than or equal to 1.'
       end
 
       @forwarder_type = forwarder_type

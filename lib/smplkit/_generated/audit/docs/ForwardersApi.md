@@ -35,7 +35,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_response = SmplkitGeneratedClient::Audit::ForwarderResponse.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: 'forwarder_type_example', http: SmplkitGeneratedClient::Audit::ForwarderHttp.new({url: 'url_example'})})})}) # ForwarderResponse | 
+forwarder_response = SmplkitGeneratedClient::Audit::ForwarderResponse.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::HTTP, http: SmplkitGeneratedClient::Audit::ForwarderHttp.new({url: 'url_example'})})})}) # ForwarderResponse | 
 
 begin
   # Create Forwarder
@@ -607,7 +607,7 @@ end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
 forwarder_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
-forwarder_response = SmplkitGeneratedClient::Audit::ForwarderResponse.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: 'forwarder_type_example', http: SmplkitGeneratedClient::Audit::ForwarderHttp.new({url: 'url_example'})})})}) # ForwarderResponse | 
+forwarder_response = SmplkitGeneratedClient::Audit::ForwarderResponse.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::HTTP, http: SmplkitGeneratedClient::Audit::ForwarderHttp.new({url: 'url_example'})})})}) # ForwarderResponse | 
 
 begin
   # Update Forwarder

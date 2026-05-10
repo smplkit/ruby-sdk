@@ -134,6 +134,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::ForwarderListResponse](docs/ForwarderListResponse.md)
  - [SmplkitGeneratedClient::Audit::ForwarderResource](docs/ForwarderResource.md)
  - [SmplkitGeneratedClient::Audit::ForwarderResponse](docs/ForwarderResponse.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderType](docs/ForwarderType.md)
  - [SmplkitGeneratedClient::Audit::HttpHeader](docs/HttpHeader.md)
  - [SmplkitGeneratedClient::Audit::ResourceTypeAttributes](docs/ResourceTypeAttributes.md)
  - [SmplkitGeneratedClient::Audit::ResourceTypeListLinks](docs/ResourceTypeListLinks.md)
