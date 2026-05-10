@@ -5,7 +5,7 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **name** | **String** |  |  |
-| **forwarder_type** | **String** |  |  |
+| **forwarder_type** | [**ForwarderType**](ForwarderType.md) |  |  |
 | **enabled** | **Boolean** |  | [optional][default to true] |
 | **filter** | **Hash&lt;String, Object&gt;** |  | [optional] |
 | **transform** | **String** |  | [optional] |

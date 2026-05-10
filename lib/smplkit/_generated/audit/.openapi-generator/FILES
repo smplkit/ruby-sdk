@@ -31,6 +31,7 @@ docs/ForwarderListMeta.md
 docs/ForwarderListResponse.md
 docs/ForwarderResource.md
 docs/ForwarderResponse.md
+docs/ForwarderType.md
 docs/ForwardersApi.md
 docs/FunctionsApi.md
 docs/HttpHeader.md
@@ -83,6 +84,7 @@ lib/smplkit_audit_client/models/forwarder_list_meta.rb
 lib/smplkit_audit_client/models/forwarder_list_response.rb
 lib/smplkit_audit_client/models/forwarder_resource.rb
 lib/smplkit_audit_client/models/forwarder_response.rb
+lib/smplkit_audit_client/models/forwarder_type.rb
 lib/smplkit_audit_client/models/http_header.rb
 lib/smplkit_audit_client/models/resource_type_attributes.rb
 lib/smplkit_audit_client/models/resource_type_list_links.rb
@@ -127,6 +129,7 @@ spec/models/forwarder_list_response_spec.rb
 spec/models/forwarder_resource_spec.rb
 spec/models/forwarder_response_spec.rb
 spec/models/forwarder_spec.rb
+spec/models/forwarder_type_spec.rb
 spec/models/http_header_spec.rb
 spec/models/resource_type_attributes_spec.rb
 spec/models/resource_type_list_links_spec.rb
