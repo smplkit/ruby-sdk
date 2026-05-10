@@ -70,7 +70,7 @@ RSpec.describe Smplkit::ManagementClient do
 
     it "registers and flushes flag declarations" do
       stub_request(:post, "https://flags.smplkit.test/api/v1/flags/bulk")
-        .to_return(status: 200, body: JSON.generate("flags" => []),
+        .to_return(status: 200, body: JSON.generate("registered" => 1),
                    headers: { "Content-Type" => "application/vnd.api+json" })
       mgmt.flags.register(Smplkit::FlagDeclaration.new(id: "x", type: "BOOLEAN", default: false))
       mgmt.flags.flush

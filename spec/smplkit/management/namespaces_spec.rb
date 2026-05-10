@@ -313,10 +313,35 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "register dedupes and flushes once threshold is hit" do
-      stub_post("flags", "/api/v1/flags/bulk", { "flags" => [] })
+      stub_post("flags", "/api/v1/flags/bulk", { "registered" => 1 })
       mgmt.flags.register(Smplkit::FlagDeclaration.new(id: "x", type: "BOOLEAN", default: false))
       mgmt.flags.flush
       expect(WebMock).to have_requested(:post, "https://flags.smplkit.test/api/v1/flags/bulk")
+    end
+
+    it "register triggers an inline threshold flush when the buffer is full" do
+      stub_post("flags", "/api/v1/flags/bulk", { "registered" => 50 })
+      Smplkit::Management::FLAG_BATCH_FLUSH_SIZE.times do |i|
+        mgmt.flags.register(Smplkit::FlagDeclaration.new(id: "flag-#{i}", type: "BOOLEAN", default: false))
+      end
+      expect(WebMock).to have_requested(:post, "https://flags.smplkit.test/api/v1/flags/bulk")
+    end
+
+    it "register swallows a threshold flush failure and retains the buffer" do
+      stub_request(:post, "https://flags.smplkit.test/api/v1/flags/bulk")
+        .to_return(status: 500, body: JSON.generate("errors" => [{ "status" => "500", "detail" => "down" }]),
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+      expect do
+        Smplkit::Management::FLAG_BATCH_FLUSH_SIZE.times do |i|
+          mgmt.flags.register(Smplkit::FlagDeclaration.new(id: "flag-#{i}", type: "BOOLEAN", default: false))
+        end
+      end.not_to raise_error
+      expect(mgmt.flags.pending_count).to eq(Smplkit::Management::FLAG_BATCH_FLUSH_SIZE)
+    end
+
+    it "pending_count reflects declarations waiting to be flushed" do
+      mgmt.flags.register(Smplkit::FlagDeclaration.new(id: "x", type: "BOOLEAN", default: false))
+      expect(mgmt.flags.pending_count).to eq(1)
     end
 
     it "new_json_flag constructs a JsonFlag" do

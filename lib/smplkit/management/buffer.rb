@@ -42,6 +42,10 @@ module Smplkit
     end
 
     # Thread-safe batch buffer for flag declarations.
+    #
+    # Use +peek+ + +commit(ids)+ for the send path so a failed POST leaves
+    # declarations queued for the next attempt. +drain+ is unconditional and
+    # used only by tests/teardown.
     class FlagRegistrationBuffer
       def initialize
         @seen = {}
@@ -59,6 +63,17 @@ module Smplkit
           item["environment"] = declaration.environment if declaration.environment
           @pending << item
         end
+      end
+
+      def peek
+        @lock.synchronize { @pending.dup }
+      end
+
+      def commit(ids)
+        return if ids.nil? || ids.empty?
+
+        committed = ids.to_set
+        @lock.synchronize { @pending.reject! { |item| committed.include?(item["id"]) } }
       end
 
       def drain

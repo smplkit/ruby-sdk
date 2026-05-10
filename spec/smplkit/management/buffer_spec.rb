@@ -31,6 +31,34 @@ RSpec.describe Smplkit::Management::FlagRegistrationBuffer do
     buffer.add(Smplkit::FlagDeclaration.new(id: "a", type: "BOOLEAN", default: false))
     expect(buffer.drain).to eq([{ "id" => "a", "type" => "BOOLEAN", "default" => false }])
   end
+
+  it "peek returns a snapshot without removing items" do
+    buffer.add(Smplkit::FlagDeclaration.new(id: "a", type: "BOOLEAN", default: false))
+    snapshot = buffer.peek
+    expect(snapshot.length).to eq(1)
+    expect(buffer.pending_count).to eq(1)
+  end
+
+  it "commit removes items by id after a successful send" do
+    buffer.add(Smplkit::FlagDeclaration.new(id: "a", type: "BOOLEAN", default: false))
+    buffer.add(Smplkit::FlagDeclaration.new(id: "b", type: "STRING", default: "x"))
+    buffer.commit(["a"])
+    expect(buffer.pending_count).to eq(1)
+    expect(buffer.peek.map { |i| i["id"] }).to eq(["b"])
+  end
+
+  it "commit is a no-op for an empty id list" do
+    buffer.add(Smplkit::FlagDeclaration.new(id: "a", type: "BOOLEAN", default: false))
+    buffer.commit([])
+    expect(buffer.pending_count).to eq(1)
+  end
+
+  it "items are retained when peek is called without a subsequent commit (failed send)" do
+    buffer.add(Smplkit::FlagDeclaration.new(id: "a", type: "BOOLEAN", default: false))
+    buffer.peek # simulate reading before a send that will fail
+    # no commit — simulates a 500 response
+    expect(buffer.pending_count).to eq(1)
+  end
 end
 
 RSpec.describe Smplkit::Management::LoggerRegistrationBuffer do

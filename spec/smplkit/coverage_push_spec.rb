@@ -222,10 +222,18 @@ RSpec.describe Smplkit::Flags::FlagsClient do
     end
   end
 
-  describe "flush_flags_safely" do
-    it "swallows exceptions from the flag flush" do
-      allow(flags_ns).to receive(:flush).and_raise("boom")
-      expect { client.send(:flush_flags_safely) }.not_to raise_error
+  describe "schedule_start_retry" do
+    it "sets the backoff timer and doubles the delay" do
+      before_delay = client.instance_variable_get(:@start_retry_delay)
+      client.send(:schedule_start_retry, StandardError.new("boom"))
+      expect(client.instance_variable_get(:@next_start_attempt_at)).to be > 0
+      expect(client.instance_variable_get(:@start_retry_delay)).to eq(before_delay * 2)
+    end
+
+    it "caps the delay at MAX_START_RETRY_DELAY" do
+      client.instance_variable_set(:@start_retry_delay, Smplkit::Flags::FlagsClient::MAX_START_RETRY_DELAY)
+      client.send(:schedule_start_retry, StandardError.new("boom"))
+      expect(client.instance_variable_get(:@start_retry_delay)).to eq(Smplkit::Flags::FlagsClient::MAX_START_RETRY_DELAY)
     end
   end
 

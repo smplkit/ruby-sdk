@@ -538,11 +538,24 @@ module Smplkit
 
       def register(declaration)
         @buffer.add(declaration)
-        flush if @buffer.pending_count >= Management::FLAG_BATCH_FLUSH_SIZE
+        return unless @buffer.pending_count >= Management::FLAG_BATCH_FLUSH_SIZE
+
+        begin
+          flush
+        rescue StandardError => e
+          Smplkit.debug("registration", "threshold flag flush failed: #{e.class}: #{e.message}")
+        end
       end
 
+      # POST pending declarations to the bulk endpoint.
+      #
+      # Items remain in the buffer until the request succeeds, so a flush
+      # against an unhealthy service is automatically retried by the next
+      # +flush+ call (lazy +start+ retry, periodic background flush, or
+      # final flush on close). Raises on failure — callers decide whether
+      # to retry.
       def flush
-        batch = @buffer.drain
+        batch = @buffer.peek
         return if batch.empty?
 
         flag_items = batch.map do |entry|
@@ -553,8 +566,11 @@ module Smplkit
         end
         body = SmplkitGeneratedClient::Flags::FlagBulkRequest.new(flags: flag_items)
         ErrorMapping.call { @api.bulk_register_flags(body) }
-      rescue StandardError => e
-        Smplkit.debug("registration", "flag flush failed: #{e.class}: #{e.message}")
+        @buffer.commit(batch.map { |b| b["id"] })
+      end
+
+      def pending_count
+        @buffer.pending_count
       end
 
       def list

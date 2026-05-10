@@ -79,6 +79,9 @@ module Smplkit
     # +mgmt.flags.*+. Per-request context is set via
     # +client.set_context([...])+.
     class FlagsClient
+      INITIAL_START_RETRY_DELAY = 1.0
+      MAX_START_RETRY_DELAY = 60.0
+
       def initialize(parent, manage:, metrics:, flags_base_url:, app_base_url:)
         @parent = parent
         @manage = manage
@@ -90,6 +93,9 @@ module Smplkit
 
         @flag_store = {}
         @connected = false
+        @ws_subscribed = false
+        @next_start_attempt_at = 0.0
+        @start_retry_delay = INITIAL_START_RETRY_DELAY
         @cache = ResolutionCache.new
         @handles = {}
         @global_listeners = []
@@ -116,24 +122,44 @@ module Smplkit
 
       # Eagerly initialize the flags subclient.
       #
-      # Drains any pending flag-declaration buffer, fetches all flag
+      # Flushes any pending flag-declaration buffer, fetches all flag
       # definitions, opens the shared WebSocket and subscribes to
       # +flag_changed+ / +flag_deleted+ / +flags_changed+ events.
       #
       # Idempotent — safe to call multiple times. Called automatically on
       # first +flag.get+ evaluation if not invoked manually.
+      #
+      # If the flags-service is unhealthy (e.g. a coordinated rebuild where
+      # the app pod starts before the schema is loaded), the flush or refresh
+      # will fail. Pending declarations stay queued, the client remains
+      # disconnected, and the next call retries after an exponentially
+      # backed-off delay (capped at +MAX_START_RETRY_DELAY+ seconds).
+      # Evaluations during that window fall back to handle defaults.
       def start
         return if @connected
+        return if Process.clock_gettime(Process::CLOCK_MONOTONIC) < @next_start_attempt_at
 
         @environment = @parent._environment
-        flush_flags_safely
-        refresh
+
+        begin
+          @manage.flags.flush
+          refresh
+        rescue StandardError => e
+          schedule_start_retry(e)
+          return
+        end
+
         @connected = true
+        @start_retry_delay = INITIAL_START_RETRY_DELAY
+        @next_start_attempt_at = 0.0
 
         @ws_manager = @parent._ensure_ws
+        return if @ws_subscribed
+
         @ws_manager.on("flag_changed") { |data| handle_flag_changed(data) }
         @ws_manager.on("flag_deleted") { |data| handle_flag_deleted(data) }
         @ws_manager.on("flags_changed") { |data| handle_flags_changed(data) }
+        @ws_subscribed = true
       end
 
       def refresh
@@ -217,10 +243,12 @@ module Smplkit
         handle
       end
 
-      def flush_flags_safely
-        @manage.flags.flush
-      rescue StandardError => e
-        Smplkit.debug("registration", "bulk flag registration failed: #{e.class}: #{e.message}")
+      def schedule_start_retry(exc)
+        delay = @start_retry_delay
+        @next_start_attempt_at = Process.clock_gettime(Process::CLOCK_MONOTONIC) + delay
+        @start_retry_delay = [delay * 2, MAX_START_RETRY_DELAY].min
+        Smplkit.debug("registration",
+                      "flags client start failed (will retry in #{delay}s): #{exc.class}: #{exc.message}")
       end
 
       def fetch_all_flags

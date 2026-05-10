@@ -84,6 +84,100 @@ RSpec.describe Smplkit::Flags::FlagsClient do
     expect(handle.get).to eq("red")
   end
 
+  describe "start() retry when flags-service is unhealthy" do
+    subject(:retrying_client) do
+      described_class.new(parent, manage: retrying_management, metrics: nil,
+                                  flags_base_url: "https://flags.smplkit.com",
+                                  app_base_url: "https://app.smplkit.com")
+    end
+
+    let(:call_count) { { n: 0 } }
+    let(:retrying_manage) do
+      m = instance_double(Smplkit::ManagementClient::FlagsNamespace, register: nil)
+      allow(m).to receive(:flush) do
+        call_count[:n] += 1
+        raise Smplkit::ConnectionError, "service unavailable" if call_count[:n] == 1
+      end
+      m
+    end
+    let(:retrying_management) do
+      instance_double(Smplkit::ManagementClient, flags: retrying_manage, contexts: contexts_ns)
+    end
+
+    it "stays disconnected after a flush failure" do
+      retrying_client.start
+      expect(retrying_client.instance_variable_get(:@connected)).to be(false)
+    end
+
+    it "schedules a retry after a flush failure" do
+      retrying_client.start
+      expect(retrying_client.instance_variable_get(:@next_start_attempt_at)).to be > 0
+    end
+
+    it "is a no-op while within the backoff window" do
+      retrying_client.start  # fails, schedules retry
+      retrying_client.start  # within window — no new call
+      retrying_client.start
+      expect(call_count[:n]).to eq(1)
+      expect(retrying_client.instance_variable_get(:@connected)).to be(false)
+    end
+
+    it "succeeds on the second start after the backoff window elapses" do
+      retrying_client.start  # fails
+      retrying_client.instance_variable_set(:@next_start_attempt_at, 0.0)
+      retrying_client.start  # succeeds
+      expect(retrying_client.instance_variable_get(:@connected)).to be(true)
+    end
+
+    it "resets retry state after a successful start" do
+      retrying_client.start
+      retrying_client.instance_variable_set(:@next_start_attempt_at, 0.0)
+      retrying_client.start
+      expect(retrying_client.instance_variable_get(:@start_retry_delay))
+        .to eq(Smplkit::Flags::FlagsClient::INITIAL_START_RETRY_DELAY)
+      expect(retrying_client.instance_variable_get(:@next_start_attempt_at)).to eq(0.0)
+    end
+
+    it "doubles the retry delay on consecutive failures, capped at MAX_START_RETRY_DELAY" do
+      always_failing = instance_double(Smplkit::ManagementClient::FlagsNamespace, register: nil)
+      allow(always_failing).to receive(:flush).and_raise(Smplkit::ConnectionError, "down")
+      mgmt = instance_double(Smplkit::ManagementClient, flags: always_failing, contexts: contexts_ns)
+      c = described_class.new(parent, manage: mgmt, metrics: nil,
+                                      flags_base_url: "https://flags.smplkit.com",
+                                      app_base_url: "https://app.smplkit.com")
+
+      observed = []
+      10.times do
+        c.instance_variable_set(:@next_start_attempt_at, 0.0)
+        observed << c.instance_variable_get(:@start_retry_delay)
+        c.start
+      end
+
+      expect(observed[0]).to eq(1.0)
+      expect(observed[1]).to eq(2.0)
+      expect(observed[2]).to eq(4.0)
+      expect(observed.last).to eq(Smplkit::Flags::FlagsClient::MAX_START_RETRY_DELAY)
+    end
+
+    it "falls back to handle defaults while disconnected" do
+      handle = retrying_client.boolean_flag("checkout-v2", default: false)
+      expect(handle.get).to be(false)
+      expect(retrying_client.instance_variable_get(:@connected)).to be(false)
+    end
+
+    it "subscribes WebSocket handlers exactly once across retry attempts" do
+      on_calls = []
+      allow(ws).to receive(:on) { |event, &_block| on_calls << event }
+
+      retrying_client.start  # fails — no WS subscription
+      expect(on_calls).to be_empty
+
+      retrying_client.instance_variable_set(:@next_start_attempt_at, 0.0)
+      retrying_client.start  # succeeds — subscribes once
+      expect(on_calls).to eq(%w[flag_changed flag_deleted flags_changed])
+    end
+  end
+
   describe "on_change" do
     it "registers a global listener" do
       block_called = false
