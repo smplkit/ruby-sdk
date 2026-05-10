@@ -6,7 +6,7 @@
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
 | **type** | **String** |  | [optional][default to &#39;usage&#39;] |
-| **attributes** | **Hash&lt;String, Object&gt;** |  |  |
+| **attributes** | [**UsageAttributes**](UsageAttributes.md) |  |  |
 
 ## Example
 

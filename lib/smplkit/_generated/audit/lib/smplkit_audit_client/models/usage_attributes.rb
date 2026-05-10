@@ -14,19 +14,20 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  class UsageResource < ApiModelBase
-    attr_accessor :id
+  # Attribute set for a usage resource.  The shape mirrors the ``/api/v1/usage`` contract used by config, flags, and logging — three fields, no per-product extras. Per-period limits live in the product catalog (``GET /api/v1/products``); the usage endpoint reports counts only.
+  class UsageAttributes < ApiModelBase
+    attr_accessor :limit_key
 
-    attr_accessor :type
+    attr_accessor :period
 
-    attr_accessor :attributes
+    attr_accessor :value
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'id' => :'id',
-        :'type' => :'type',
-        :'attributes' => :'attributes'
+        :'limit_key' => :'limit_key',
+        :'period' => :'period',
+        :'value' => :'value'
       }
     end
 
@@ -43,9 +44,9 @@ module SmplkitGeneratedClient::Audit
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'id' => :'String',
-        :'type' => :'String',
-        :'attributes' => :'UsageAttributes'
+        :'limit_key' => :'String',
+        :'period' => :'String',
+        :'value' => :'Integer'
       }
     end
 
@@ -59,34 +60,34 @@ module SmplkitGeneratedClient::Audit
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::UsageResource` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::UsageAttributes` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::UsageResource`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::UsageAttributes`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'id')
-        self.id = attributes[:'id']
+      if attributes.key?(:'limit_key')
+        self.limit_key = attributes[:'limit_key']
       else
-        self.id = nil
+        self.limit_key = nil
       end
 
-      if attributes.key?(:'type')
-        self.type = attributes[:'type']
+      if attributes.key?(:'period')
+        self.period = attributes[:'period']
       else
-        self.type = 'usage'
+        self.period = nil
       end
 
-      if attributes.key?(:'attributes')
-        self.attributes = attributes[:'attributes']
+      if attributes.key?(:'value')
+        self.value = attributes[:'value']
       else
-        self.attributes = nil
+        self.value = nil
       end
     end
 
@@ -95,12 +96,16 @@ module SmplkitGeneratedClient::Audit
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @id.nil?
-        invalid_properties.push('invalid value for "id", id cannot be nil.')
+      if @limit_key.nil?
+        invalid_properties.push('invalid value for "limit_key", limit_key cannot be nil.')
       end
 
-      if @attributes.nil?
-        invalid_properties.push('invalid value for "attributes", attributes cannot be nil.')
+      if @period.nil?
+        invalid_properties.push('invalid value for "period", period cannot be nil.')
+      end
+
+      if @value.nil?
+        invalid_properties.push('invalid value for "value", value cannot be nil.')
       end
 
       invalid_properties
@@ -110,29 +115,40 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @id.nil?
-      return false if @attributes.nil?
+      return false if @limit_key.nil?
+      return false if @period.nil?
+      return false if @value.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] id Value to be assigned
-    def id=(id)
-      if id.nil?
-        fail ArgumentError, 'id cannot be nil'
+    # @param [Object] limit_key Value to be assigned
+    def limit_key=(limit_key)
+      if limit_key.nil?
+        fail ArgumentError, 'limit_key cannot be nil'
       end
 
-      @id = id
+      @limit_key = limit_key
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] attributes Value to be assigned
-    def attributes=(attributes)
-      if attributes.nil?
-        fail ArgumentError, 'attributes cannot be nil'
+    # @param [Object] period Value to be assigned
+    def period=(period)
+      if period.nil?
+        fail ArgumentError, 'period cannot be nil'
       end
 
-      @attributes = attributes
+      @period = period
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] value Value to be assigned
+    def value=(value)
+      if value.nil?
+        fail ArgumentError, 'value cannot be nil'
+      end
+
+      @value = value
     end
 
     # Checks equality by comparing each attribute.
@@ -140,9 +156,9 @@ module SmplkitGeneratedClient::Audit
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          id == o.id &&
-          type == o.type &&
-          attributes == o.attributes
+          limit_key == o.limit_key &&
+          period == o.period &&
+          value == o.value
     end
 
     # @see the `==` method
@@ -154,7 +170,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [id, type, attributes].hash
+      [limit_key, period, value].hash
     end
 
     # Builds the object from hash
