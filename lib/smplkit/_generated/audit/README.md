@@ -124,6 +124,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary](docs/RetryFailedDeliveriesSummary.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderRequest](docs/TestForwarderRequest.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderResponse](docs/TestForwarderResponse.md)
+ - [SmplkitGeneratedClient::Audit::UsageAttributes](docs/UsageAttributes.md)
  - [SmplkitGeneratedClient::Audit::UsageResource](docs/UsageResource.md)
  - [SmplkitGeneratedClient::Audit::UsageResponse](docs/UsageResponse.md)
 

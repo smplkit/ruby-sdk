@@ -39,6 +39,7 @@ require 'smplkit_audit_client/models/http_header'
 require 'smplkit_audit_client/models/retry_failed_deliveries_summary'
 require 'smplkit_audit_client/models/test_forwarder_request'
 require 'smplkit_audit_client/models/test_forwarder_response'
+require 'smplkit_audit_client/models/usage_attributes'
 require 'smplkit_audit_client/models/usage_resource'
 require 'smplkit_audit_client/models/usage_response'
 
