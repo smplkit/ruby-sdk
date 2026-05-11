@@ -4,9 +4,9 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **product** | **String** |  |  |
-| **plan** | **String** |  |  |
-| **payment_method** | **String** |  | [optional] |
+| **product** | **String** | Product key to subscribe to, e.g. &#x60;flags&#x60;. |  |
+| **plan** | **String** | Plan key to subscribe on, e.g. &#x60;pro&#x60;. |  |
+| **payment_method** | **String** | UUID of a payment method on file to bill against. If omitted, the account&#39;s default payment method is used. | [optional] |
 
 ## Example
 

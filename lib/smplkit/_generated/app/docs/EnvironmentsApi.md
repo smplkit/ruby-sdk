@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 ## create_environment
 
-> <EnvironmentResponse> create_environment(environment_response)
+> <EnvironmentResponse> create_environment(environment_request)
 
 Create Environment
 
@@ -31,11 +31,11 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::EnvironmentsApi.new
-environment_response = SmplkitGeneratedClient::App::EnvironmentResponse.new({data: SmplkitGeneratedClient::App::EnvironmentResource.new({type: 'environment', attributes: SmplkitGeneratedClient::App::Environment.new({name: 'name_example'})})}) # EnvironmentResponse | 
+environment_request = SmplkitGeneratedClient::App::EnvironmentRequest.new({data: SmplkitGeneratedClient::App::EnvironmentResource.new({type: 'environment', attributes: SmplkitGeneratedClient::App::Environment.new({name: 'name_example'})})}) # EnvironmentRequest | 
 
 begin
   # Create Environment
-  result = api_instance.create_environment(environment_response)
+  result = api_instance.create_environment(environment_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling EnvironmentsApi->create_environment: #{e}"
@@ -46,12 +46,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<EnvironmentResponse>, Integer, Hash)> create_environment_with_http_info(environment_response)
+> <Array(<EnvironmentResponse>, Integer, Hash)> create_environment_with_http_info(environment_request)
 
 ```ruby
 begin
   # Create Environment
-  data, status_code, headers = api_instance.create_environment_with_http_info(environment_response)
+  data, status_code, headers = api_instance.create_environment_with_http_info(environment_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <EnvironmentResponse>
@@ -64,7 +64,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **environment_response** | [**EnvironmentResponse**](EnvironmentResponse.md) |  |  |
+| **environment_request** | [**EnvironmentRequest**](EnvironmentRequest.md) |  |  |
 
 ### Return type
 
@@ -285,7 +285,7 @@ This endpoint does not need any parameter.
 
 ## update_environment
 
-> <EnvironmentResponse> update_environment(id, environment_response)
+> <EnvironmentResponse> update_environment(id, environment_request)
 
 Update Environment
 
@@ -304,11 +304,11 @@ end
 
 api_instance = SmplkitGeneratedClient::App::EnvironmentsApi.new
 id = 'id_example' # String | 
-environment_response = SmplkitGeneratedClient::App::EnvironmentResponse.new({data: SmplkitGeneratedClient::App::EnvironmentResource.new({type: 'environment', attributes: SmplkitGeneratedClient::App::Environment.new({name: 'name_example'})})}) # EnvironmentResponse | 
+environment_request = SmplkitGeneratedClient::App::EnvironmentRequest.new({data: SmplkitGeneratedClient::App::EnvironmentResource.new({type: 'environment', attributes: SmplkitGeneratedClient::App::Environment.new({name: 'name_example'})})}) # EnvironmentRequest | 
 
 begin
   # Update Environment
-  result = api_instance.update_environment(id, environment_response)
+  result = api_instance.update_environment(id, environment_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling EnvironmentsApi->update_environment: #{e}"
@@ -319,12 +319,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<EnvironmentResponse>, Integer, Hash)> update_environment_with_http_info(id, environment_response)
+> <Array(<EnvironmentResponse>, Integer, Hash)> update_environment_with_http_info(id, environment_request)
 
 ```ruby
 begin
   # Update Environment
-  data, status_code, headers = api_instance.update_environment_with_http_info(id, environment_response)
+  data, status_code, headers = api_instance.update_environment_with_http_info(id, environment_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <EnvironmentResponse>
@@ -338,7 +338,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **environment_response** | [**EnvironmentResponse**](EnvironmentResponse.md) |  |  |
+| **environment_request** | [**EnvironmentRequest**](EnvironmentRequest.md) |  |  |
 
 ### Return type
 

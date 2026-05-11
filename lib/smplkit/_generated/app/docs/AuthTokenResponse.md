@@ -4,8 +4,8 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **token** | **String** |  |  |
-| **expires_in** | **Integer** |  |  |
+| **token** | **String** | Bearer token to pass in the &#x60;Authorization&#x60; header. |  |
+| **expires_in** | **Integer** | Seconds until the token expires. |  |
 
 ## Example
 

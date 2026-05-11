@@ -14,13 +14,18 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Description of a single metered limit on a product.
   class LimitDefinition < ApiModelBase
+    # Human-readable name for the limit.
     attr_accessor :display_name
 
+    # Long-form description of what the limit controls.
     attr_accessor :description
 
+    # Unit the limit is measured in, e.g. `flags`, `events`.
     attr_accessor :unit
 
+    # Optional formatter hint for rendering the limit value in customer-facing UI.
     attr_accessor :display_format
 
     # Attribute mapping from ruby-style variable name to JSON key.

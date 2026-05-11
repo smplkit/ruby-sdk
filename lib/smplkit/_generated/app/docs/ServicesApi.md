@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 ## create_service
 
-> <ServiceResponse> create_service(service_response)
+> <ServiceResponse> create_service(service_request)
 
 Create Service
 
@@ -31,11 +31,11 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::ServicesApi.new
-service_response = SmplkitGeneratedClient::App::ServiceResponse.new({data: SmplkitGeneratedClient::App::ServiceResource.new({type: 'service', attributes: SmplkitGeneratedClient::App::Service.new({name: 'name_example'})})}) # ServiceResponse | 
+service_request = SmplkitGeneratedClient::App::ServiceRequest.new({data: SmplkitGeneratedClient::App::ServiceResource.new({type: 'service', attributes: SmplkitGeneratedClient::App::Service.new({name: 'name_example'})})}) # ServiceRequest | 
 
 begin
   # Create Service
-  result = api_instance.create_service(service_response)
+  result = api_instance.create_service(service_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling ServicesApi->create_service: #{e}"
@@ -46,12 +46,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ServiceResponse>, Integer, Hash)> create_service_with_http_info(service_response)
+> <Array(<ServiceResponse>, Integer, Hash)> create_service_with_http_info(service_request)
 
 ```ruby
 begin
   # Create Service
-  data, status_code, headers = api_instance.create_service_with_http_info(service_response)
+  data, status_code, headers = api_instance.create_service_with_http_info(service_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ServiceResponse>
@@ -64,7 +64,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **service_response** | [**ServiceResponse**](ServiceResponse.md) |  |  |
+| **service_request** | [**ServiceRequest**](ServiceRequest.md) |  |  |
 
 ### Return type
 
@@ -285,7 +285,7 @@ This endpoint does not need any parameter.
 
 ## update_service
 
-> <ServiceResponse> update_service(id, service_response)
+> <ServiceResponse> update_service(id, service_request)
 
 Update Service
 
@@ -304,11 +304,11 @@ end
 
 api_instance = SmplkitGeneratedClient::App::ServicesApi.new
 id = 'id_example' # String | 
-service_response = SmplkitGeneratedClient::App::ServiceResponse.new({data: SmplkitGeneratedClient::App::ServiceResource.new({type: 'service', attributes: SmplkitGeneratedClient::App::Service.new({name: 'name_example'})})}) # ServiceResponse | 
+service_request = SmplkitGeneratedClient::App::ServiceRequest.new({data: SmplkitGeneratedClient::App::ServiceResource.new({type: 'service', attributes: SmplkitGeneratedClient::App::Service.new({name: 'name_example'})})}) # ServiceRequest | 
 
 begin
   # Update Service
-  result = api_instance.update_service(id, service_response)
+  result = api_instance.update_service(id, service_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling ServicesApi->update_service: #{e}"
@@ -319,12 +319,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ServiceResponse>, Integer, Hash)> update_service_with_http_info(id, service_response)
+> <Array(<ServiceResponse>, Integer, Hash)> update_service_with_http_info(id, service_request)
 
 ```ruby
 begin
   # Update Service
-  data, status_code, headers = api_instance.update_service_with_http_info(id, service_response)
+  data, status_code, headers = api_instance.update_service_with_http_info(id, service_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ServiceResponse>
@@ -338,7 +338,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **service_response** | [**ServiceResponse**](ServiceResponse.md) |  |  |
+| **service_request** | [**ServiceRequest**](ServiceRequest.md) |  |  |
 
 ### Return type
 

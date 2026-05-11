@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API resource envelope for a plan tier.
   class PlanResource < ApiModelBase
     attr_accessor :id
 

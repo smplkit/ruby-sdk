@@ -4,18 +4,18 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **number** | **String** |  |  |
-| **status** | **String** |  |  |
-| **amount_due** | **Integer** |  |  |
-| **amount_paid** | **Integer** |  |  |
-| **currency** | **String** |  |  |
-| **description** | **String** |  |  |
-| **period_start** | **String** |  |  |
-| **period_end** | **String** |  |  |
-| **created_at** | **String** |  |  |
-| **paid_at** | **String** |  |  |
-| **hosted_invoice_url** | **String** |  |  |
-| **invoice_pdf** | **String** |  |  |
+| **number** | **String** | Invoice number assigned by the billing provider. |  |
+| **status** | **String** | Invoice lifecycle state, e.g. &#x60;draft&#x60;, &#x60;open&#x60;, &#x60;paid&#x60;, &#x60;uncollectible&#x60;, &#x60;void&#x60;. |  |
+| **amount_due** | **Integer** | Amount owed on the invoice in the smallest currency unit (e.g. cents). |  |
+| **amount_paid** | **Integer** | Amount paid against the invoice in the smallest currency unit. |  |
+| **currency** | **String** | ISO 4217 currency code, e.g. &#x60;usd&#x60;. |  |
+| **description** | **String** | Human-readable summary of the invoice&#39;s line items. |  |
+| **period_start** | **String** | Start of the service period the invoice covers (ISO 8601). |  |
+| **period_end** | **String** | End of the service period the invoice covers (ISO 8601). |  |
+| **created_at** | **String** | When the invoice was created (ISO 8601). |  |
+| **paid_at** | **String** | When the invoice was paid in full (ISO 8601), or &#x60;null&#x60; if unpaid. |  |
+| **hosted_invoice_url** | **String** | Link to the hosted invoice page. |  |
+| **invoice_pdf** | **String** | Link to the PDF rendering of the invoice. |  |
 
 ## Example
 

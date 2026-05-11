@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API collection response for context instances.
   class ContextListResponse < ApiModelBase
     attr_accessor :data
 

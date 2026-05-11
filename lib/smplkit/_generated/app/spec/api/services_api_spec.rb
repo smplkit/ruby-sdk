@@ -35,7 +35,7 @@ describe 'ServicesApi' do
   # unit tests for create_service
   # Create Service
   # Create a new service. The caller provides the id (key) in the request body.
-  # @param service_response 
+  # @param service_request 
   # @param [Hash] opts the optional parameters
   # @return [ServiceResponse]
   describe 'create_service test' do
@@ -83,7 +83,7 @@ describe 'ServicesApi' do
   # Update Service
   # Update a service by id.
   # @param id 
-  # @param service_response 
+  # @param service_request 
   # @param [Hash] opts the optional parameters
   # @return [ServiceResponse]
   describe 'update_service test' do

@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 ## create_context_type
 
-> <ContextTypeResponse> create_context_type(context_type_response)
+> <ContextTypeResponse> create_context_type(context_type_request)
 
 Create Context Type
 
@@ -31,11 +31,11 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::ContextTypesApi.new
-context_type_response = SmplkitGeneratedClient::App::ContextTypeResponse.new({data: SmplkitGeneratedClient::App::ContextTypeResource.new({type: 'context_type', attributes: SmplkitGeneratedClient::App::ContextType.new({name: 'name_example'})})}) # ContextTypeResponse | 
+context_type_request = SmplkitGeneratedClient::App::ContextTypeRequest.new({data: SmplkitGeneratedClient::App::ContextTypeResource.new({type: 'context_type', attributes: SmplkitGeneratedClient::App::ContextType.new({name: 'name_example'})})}) # ContextTypeRequest | 
 
 begin
   # Create Context Type
-  result = api_instance.create_context_type(context_type_response)
+  result = api_instance.create_context_type(context_type_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling ContextTypesApi->create_context_type: #{e}"
@@ -46,12 +46,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ContextTypeResponse>, Integer, Hash)> create_context_type_with_http_info(context_type_response)
+> <Array(<ContextTypeResponse>, Integer, Hash)> create_context_type_with_http_info(context_type_request)
 
 ```ruby
 begin
   # Create Context Type
-  data, status_code, headers = api_instance.create_context_type_with_http_info(context_type_response)
+  data, status_code, headers = api_instance.create_context_type_with_http_info(context_type_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ContextTypeResponse>
@@ -64,7 +64,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **context_type_response** | [**ContextTypeResponse**](ContextTypeResponse.md) |  |  |
+| **context_type_request** | [**ContextTypeRequest**](ContextTypeRequest.md) |  |  |
 
 ### Return type
 
@@ -285,7 +285,7 @@ This endpoint does not need any parameter.
 
 ## update_context_type
 
-> <ContextTypeResponse> update_context_type(id, context_type_response)
+> <ContextTypeResponse> update_context_type(id, context_type_request)
 
 Update Context Type
 
@@ -304,11 +304,11 @@ end
 
 api_instance = SmplkitGeneratedClient::App::ContextTypesApi.new
 id = 'id_example' # String | 
-context_type_response = SmplkitGeneratedClient::App::ContextTypeResponse.new({data: SmplkitGeneratedClient::App::ContextTypeResource.new({type: 'context_type', attributes: SmplkitGeneratedClient::App::ContextType.new({name: 'name_example'})})}) # ContextTypeResponse | 
+context_type_request = SmplkitGeneratedClient::App::ContextTypeRequest.new({data: SmplkitGeneratedClient::App::ContextTypeResource.new({type: 'context_type', attributes: SmplkitGeneratedClient::App::ContextType.new({name: 'name_example'})})}) # ContextTypeRequest | 
 
 begin
   # Update Context Type
-  result = api_instance.update_context_type(id, context_type_response)
+  result = api_instance.update_context_type(id, context_type_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling ContextTypesApi->update_context_type: #{e}"
@@ -319,12 +319,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ContextTypeResponse>, Integer, Hash)> update_context_type_with_http_info(id, context_type_response)
+> <Array(<ContextTypeResponse>, Integer, Hash)> update_context_type_with_http_info(id, context_type_request)
 
 ```ruby
 begin
   # Update Context Type
-  data, status_code, headers = api_instance.update_context_type_with_http_info(id, context_type_response)
+  data, status_code, headers = api_instance.update_context_type_with_http_info(id, context_type_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ContextTypeResponse>
@@ -338,7 +338,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **context_type_response** | [**ContextTypeResponse**](ContextTypeResponse.md) |  |  |
+| **context_type_request** | [**ContextTypeRequest**](ContextTypeRequest.md) |  |  |
 
 ### Return type
 

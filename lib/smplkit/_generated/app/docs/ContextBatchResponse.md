@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **registered** | **Integer** |  |  |
+| **registered** | **Integer** | Number of context instances that were created or updated. |  |
 
 ## Example
 

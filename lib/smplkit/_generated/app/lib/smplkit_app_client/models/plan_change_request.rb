@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Body for the subscription upgrade and downgrade actions.
   class PlanChangeRequest < ApiModelBase
+    # Plan key to change the subscription to.
     attr_accessor :plan
 
     # Attribute mapping from ruby-style variable name to JSON key.

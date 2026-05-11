@@ -14,9 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # One distinct metric name with a representative unit.
   class MetricNameItem < ApiModelBase
+    # Distinct metric series name.
     attr_accessor :name
 
+    # Representative unit observed for this series.
     attr_accessor :unit
 
     # Attribute mapping from ruby-style variable name to JSON key.

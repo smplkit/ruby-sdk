@@ -14,12 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # Confirmation envelope for ``POST /accounts/current/actions/wipe``.
+  # Confirmation envelope for the wipe-account action.
   class AccountWipeRequest < ApiModelBase
-    # Must be ``true`` to proceed. Anything else returns 400. The frontend gates the call behind a confirmation dialog; this field is the server-side seatbelt.
+    # Must be `true` for the wipe to proceed. Any other value returns 400.
     attr_accessor :confirm
 
-    # When ``true``, the wipe re-seeds the account with the same Acme Commerce sample dataset that new accounts are bootstrapped with. Best-effort: any seeding failures are logged but do not fail the wipe.
+    # When `true`, re-seed the account with the standard sample dataset after wiping. Best-effort: any seeding failure is logged but does not fail the wipe.
     attr_accessor :generate_sample_data
 
     # Attribute mapping from ruby-style variable name to JSON key.

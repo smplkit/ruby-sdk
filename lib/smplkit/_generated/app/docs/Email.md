@@ -5,8 +5,8 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **topic** | [**ContactTopic**](ContactTopic.md) |  |  |
-| **body** | **String** |  |  |
-| **sent_at** | **Time** |  | [optional][readonly] |
+| **body** | **String** | Free-form text of the message. Trimmed before validation. |  |
+| **sent_at** | **Time** | When the message was accepted by the server. | [optional][readonly] |
 
 ## Example
 

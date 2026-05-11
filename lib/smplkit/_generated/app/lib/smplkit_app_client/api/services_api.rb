@@ -21,26 +21,26 @@ module SmplkitGeneratedClient::App
     end
     # Create Service
     # Create a new service. The caller provides the id (key) in the request body.
-    # @param service_response [ServiceResponse] 
+    # @param service_request [ServiceRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ServiceResponse]
-    def create_service(service_response, opts = {})
-      data, _status_code, _headers = create_service_with_http_info(service_response, opts)
+    def create_service(service_request, opts = {})
+      data, _status_code, _headers = create_service_with_http_info(service_request, opts)
       data
     end
 
     # Create Service
     # Create a new service. The caller provides the id (key) in the request body.
-    # @param service_response [ServiceResponse] 
+    # @param service_request [ServiceRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ServiceResponse, Integer, Hash)>] ServiceResponse data, response status code and response headers
-    def create_service_with_http_info(service_response, opts = {})
+    def create_service_with_http_info(service_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ServicesApi.create_service ...'
       end
-      # verify the required parameter 'service_response' is set
-      if @api_client.config.client_side_validation && service_response.nil?
-        fail ArgumentError, "Missing the required parameter 'service_response' when calling ServicesApi.create_service"
+      # verify the required parameter 'service_request' is set
+      if @api_client.config.client_side_validation && service_request.nil?
+        fail ArgumentError, "Missing the required parameter 'service_request' when calling ServicesApi.create_service"
       end
       # resource path
       local_var_path = '/api/v1/services'
@@ -62,7 +62,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(service_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(service_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ServiceResponse'
@@ -273,21 +273,21 @@ module SmplkitGeneratedClient::App
     # Update Service
     # Update a service by id.
     # @param id [String] 
-    # @param service_response [ServiceResponse] 
+    # @param service_request [ServiceRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ServiceResponse]
-    def update_service(id, service_response, opts = {})
-      data, _status_code, _headers = update_service_with_http_info(id, service_response, opts)
+    def update_service(id, service_request, opts = {})
+      data, _status_code, _headers = update_service_with_http_info(id, service_request, opts)
       data
     end
 
     # Update Service
     # Update a service by id.
     # @param id [String] 
-    # @param service_response [ServiceResponse] 
+    # @param service_request [ServiceRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ServiceResponse, Integer, Hash)>] ServiceResponse data, response status code and response headers
-    def update_service_with_http_info(id, service_response, opts = {})
+    def update_service_with_http_info(id, service_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ServicesApi.update_service ...'
       end
@@ -295,9 +295,9 @@ module SmplkitGeneratedClient::App
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling ServicesApi.update_service"
       end
-      # verify the required parameter 'service_response' is set
-      if @api_client.config.client_side_validation && service_response.nil?
-        fail ArgumentError, "Missing the required parameter 'service_response' when calling ServicesApi.update_service"
+      # verify the required parameter 'service_request' is set
+      if @api_client.config.client_side_validation && service_request.nil?
+        fail ArgumentError, "Missing the required parameter 'service_request' when calling ServicesApi.update_service"
       end
       # resource path
       local_var_path = '/api/v1/services/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -319,7 +319,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(service_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(service_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ServiceResponse'

@@ -14,26 +14,34 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # An API key used by SDKs, scripts, and other programmatic clients to authenticate with the smplkit API on behalf of the account.  The full key value is returned in plaintext on the create response and is otherwise unavailable — record it somewhere safe immediately after creation.
   class ApiKey < ApiModelBase
+    # Human-readable name for the key.
     attr_accessor :name
 
+    # Lifecycle state of the key. `ACTIVE` keys may be used to authenticate; `REVOKED` keys are rejected.
     attr_accessor :status
 
+    # The bearer token value. Returned in plaintext on the create response so the caller can capture it; subsequent reads return the same value for round-tripping.
     attr_accessor :key
 
+    # Scope restrictions applied to the key. Empty object grants full account access; populated forms are reserved for future scope syntax.
     attr_accessor :scopes
 
+    # UUID of the user who created the key.
     attr_accessor :created_by
 
+    # Optional expiry timestamp. After this time, the key is rejected. Omit for keys that do not expire.
     attr_accessor :expires_at
 
+    # When the key was most recently used to authenticate.
     attr_accessor :last_used_at
 
+    # When the key was created.
     attr_accessor :created_at
 
+    # When the key was last modified.
     attr_accessor :updated_at
-
-    attr_accessor :data
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -46,8 +54,7 @@ module SmplkitGeneratedClient::App
         :'expires_at' => :'expires_at',
         :'last_used_at' => :'last_used_at',
         :'created_at' => :'created_at',
-        :'updated_at' => :'updated_at',
-        :'data' => :'data'
+        :'updated_at' => :'updated_at'
       }
     end
 
@@ -72,8 +79,7 @@ module SmplkitGeneratedClient::App
         :'expires_at' => :'Time',
         :'last_used_at' => :'Time',
         :'created_at' => :'Time',
-        :'updated_at' => :'Time',
-        :'data' => :'Hash<String, Object>'
+        :'updated_at' => :'Time'
       }
     end
 
@@ -86,7 +92,7 @@ module SmplkitGeneratedClient::App
         :'expires_at',
         :'last_used_at',
         :'created_at',
-        :'updated_at',
+        :'updated_at'
       ])
     end
 
@@ -145,12 +151,6 @@ module SmplkitGeneratedClient::App
       if attributes.key?(:'updated_at')
         self.updated_at = attributes[:'updated_at']
       end
-
-      if attributes.key?(:'data')
-        if (value = attributes[:'data']).is_a?(Hash)
-          self.data = value
-        end
-      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -205,8 +205,7 @@ module SmplkitGeneratedClient::App
           expires_at == o.expires_at &&
           last_used_at == o.last_used_at &&
           created_at == o.created_at &&
-          updated_at == o.updated_at &&
-          data == o.data
+          updated_at == o.updated_at
     end
 
     # @see the `==` method
@@ -218,7 +217,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, status, key, scopes, created_by, expires_at, last_used_at, created_at, updated_at, data].hash
+      [name, status, key, scopes, created_by, expires_at, last_used_at, created_at, updated_at].hash
     end
 
     # Builds the object from hash

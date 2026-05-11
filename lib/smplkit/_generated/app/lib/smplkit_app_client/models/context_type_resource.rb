@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API resource envelope for a context type.  `id` must not be specified for create requests (the server assigns it).
   class ContextTypeResource < ApiModelBase
     attr_accessor :id
 

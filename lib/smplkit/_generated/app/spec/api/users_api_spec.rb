@@ -120,7 +120,7 @@ describe 'UsersApi' do
   # unit tests for update_current_user
   # Update Current User
   # Update the currently authenticated user&#39;s profile.
-  # @param user_response 
+  # @param user_request 
   # @param [Hash] opts the optional parameters
   # @return [UserResponse]
   describe 'update_current_user test' do
@@ -133,7 +133,7 @@ describe 'UsersApi' do
   # Update User Role
   # Update a user&#39;s role in the account.
   # @param id 
-  # @param user_response 
+  # @param user_request 
   # @param [Hash] opts the optional parameters
   # @return [UserResponse]
   describe 'update_user_role test' do

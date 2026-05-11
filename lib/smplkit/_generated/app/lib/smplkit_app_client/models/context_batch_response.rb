@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Summary returned by the bulk context registration endpoint.
   class ContextBatchResponse < ApiModelBase
+    # Number of context instances that were created or updated.
     attr_accessor :registered
 
     # Attribute mapping from ruby-style variable name to JSON key.

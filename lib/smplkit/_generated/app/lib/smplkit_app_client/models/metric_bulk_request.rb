@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Bulk-ingest request envelope for metric data points.
   class MetricBulkRequest < ApiModelBase
+    # Metric data points to ingest in a single request.
     attr_accessor :data
 
     # Attribute mapping from ruby-style variable name to JSON key.

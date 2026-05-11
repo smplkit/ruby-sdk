@@ -14,13 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # One context instance in a bulk registration payload.
   class ContextBulkItem < ApiModelBase
-    # Context type key: 'user', 'account', 'device'
+    # Key of the context type this instance belongs to (e.g. `user`, `account`, `device`).
     attr_accessor :type
 
-    # Entity identifier: 'user-123', 'acme-corp'
+    # Entity identifier within the context type, e.g. `user-123`.
     attr_accessor :key
 
+    # Observed attribute values for this context instance.
     attr_accessor :attributes
 
     # Attribute mapping from ruby-style variable name to JSON key.

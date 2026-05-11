@@ -14,19 +14,27 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A smplkit product, with its plans, metered limits, and marketing copy.
   class Product < ApiModelBase
+    # Human-readable product name.
     attr_accessor :display_name
 
+    # Long-form product description.
     attr_accessor :description
 
+    # Short marketing tagline shown on plan-selection surfaces.
     attr_accessor :tagline
 
+    # Bullet-list feature highlights for the product.
     attr_accessor :features
 
+    # When `true`, the product is listed but not yet available for subscription.
     attr_accessor :coming_soon
 
+    # Map of limit key to limit definition for this product.
     attr_accessor :limits
 
+    # Map of plan key to plan definition for this product.
     attr_accessor :plans
 
     # Attribute mapping from ruby-style variable name to JSON key.

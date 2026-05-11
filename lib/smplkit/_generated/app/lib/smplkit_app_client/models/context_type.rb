@@ -14,15 +14,18 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A kind of context — for example, `user`, `account`, or `device` — that groups together context instances sharing a common set of attributes.  The known attribute keys for the type accumulate as instances are registered; each key carries an optional metadata object describing it.
   class ContextType < ApiModelBase
-    # Display label: User, Account, Device
+    # Display label for the context type, e.g. `User`, `Account`, or `Device`.
     attr_accessor :name
 
-    # Known attribute keys with metadata objects
+    # Map of known attribute key to per-attribute metadata. The metadata object is free-form and may be empty. Keys grow as new attributes are observed on context instances of this type.
     attr_accessor :attributes
 
+    # When the context type was created.
     attr_accessor :created_at
 
+    # When the context type was last modified.
     attr_accessor :updated_at
 
     # Attribute mapping from ruby-style variable name to JSON key.

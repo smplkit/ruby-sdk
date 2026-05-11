@@ -274,23 +274,23 @@ module SmplkitGeneratedClient::App
     end
 
     # Update Context
-    # Update a context instance by composite id (type:key). Only the human-readable display name is mutable through this endpoint; context_type and observed attributes are written by the SDK ingestion path.
+    # Update a context instance by composite id (type:key). Only the human-readable display name is mutable here; `context_type` and observed `attributes` are written by SDK registration and ignored on this endpoint.
     # @param id [String] 
-    # @param context_response [ContextResponse] 
+    # @param context_request [ContextRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ContextResponse]
-    def update_context(id, context_response, opts = {})
-      data, _status_code, _headers = update_context_with_http_info(id, context_response, opts)
+    def update_context(id, context_request, opts = {})
+      data, _status_code, _headers = update_context_with_http_info(id, context_request, opts)
       data
     end
 
     # Update Context
-    # Update a context instance by composite id (type:key). Only the human-readable display name is mutable through this endpoint; context_type and observed attributes are written by the SDK ingestion path.
+    # Update a context instance by composite id (type:key). Only the human-readable display name is mutable here; &#x60;context_type&#x60; and observed &#x60;attributes&#x60; are written by SDK registration and ignored on this endpoint.
     # @param id [String] 
-    # @param context_response [ContextResponse] 
+    # @param context_request [ContextRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ContextResponse, Integer, Hash)>] ContextResponse data, response status code and response headers
-    def update_context_with_http_info(id, context_response, opts = {})
+    def update_context_with_http_info(id, context_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ContextsApi.update_context ...'
       end
@@ -298,9 +298,9 @@ module SmplkitGeneratedClient::App
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling ContextsApi.update_context"
       end
-      # verify the required parameter 'context_response' is set
-      if @api_client.config.client_side_validation && context_response.nil?
-        fail ArgumentError, "Missing the required parameter 'context_response' when calling ContextsApi.update_context"
+      # verify the required parameter 'context_request' is set
+      if @api_client.config.client_side_validation && context_request.nil?
+        fail ArgumentError, "Missing the required parameter 'context_request' when calling ContextsApi.update_context"
       end
       # resource path
       local_var_path = '/api/v1/contexts/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -322,7 +322,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(context_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(context_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ContextResponse'

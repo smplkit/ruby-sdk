@@ -14,11 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A service that contexts can be evaluated against — for example, a backend application or microservice in the customer's stack.
   class Service < ApiModelBase
+    # Human-readable name for the service.
     attr_accessor :name
 
+    # When the service was created.
     attr_accessor :created_at
 
+    # When the service was last modified.
     attr_accessor :updated_at
 
     # Attribute mapping from ruby-style variable name to JSON key.

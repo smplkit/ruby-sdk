@@ -14,12 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Body for the email + password registration endpoint.
   class RegisterRequest < ApiModelBase
+    # Email address that becomes the new user's login identifier.
     attr_accessor :email
 
+    # Password for the new account. Must be at least 8 characters.
     attr_accessor :password
 
-    # Registration entry point. Allowed: LOGIN, GET_STARTED, LIVE_DEMO, UNKNOWN. Defaults to UNKNOWN when omitted. Case-insensitive.
+    # How the customer arrived at the registration page. Allowed values: `LOGIN`, `GET_STARTED`, `LIVE_DEMO`, `UNKNOWN`. Defaults to `UNKNOWN` when omitted. Case-insensitive on input.
     attr_accessor :entry_point
 
     class EnumAttributeValidator

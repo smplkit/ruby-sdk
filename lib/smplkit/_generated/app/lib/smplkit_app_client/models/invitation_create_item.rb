@@ -14,9 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # One invitation in a bulk-create request.
   class InvitationCreateItem < ApiModelBase
+    # Email address to send the invitation to.
     attr_accessor :email
 
+    # Role to assign on acceptance. One of `ADMIN`, `MEMBER`, or `VIEWER`. `OWNER` cannot be assigned via invitation. Case-insensitive on input.
     attr_accessor :role
 
     # Attribute mapping from ruby-style variable name to JSON key.

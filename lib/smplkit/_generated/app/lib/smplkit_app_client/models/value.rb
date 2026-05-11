@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Aggregated value for this data point over `period_seconds`.
   module Value
     class << self
       # List of class defined in anyOf (OpenAPI v3)

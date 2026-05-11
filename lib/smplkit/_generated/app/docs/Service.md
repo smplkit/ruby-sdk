@@ -4,9 +4,9 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **name** | **String** |  |  |
-| **created_at** | **Time** |  | [optional][readonly] |
-| **updated_at** | **Time** |  | [optional][readonly] |
+| **name** | **String** | Human-readable name for the service. |  |
+| **created_at** | **Time** | When the service was created. | [optional][readonly] |
+| **updated_at** | **Time** | When the service was last modified. | [optional][readonly] |
 
 ## Example
 

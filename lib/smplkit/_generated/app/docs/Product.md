@@ -4,13 +4,13 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **display_name** | **String** |  |  |
-| **description** | **String** |  |  |
-| **tagline** | **String** |  | [optional] |
-| **features** | **Array&lt;String&gt;** |  | [optional] |
-| **coming_soon** | **Boolean** |  | [optional][default to false] |
-| **limits** | [**Hash&lt;String, LimitDefinition&gt;**](LimitDefinition.md) |  |  |
-| **plans** | [**Hash&lt;String, PlanDefinition&gt;**](PlanDefinition.md) |  |  |
+| **display_name** | **String** | Human-readable product name. |  |
+| **description** | **String** | Long-form product description. |  |
+| **tagline** | **String** | Short marketing tagline shown on plan-selection surfaces. | [optional] |
+| **features** | **Array&lt;String&gt;** | Bullet-list feature highlights for the product. | [optional] |
+| **coming_soon** | **Boolean** | When &#x60;true&#x60;, the product is listed but not yet available for subscription. | [optional][default to false] |
+| **limits** | [**Hash&lt;String, LimitDefinition&gt;**](LimitDefinition.md) | Map of limit key to limit definition for this product. |  |
+| **plans** | [**Hash&lt;String, PlanDefinition&gt;**](PlanDefinition.md) | Map of plan key to plan definition for this product. |  |
 
 ## Example
 

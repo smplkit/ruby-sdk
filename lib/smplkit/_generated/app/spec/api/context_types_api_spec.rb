@@ -35,7 +35,7 @@ describe 'ContextTypesApi' do
   # unit tests for create_context_type
   # Create Context Type
   # Create a new context type. The caller provides the id (key) in the request body.
-  # @param context_type_response 
+  # @param context_type_request 
   # @param [Hash] opts the optional parameters
   # @return [ContextTypeResponse]
   describe 'create_context_type test' do
@@ -83,7 +83,7 @@ describe 'ContextTypesApi' do
   # Update Context Type
   # Update a context type by id.
   # @param id 
-  # @param context_type_response 
+  # @param context_type_request 
   # @param [Hash] opts the optional parameters
   # @return [ContextTypeResponse]
   describe 'update_context_type test' do

@@ -14,15 +14,21 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A named deployment context — for example, `production`, `staging`, or `development`. Resources scoped to an environment (such as config items and feature flags) are evaluated against environment-specific values.
   class Environment < ApiModelBase
+    # Human-readable name for the environment.
     attr_accessor :name
 
+    # Display color used by the console to badge the environment. Accepts any CSS color string.
     attr_accessor :color
 
+    # `STANDARD` for environments the customer explicitly manages; `AD_HOC` for environments auto-created from SDK traffic. Case-insensitive on input.
     attr_accessor :classification
 
+    # When the environment was created.
     attr_accessor :created_at
 
+    # When the environment was last modified.
     attr_accessor :updated_at
 
     class EnumAttributeValidator

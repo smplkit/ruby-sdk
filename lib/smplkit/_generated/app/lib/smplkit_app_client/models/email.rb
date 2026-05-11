@@ -14,12 +14,14 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # Contact-us email resource attributes.  This resource is a pure action — it is not persisted. The id returned in the response is a per-request uuid4 for correlation only.
+  # A contact-us submission. Sending the resource delivers a support ticket and an auto-response email; nothing is persisted. The `id` returned on the response is a per-request correlation identifier.
   class Email < ApiModelBase
     attr_accessor :topic
 
+    # Free-form text of the message. Trimmed before validation.
     attr_accessor :body
 
+    # When the message was accepted by the server.
     attr_accessor :sent_at
 
     class EnumAttributeValidator

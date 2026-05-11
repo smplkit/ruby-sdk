@@ -4,8 +4,8 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **email** | **String** |  |  |
-| **password** | **String** |  |  |
+| **email** | **String** | Email address of the user signing in. |  |
+| **password** | **String** | Password supplied for authentication. |  |
 
 ## Example
 

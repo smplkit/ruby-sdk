@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API resource envelope for a payment method.  `id` must not be specified for create requests (the server assigns it).
   class PaymentMethodResource < ApiModelBase
     attr_accessor :id
 

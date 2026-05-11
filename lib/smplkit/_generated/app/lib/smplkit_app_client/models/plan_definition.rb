@@ -14,9 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Per-plan pricing and limits for a product.
   class PlanDefinition < ApiModelBase
+    # Monthly list price in cents. `0` for free plans.
     attr_accessor :price_monthly_cents
 
+    # Map of limit key to the cap that applies on this plan. `-1` indicates an unlimited cap.
     attr_accessor :limits
 
     # Attribute mapping from ruby-style variable name to JSON key.

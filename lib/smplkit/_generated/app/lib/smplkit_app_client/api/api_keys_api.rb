@@ -21,26 +21,26 @@ module SmplkitGeneratedClient::App
     end
     # Create API Key
     # Create a new API key. The id and key value are server-generated.
-    # @param api_key_response [ApiKeyResponse] 
+    # @param api_key_request [ApiKeyRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ApiKeyResponse]
-    def create_api_key(api_key_response, opts = {})
-      data, _status_code, _headers = create_api_key_with_http_info(api_key_response, opts)
+    def create_api_key(api_key_request, opts = {})
+      data, _status_code, _headers = create_api_key_with_http_info(api_key_request, opts)
       data
     end
 
     # Create API Key
     # Create a new API key. The id and key value are server-generated.
-    # @param api_key_response [ApiKeyResponse] 
+    # @param api_key_request [ApiKeyRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ApiKeyResponse, Integer, Hash)>] ApiKeyResponse data, response status code and response headers
-    def create_api_key_with_http_info(api_key_response, opts = {})
+    def create_api_key_with_http_info(api_key_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: APIKeysApi.create_api_key ...'
       end
-      # verify the required parameter 'api_key_response' is set
-      if @api_client.config.client_side_validation && api_key_response.nil?
-        fail ArgumentError, "Missing the required parameter 'api_key_response' when calling APIKeysApi.create_api_key"
+      # verify the required parameter 'api_key_request' is set
+      if @api_client.config.client_side_validation && api_key_request.nil?
+        fail ArgumentError, "Missing the required parameter 'api_key_request' when calling APIKeysApi.create_api_key"
       end
       # resource path
       local_var_path = '/api/v1/api_keys'
@@ -62,7 +62,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(api_key_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(api_key_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ApiKeyResponse'
@@ -339,21 +339,21 @@ module SmplkitGeneratedClient::App
     # Update API Key
     # Update an API key by id.
     # @param id [String] 
-    # @param api_key_response [ApiKeyResponse] 
+    # @param api_key_request [ApiKeyRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ApiKeyResponse]
-    def update_api_key(id, api_key_response, opts = {})
-      data, _status_code, _headers = update_api_key_with_http_info(id, api_key_response, opts)
+    def update_api_key(id, api_key_request, opts = {})
+      data, _status_code, _headers = update_api_key_with_http_info(id, api_key_request, opts)
       data
     end
 
     # Update API Key
     # Update an API key by id.
     # @param id [String] 
-    # @param api_key_response [ApiKeyResponse] 
+    # @param api_key_request [ApiKeyRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ApiKeyResponse, Integer, Hash)>] ApiKeyResponse data, response status code and response headers
-    def update_api_key_with_http_info(id, api_key_response, opts = {})
+    def update_api_key_with_http_info(id, api_key_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: APIKeysApi.update_api_key ...'
       end
@@ -361,9 +361,9 @@ module SmplkitGeneratedClient::App
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling APIKeysApi.update_api_key"
       end
-      # verify the required parameter 'api_key_response' is set
-      if @api_client.config.client_side_validation && api_key_response.nil?
-        fail ArgumentError, "Missing the required parameter 'api_key_response' when calling APIKeysApi.update_api_key"
+      # verify the required parameter 'api_key_request' is set
+      if @api_client.config.client_side_validation && api_key_request.nil?
+        fail ArgumentError, "Missing the required parameter 'api_key_request' when calling APIKeysApi.update_api_key"
       end
       # resource path
       local_var_path = '/api/v1/api_keys/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -385,7 +385,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(api_key_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(api_key_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ApiKeyResponse'

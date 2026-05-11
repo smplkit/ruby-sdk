@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API resource envelope for an environment.  `id` must not be specified for create requests (the server assigns it).
   class EnvironmentResource < ApiModelBase
     attr_accessor :id
 

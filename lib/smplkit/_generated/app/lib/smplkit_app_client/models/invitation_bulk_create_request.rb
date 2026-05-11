@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Bulk-create request body for the invitations endpoint.
   class InvitationBulkCreateRequest < ApiModelBase
+    # One to fifty invitations to send in a single request.
     attr_accessor :invitations
 
     # Attribute mapping from ruby-style variable name to JSON key.

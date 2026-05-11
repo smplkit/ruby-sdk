@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **type** | **String** |  |  |
+| **type** | **String** | Resource type; must be &#x60;subscription&#x60;. |  |
 | **attributes** | [**CreateSubscriptionAttributes**](CreateSubscriptionAttributes.md) |  |  |
 
 ## Example

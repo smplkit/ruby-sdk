@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Bulk registration request body for the contexts endpoint.
   class ContextBulkRegister < ApiModelBase
+    # One context instance per entry.
     attr_accessor :contexts
 
     # Attribute mapping from ruby-style variable name to JSON key.

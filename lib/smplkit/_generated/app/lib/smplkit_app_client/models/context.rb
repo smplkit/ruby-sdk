@@ -14,18 +14,21 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A specific instance of a context type — for example, a particular user, account, or device — together with the attributes observed on it.  Context instances are addressed by a composite identifier of the form `context_type:key` (e.g. `user:alice-123`).
   class Context < ApiModelBase
-    # Human-readable display name
+    # Human-readable display name for the context instance.
     attr_accessor :name
 
-    # Context type key (e.g., 'user', 'account')
+    # Key of the context type this instance belongs to (e.g. `user`, `account`).
     attr_accessor :context_type
 
-    # Observed attributes
+    # Observed attribute values for this context instance. The key set is conventionally aligned with the parent context type's known attribute keys, but additional keys are accepted.
     attr_accessor :attributes
 
+    # When the context instance was first registered.
     attr_accessor :created_at
 
+    # When the context instance was last modified.
     attr_accessor :updated_at
 
     # Attribute mapping from ruby-style variable name to JSON key.

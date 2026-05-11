@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Body for the email-verification endpoint.
   class VerifyEmailRequest < ApiModelBase
+    # Verification token previously delivered to the user's email.
     attr_accessor :token
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **client_secret** | **String** |  |  |
+| **client_secret** | **String** | Client secret to pass to Stripe Elements so the customer can complete payment-method setup in the browser. |  |
 
 ## Example
 

@@ -14,11 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Attributes accepted when creating a new subscription.
   class CreateSubscriptionAttributes < ApiModelBase
+    # Product key to subscribe to, e.g. `flags`.
     attr_accessor :product
 
+    # Plan key to subscribe on, e.g. `pro`.
     attr_accessor :plan
 
+    # UUID of a payment method on file to bill against. If omitted, the account's default payment method is used.
     attr_accessor :payment_method
 
     # Attribute mapping from ruby-style variable name to JSON key.

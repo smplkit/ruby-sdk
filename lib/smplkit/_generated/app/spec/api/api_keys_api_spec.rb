@@ -35,7 +35,7 @@ describe 'APIKeysApi' do
   # unit tests for create_api_key
   # Create API Key
   # Create a new API key. The id and key value are server-generated.
-  # @param api_key_response 
+  # @param api_key_request 
   # @param [Hash] opts the optional parameters
   # @return [ApiKeyResponse]
   describe 'create_api_key test' do
@@ -96,7 +96,7 @@ describe 'APIKeysApi' do
   # Update API Key
   # Update an API key by id.
   # @param id 
-  # @param api_key_response 
+  # @param api_key_request 
   # @param [Hash] opts the optional parameters
   # @return [ApiKeyResponse]
   describe 'update_api_key test' do

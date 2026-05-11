@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Body for the invitation-accept endpoint.
   class InvitationAcceptRequest < ApiModelBase
+    # Invitation token from the email link.
     attr_accessor :token
 
     # Attribute mapping from ruby-style variable name to JSON key.

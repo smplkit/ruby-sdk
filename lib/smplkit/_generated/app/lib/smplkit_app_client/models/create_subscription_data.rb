@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Resource object for the create-subscription request.
   class CreateSubscriptionData < ApiModelBase
+    # Resource type; must be `subscription`.
     attr_accessor :type
 
     attr_accessor :attributes

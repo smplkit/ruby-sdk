@@ -14,7 +14,7 @@ All URIs are relative to *http://localhost*
 
 ## create_api_key
 
-> <ApiKeyResponse> create_api_key(api_key_response)
+> <ApiKeyResponse> create_api_key(api_key_request)
 
 Create API Key
 
@@ -32,11 +32,11 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::APIKeysApi.new
-api_key_response = SmplkitGeneratedClient::App::ApiKeyResponse.new({data: SmplkitGeneratedClient::App::ApiKeyResource.new({type: 'api_key', attributes: SmplkitGeneratedClient::App::ApiKey.new({name: 'name_example'})})}) # ApiKeyResponse | 
+api_key_request = SmplkitGeneratedClient::App::ApiKeyRequest.new({data: SmplkitGeneratedClient::App::ApiKeyResource.new({type: 'api_key', attributes: SmplkitGeneratedClient::App::ApiKey.new({name: 'name_example'})})}) # ApiKeyRequest | 
 
 begin
   # Create API Key
-  result = api_instance.create_api_key(api_key_response)
+  result = api_instance.create_api_key(api_key_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling APIKeysApi->create_api_key: #{e}"
@@ -47,12 +47,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ApiKeyResponse>, Integer, Hash)> create_api_key_with_http_info(api_key_response)
+> <Array(<ApiKeyResponse>, Integer, Hash)> create_api_key_with_http_info(api_key_request)
 
 ```ruby
 begin
   # Create API Key
-  data, status_code, headers = api_instance.create_api_key_with_http_info(api_key_response)
+  data, status_code, headers = api_instance.create_api_key_with_http_info(api_key_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ApiKeyResponse>
@@ -65,7 +65,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **api_key_response** | [**ApiKeyResponse**](ApiKeyResponse.md) |  |  |
+| **api_key_request** | [**ApiKeyRequest**](ApiKeyRequest.md) |  |  |
 
 ### Return type
 
@@ -360,7 +360,7 @@ end
 
 ## update_api_key
 
-> <ApiKeyResponse> update_api_key(id, api_key_response)
+> <ApiKeyResponse> update_api_key(id, api_key_request)
 
 Update API Key
 
@@ -379,11 +379,11 @@ end
 
 api_instance = SmplkitGeneratedClient::App::APIKeysApi.new
 id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
-api_key_response = SmplkitGeneratedClient::App::ApiKeyResponse.new({data: SmplkitGeneratedClient::App::ApiKeyResource.new({type: 'api_key', attributes: SmplkitGeneratedClient::App::ApiKey.new({name: 'name_example'})})}) # ApiKeyResponse | 
+api_key_request = SmplkitGeneratedClient::App::ApiKeyRequest.new({data: SmplkitGeneratedClient::App::ApiKeyResource.new({type: 'api_key', attributes: SmplkitGeneratedClient::App::ApiKey.new({name: 'name_example'})})}) # ApiKeyRequest | 
 
 begin
   # Update API Key
-  result = api_instance.update_api_key(id, api_key_response)
+  result = api_instance.update_api_key(id, api_key_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling APIKeysApi->update_api_key: #{e}"
@@ -394,12 +394,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ApiKeyResponse>, Integer, Hash)> update_api_key_with_http_info(id, api_key_response)
+> <Array(<ApiKeyResponse>, Integer, Hash)> update_api_key_with_http_info(id, api_key_request)
 
 ```ruby
 begin
   # Update API Key
-  data, status_code, headers = api_instance.update_api_key_with_http_info(id, api_key_response)
+  data, status_code, headers = api_instance.update_api_key_with_http_info(id, api_key_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ApiKeyResponse>
@@ -413,7 +413,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **api_key_response** | [**ApiKeyResponse**](ApiKeyResponse.md) |  |  |
+| **api_key_request** | [**ApiKeyRequest**](ApiKeyRequest.md) |  |  |
 
 ### Return type
 

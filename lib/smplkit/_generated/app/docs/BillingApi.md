@@ -97,7 +97,7 @@ end
 
 Add Payment Method
 
-Register a Stripe payment method (``pm_...``) as a persistent resource. The frontend obtains the Stripe ID via SetupIntent + Stripe Elements, then POSTs it here. Body shape and server behavior per ADR-044 §5.1.
+Register a Stripe payment method (`pm_...`) on the account. The client first creates the Stripe payment method using a SetupIntent and Stripe Elements, then submits its identifier here to persist it.
 
 ### Examples
 
@@ -235,7 +235,7 @@ end
 
 Delete Payment Method
 
-Detach the payment method from Stripe and soft-delete the local row. Returns 409 if this is the only PM and the account has an active paid subscription. If the deleted row was default, the oldest remaining row is promoted.
+Delete a payment method. Returns 409 if this is the only payment method on file and the account has an active paid subscription. If the deleted payment method was the default, the oldest remaining payment method is promoted to default.
 
 ### Examples
 
@@ -374,7 +374,7 @@ end
 
 Execute Setup Intent
 
-Create a Stripe SetupIntent for saving a payment method.  Returns a ``client_secret`` that the frontend passes to Stripe's Payment Element so the customer can securely enter card details without an immediate charge.
+Create a Stripe SetupIntent for adding a payment method without an immediate charge. Returns the `client_secret` to pass to Stripe Elements in the browser.
 
 ### Examples
 
@@ -440,7 +440,7 @@ This endpoint does not need any parameter.
 
 Get Invoice
 
-Return a single invoice by ID. Supports content negotiation via Accept header:  - ``application/pdf`` — PDF bytes proxy-streamed from Stripe - ``application/vnd.api+json`` / ``application/json`` / absent — JSON:API resource - Any other value — 406 Not Acceptable
+Return a single invoice by id. Supports content negotiation via the `Accept` header:  - `application/pdf` — streams the invoice PDF. - `application/vnd.api+json`, `application/json`, or absent — returns   the JSON:API invoice resource. - Any other value — `406 Not Acceptable`.
 
 ### Examples
 
@@ -776,7 +776,7 @@ This endpoint does not need any parameter.
 
 Set Default Payment Method
 
-Mark this payment method as the account's default. Idempotent — a no-op 200 if already default.
+Mark this payment method as the account's default. Idempotent: returns 200 with no changes when the payment method is already the default.
 
 ### Examples
 
@@ -979,11 +979,11 @@ end
 
 ## update_payment_method
 
-> <PaymentMethodResponse> update_payment_method(id, payment_method_response)
+> <PaymentMethodResponse> update_payment_method(id, payment_method_request)
 
 Update Payment Method
 
-Update the mutable fields (``billing_details``, ``exp_month``, ``exp_year``). The ``default`` field is not mutable via PUT — see ADR-044 §5.2; use the ``set_default`` action instead.
+Update the mutable fields of a payment method (`billing_details`, `exp_month`, `exp_year`). The `default` flag is not mutable via PUT — use the `set_default` action instead.
 
 ### Examples
 
@@ -998,11 +998,11 @@ end
 
 api_instance = SmplkitGeneratedClient::App::BillingApi.new
 id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
-payment_method_response = SmplkitGeneratedClient::App::PaymentMethodResponse.new({data: SmplkitGeneratedClient::App::PaymentMethodResource.new({type: 'payment_method', attributes: SmplkitGeneratedClient::App::PaymentMethod.new})}) # PaymentMethodResponse | 
+payment_method_request = SmplkitGeneratedClient::App::PaymentMethodRequest.new({data: SmplkitGeneratedClient::App::PaymentMethodResource.new({type: 'payment_method', attributes: SmplkitGeneratedClient::App::PaymentMethod.new})}) # PaymentMethodRequest | 
 
 begin
   # Update Payment Method
-  result = api_instance.update_payment_method(id, payment_method_response)
+  result = api_instance.update_payment_method(id, payment_method_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling BillingApi->update_payment_method: #{e}"
@@ -1013,12 +1013,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<PaymentMethodResponse>, Integer, Hash)> update_payment_method_with_http_info(id, payment_method_response)
+> <Array(<PaymentMethodResponse>, Integer, Hash)> update_payment_method_with_http_info(id, payment_method_request)
 
 ```ruby
 begin
   # Update Payment Method
-  data, status_code, headers = api_instance.update_payment_method_with_http_info(id, payment_method_response)
+  data, status_code, headers = api_instance.update_payment_method_with_http_info(id, payment_method_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <PaymentMethodResponse>
@@ -1032,7 +1032,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **payment_method_response** | [**PaymentMethodResponse**](PaymentMethodResponse.md) |  |  |
+| **payment_method_request** | [**PaymentMethodRequest**](PaymentMethodRequest.md) |  |  |
 
 ### Return type
 
