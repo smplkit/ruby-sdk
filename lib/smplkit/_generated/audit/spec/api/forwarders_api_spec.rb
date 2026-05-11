@@ -82,11 +82,12 @@ describe 'ForwardersApi' do
 
   # unit tests for list_forwarder_deliveries
   # List Forwarder Deliveries
-  # List delivery rows for a forwarder.  Default sort is &#x60;&#x60;-created_at&#x60;&#x60;. Cursor pagination via &#x60;&#x60;page[after]&#x60;&#x60;. Filter by status (&#x60;&#x60;succeeded&#x60;&#x60; / &#x60;&#x60;failed&#x60;&#x60; / &#x60;&#x60;filtered_out&#x60;&#x60; / &#x60;&#x60;skipped_do_not_forward&#x60;&#x60;) or by a &#x60;&#x60;created_at&#x60;&#x60; range using the platform&#39;s interval notation (&#x60;&#x60;[2026-01-01T00:00:00Z,*)&#x60;&#x60;). Reads do not require the entitlement — a downgraded account can still inspect historical deliveries from when the forwarder was active.
+  # List delivery rows for a forwarder.  Default sort is &#x60;&#x60;-created_at&#x60;&#x60;. Cursor pagination via &#x60;&#x60;page[after]&#x60;&#x60;. Filter by status (&#x60;&#x60;SUCCEEDED&#x60;&#x60; / &#x60;&#x60;FAILED&#x60;&#x60; / &#x60;&#x60;FILTERED_OUT&#x60;&#x60; / &#x60;&#x60;SKIPPED_DO_NOT_FORWARD&#x60;&#x60;, case-insensitive) or by a &#x60;&#x60;created_at&#x60;&#x60; range using the platform&#39;s interval notation (&#x60;&#x60;[2026-01-01T00:00:00Z,*)&#x60;&#x60;). Reads do not require the entitlement — a downgraded account can still inspect historical deliveries from when the forwarder was active.
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_status 
   # @option opts [String] :filter_created_at 
+  # @option opts [String] :filter_event_id 
   # @option opts [Integer] :page_size 
   # @option opts [String] :page_after 
   # @return [ForwarderDeliveryListResponse]

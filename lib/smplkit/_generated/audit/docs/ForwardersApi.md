@@ -296,7 +296,7 @@ end
 
 List Forwarder Deliveries
 
-List delivery rows for a forwarder.  Default sort is ``-created_at``. Cursor pagination via ``page[after]``. Filter by status (``succeeded`` / ``failed`` / ``filtered_out`` / ``skipped_do_not_forward``) or by a ``created_at`` range using the platform's interval notation (``[2026-01-01T00:00:00Z,*)``). Reads do not require the entitlement — a downgraded account can still inspect historical deliveries from when the forwarder was active.
+List delivery rows for a forwarder.  Default sort is ``-created_at``. Cursor pagination via ``page[after]``. Filter by status (``SUCCEEDED`` / ``FAILED`` / ``FILTERED_OUT`` / ``SKIPPED_DO_NOT_FORWARD``, case-insensitive) or by a ``created_at`` range using the platform's interval notation (``[2026-01-01T00:00:00Z,*)``). Reads do not require the entitlement — a downgraded account can still inspect historical deliveries from when the forwarder was active.
 
 ### Examples
 
@@ -314,6 +314,7 @@ forwarder_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String |
 opts = {
   filter_status: 'filter_status_example', # String | 
   filter_created_at: 'filter_created_at_example', # String | 
+  filter_event_id: 'filter_event_id_example', # String | 
   page_size: 56, # Integer | 
   page_after: 'page_after_example' # String | 
 }
@@ -352,6 +353,7 @@ end
 | **forwarder_id** | **String** |  |  |
 | **filter_status** | **String** |  | [optional] |
 | **filter_created_at** | **String** |  | [optional] |
+| **filter_event_id** | **String** |  | [optional] |
 | **page_size** | **Integer** |  | [optional] |
 | **page_after** | **String** |  | [optional] |
 

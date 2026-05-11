@@ -15,13 +15,13 @@ require 'time'
 
 module SmplkitGeneratedClient::Audit
   class ForwarderType
-    HTTP = "http".freeze
-    DATADOG = "datadog".freeze
-    SPLUNK_HEC = "splunk_hec".freeze
-    SUMO_LOGIC = "sumo_logic".freeze
-    NEW_RELIC = "new_relic".freeze
-    HONEYCOMB = "honeycomb".freeze
-    ELASTIC = "elastic".freeze
+    HTTP = "HTTP".freeze
+    DATADOG = "DATADOG".freeze
+    SPLUNK_HEC = "SPLUNK_HEC".freeze
+    SUMO_LOGIC = "SUMO_LOGIC".freeze
+    NEW_RELIC = "NEW_RELIC".freeze
+    HONEYCOMB = "HONEYCOMB".freeze
+    ELASTIC = "ELASTIC".freeze
 
     def self.all_vars
       @all_vars ||= [HTTP, DATADOG, SPLUNK_HEC, SUMO_LOGIC, NEW_RELIC, HONEYCOMB, ELASTIC].freeze
