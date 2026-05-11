@@ -15,7 +15,7 @@ All URIs are relative to *http://localhost*
 
 Get Event
 
-Retrieve a single audit event by id.  Returns 404 if no event with that id exists in the caller's account — RLS enforces tenant isolation; this endpoint never leaks the existence of another tenant's event.
+Retrieve a single audit event by id.
 
 ### Examples
 
@@ -84,7 +84,7 @@ end
 
 List Events
 
-List audit events for the authenticated account.  Default sort is ``-created_at``; cursor pagination via ``page[after]`` (the opaque cursor returned in ``links.next``). Filters are exact-match except ``filter[occurred_at]`` which uses the platform's range notation (``[2026-01-01T00:00:00Z,*)``) and ``filter[search]`` which is a case-insensitive substring match (per ADR-014; targets ``resource_id`` only at this revision).
+List audit events for this account.  Default sort is newest first. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,*)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id`.
 
 ### Examples
 
@@ -105,7 +105,7 @@ opts = {
   filter_action: 'filter_action_example', # String | 
   filter_resource_type: 'filter_resource_type_example', # String | 
   filter_resource_id: 'filter_resource_id_example', # String | 
-  filter_search: 'filter_search_example', # String | Case-insensitive substring match. Searches against ``resource_id`` only — see ADR-014 for the platform-wide ``filter[search]`` convention. Use ``filter[resource_id]`` for an exact match.
+  filter_search: 'filter_search_example', # String | Case-insensitive substring match against `resource_id`. Use `filter[resource_id]` for an exact match.
   page_size: 56, # Integer | 
   page_after: 'page_after_example' # String | 
 }
@@ -147,7 +147,7 @@ end
 | **filter_action** | **String** |  | [optional] |
 | **filter_resource_type** | **String** |  | [optional] |
 | **filter_resource_id** | **String** |  | [optional] |
-| **filter_search** | **String** | Case-insensitive substring match. Searches against &#x60;&#x60;resource_id&#x60;&#x60; only — see ADR-014 for the platform-wide &#x60;&#x60;filter[search]&#x60;&#x60; convention. Use &#x60;&#x60;filter[resource_id]&#x60;&#x60; for an exact match. | [optional] |
+| **filter_search** | **String** | Case-insensitive substring match against &#x60;resource_id&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match. | [optional] |
 | **page_size** | **Integer** |  | [optional] |
 | **page_after** | **String** |  | [optional] |
 
@@ -167,11 +167,11 @@ end
 
 ## record_event
 
-> <EventResponse> record_event(event_response, opts)
+> <EventResponse> record_event(event_request, opts)
 
 Record Event
 
-Record an audit event for the authenticated account.  Returns ``201 Created`` on first write, ``200 OK`` if the request was a duplicate (matched by ``Idempotency-Key`` or auto-derived key).  Customers may not emit events whose ``resource_type`` starts with ``smpl.`` — that namespace is reserved for smplkit-emitted events about platform resources.
+Record an audit event for this account.  Returns `201 Created` on first write, `200 OK` if the request was a duplicate (matched by `Idempotency-Key` or a key derived from the event's content).  `resource_type` values beginning with `smpl.` are reserved for events that smplkit emits about its own resources and cannot be used here.
 
 ### Examples
 
@@ -185,14 +185,14 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::EventsApi.new
-event_response = SmplkitGeneratedClient::Audit::EventResponse.new({data: SmplkitGeneratedClient::Audit::EventResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Event.new({action: 'action_example', resource_type: 'resource_type_example', resource_id: 'resource_id_example'})})}) # EventResponse | 
+event_request = SmplkitGeneratedClient::Audit::EventRequest.new({data: SmplkitGeneratedClient::Audit::EventResource.new({attributes: SmplkitGeneratedClient::Audit::Event.new({action: 'action_example', resource_type: 'resource_type_example', resource_id: 'resource_id_example'})})}) # EventRequest | 
 opts = {
   idempotency_key: 'idempotency_key_example' # String | 
 }
 
 begin
   # Record Event
-  result = api_instance.record_event(event_response, opts)
+  result = api_instance.record_event(event_request, opts)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
   puts "Error when calling EventsApi->record_event: #{e}"
@@ -203,12 +203,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<EventResponse>, Integer, Hash)> record_event_with_http_info(event_response, opts)
+> <Array(<EventResponse>, Integer, Hash)> record_event_with_http_info(event_request, opts)
 
 ```ruby
 begin
   # Record Event
-  data, status_code, headers = api_instance.record_event_with_http_info(event_response, opts)
+  data, status_code, headers = api_instance.record_event_with_http_info(event_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <EventResponse>
@@ -221,7 +221,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **event_response** | [**EventResponse**](EventResponse.md) |  |  |
+| **event_request** | [**EventRequest**](EventRequest.md) |  |  |
 | **idempotency_key** | **String** |  | [optional] |
 
 ### Return type

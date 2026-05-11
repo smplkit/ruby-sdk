@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Usage
 
-Current-period usage and quota for the audit product.  Only ``filter[period]=current`` is supported; historical usage is a follow-up.
+Report the current-period usage counters for this account.
 
 ### Examples
 
@@ -27,7 +27,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::UsageApi.new
-filter_period = 'filter_period_example' # String | 
+filter_period = 'filter_period_example' # String | Period to report. `current` is the only supported value.
 
 begin
   # List Usage
@@ -60,7 +60,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **filter_period** | **String** |  |  |
+| **filter_period** | **String** | Period to report. &#x60;current&#x60; is the only supported value. |  |
 
 ### Return type
 

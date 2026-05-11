@@ -4,9 +4,9 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **wiped** | **Boolean** |  | [optional][default to true] |
+| **wiped** | **Boolean** | Always &#x60;true&#x60; for a successful wipe. | [optional][default to true] |
 | **tables** | [**WipeTablesSummary**](WipeTablesSummary.md) |  |  |
-| **completed_at** | **Time** |  |  |
+| **completed_at** | **Time** | When the wipe completed. |  |
 
 ## Example
 

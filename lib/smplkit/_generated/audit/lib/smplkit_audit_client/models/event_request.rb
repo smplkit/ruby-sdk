@@ -14,23 +14,14 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # Counts returned by the retry-failed-deliveries action.
-  class RetryFailedDeliveriesSummary < ApiModelBase
-    # Number of failed deliveries that were re-attempted.
-    attr_accessor :attempted
-
-    # Number of re-attempts that succeeded.
-    attr_accessor :succeeded
-
-    # Number of re-attempts that failed again.
-    attr_accessor :failed
+  # JSON:API request envelope for recording an audit event.
+  class EventRequest < ApiModelBase
+    attr_accessor :data
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'attempted' => :'attempted',
-        :'succeeded' => :'succeeded',
-        :'failed' => :'failed'
+        :'data' => :'data'
       }
     end
 
@@ -47,9 +38,7 @@ module SmplkitGeneratedClient::Audit
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'attempted' => :'Integer',
-        :'succeeded' => :'Integer',
-        :'failed' => :'Integer'
+        :'data' => :'EventResource'
       }
     end
 
@@ -63,34 +52,22 @@ module SmplkitGeneratedClient::Audit
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::EventRequest` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::EventRequest`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'attempted')
-        self.attempted = attributes[:'attempted']
+      if attributes.key?(:'data')
+        self.data = attributes[:'data']
       else
-        self.attempted = nil
-      end
-
-      if attributes.key?(:'succeeded')
-        self.succeeded = attributes[:'succeeded']
-      else
-        self.succeeded = nil
-      end
-
-      if attributes.key?(:'failed')
-        self.failed = attributes[:'failed']
-      else
-        self.failed = nil
+        self.data = nil
       end
     end
 
@@ -99,16 +76,8 @@ module SmplkitGeneratedClient::Audit
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @attempted.nil?
-        invalid_properties.push('invalid value for "attempted", attempted cannot be nil.')
-      end
-
-      if @succeeded.nil?
-        invalid_properties.push('invalid value for "succeeded", succeeded cannot be nil.')
-      end
-
-      if @failed.nil?
-        invalid_properties.push('invalid value for "failed", failed cannot be nil.')
+      if @data.nil?
+        invalid_properties.push('invalid value for "data", data cannot be nil.')
       end
 
       invalid_properties
@@ -118,40 +87,18 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @attempted.nil?
-      return false if @succeeded.nil?
-      return false if @failed.nil?
+      return false if @data.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] attempted Value to be assigned
-    def attempted=(attempted)
-      if attempted.nil?
-        fail ArgumentError, 'attempted cannot be nil'
+    # @param [Object] data Value to be assigned
+    def data=(data)
+      if data.nil?
+        fail ArgumentError, 'data cannot be nil'
       end
 
-      @attempted = attempted
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] succeeded Value to be assigned
-    def succeeded=(succeeded)
-      if succeeded.nil?
-        fail ArgumentError, 'succeeded cannot be nil'
-      end
-
-      @succeeded = succeeded
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] failed Value to be assigned
-    def failed=(failed)
-      if failed.nil?
-        fail ArgumentError, 'failed cannot be nil'
-      end
-
-      @failed = failed
+      @data = data
     end
 
     # Checks equality by comparing each attribute.
@@ -159,9 +106,7 @@ module SmplkitGeneratedClient::Audit
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          attempted == o.attempted &&
-          succeeded == o.succeeded &&
-          failed == o.failed
+          data == o.data
     end
 
     # @see the `==` method
@@ -173,7 +118,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [attempted, succeeded, failed].hash
+      [data].hash
     end
 
     # Builds the object from hash

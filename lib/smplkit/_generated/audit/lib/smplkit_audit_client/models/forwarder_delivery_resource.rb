@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
+  # JSON:API resource envelope for a forwarder delivery log entry.
   class ForwarderDeliveryResource < ApiModelBase
     attr_accessor :id
 

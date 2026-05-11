@@ -14,31 +14,40 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # Public-facing forwarder resource.  Attribute set on POST /api/v1/forwarders:     - name (required)     - forwarder_type (required)     - http (required)     - enabled (optional, defaults true)     - filter (optional, JSON Logic)     - transform (optional, JSONata)  The slug is server-derived from name on create; it is immutable on update because consumers (UI, observability) key off it.
+  # A destination that receives audit events recorded for the account.  Each event recorded for the account is evaluated against every enabled forwarder. If the filter expression evaluates truthy — or is absent — the event is delivered to the destination using the configured HTTP request. The slug, derived from `name` at create time, is the stable identifier used by the console and other tooling.
   class Forwarder < ApiModelBase
+    # Human-readable name for the forwarder.
     attr_accessor :name
 
+    # Destination type.
     attr_accessor :forwarder_type
 
+    # Whether the forwarder is currently delivering events. Set to `false` to pause deliveries without deleting the forwarder.
     attr_accessor :enabled
 
+    # JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event.
     attr_accessor :filter
 
+    # JSONata template applied to each event before delivery. Omit to deliver the event unchanged.
     attr_accessor :transform
 
+    # HTTP request used to deliver each event to the destination.
     attr_accessor :http
 
+    # URL-safe identifier derived from `name` at create time. Stable for the lifetime of the forwarder.
     attr_accessor :slug
 
+    # When the forwarder was created.
     attr_accessor :created_at
 
+    # When the forwarder was last modified.
     attr_accessor :updated_at
 
+    # When the forwarder was deleted. `null` for active forwarders.
     attr_accessor :deleted_at
 
+    # Monotonic counter incremented on every update, starting at 1.
     attr_accessor :version
-
-    attr_accessor :data
 
     class EnumAttributeValidator
       attr_reader :datatype
@@ -75,8 +84,7 @@ module SmplkitGeneratedClient::Audit
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at',
         :'deleted_at' => :'deleted_at',
-        :'version' => :'version',
-        :'data' => :'data'
+        :'version' => :'version'
       }
     end
 
@@ -103,8 +111,7 @@ module SmplkitGeneratedClient::Audit
         :'created_at' => :'Time',
         :'updated_at' => :'Time',
         :'deleted_at' => :'Time',
-        :'version' => :'Integer',
-        :'data' => :'Hash<String, Object>'
+        :'version' => :'Integer'
       }
     end
 
@@ -117,7 +124,7 @@ module SmplkitGeneratedClient::Audit
         :'created_at',
         :'updated_at',
         :'deleted_at',
-        :'version',
+        :'version'
       ])
     end
 
@@ -189,12 +196,6 @@ module SmplkitGeneratedClient::Audit
 
       if attributes.key?(:'version')
         self.version = attributes[:'version']
-      end
-
-      if attributes.key?(:'data')
-        if (value = attributes[:'data']).is_a?(Hash)
-          self.data = value
-        end
       end
     end
 
@@ -306,8 +307,7 @@ module SmplkitGeneratedClient::Audit
           created_at == o.created_at &&
           updated_at == o.updated_at &&
           deleted_at == o.deleted_at &&
-          version == o.version &&
-          data == o.data
+          version == o.version
     end
 
     # @see the `==` method
@@ -319,7 +319,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, forwarder_type, enabled, filter, transform, http, slug, created_at, updated_at, deleted_at, version, data].hash
+      [name, forwarder_type, enabled, filter, transform, http, slug, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash

@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **id** | **String** |  |  |
+| **id** | **String** |  | [optional] |
 | **type** | **String** |  | [optional][default to &#39;forwarder&#39;] |
 | **attributes** | [**Forwarder**](Forwarder.md) |  |  |
 

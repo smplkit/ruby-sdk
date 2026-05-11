@@ -14,29 +14,39 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # Public-facing event resource.  Attribute set on POST /api/v1/events:     - action (required)     - resource_type (required)     - resource_id (required)     - occurred_at (optional; defaults to ``created_at``)     - data (optional; defaults to ``{}``)  There is no top-level ``snapshot`` attribute. Customers wishing to record a resource snapshot place it inside ``data`` -- smplkit's internal convention nests it at ``data.snapshot``, but customers may follow their own convention.  Attribute set on GET responses includes everything above plus the server-populated fields: ``created_at``, ``actor_type``, ``actor_id``, ``actor_label``, ``idempotency_key``.
+  # An audit event — a record that something happened, attributed to an actor and a resource.  When recording a snapshot of the resource at the time of the event, place it inside `data`. smplkit's own integrations nest it under `data.snapshot`, but the slot is yours to use however you like.
   class Event < ApiModelBase
+    # Slug for what happened, e.g. `user.created`. Lowercase, dot-separated.
     attr_accessor :action
 
+    # Slug for the kind of resource the event is about, e.g. `user`. Lowercase, dot-separated.
     attr_accessor :resource_type
 
+    # Identifier of the specific resource the event is about.
     attr_accessor :resource_id
 
+    # When the event actually happened. Defaults to the server receipt time (`created_at`).
     attr_accessor :occurred_at
 
+    # Free-form payload attached to the event. Use it for resource snapshots (by convention under `data.snapshot`), request identifiers, or any other context the event needs to carry.
     attr_accessor :data
 
-    # When true, this event is recorded normally but is not forwarded to any configured SIEM forwarder. A forwarder_delivery row with status=skipped_do_not_forward is recorded for each enabled forwarder so the skip is visible in the delivery log.
+    # When `true`, the event is recorded but not delivered to any forwarder. A delivery log entry with status `SKIPPED_DO_NOT_FORWARD` is written for each enabled forwarder so the skip is visible in the delivery log.
     attr_accessor :do_not_forward
 
+    # When the event was received and recorded.
     attr_accessor :created_at
 
+    # Kind of credential that emitted the event, e.g. `USER` or `API_KEY`. Resolved server-side from the request credential.
     attr_accessor :actor_type
 
+    # Identifier of the actor that emitted the event.
     attr_accessor :actor_id
 
+    # Human-readable label for the actor (e.g. the user's email address or the API key name) at the time the event was recorded.
     attr_accessor :actor_label
 
+    # The idempotency key used to deduplicate the record. Echoes the `Idempotency-Key` header if one was supplied, otherwise a key derived from the event's content.
     attr_accessor :idempotency_key
 
     # Attribute mapping from ruby-style variable name to JSON key.

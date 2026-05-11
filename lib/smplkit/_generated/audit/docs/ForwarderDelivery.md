@@ -4,16 +4,16 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **forwarder_id** | **String** |  |  |
-| **event_id** | **String** |  |  |
-| **attempt_number** | **Integer** |  |  |
-| **status** | **String** |  |  |
-| **request** | **Hash&lt;String, Object&gt;** |  | [optional] |
-| **response_status** | **Integer** |  | [optional] |
-| **response_body** | **String** |  | [optional] |
-| **latency_ms** | **Integer** |  | [optional] |
-| **error** | **String** |  | [optional] |
-| **created_at** | **Time** |  | [optional] |
+| **forwarder_id** | **String** | Forwarder the delivery belongs to. |  |
+| **event_id** | **String** | Event that was being delivered. |  |
+| **attempt_number** | **Integer** | 1 for the initial delivery, incremented for each retry. |  |
+| **status** | **String** | Delivery outcome. &#x60;SUCCEEDED&#x60; and &#x60;FAILED&#x60; are the live-delivery outcomes; &#x60;FILTERED_OUT&#x60; is recorded when the forwarder&#39;s filter rejected the event; &#x60;SKIPPED_DO_NOT_FORWARD&#x60; is recorded when the event was emitted with &#x60;do_not_forward&#x3D;true&#x60;. |  |
+| **request** | **Hash&lt;String, Object&gt;** | The HTTP request as it was sent to the destination. Header values are redacted. | [optional] |
+| **response_status** | **Integer** | HTTP status code returned by the destination. | [optional] |
+| **response_body** | **String** | Response body returned by the destination. | [optional] |
+| **latency_ms** | **Integer** | Elapsed time of the delivery attempt in milliseconds. | [optional] |
+| **error** | **String** | Error message if the delivery did not complete. | [optional] |
+| **created_at** | **Time** | When the delivery attempt was recorded. | [optional] |
 
 ## Example
 

@@ -14,17 +14,24 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
+  # Counts of records deleted, broken down by record kind.
   class WipeTablesSummary < ApiModelBase
+    # Number of audit events deleted.
     attr_accessor :audit_event
 
+    # Number of monthly usage-quota counters deleted.
     attr_accessor :audit_event_quota
 
+    # Number of forwarders deleted.
     attr_accessor :forwarder
 
+    # Number of forwarder delivery log entries deleted.
     attr_accessor :forwarder_delivery
 
+    # Number of distinct `resource_type` entries deleted.
     attr_accessor :resource_type
 
+    # Number of distinct `action` entries deleted.
     attr_accessor :action
 
     # Attribute mapping from ruby-style variable name to JSON key.

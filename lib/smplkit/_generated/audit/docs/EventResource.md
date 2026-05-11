@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **id** | **String** |  |  |
+| **id** | **String** |  | [optional] |
 | **type** | **String** |  | [optional][default to &#39;event&#39;] |
 | **attributes** | [**Event**](Event.md) |  |  |
 

@@ -91,7 +91,6 @@ All URIs are relative to *http://localhost*
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *SmplkitGeneratedClient::Audit::ActionsApi* | [**list_actions**](docs/ActionsApi.md#list_actions) | **GET** /api/v1/actions | List Actions
-*SmplkitGeneratedClient::Audit::ActionsApi* | [**list_resource_types**](docs/ActionsApi.md#list_resource_types) | **GET** /api/v1/resource_types | List Resource Types
 *SmplkitGeneratedClient::Audit::EventsApi* | [**get_event**](docs/EventsApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event
 *SmplkitGeneratedClient::Audit::EventsApi* | [**list_events**](docs/EventsApi.md#list_events) | **GET** /api/v1/events | List Events
 *SmplkitGeneratedClient::Audit::EventsApi* | [**record_event**](docs/EventsApi.md#record_event) | **POST** /api/v1/events | Record Event
@@ -105,7 +104,6 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**retry_forwarder_delivery**](docs/ForwardersApi.md#retry_forwarder_delivery) | **POST** /api/v1/forwarders/{forwarder_id}/deliveries/{delivery_id}/actions/retry | Retry Forwarder Delivery
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**update_forwarder**](docs/ForwardersApi.md#update_forwarder) | **PUT** /api/v1/forwarders/{forwarder_id} | Update Forwarder
 *SmplkitGeneratedClient::Audit::FunctionsApi* | [**execute_wipe**](docs/FunctionsApi.md#execute_wipe) | **POST** /api/v1/functions/wipe/actions/execute | Execute Wipe
-*SmplkitGeneratedClient::Audit::ResourceTypesApi* | [**list_actions**](docs/ResourceTypesApi.md#list_actions) | **GET** /api/v1/actions | List Actions
 *SmplkitGeneratedClient::Audit::ResourceTypesApi* | [**list_resource_types**](docs/ResourceTypesApi.md#list_resource_types) | **GET** /api/v1/resource_types | List Resource Types
 *SmplkitGeneratedClient::Audit::UsageApi* | [**list_usage**](docs/UsageApi.md#list_usage) | **GET** /api/v1/usage | List Usage
 
@@ -121,6 +119,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::EventListLinks](docs/EventListLinks.md)
  - [SmplkitGeneratedClient::Audit::EventListMeta](docs/EventListMeta.md)
  - [SmplkitGeneratedClient::Audit::EventListResponse](docs/EventListResponse.md)
+ - [SmplkitGeneratedClient::Audit::EventRequest](docs/EventRequest.md)
  - [SmplkitGeneratedClient::Audit::EventResource](docs/EventResource.md)
  - [SmplkitGeneratedClient::Audit::EventResponse](docs/EventResponse.md)
  - [SmplkitGeneratedClient::Audit::Forwarder](docs/Forwarder.md)
@@ -132,6 +131,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::ForwarderListLinks](docs/ForwarderListLinks.md)
  - [SmplkitGeneratedClient::Audit::ForwarderListMeta](docs/ForwarderListMeta.md)
  - [SmplkitGeneratedClient::Audit::ForwarderListResponse](docs/ForwarderListResponse.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderRequest](docs/ForwarderRequest.md)
  - [SmplkitGeneratedClient::Audit::ForwarderResource](docs/ForwarderResource.md)
  - [SmplkitGeneratedClient::Audit::ForwarderResponse](docs/ForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::ForwarderType](docs/ForwarderType.md)
