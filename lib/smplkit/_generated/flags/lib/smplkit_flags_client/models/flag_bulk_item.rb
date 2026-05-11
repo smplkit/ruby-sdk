@@ -14,20 +14,43 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # One flag declaration reported by an SDK during bulk registration.
   class FlagBulkItem < ApiModelBase
-    # Flag key as declared in code
+    # Flag key as declared in code. URL-safe and stable for the lifetime of the flag.
     attr_accessor :id
 
-    # Flag type: BOOLEAN, STRING, NUMERIC, or JSON
+    # Value type the SDK declared for the flag. Accepted case-insensitively.
     attr_accessor :type
 
     attr_accessor :default
 
-    # Service that declared this flag
+    # Service reporting the declaration. Defaults to `unknown`.
     attr_accessor :service
 
-    # Environment where observed
+    # Environment reporting the declaration. Defaults to `unknown`.
     attr_accessor :environment
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -135,6 +158,8 @@ module SmplkitGeneratedClient::Flags
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @id.nil?
       return false if @type.nil?
+      type_validator = EnumAttributeValidator.new('String', ["BOOLEAN", "STRING", "NUMERIC", "JSON"])
+      return false unless type_validator.valid?(@type)
       true
     end
 
@@ -148,13 +173,13 @@ module SmplkitGeneratedClient::Flags
       @id = id
     end
 
-    # Custom attribute writer method with validation
-    # @param [Object] type Value to be assigned
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] type Object to be assigned
     def type=(type)
-      if type.nil?
-        fail ArgumentError, 'type cannot be nil'
+      validator = EnumAttributeValidator.new('String', ["BOOLEAN", "STRING", "NUMERIC", "JSON"])
+      unless validator.valid?(type)
+        fail ArgumentError, "invalid value for \"type\", must be one of #{validator.allowable_values}."
       end
-
       @type = type
     end
 

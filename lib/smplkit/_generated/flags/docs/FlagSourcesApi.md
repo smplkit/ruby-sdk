@@ -14,7 +14,7 @@ All URIs are relative to *http://localhost*
 
 List All Flag Sources
 
-List all flag sources across all flags. Optionally filter by environment or service.
+List service/environment observations across all flags for this account.  Filter by `environment` or `service` (or both) to narrow the result.
 
 ### Examples
 
@@ -87,7 +87,7 @@ end
 
 List Flag Sources
 
-List all sources (service/environment observations) for a specific flag.
+List the service/environment observations recorded for a single flag.
 
 ### Examples
 

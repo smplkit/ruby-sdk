@@ -14,11 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # Per-environment evaluation configuration for a flag.
   class FlagEnvironment < ApiModelBase
+    # Whether the flag is active in this environment. When `false`, evaluation skips rules and returns the flag's global `default`.
     attr_accessor :enabled
 
+    # Environment-level default returned when no rule fires. If `null`, evaluation falls back to the flag's global `default`.
     attr_accessor :default
 
+    # Targeting rules evaluated top-down. The first rule whose logic returns truthy provides the result.
     attr_accessor :rules
 
     # Attribute mapping from ruby-style variable name to JSON key.

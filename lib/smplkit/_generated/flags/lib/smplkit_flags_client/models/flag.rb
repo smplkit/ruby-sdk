@@ -14,30 +14,58 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # A feature flag whose value is resolved at runtime from environment rules and a default.  A flag has a value type (`BOOLEAN`, `STRING`, `NUMERIC`, or `JSON`) and either a fixed set of allowed values (constrained) or accepts any value matching the type (unconstrained). Each environment can enable or disable the flag, set its own default, and define targeting rules that override the default for specific evaluation contexts.
   class Flag < ApiModelBase
-    # Human-readable display name
+    # Human-readable display name for the flag.
     attr_accessor :name
 
+    # Human-readable description of the flag's purpose.
     attr_accessor :description
 
-    # Value type: STRING, BOOLEAN, NUMERIC, or JSON
+    # Value type of the flag. Accepted case-insensitively. Changing the type cascades to `values`, `default`, and every environment's rules and default.
     attr_accessor :type
 
     attr_accessor :default
 
-    # Ordered set of allowed values (constrained), or null (unconstrained)
+    # Ordered set of allowed values for a constrained flag, or `null` for an unconstrained flag. `BOOLEAN` flags, if constrained, must declare exactly two values.
     attr_accessor :values
 
+    # Per-environment configuration keyed by environment name (`production`, `staging`, etc.). Environments not listed fall back to the flag's global `default`.
     attr_accessor :environments
 
-    # True if admin-managed, false if auto-discovered
+    # `true` when the flag was created through the API, `false` when it was auto-discovered from a bulk-register call. Auto-discovered flags can be edited and converted to managed by setting this to `true`.
     attr_accessor :managed
 
+    # SDK-reported observations of this flag, grouped by service and environment. Populated automatically by the bulk-register endpoint.
     attr_accessor :sources
 
+    # When the flag was created.
     attr_accessor :created_at
 
+    # When the flag was last modified.
     attr_accessor :updated_at
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -75,7 +103,7 @@ module SmplkitGeneratedClient::Flags
         :'values' => :'Array<FlagValue>',
         :'environments' => :'Hash<String, FlagEnvironment>',
         :'managed' => :'Boolean',
-        :'sources' => :'Array<Hash<String, Object>>',
+        :'sources' => :'Array<FlagSource>',
         :'created_at' => :'Time',
         :'updated_at' => :'Time'
       }
@@ -185,6 +213,8 @@ module SmplkitGeneratedClient::Flags
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @name.nil?
       return false if @type.nil?
+      type_validator = EnumAttributeValidator.new('String', ["BOOLEAN", "STRING", "NUMERIC", "JSON"])
+      return false unless type_validator.valid?(@type)
       true
     end
 
@@ -198,13 +228,13 @@ module SmplkitGeneratedClient::Flags
       @name = name
     end
 
-    # Custom attribute writer method with validation
-    # @param [Object] type Value to be assigned
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] type Object to be assigned
     def type=(type)
-      if type.nil?
-        fail ArgumentError, 'type cannot be nil'
+      validator = EnumAttributeValidator.new('String', ["BOOLEAN", "STRING", "NUMERIC", "JSON"])
+      unless validator.valid?(type)
+        fail ArgumentError, "invalid value for \"type\", must be one of #{validator.allowable_values}."
       end
-
       @type = type
     end
 

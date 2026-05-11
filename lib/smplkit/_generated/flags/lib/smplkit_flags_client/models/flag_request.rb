@@ -14,19 +14,14 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
-  # Inputs to the remove-references action.  Exactly one of `context` or `context_type` must be provided.
-  class RemoveReferencesRequest < ApiModelBase
-    # Identifier of the context instance to remove references to, formatted as `{type}:{key}` (e.g. `customer:c-123`).
-    attr_accessor :context
-
-    # Context type to remove all references to (any attribute of this type).
-    attr_accessor :context_type
+  # JSON:API request envelope for creating or updating a flag.
+  class FlagRequest < ApiModelBase
+    attr_accessor :data
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'context' => :'context',
-        :'context_type' => :'context_type'
+        :'data' => :'data'
       }
     end
 
@@ -43,16 +38,13 @@ module SmplkitGeneratedClient::Flags
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'context' => :'String',
-        :'context_type' => :'String'
+        :'data' => :'FlagResource'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'context',
-        :'context_type'
       ])
     end
 
@@ -60,24 +52,22 @@ module SmplkitGeneratedClient::Flags
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Flags::RemoveReferencesRequest` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Flags::FlagRequest` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Flags::RemoveReferencesRequest`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Flags::FlagRequest`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'context')
-        self.context = attributes[:'context']
-      end
-
-      if attributes.key?(:'context_type')
-        self.context_type = attributes[:'context_type']
+      if attributes.key?(:'data')
+        self.data = attributes[:'data']
+      else
+        self.data = nil
       end
     end
 
@@ -86,6 +76,10 @@ module SmplkitGeneratedClient::Flags
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
+      if @data.nil?
+        invalid_properties.push('invalid value for "data", data cannot be nil.')
+      end
+
       invalid_properties
     end
 
@@ -93,7 +87,18 @@ module SmplkitGeneratedClient::Flags
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      return false if @data.nil?
       true
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] data Value to be assigned
+    def data=(data)
+      if data.nil?
+        fail ArgumentError, 'data cannot be nil'
+      end
+
+      @data = data
     end
 
     # Checks equality by comparing each attribute.
@@ -101,8 +106,7 @@ module SmplkitGeneratedClient::Flags
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          context == o.context &&
-          context_type == o.context_type
+          data == o.data
     end
 
     # @see the `==` method
@@ -114,7 +118,7 @@ module SmplkitGeneratedClient::Flags
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [context, context_type].hash
+      [data].hash
     end
 
     # Builds the object from hash

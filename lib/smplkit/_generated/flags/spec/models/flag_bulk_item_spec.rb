@@ -36,6 +36,10 @@ describe SmplkitGeneratedClient::Flags::FlagBulkItem do
   describe 'test attribute "type"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["BOOLEAN", "STRING", "NUMERIC", "JSON"])
+      # validator.allowable_values.each do |value|
+      #   expect { instance.type = value }.not_to raise_error
+      # end
     end
   end
 

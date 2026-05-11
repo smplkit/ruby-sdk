@@ -34,7 +34,7 @@ describe 'FlagsApi' do
 
   # unit tests for bulk_register_flags
   # Bulk Register Flags
-  # Register flags discovered by an SDK. Creates new flags or updates source observations on existing ones.
+  # Register flags discovered by an SDK.  Creates a new flag for each unreported key and refreshes the service/environment source observation on each already-known key.
   # @param flag_bulk_request 
   # @param [Hash] opts the optional parameters
   # @return [FlagBulkResponse]
@@ -46,8 +46,8 @@ describe 'FlagsApi' do
 
   # unit tests for create_flag
   # Create Flag
-  # Create a new feature flag. The caller provides the id (key) in the request body.
-  # @param flag_response 
+  # Create a new feature flag. The caller provides the id (the flag key) in the request body.
+  # @param flag_request 
   # @param [Hash] opts the optional parameters
   # @return [FlagResponse]
   describe 'create_flag test' do
@@ -70,7 +70,7 @@ describe 'FlagsApi' do
 
   # unit tests for get_flag
   # Get Flag
-  # Return a feature flag by its key.
+  # Retrieve a feature flag by its key.
   # @param id 
   # @param [Hash] opts the optional parameters
   # @return [FlagResponse]
@@ -82,7 +82,7 @@ describe 'FlagsApi' do
 
   # unit tests for list_flags
   # List Flags
-  # List all feature flags for the authenticated account.
+  # List feature flags for this account.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_type 
   # @option opts [Boolean] :filter_managed 
@@ -97,9 +97,9 @@ describe 'FlagsApi' do
 
   # unit tests for update_flag
   # Update Flag
-  # Replace a feature flag entirely.
+  # Replace a feature flag entirely. Every writable field is overwritten.
   # @param id 
-  # @param flag_response 
+  # @param flag_request 
   # @param [Hash] opts the optional parameters
   # @return [FlagResponse]
   describe 'update_flag test' do
