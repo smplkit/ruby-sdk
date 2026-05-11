@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # Execute Wipe
-    # Delete every audit-database row scoped to the authenticated account.  Returns the per-table row counts that were deleted along with the completion timestamp. The action is atomic within the audit database — either every account-scoped row is gone, or none is. The body is required to be ``{}``; no parameters are accepted.
+    # Delete every audit record this account has stored.  Atomic: either every record is deleted, or none is. Returns the per-table counts and the completion timestamp. The request body must be `{}`.
     # @param body [Object] 
     # @param [Hash] opts the optional parameters
     # @return [WipeResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Execute Wipe
-    # Delete every audit-database row scoped to the authenticated account.  Returns the per-table row counts that were deleted along with the completion timestamp. The action is atomic within the audit database — either every account-scoped row is gone, or none is. The body is required to be &#x60;&#x60;{}&#x60;&#x60;; no parameters are accepted.
+    # Delete every audit record this account has stored.  Atomic: either every record is deleted, or none is. Returns the per-table counts and the completion timestamp. The request body must be &#x60;{}&#x60;.
     # @param body [Object] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(WipeResponse, Integer, Hash)>] WipeResponse data, response status code and response headers

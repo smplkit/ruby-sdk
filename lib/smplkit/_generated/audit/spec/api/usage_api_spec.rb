@@ -34,8 +34,8 @@ describe 'UsageApi' do
 
   # unit tests for list_usage
   # List Usage
-  # Current-period usage and quota for the audit product.  Only &#x60;&#x60;filter[period]&#x3D;current&#x60;&#x60; is supported; historical usage is a follow-up.
-  # @param filter_period 
+  # Report the current-period usage counters for this account.
+  # @param filter_period Period to report. &#x60;current&#x60; is the only supported value.
   # @param [Hash] opts the optional parameters
   # @return [UsageResponse]
   describe 'list_usage test' do

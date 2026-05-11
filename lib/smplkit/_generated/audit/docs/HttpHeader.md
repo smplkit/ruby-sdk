@@ -4,8 +4,8 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **name** | **String** |  |  |
-| **value** | **String** |  |  |
+| **name** | **String** | Header name. |  |
+| **value** | **String** | Header value. |  |
 
 ## Example
 

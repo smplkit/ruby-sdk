@@ -14,17 +14,44 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # The destination HTTP request shape stored encrypted on a forwarder.  ``success_status`` is a string: either a single status code (e.g. ``\"200\"``, ``\"204\"``) or a class (e.g. ``\"2xx\"``, ``\"3xx\"``). The string-only contract is intentional — a Pydantic ``int | str`` union confused several SDK code generators (Java in particular wrote the default ``\"2xx\"`` unquoted into a typed enum). String covers both shapes universally with a single wire type.
+  # HTTP request configuration used to deliver an event to the destination.
   class ForwarderHttp < ApiModelBase
+    # HTTP method used when delivering an event.
     attr_accessor :method
 
+    # Destination URL.
     attr_accessor :url
 
+    # HTTP headers attached to each delivery request.
     attr_accessor :headers
 
+    # Request body sent to the destination. If omitted, the event JSON is sent as the body.
     attr_accessor :body
 
+    # HTTP response status that indicates a successful delivery. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
     attr_accessor :success_status
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -142,12 +169,24 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      method_validator = EnumAttributeValidator.new('String', ["GET", "POST", "PUT", "PATCH", "DELETE"])
+      return false unless method_validator.valid?(@method)
       return false if @url.nil?
       return false if @url.to_s.length > 2048
       return false if @url.to_s.length < 1
       return false if !@body.nil? && @body.to_s.length > 65536
       return false if !@success_status.nil? && @success_status.to_s.length > 3
       true
+    end
+
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] method Object to be assigned
+    def method=(method)
+      validator = EnumAttributeValidator.new('String', ["GET", "POST", "PUT", "PATCH", "DELETE"])
+      unless validator.valid?(method)
+        fail ArgumentError, "invalid value for \"method\", must be one of #{validator.allowable_values}."
+      end
+      @method = method
     end
 
     # Custom attribute writer method with validation

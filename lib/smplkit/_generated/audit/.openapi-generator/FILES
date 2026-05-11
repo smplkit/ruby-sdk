@@ -17,6 +17,7 @@ docs/Event.md
 docs/EventListLinks.md
 docs/EventListMeta.md
 docs/EventListResponse.md
+docs/EventRequest.md
 docs/EventResource.md
 docs/EventResponse.md
 docs/EventsApi.md
@@ -29,6 +30,7 @@ docs/ForwarderHttp.md
 docs/ForwarderListLinks.md
 docs/ForwarderListMeta.md
 docs/ForwarderListResponse.md
+docs/ForwarderRequest.md
 docs/ForwarderResource.md
 docs/ForwarderResponse.md
 docs/ForwarderType.md
@@ -71,6 +73,7 @@ lib/smplkit_audit_client/models/event.rb
 lib/smplkit_audit_client/models/event_list_links.rb
 lib/smplkit_audit_client/models/event_list_meta.rb
 lib/smplkit_audit_client/models/event_list_response.rb
+lib/smplkit_audit_client/models/event_request.rb
 lib/smplkit_audit_client/models/event_resource.rb
 lib/smplkit_audit_client/models/event_response.rb
 lib/smplkit_audit_client/models/forwarder.rb
@@ -82,6 +85,7 @@ lib/smplkit_audit_client/models/forwarder_http.rb
 lib/smplkit_audit_client/models/forwarder_list_links.rb
 lib/smplkit_audit_client/models/forwarder_list_meta.rb
 lib/smplkit_audit_client/models/forwarder_list_response.rb
+lib/smplkit_audit_client/models/forwarder_request.rb
 lib/smplkit_audit_client/models/forwarder_resource.rb
 lib/smplkit_audit_client/models/forwarder_response.rb
 lib/smplkit_audit_client/models/forwarder_type.rb
@@ -115,6 +119,7 @@ spec/models/action_resource_spec.rb
 spec/models/event_list_links_spec.rb
 spec/models/event_list_meta_spec.rb
 spec/models/event_list_response_spec.rb
+spec/models/event_request_spec.rb
 spec/models/event_resource_spec.rb
 spec/models/event_response_spec.rb
 spec/models/event_spec.rb
@@ -126,6 +131,7 @@ spec/models/forwarder_http_spec.rb
 spec/models/forwarder_list_links_spec.rb
 spec/models/forwarder_list_meta_spec.rb
 spec/models/forwarder_list_response_spec.rb
+spec/models/forwarder_request_spec.rb
 spec/models/forwarder_resource_spec.rb
 spec/models/forwarder_response_spec.rb
 spec/models/forwarder_spec.rb

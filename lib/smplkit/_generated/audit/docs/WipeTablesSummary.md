@@ -4,12 +4,12 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **audit_event** | **Integer** |  |  |
-| **audit_event_quota** | **Integer** |  |  |
-| **forwarder** | **Integer** |  |  |
-| **forwarder_delivery** | **Integer** |  |  |
-| **resource_type** | **Integer** |  |  |
-| **action** | **Integer** |  |  |
+| **audit_event** | **Integer** | Number of audit events deleted. |  |
+| **audit_event_quota** | **Integer** | Number of monthly usage-quota counters deleted. |  |
+| **forwarder** | **Integer** | Number of forwarders deleted. |  |
+| **forwarder_delivery** | **Integer** | Number of forwarder delivery log entries deleted. |  |
+| **resource_type** | **Integer** | Number of distinct &#x60;resource_type&#x60; entries deleted. |  |
+| **action** | **Integer** | Number of distinct &#x60;action&#x60; entries deleted. |  |
 
 ## Example
 

@@ -14,26 +14,36 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # Read-only delivery log row.  All fields are server-populated. Headers in ``request`` always show redacted values, regardless of who configured them.
+  # A log entry for one attempt to deliver an event to a forwarder.
   class ForwarderDelivery < ApiModelBase
+    # Forwarder the delivery belongs to.
     attr_accessor :forwarder_id
 
+    # Event that was being delivered.
     attr_accessor :event_id
 
+    # 1 for the initial delivery, incremented for each retry.
     attr_accessor :attempt_number
 
+    # Delivery outcome. `SUCCEEDED` and `FAILED` are the live-delivery outcomes; `FILTERED_OUT` is recorded when the forwarder's filter rejected the event; `SKIPPED_DO_NOT_FORWARD` is recorded when the event was emitted with `do_not_forward=true`.
     attr_accessor :status
 
+    # The HTTP request as it was sent to the destination. Header values are redacted.
     attr_accessor :request
 
+    # HTTP status code returned by the destination.
     attr_accessor :response_status
 
+    # Response body returned by the destination.
     attr_accessor :response_body
 
+    # Elapsed time of the delivery attempt in milliseconds.
     attr_accessor :latency_ms
 
+    # Error message if the delivery did not complete.
     attr_accessor :error
 
+    # When the delivery attempt was recorded.
     attr_accessor :created_at
 
     class EnumAttributeValidator

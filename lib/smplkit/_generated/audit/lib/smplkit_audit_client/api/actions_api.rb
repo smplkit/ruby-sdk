@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # List Actions
-    # List the distinct ``action`` slugs seen in the account.  Without ``filter[resource_type]``, returns one row per distinct action — the same action may have been recorded with multiple resource types and the unfiltered dropdown shows it once.  With ``filter[resource_type]``, returns the actions seen with that specific resource type, powering the Activity tab's cascading filter behavior.
+    # List the distinct `action` slugs recorded for this account.  Without `filter[resource_type]`, returns one row per distinct action. With `filter[resource_type]`, returns the actions recorded for that specific resource type.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_resource_type 
     # @option opts [Integer] :page_size 
@@ -32,7 +32,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Actions
-    # List the distinct &#x60;&#x60;action&#x60;&#x60; slugs seen in the account.  Without &#x60;&#x60;filter[resource_type]&#x60;&#x60;, returns one row per distinct action — the same action may have been recorded with multiple resource types and the unfiltered dropdown shows it once.  With &#x60;&#x60;filter[resource_type]&#x60;&#x60;, returns the actions seen with that specific resource type, powering the Activity tab&#39;s cascading filter behavior.
+    # List the distinct &#x60;action&#x60; slugs recorded for this account.  Without &#x60;filter[resource_type]&#x60;, returns one row per distinct action. With &#x60;filter[resource_type]&#x60;, returns the actions recorded for that specific resource type.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_resource_type 
     # @option opts [Integer] :page_size 
@@ -85,73 +85,6 @@ module SmplkitGeneratedClient::Audit
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: ActionsApi#list_actions\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
-      end
-      return data, status_code, headers
-    end
-
-    # List Resource Types
-    # List the distinct ``resource_type`` slugs seen in the account.  Each row's ``id`` is the slug itself, mirroring the smplkit convention of using customer-provided identifiers as the public-facing resource id (ADR-014).
-    # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :page_size 
-    # @option opts [String] :page_after 
-    # @return [ResourceTypeListResponse]
-    def list_resource_types(opts = {})
-      data, _status_code, _headers = list_resource_types_with_http_info(opts)
-      data
-    end
-
-    # List Resource Types
-    # List the distinct &#x60;&#x60;resource_type&#x60;&#x60; slugs seen in the account.  Each row&#39;s &#x60;&#x60;id&#x60;&#x60; is the slug itself, mirroring the smplkit convention of using customer-provided identifiers as the public-facing resource id (ADR-014).
-    # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :page_size 
-    # @option opts [String] :page_after 
-    # @return [Array<(ResourceTypeListResponse, Integer, Hash)>] ResourceTypeListResponse data, response status code and response headers
-    def list_resource_types_with_http_info(opts = {})
-      if @api_client.config.debugging
-        @api_client.config.logger.debug 'Calling API: ActionsApi.list_resource_types ...'
-      end
-      if @api_client.config.client_side_validation && !opts[:'page_size'].nil? && opts[:'page_size'] < 1
-        fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling ActionsApi.list_resource_types, must be greater than or equal to 1.'
-      end
-
-      # resource path
-      local_var_path = '/api/v1/resource_types'
-
-      # query parameters
-      query_params = opts[:query_params] || {}
-      query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
-      query_params[:'page[after]'] = opts[:'page_after'] if !opts[:'page_after'].nil?
-
-      # header parameters
-      header_params = opts[:header_params] || {}
-      # HTTP header 'Accept' (if needed)
-      header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
-
-      # form parameters
-      form_params = opts[:form_params] || {}
-
-      # http body (model)
-      post_body = opts[:debug_body]
-
-      # return_type
-      return_type = opts[:debug_return_type] || 'ResourceTypeListResponse'
-
-      # auth_names
-      auth_names = opts[:debug_auth_names] || ['HTTPBearer']
-
-      new_options = opts.merge(
-        :operation => :"ActionsApi.list_resource_types",
-        :header_params => header_params,
-        :query_params => query_params,
-        :form_params => form_params,
-        :body => post_body,
-        :auth_names => auth_names,
-        :return_type => return_type
-      )
-
-      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
-      if @api_client.config.debugging
-        @api_client.config.logger.debug "API called: ActionsApi#list_resource_types\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end
