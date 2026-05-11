@@ -10,13 +10,13 @@ module Smplkit
     # {Forwarders#list}. The wrapper validates membership before
     # round-tripping to the wire.
     module ForwarderType
-      HTTP = "http"
-      DATADOG = "datadog"
-      SPLUNK_HEC = "splunk_hec"
-      SUMO_LOGIC = "sumo_logic"
-      NEW_RELIC = "new_relic"
-      HONEYCOMB = "honeycomb"
-      ELASTIC = "elastic"
+      HTTP = "HTTP"
+      DATADOG = "DATADOG"
+      SPLUNK_HEC = "SPLUNK_HEC"
+      SUMO_LOGIC = "SUMO_LOGIC"
+      NEW_RELIC = "NEW_RELIC"
+      HONEYCOMB = "HONEYCOMB"
+      ELASTIC = "ELASTIC"
 
       # Every supported value, in spec order. Useful for membership
       # checks, dropdown population, or test parametrization.
@@ -129,10 +129,11 @@ module Smplkit
         @actions = DeliveryActions.new(api)
       end
 
-      def list(forwarder_id, status: nil, created_at_range: nil, page_size: nil, page_after: nil)
+      def list(forwarder_id, status: nil, created_at_range: nil, event_id: nil, page_size: nil, page_after: nil)
         opts = {}
         opts[:filter_status] = status if status
         opts[:filter_created_at] = created_at_range if created_at_range
+        opts[:filter_event_id] = event_id if event_id
         opts[:page_size] = page_size if page_size
         opts[:page_after] = page_after if page_after
         resp = @api.list_forwarder_deliveries(forwarder_id, opts)

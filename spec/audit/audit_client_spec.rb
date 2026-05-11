@@ -369,6 +369,22 @@ RSpec.describe Smplkit::Audit::AuditClient do
         client._close
       end
     end
+
+    it "passes filter[search] to the generated client" do
+      captured_uri = nil
+      stub_request(:get, %r{#{Regexp.escape(base_url)}/api/v1/events})
+        .with { |req| captured_uri = req.uri.to_s; true }
+        .to_return(status: 200, body: { data: [], meta: { page_size: 50 } }.to_json,
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.list(search: "order-123")
+        expect(captured_uri).to include("filter%5Bsearch%5D=order-123")
+      ensure
+        client._close
+      end
+    end
   end
 
   describe "buffer overflow" do

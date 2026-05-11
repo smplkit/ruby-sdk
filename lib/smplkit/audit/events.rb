@@ -71,7 +71,7 @@ module Smplkit
       # +#next_cursor+ is the opaque token for the next page (or nil).
       def list(action: nil, resource_type: nil, resource_id: nil,
                actor_type: nil, actor_id: nil, occurred_at_range: nil,
-               page_size: nil, page_after: nil)
+               search: nil, page_size: nil, page_after: nil)
         # Generated client opts use snake_case keys that internally map
         # to the JSON:API ``filter[*]`` / ``page[*]`` query-string format
         # (see default_api.rb#list_events_with_http_info). Without the
@@ -84,6 +84,7 @@ module Smplkit
         opts[:filter_actor_type] = actor_type if actor_type
         opts[:filter_actor_id] = actor_id if actor_id
         opts[:filter_occurred_at] = occurred_at_range if occurred_at_range
+        opts[:filter_search] = search if search
         opts[:page_size] = page_size if page_size
         opts[:page_after] = page_after if page_after
 

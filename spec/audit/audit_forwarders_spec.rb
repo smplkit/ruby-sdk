@@ -17,7 +17,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
       id: fwd_id,
       type: "forwarder",
       attributes: {
-        name: name, slug: slug, forwarder_type: "datadog", enabled: enabled,
+        name: name, slug: slug, forwarder_type: "DATADOG", enabled: enabled,
         filter: nil, transform: nil,
         http: {
           method: "POST", url: "https://siem.example.com/in",
@@ -30,7 +30,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
     }
   end
 
-  def delivery_resource(status: "succeeded")
+  def delivery_resource(status: "SUCCEEDED")
     {
       id: delivery_id,
       type: "forwarder_delivery",
@@ -53,7 +53,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
         headers: { "Content-Type" => "application/vnd.api+json" }
       )
       fwd = client.forwarders.create(
-        name: "Datadog production", forwarder_type: "datadog",
+        name: "Datadog production", forwarder_type: "DATADOG",
         http: { url: "https://siem.example.com/in",
                 headers: [{ name: "DD-API-KEY", value: "real-secret" }] },
         filter: { "==" => [1, 1] }, transform: "$",
@@ -70,7 +70,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
       )
       expect do
         client.forwarders.create(
-          name: "x", forwarder_type: "http",
+          name: "x", forwarder_type: "HTTP",
           http: Smplkit::Audit::ForwarderHttp.new(url: "https://x")
         )
       end.to raise_error(SmplkitGeneratedClient::Audit::ApiError)
@@ -92,7 +92,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
         { status: 200, body: page1, headers: { "Content-Type" => "application/vnd.api+json" } },
         { status: 200, body: page2, headers: { "Content-Type" => "application/vnd.api+json" } }
       )
-      first = client.forwarders.list(forwarder_type: "datadog", enabled: true, page_size: 1)
+      first = client.forwarders.list(forwarder_type: "DATADOG", enabled: true, page_size: 1)
       expect(first.next_cursor).to eq("tok-2")
       second = client.forwarders.list(page_after: first.next_cursor)
       expect(second.next_cursor).to be_nil
@@ -145,7 +145,7 @@ RSpec.describe Smplkit::Audit::Forwarders do
         headers: { "Content-Type" => "application/vnd.api+json" }
       )
       fwd = client.forwarders.update(
-        fwd_id, name: "Renamed", forwarder_type: "datadog",
+        fwd_id, name: "Renamed", forwarder_type: "DATADOG",
                 http: Smplkit::Audit::ForwarderHttp.new(url: "https://x")
       )
       expect(put_stub).to have_been_requested
@@ -167,10 +167,23 @@ RSpec.describe Smplkit::Audit::Forwarders do
         headers: { "Content-Type" => "application/vnd.api+json" }
       )
       page = client.forwarders.deliveries.list(
-        fwd_id, status: "succeeded",
+        fwd_id, status: "SUCCEEDED",
                 created_at_range: "[2020-01-01T00:00:00Z,*)", page_size: 1
       )
-      expect(page.deliveries.first.status).to eq("succeeded")
+      expect(page.deliveries.first.status).to eq("SUCCEEDED")
+    end
+
+    it "passes filter[event_id] to the generated client" do
+      captured_uri = nil
+      stub_request(:get, %r{#{base_url}/api/v1/forwarders/#{fwd_id}/deliveries\b})
+        .with { |req| captured_uri = req.uri.to_s; true }
+        .to_return(
+          status: 200,
+          body: { data: [], meta: { page_size: 50 } }.to_json,
+          headers: { "Content-Type" => "application/vnd.api+json" }
+        )
+      client.forwarders.deliveries.list(fwd_id, event_id: "33333333-4444-5555-6666-777777777777")
+      expect(captured_uri).to include("filter%5Bevent_id%5D=33333333")
     end
 
     it "returns delivery request with string keys at every depth" do
@@ -208,11 +221,11 @@ RSpec.describe Smplkit::Audit::Forwarders do
         :post,
         "#{base_url}/api/v1/forwarders/#{fwd_id}/deliveries/#{delivery_id}/actions/retry"
       ).to_return(
-        status: 200, body: { data: delivery_resource(status: "succeeded") }.to_json,
+        status: 200, body: { data: delivery_resource(status: "SUCCEEDED") }.to_json,
         headers: { "Content-Type" => "application/vnd.api+json" }
       )
       row = client.forwarders.deliveries.actions.retry(fwd_id, delivery_id)
-      expect(row.status).to eq("succeeded")
+      expect(row.status).to eq("SUCCEEDED")
     end
   end
 
@@ -355,28 +368,28 @@ end
 RSpec.describe Smplkit::Audit::ForwarderType do
   it "lists every spec value in VALUES" do
     expect(described_class::VALUES).to eq(%w[
-                                            http datadog splunk_hec sumo_logic new_relic honeycomb elastic
+                                            HTTP DATADOG SPLUNK_HEC SUMO_LOGIC NEW_RELIC HONEYCOMB ELASTIC
                                           ])
   end
 
   it "exposes each value as a SCREAMING_SNAKE_CASE constant" do
-    expect(described_class::HTTP).to eq("http")
-    expect(described_class::DATADOG).to eq("datadog")
-    expect(described_class::SPLUNK_HEC).to eq("splunk_hec")
-    expect(described_class::SUMO_LOGIC).to eq("sumo_logic")
-    expect(described_class::NEW_RELIC).to eq("new_relic")
-    expect(described_class::HONEYCOMB).to eq("honeycomb")
-    expect(described_class::ELASTIC).to eq("elastic")
+    expect(described_class::HTTP).to eq("HTTP")
+    expect(described_class::DATADOG).to eq("DATADOG")
+    expect(described_class::SPLUNK_HEC).to eq("SPLUNK_HEC")
+    expect(described_class::SUMO_LOGIC).to eq("SUMO_LOGIC")
+    expect(described_class::NEW_RELIC).to eq("NEW_RELIC")
+    expect(described_class::HONEYCOMB).to eq("HONEYCOMB")
+    expect(described_class::ELASTIC).to eq("ELASTIC")
   end
 
   describe ".coerce" do
     it "passes through valid wire-format strings" do
-      expect(described_class.coerce("http")).to eq("http")
-      expect(described_class.coerce("datadog")).to eq("datadog")
+      expect(described_class.coerce("HTTP")).to eq("HTTP")
+      expect(described_class.coerce("DATADOG")).to eq("DATADOG")
     end
 
     it "passes through the published constants (which are strings)" do
-      expect(described_class.coerce(described_class::SPLUNK_HEC)).to eq("splunk_hec")
+      expect(described_class.coerce(described_class::SPLUNK_HEC)).to eq("SPLUNK_HEC")
     end
 
     it "preserves nil so optional params remain optional" do
@@ -388,8 +401,8 @@ RSpec.describe Smplkit::Audit::ForwarderType do
         .to raise_error(ArgumentError, /Unknown ForwarderType/)
     end
 
-    it "raises ArgumentError on the wrong case" do
-      expect { described_class.coerce("HTTP") }
+    it "raises ArgumentError on a lowercase value" do
+      expect { described_class.coerce("http") }
         .to raise_error(ArgumentError, /Unknown ForwarderType/)
     end
   end
@@ -422,7 +435,7 @@ RSpec.describe Smplkit::Audit::ForwarderType do
           data: {
             id: SecureRandom.uuid, type: "forwarder",
             attributes: {
-              name: "n", slug: "n", forwarder_type: "datadog", enabled: true,
+              name: "n", slug: "n", forwarder_type: "DATADOG", enabled: true,
               filter: nil, transform: nil,
               http: { method: "POST", url: "u",
                       headers: [], body: nil, success_status: "2xx" },
@@ -437,7 +450,7 @@ RSpec.describe Smplkit::Audit::ForwarderType do
         name: "n", forwarder_type: Smplkit::Audit::ForwarderType::DATADOG,
         http: Smplkit::Audit::ForwarderHttp.new(url: "u")
       )
-      expect(fwd.forwarder_type).to eq("datadog")
+      expect(fwd.forwarder_type).to eq("DATADOG")
     end
   end
 end
