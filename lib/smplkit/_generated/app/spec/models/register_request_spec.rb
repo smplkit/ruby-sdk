@@ -42,7 +42,7 @@ describe SmplkitGeneratedClient::App::RegisterRequest do
   describe 'test attribute "entry_point"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["login", "get_started", "live_demo", "unknown"])
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["LOGIN", "GET_STARTED", "LIVE_DEMO", "UNKNOWN"])
       # validator.allowable_values.each do |value|
       #   expect { instance.entry_point = value }.not_to raise_error
       # end

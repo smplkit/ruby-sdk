@@ -48,7 +48,7 @@ describe SmplkitGeneratedClient::App::SubscriptionListMeta do
   describe 'test attribute "discount_source"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["volume", "override"])
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["VOLUME", "OVERRIDE"])
       # validator.allowable_values.each do |value|
       #   expect { instance.discount_source = value }.not_to raise_error
       # end

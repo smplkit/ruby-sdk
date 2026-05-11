@@ -6,7 +6,7 @@
 | ---- | ---- | ----------- | ----- |
 | **email** | **String** |  |  |
 | **password** | **String** |  |  |
-| **entry_point** | **String** | Registration entry point. Allowed: login, get_started, live_demo, unknown. Defaults to unknown when omitted. | [optional] |
+| **entry_point** | **String** | Registration entry point. Allowed: LOGIN, GET_STARTED, LIVE_DEMO, UNKNOWN. Defaults to UNKNOWN when omitted. Case-insensitive. | [optional] |
 
 ## Example
 

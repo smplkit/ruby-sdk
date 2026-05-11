@@ -19,7 +19,7 @@ module SmplkitGeneratedClient::App
 
     attr_accessor :password
 
-    # Registration entry point. Allowed: login, get_started, live_demo, unknown. Defaults to unknown when omitted.
+    # Registration entry point. Allowed: LOGIN, GET_STARTED, LIVE_DEMO, UNKNOWN. Defaults to UNKNOWN when omitted. Case-insensitive.
     attr_accessor :entry_point
 
     class EnumAttributeValidator
@@ -144,7 +144,7 @@ module SmplkitGeneratedClient::App
       return false if @password.nil?
       return false if @password.to_s.length > 128
       return false if @password.to_s.length < 8
-      entry_point_validator = EnumAttributeValidator.new('String', ["login", "get_started", "live_demo", "unknown"])
+      entry_point_validator = EnumAttributeValidator.new('String', ["LOGIN", "GET_STARTED", "LIVE_DEMO", "UNKNOWN"])
       return false unless entry_point_validator.valid?(@entry_point)
       true
     end
@@ -180,7 +180,7 @@ module SmplkitGeneratedClient::App
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] entry_point Object to be assigned
     def entry_point=(entry_point)
-      validator = EnumAttributeValidator.new('String', ["login", "get_started", "live_demo", "unknown"])
+      validator = EnumAttributeValidator.new('String', ["LOGIN", "GET_STARTED", "LIVE_DEMO", "UNKNOWN"])
       unless validator.valid?(entry_point)
         fail ArgumentError, "invalid value for \"entry_point\", must be one of #{validator.allowable_values}."
       end
