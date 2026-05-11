@@ -250,14 +250,14 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
 
-    it "raises ApiError on 404" do
+    it "raises NotFoundError on 404" do
       event_id = "00000000-0000-0000-0000-000000000099"
       stub_request(:get, "#{base_url}/api/v1/events/#{event_id}")
         .to_return(status: 404, body: "{}", headers: { "Content-Type" => "application/vnd.api+json" })
 
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
-        expect { client.events.get(event_id) }.to raise_error(SmplkitGeneratedClient::Audit::ApiError)
+        expect { client.events.get(event_id) }.to raise_error(Smplkit::NotFoundError)
       ensure
         client._close
       end

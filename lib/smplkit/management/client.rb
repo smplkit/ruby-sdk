@@ -28,7 +28,7 @@ module Smplkit
   # +<resource>_from_resource+ helpers.
   class ManagementClient
     attr_reader :contexts, :context_types, :environments, :account_settings,
-                :config, :flags, :loggers, :log_groups
+                :config, :flags, :loggers, :log_groups, :audit
 
     def self.from_resolved(resolved, extra_headers: nil)
       new(_resolved: resolved, extra_headers: extra_headers)
@@ -50,6 +50,7 @@ module Smplkit
       @config_api_client = build_api_client(SmplkitGeneratedClient::Config, "config", cfg)
       @flags_api_client = build_api_client(SmplkitGeneratedClient::Flags, "flags", cfg)
       @logging_api_client = build_api_client(SmplkitGeneratedClient::Logging, "logging", cfg)
+      @audit_api_client = build_api_client(SmplkitGeneratedClient::Audit, "audit", cfg)
 
       @contexts = ContextsNamespace.new(@app_api_client)
       @context_types = ContextTypesNamespace.new(@app_api_client)
@@ -59,6 +60,7 @@ module Smplkit
       @flags = FlagsNamespace.new(@flags_api_client)
       @loggers = LoggersNamespace.new(@logging_api_client)
       @log_groups = LogGroupsNamespace.new(@logging_api_client)
+      @audit = Management::AuditNamespace.new(@audit_api_client)
     end
 
     def close
@@ -71,6 +73,7 @@ module Smplkit
     def _config_http = @config_api_client
     def _flags_http = @flags_api_client
     def _logging_http = @logging_api_client
+    def _audit_http = @audit_api_client
 
     SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
 

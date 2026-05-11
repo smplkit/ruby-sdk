@@ -4,9 +4,9 @@ module Smplkit
   module Audit
     # Audit events surface — accessed via +client.audit.events+.
     #
-    # +#create+ is fire-and-forget per ADR-047 §2.6 — the call enqueues
+    # +#record+ is fire-and-forget per ADR-047 §2.6 — the call enqueues
     # the event onto an in-memory bounded buffer and returns
-    # immediately. +#list+ and +#get+ are synchronous.
+    # immediately. +#list+ and +#get+ are synchronous reads.
     class Events
       def initialize(api)
         @api = api
@@ -53,16 +53,16 @@ module Smplkit
           type: "event",
           attributes: attrs
         )
-        body = SmplkitGeneratedClient::Audit::EventResponse.new(data: resource)
+        body = SmplkitGeneratedClient::Audit::EventRequest.new(data: resource)
         @buffer.enqueue(body, idempotency_key)
       end
 
       # Single-event retrieval.
       #
-      # Raises +SmplkitGeneratedClient::Audit::ApiError+ on non-2xx
-      # responses (404 if the event is not in the caller's account).
+      # Raises {Smplkit::NotFoundError} when no event with that id
+      # exists in the caller's account.
       def get(event_id)
-        resp = @api.get_event(event_id)
+        resp = Smplkit::Audit.call_api { @api.get_event(event_id) }
         AuditEvent.from_resource(resp.data)
       end
 
@@ -88,19 +88,9 @@ module Smplkit
         opts[:page_size] = page_size if page_size
         opts[:page_after] = page_after if page_after
 
-        resp = @api.list_events(opts)
+        resp = Smplkit::Audit.call_api { @api.list_events(opts) }
         events = (resp.data || []).map { |r| AuditEvent.from_resource(r) }
-        next_cursor = nil
-        if resp.links&._next.is_a?(String)
-          next_link = resp.links._next
-          if (idx = next_link.index("page[after]="))
-            next_cursor = next_link[(idx + "page[after]=".length)..]
-            if (amp = next_cursor.index("&"))
-              next_cursor = next_cursor[0...amp]
-            end
-          end
-        end
-        ListEventsPage.new(events, next_cursor)
+        ListEventsPage.new(events, Smplkit::Audit.next_cursor(resp.links&._next))
       end
 
       # Block until the in-memory buffer is drained or the timeout elapses.
@@ -111,33 +101,6 @@ module Smplkit
       # @api private — drains best-effort and stops the worker thread.
       def _close
         @buffer.close
-      end
-    end
-
-    # Public-facing audit event resource. ADR-047 §2.3.1.
-    AuditEvent = Struct.new(
-      :id, :action, :resource_type, :resource_id,
-      :occurred_at, :created_at,
-      :actor_type, :actor_id, :actor_label,
-      :data, :idempotency_key, :do_not_forward,
-      keyword_init: true
-    ) do
-      def self.from_resource(resource)
-        attrs = resource.attributes
-        new(
-          id: resource.id,
-          action: attrs.action,
-          resource_type: attrs.resource_type,
-          resource_id: attrs.resource_id,
-          occurred_at: attrs.occurred_at,
-          created_at: attrs.created_at,
-          actor_type: attrs.actor_type,
-          actor_id: attrs.actor_id,
-          actor_label: attrs.actor_label,
-          data: Smplkit::Helpers.deep_stringify_keys(attrs.data || {}),
-          idempotency_key: attrs.idempotency_key,
-          do_not_forward: attrs.do_not_forward || false
-        )
       end
     end
 

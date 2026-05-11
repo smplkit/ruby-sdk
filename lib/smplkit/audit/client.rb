@@ -4,11 +4,15 @@ module Smplkit
   module Audit
     # Audit-product entry point — accessed via +client.audit+.
     #
-    # Today the audit namespace is exclusively +#events+; future
-    # iterations may add SIEM exports as additional sub-clients
-    # (ADR-047 §2.7 lists SIEM streaming as a Pro-tier capability).
+    # Owns event recording and read-side queries: fire-and-forget
+    # +#events.record+, plus the audit-log +list+ / +get+ and the
+    # distinct-value listings that back the Activity tab filter
+    # dropdowns. ADR-047 §2.7.
+    #
+    # SIEM forwarder CRUD lives on {Smplkit::ManagementClient} under
+    # +mgmt.audit.forwarders.*+.
     class AuditClient
-      attr_reader :events, :forwarders, :functions
+      attr_reader :events, :resource_types, :actions
 
       SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
 
@@ -23,11 +27,9 @@ module Smplkit
         extra_headers&.each do |k, v|
           api_client.default_headers[k] = v unless SDK_OWNED_HEADERS.include?(k.downcase)
         end
-        events_api = SmplkitGeneratedClient::Audit::EventsApi.new(api_client)
-        forwarders_api = SmplkitGeneratedClient::Audit::ForwardersApi.new(api_client)
-        @events = Events.new(events_api)
-        @forwarders = Forwarders.new(forwarders_api)
-        @functions = Functions.new(forwarders_api)
+        @events = Events.new(SmplkitGeneratedClient::Audit::EventsApi.new(api_client))
+        @resource_types = ResourceTypes.new(SmplkitGeneratedClient::Audit::ResourceTypesApi.new(api_client))
+        @actions = Actions.new(SmplkitGeneratedClient::Audit::ActionsApi.new(api_client))
       end
 
       def _close

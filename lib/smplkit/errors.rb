@@ -70,6 +70,10 @@ module Smplkit
   class ConflictError < Error; end
   class ValidationError < Error; end
 
+  # Raised when the server rejects a request because the account's
+  # subscription plan does not include the required entitlement.
+  class PaymentRequiredError < Error; end
+
   module Errors
     module_function
 
@@ -102,6 +106,7 @@ module Smplkit
 
       exc_cls =
         case status_code
+        when 402 then PaymentRequiredError
         when 404 then NotFoundError
         when 409 then ConflictError
         when 400, 422 then ValidationError

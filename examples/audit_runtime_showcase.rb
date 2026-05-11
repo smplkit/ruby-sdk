@@ -2,11 +2,11 @@
 
 # Demonstrates the smplkit runtime SDK for Smpl Audit.
 #
-# Covers: event record / list / get, plus the SIEM forwarders surface
-# (create / list / delete + the test_forwarder.execute proxy + a
-# do_not_forward event flow). The forwarders portion gracefully skips
-# on 402 (free / standard tier) so the showcase remains runnable in
-# any environment.
+# Prerequisites:
+#   - +gem install smplkit+
+#   - A valid smplkit API key, provided via one of:
+#       - +SMPLKIT_API_KEY+ environment variable
+#       - +~/.smplkit+ configuration file (see SDK docs)
 #
 # Usage:
 #
@@ -17,8 +17,9 @@ require "smplkit"
 
 # create the client
 Smplkit::Client.open(environment: "production", service: "showcase-service") do |client|
-  # record an event
   some_resource_id = "showcase-#{SecureRandom.hex(4)}"
+
+  # record an event
   client.audit.events.record(
     action: "invoice.created",
     resource_type: "invoice",
@@ -29,70 +30,35 @@ Smplkit::Client.open(environment: "production", service: "showcase-service") do 
       "request_id" => "req-abc"
     }
   )
-
-  # force the event to be posted (normally happens automatically, in the
-  # background, but we want to force it to be written now for this demo)
-  client.audit.events.flush(timeout: 2.0)
+  client.audit.events.flush(timeout: 5.0) # or omit to have events flushed asynchronously
+  puts "Recorded events for invoice #{some_resource_id}"
 
   # list events
-  page = client.audit.events.list(
-    resource_type: "invoice",
-    resource_id: some_resource_id,
-    page_size: 10
-  )
-  puts "Found #{page.events.length} events for #{some_resource_id}:"
-  page.events.each do |ev|
-    puts "  #{ev.action}  id=#{ev.id}  actor=#{ev.actor_type}"
-  end
+  page = client.audit.events.list(resource_id: some_resource_id)
+  raise "expected event for #{some_resource_id}" unless page.events.any? { |e| e.resource_id == some_resource_id }
 
-  raise "Expected 1 event, got #{page.events.length}" unless page.events.length == 1
+  recorded_event_id = page.events[0].id
+  puts "Listed #{page.events.length} event(s) for invoice #{some_resource_id}"
 
-  # fetch an event by ID
-  first = client.audit.events.get(page.events[0].id)
-  puts "Round-tripped: #{first.action} at #{first.occurred_at}"
+  # fetch an event
+  event = client.audit.events.get(recorded_event_id)
+  raise "id mismatch" unless event.id == recorded_event_id
+  raise "resource_id mismatch" unless event.resource_id == some_resource_id
+  raise "action mismatch" unless event.action == "invoice.created"
 
-  # Forwarders (Pro tier — gracefully skip on 402)
-  fwd = nil
-  begin
-    fwd = client.audit.forwarders.create(
-      name: "showcase-#{SecureRandom.hex(3)}",
-      forwarder_type: "http",
-      http: Smplkit::Audit::ForwarderHttp.new(
-        url: "https://httpbin.org/post",
-        headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")]
-      )
-    )
-    puts "Created forwarder: #{fwd.slug}"
-  rescue SmplkitGeneratedClient::Audit::ApiError => e
-    if e.code == 402
-      puts "Skipping forwarder showcase — account is not Pro tier"
-      puts "Done!"
-      next
-    end
-    raise
-  end
+  puts "Fetched event #{event.id}: #{event.action}"
 
-  begin
-    # do_not_forward suppresses the forward but still records the
-    # skip in the delivery log.
-    client.audit.events.record(
-      action: "invoice.created",
-      resource_type: "invoice",
-      resource_id: "#{some_resource_id}-skipped",
-      do_not_forward: true
-    )
-    client.audit.events.flush(timeout: 2.0)
+  # list resource types observed
+  resource_types = client.audit.resource_types.list
+  raise "expected 'invoice' in resource types" unless resource_types.resource_types.any? { |rt| rt.id == "invoice" }
 
-    test = client.audit.functions.test_forwarder.actions.execute(
-      url: "https://httpbin.org/post",
-      body: '{"hello":"world"}',
-      timeout_ms: 5000
-    )
-    puts "test_forwarder: succeeded=#{test.succeeded} status=#{test.response_status}"
-  ensure
-    client.audit.forwarders.delete(fwd.id)
-    puts "Deleted forwarder: #{fwd.slug}"
-  end
+  puts "Observed resource types: #{resource_types.resource_types.map(&:id)}"
+
+  # list actions observed
+  actions = client.audit.actions.list
+  raise "expected 'invoice.created' in actions" unless actions.actions.any? { |a| a.id == "invoice.created" }
+
+  puts "Observed actions: #{actions.actions.map(&:id)}"
 
   puts "Done!"
 end
