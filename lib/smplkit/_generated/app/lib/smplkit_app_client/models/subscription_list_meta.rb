@@ -177,7 +177,7 @@ module SmplkitGeneratedClient::App
       return false if @discount_pct.nil?
       return false if @discount_amount_cents.nil?
       return false if @discount_source.nil?
-      discount_source_validator = EnumAttributeValidator.new('String', ["volume", "override"])
+      discount_source_validator = EnumAttributeValidator.new('String', ["VOLUME", "OVERRIDE"])
       return false unless discount_source_validator.valid?(@discount_source)
       return false if @total_cents.nil?
       true
@@ -216,7 +216,7 @@ module SmplkitGeneratedClient::App
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] discount_source Object to be assigned
     def discount_source=(discount_source)
-      validator = EnumAttributeValidator.new('String', ["volume", "override"])
+      validator = EnumAttributeValidator.new('String', ["VOLUME", "OVERRIDE"])
       unless validator.valid?(discount_source)
         fail ArgumentError, "invalid value for \"discount_source\", must be one of #{validator.allowable_values}."
       end
