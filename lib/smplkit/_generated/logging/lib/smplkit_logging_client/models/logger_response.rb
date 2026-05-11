@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # JSON:API single-resource response envelope for a logger.
   class LoggerResponse < ApiModelBase
     attr_accessor :data
 

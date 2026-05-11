@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Logging
       @api_client = api_client
     end
     # List All Logger Sources
-    # List all logger sources across all loggers. Optionally filter by environment or service.
+    # List every logger source observation for this account.  Supports `filter[environment]` and `filter[service]` to narrow to a specific environment or service.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_environment 
     # @option opts [String] :filter_service 
@@ -31,7 +31,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List All Logger Sources
-    # List all logger sources across all loggers. Optionally filter by environment or service.
+    # List every logger source observation for this account.  Supports &#x60;filter[environment]&#x60; and &#x60;filter[service]&#x60; to narrow to a specific environment or service.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_environment 
     # @option opts [String] :filter_service 
@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Logger Sources
-    # List all sources (service/environment observations) for a specific logger.
+    # List the service / environment observations recorded for a logger.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [LoggerSourceListResponse]
@@ -93,7 +93,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Logger Sources
-    # List all sources (service/environment observations) for a specific logger.
+    # List the service / environment observations recorded for a logger.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(LoggerSourceListResponse, Integer, Hash)>] LoggerSourceListResponse data, response status code and response headers

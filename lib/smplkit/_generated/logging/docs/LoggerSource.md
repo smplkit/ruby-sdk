@@ -4,14 +4,14 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **service** | **String** |  | [optional][readonly] |
-| **environment** | **String** |  | [optional][readonly] |
-| **level** | **String** |  | [optional][readonly] |
-| **resolved_level** | **String** |  | [optional][readonly] |
-| **first_observed** | **Time** |  | [optional][readonly] |
-| **last_seen** | **Time** |  | [optional][readonly] |
-| **created_at** | **Time** |  | [optional][readonly] |
-| **updated_at** | **Time** |  | [optional][readonly] |
+| **service** | **String** | Service that reported the logger. | [optional][readonly] |
+| **environment** | **String** | Environment the service was running in when it reported the logger. | [optional][readonly] |
+| **level** | **String** | Level explicitly set on the logger in the source runtime. &#x60;null&#x60; when the runtime inherits its level. | [optional][readonly] |
+| **resolved_level** | **String** | Effective level the runtime resolved for the logger. | [optional][readonly] |
+| **first_observed** | **Time** | When this service / environment combination first reported the logger. | [optional][readonly] |
+| **last_seen** | **Time** | Most recent report received for this service / environment combination. | [optional][readonly] |
+| **created_at** | **Time** | When the source row was created. | [optional][readonly] |
+| **updated_at** | **Time** | When the source row was last refreshed. | [optional][readonly] |
 
 ## Example
 

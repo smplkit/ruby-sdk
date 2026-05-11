@@ -34,7 +34,7 @@ describe 'LoggersApi' do
 
   # unit tests for bulk_register_loggers
   # Bulk Register Loggers
-  # Register loggers discovered by an SDK. Creates new loggers or updates source observations on existing ones.
+  # Register loggers discovered by an SDK.  Creates new logger entries for previously unseen keys and refreshes the per-(service, environment) observation for keys already known. Returns the number of items processed.
   # @param logger_bulk_request 
   # @param [Hash] opts the optional parameters
   # @return [LoggerBulkResponse]
@@ -46,7 +46,7 @@ describe 'LoggersApi' do
 
   # unit tests for delete_logger
   # Delete Logger
-  # Delete a logger by its key.
+  # Delete a logger.
   # @param id 
   # @param [Hash] opts the optional parameters
   # @return [nil]
@@ -58,7 +58,7 @@ describe 'LoggersApi' do
 
   # unit tests for get_logger
   # Get Logger
-  # Return a logger by its key.
+  # Retrieve a logger by its key.
   # @param id 
   # @param [Hash] opts the optional parameters
   # @return [LoggerResponse]
@@ -70,7 +70,7 @@ describe 'LoggersApi' do
 
   # unit tests for list_loggers
   # List Loggers
-  # List all loggers for the authenticated account. Optionally filter by managed status, service, or last-seen time window.
+  # List loggers for this account.  Supports &#x60;filter[managed]&#x60; to narrow to managed (or unmanaged) loggers, &#x60;filter[service]&#x60; to keep only loggers observed in a specific service, and &#x60;filter[last_seen]&#x60; (interval notation &#x60;[&lt;from&gt;,*)&#x60;) to keep only loggers with a source observation at or after the given timestamp.
   # @param [Hash] opts the optional parameters
   # @option opts [Boolean] :filter_managed 
   # @option opts [String] :filter_service 
@@ -84,9 +84,9 @@ describe 'LoggersApi' do
 
   # unit tests for update_logger
   # Update or Create Logger
-  # Create or update a logger (upsert). If the logger does not exist it is created. Fields absent from the body are preserved on update; explicit null clears them.
+  # Create or replace a logger at the given key.  If the logger does not yet exist, it is created. Fields omitted from the request body are preserved; explicit &#x60;null&#x60; clears them. Setting &#x60;level&#x60;, &#x60;group&#x60;, or &#x60;environments&#x60; on an unmanaged logger promotes it to managed automatically.
   # @param id 
-  # @param logger_response 
+  # @param logger_request 
   # @param [Hash] opts the optional parameters
   # @return [LoggerResponse]
   describe 'update_logger test' do

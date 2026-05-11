@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Logging Usage
 
-Return current resource usage counts for the authenticated account.
+Report the current-period usage counters for this account.
 
 ### Examples
 

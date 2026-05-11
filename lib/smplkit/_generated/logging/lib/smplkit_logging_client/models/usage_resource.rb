@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # JSON:API resource envelope for a single usage counter.
   class UsageResource < ApiModelBase
     attr_accessor :id
 

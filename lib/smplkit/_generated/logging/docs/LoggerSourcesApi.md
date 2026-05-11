@@ -14,7 +14,7 @@ All URIs are relative to *http://localhost*
 
 List All Logger Sources
 
-List all logger sources across all loggers. Optionally filter by environment or service.
+List every logger source observation for this account.  Supports `filter[environment]` and `filter[service]` to narrow to a specific environment or service.
 
 ### Examples
 
@@ -87,7 +87,7 @@ end
 
 List Logger Sources
 
-List all sources (service/environment observations) for a specific logger.
+List the service / environment observations recorded for a logger.
 
 ### Examples
 

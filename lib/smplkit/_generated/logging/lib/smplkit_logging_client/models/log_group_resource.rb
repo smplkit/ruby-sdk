@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # JSON:API resource envelope for a log group.  `id` is the group's key (e.g. `database-loggers`). On a create request the id may be supplied; if omitted, the server generates one from `name`.
   class LogGroupResource < ApiModelBase
     attr_accessor :id
 

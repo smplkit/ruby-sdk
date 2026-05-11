@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Logging
       @api_client = api_client
     end
     # List Logging Usage
-    # Return current resource usage counts for the authenticated account.
+    # Report the current-period usage counters for this account.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_period 
     # @return [UsageListResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Logging Usage
-    # Return current resource usage counts for the authenticated account.
+    # Report the current-period usage counters for this account.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_period 
     # @return [Array<(UsageListResponse, Integer, Hash)>] UsageListResponse data, response status code and response headers

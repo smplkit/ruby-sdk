@@ -17,7 +17,7 @@ All URIs are relative to *http://localhost*
 
 Bulk Register Loggers
 
-Register loggers discovered by an SDK. Creates new loggers or updates source observations on existing ones.
+Register loggers discovered by an SDK.  Creates new logger entries for previously unseen keys and refreshes the per-(service, environment) observation for keys already known. Returns the number of items processed.
 
 ### Examples
 
@@ -86,7 +86,7 @@ end
 
 Delete Logger
 
-Delete a logger by its key.
+Delete a logger.
 
 ### Examples
 
@@ -154,7 +154,7 @@ nil (empty response body)
 
 Get Logger
 
-Return a logger by its key.
+Retrieve a logger by its key.
 
 ### Examples
 
@@ -223,7 +223,7 @@ end
 
 List Loggers
 
-List all loggers for the authenticated account. Optionally filter by managed status, service, or last-seen time window.
+List loggers for this account.  Supports `filter[managed]` to narrow to managed (or unmanaged) loggers, `filter[service]` to keep only loggers observed in a specific service, and `filter[last_seen]` (interval notation `[<from>,*)`) to keep only loggers with a source observation at or after the given timestamp.
 
 ### Examples
 
@@ -294,11 +294,11 @@ end
 
 ## update_logger
 
-> <LoggerResponse> update_logger(id, logger_response)
+> <LoggerResponse> update_logger(id, logger_request)
 
 Update or Create Logger
 
-Create or update a logger (upsert). If the logger does not exist it is created. Fields absent from the body are preserved on update; explicit null clears them.
+Create or replace a logger at the given key.  If the logger does not yet exist, it is created. Fields omitted from the request body are preserved; explicit `null` clears them. Setting `level`, `group`, or `environments` on an unmanaged logger promotes it to managed automatically.
 
 ### Examples
 
@@ -313,11 +313,11 @@ end
 
 api_instance = SmplkitGeneratedClient::Logging::LoggersApi.new
 id = 'id_example' # String | 
-logger_response = SmplkitGeneratedClient::Logging::LoggerResponse.new({data: SmplkitGeneratedClient::Logging::LoggerResource.new({type: 'logger', attributes: SmplkitGeneratedClient::Logging::Logger.new({name: 'name_example'})})}) # LoggerResponse | 
+logger_request = SmplkitGeneratedClient::Logging::LoggerRequest.new({data: SmplkitGeneratedClient::Logging::LoggerResource.new({type: 'logger', attributes: SmplkitGeneratedClient::Logging::Logger.new({name: 'name_example'})})}) # LoggerRequest | 
 
 begin
   # Update or Create Logger
-  result = api_instance.update_logger(id, logger_response)
+  result = api_instance.update_logger(id, logger_request)
   p result
 rescue SmplkitGeneratedClient::Logging::ApiError => e
   puts "Error when calling LoggersApi->update_logger: #{e}"
@@ -328,12 +328,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<LoggerResponse>, Integer, Hash)> update_logger_with_http_info(id, logger_response)
+> <Array(<LoggerResponse>, Integer, Hash)> update_logger_with_http_info(id, logger_request)
 
 ```ruby
 begin
   # Update or Create Logger
-  data, status_code, headers = api_instance.update_logger_with_http_info(id, logger_response)
+  data, status_code, headers = api_instance.update_logger_with_http_info(id, logger_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <LoggerResponse>
@@ -347,7 +347,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **logger_response** | [**LoggerResponse**](LoggerResponse.md) |  |  |
+| **logger_request** | [**LoggerRequest**](LoggerRequest.md) |  |  |
 
 ### Return type
 

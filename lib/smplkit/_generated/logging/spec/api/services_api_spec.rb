@@ -34,7 +34,7 @@ describe 'ServicesApi' do
 
   # unit tests for list_services
   # List Services
-  # Return the distinct service names observed across all logger sources for the account.
+  # List the services that have reported a logger for this account.
   # @param [Hash] opts the optional parameters
   # @return [ServiceListResponse]
   describe 'list_services test' do

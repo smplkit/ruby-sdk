@@ -14,24 +14,56 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # A logger configured for the account.  Loggers are organized by dot-separated key (for example, `sqlalchemy.engine`), matching the hierarchical naming convention used by most logging frameworks. A managed logger applies the configured level to every runtime where the logger appears; unmanaged loggers are tracked only as observations from SDKs.
   class Logger < ApiModelBase
+    # Human-readable label for the logger.
     attr_accessor :name
 
+    # Account-wide log level applied to this logger. `null` means no override at the logger level — the level is inherited from the logger's group or the framework default.
     attr_accessor :level
 
+    # Key of the log group this logger belongs to, or `null` if the logger is not grouped. Assigning a logger to a group promotes it to managed; assigning a group cascades to unmanaged descendants by clearing their group reference.
     attr_accessor :group
 
+    # When `true`, the logger is part of the account's managed configuration and counts toward the managed-loggers usage counter. Setting `level`, `group`, or `environments` on an unmanaged logger promotes it to managed automatically.
     attr_accessor :managed
 
+    # Service / environment observations reported by SDKs for this logger. Each entry carries the service name, environment, the level the SDK saw, the resolved level after framework inheritance, and timestamps for the first and most recent sighting.
     attr_accessor :sources
 
+    # Per-environment level overrides keyed by environment name. Each value is an object with an optional `level` field, e.g. `{\"production\": {\"level\": \"WARN\"}}`. An environment may be present with no `level` to record that the logger applies there without changing the resolved level.
     attr_accessor :environments
 
+    # Per-environment summary of what runtimes are reporting for this logger. Keyed by environment name; each entry is one of `{\"status\": \"none\"}`, `{\"status\": \"agrees\", \"level\": \"<LEVEL>\"}`, or `{\"status\": \"varies\"}`. `agrees` means every observed source in that environment reports the same resolved level; `varies` means at least two sources disagree.
     attr_accessor :effective_levels
 
+    # When the logger was first created or discovered.
     attr_accessor :created_at
 
+    # When the logger was last modified.
     attr_accessor :updated_at
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -161,10 +193,6 @@ module SmplkitGeneratedClient::Logging
         invalid_properties.push('invalid value for "name", the character length must be smaller than or equal to 255.')
       end
 
-      if !@level.nil? && @level.to_s.length > 10
-        invalid_properties.push('invalid value for "level", the character length must be smaller than or equal to 10.')
-      end
-
       invalid_properties
     end
 
@@ -174,7 +202,8 @@ module SmplkitGeneratedClient::Logging
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @name.nil?
       return false if @name.to_s.length > 255
-      return false if !@level.nil? && @level.to_s.length > 10
+      level_validator = EnumAttributeValidator.new('String', ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "SILENT"])
+      return false unless level_validator.valid?(@level)
       true
     end
 
@@ -192,13 +221,13 @@ module SmplkitGeneratedClient::Logging
       @name = name
     end
 
-    # Custom attribute writer method with validation
-    # @param [Object] level Value to be assigned
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] level Object to be assigned
     def level=(level)
-      if !level.nil? && level.to_s.length > 10
-        fail ArgumentError, 'invalid value for "level", the character length must be smaller than or equal to 10.'
+      validator = EnumAttributeValidator.new('String', ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "SILENT"])
+      unless validator.valid?(level)
+        fail ArgumentError, "invalid value for \"level\", must be one of #{validator.allowable_values}."
       end
-
       @level = level
     end
 

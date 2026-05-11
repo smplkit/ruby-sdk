@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Logging
       @api_client = api_client
     end
     # List Services
-    # Return the distinct service names observed across all logger sources for the account.
+    # List the services that have reported a logger for this account.
     # @param [Hash] opts the optional parameters
     # @return [ServiceListResponse]
     def list_services(opts = {})
@@ -29,7 +29,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Services
-    # Return the distinct service names observed across all logger sources for the account.
+    # List the services that have reported a logger for this account.
     # @param [Hash] opts the optional parameters
     # @return [Array<(ServiceListResponse, Integer, Hash)>] ServiceListResponse data, response status code and response headers
     def list_services_with_http_info(opts = {})

@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Logging
       @api_client = api_client
     end
     # Bulk Register Loggers
-    # Register loggers discovered by an SDK. Creates new loggers or updates source observations on existing ones.
+    # Register loggers discovered by an SDK.  Creates new logger entries for previously unseen keys and refreshes the per-(service, environment) observation for keys already known. Returns the number of items processed.
     # @param logger_bulk_request [LoggerBulkRequest] 
     # @param [Hash] opts the optional parameters
     # @return [LoggerBulkResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # Bulk Register Loggers
-    # Register loggers discovered by an SDK. Creates new loggers or updates source observations on existing ones.
+    # Register loggers discovered by an SDK.  Creates new logger entries for previously unseen keys and refreshes the per-(service, environment) observation for keys already known. Returns the number of items processed.
     # @param logger_bulk_request [LoggerBulkRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(LoggerBulkResponse, Integer, Hash)>] LoggerBulkResponse data, response status code and response headers
@@ -88,7 +88,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # Delete Logger
-    # Delete a logger by its key.
+    # Delete a logger.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [nil]
@@ -98,7 +98,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # Delete Logger
-    # Delete a logger by its key.
+    # Delete a logger.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers
@@ -151,7 +151,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # Get Logger
-    # Return a logger by its key.
+    # Retrieve a logger by its key.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [LoggerResponse]
@@ -161,7 +161,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # Get Logger
-    # Return a logger by its key.
+    # Retrieve a logger by its key.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(LoggerResponse, Integer, Hash)>] LoggerResponse data, response status code and response headers
@@ -214,7 +214,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Loggers
-    # List all loggers for the authenticated account. Optionally filter by managed status, service, or last-seen time window.
+    # List loggers for this account.  Supports `filter[managed]` to narrow to managed (or unmanaged) loggers, `filter[service]` to keep only loggers observed in a specific service, and `filter[last_seen]` (interval notation `[<from>,*)`) to keep only loggers with a source observation at or after the given timestamp.
     # @param [Hash] opts the optional parameters
     # @option opts [Boolean] :filter_managed 
     # @option opts [String] :filter_service 
@@ -226,7 +226,7 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Loggers
-    # List all loggers for the authenticated account. Optionally filter by managed status, service, or last-seen time window.
+    # List loggers for this account.  Supports &#x60;filter[managed]&#x60; to narrow to managed (or unmanaged) loggers, &#x60;filter[service]&#x60; to keep only loggers observed in a specific service, and &#x60;filter[last_seen]&#x60; (interval notation &#x60;[&lt;from&gt;,*)&#x60;) to keep only loggers with a source observation at or after the given timestamp.
     # @param [Hash] opts the optional parameters
     # @option opts [Boolean] :filter_managed 
     # @option opts [String] :filter_service 
@@ -280,23 +280,23 @@ module SmplkitGeneratedClient::Logging
     end
 
     # Update or Create Logger
-    # Create or update a logger (upsert). If the logger does not exist it is created. Fields absent from the body are preserved on update; explicit null clears them.
+    # Create or replace a logger at the given key.  If the logger does not yet exist, it is created. Fields omitted from the request body are preserved; explicit `null` clears them. Setting `level`, `group`, or `environments` on an unmanaged logger promotes it to managed automatically.
     # @param id [String] 
-    # @param logger_response [LoggerResponse] 
+    # @param logger_request [LoggerRequest] 
     # @param [Hash] opts the optional parameters
     # @return [LoggerResponse]
-    def update_logger(id, logger_response, opts = {})
-      data, _status_code, _headers = update_logger_with_http_info(id, logger_response, opts)
+    def update_logger(id, logger_request, opts = {})
+      data, _status_code, _headers = update_logger_with_http_info(id, logger_request, opts)
       data
     end
 
     # Update or Create Logger
-    # Create or update a logger (upsert). If the logger does not exist it is created. Fields absent from the body are preserved on update; explicit null clears them.
+    # Create or replace a logger at the given key.  If the logger does not yet exist, it is created. Fields omitted from the request body are preserved; explicit &#x60;null&#x60; clears them. Setting &#x60;level&#x60;, &#x60;group&#x60;, or &#x60;environments&#x60; on an unmanaged logger promotes it to managed automatically.
     # @param id [String] 
-    # @param logger_response [LoggerResponse] 
+    # @param logger_request [LoggerRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(LoggerResponse, Integer, Hash)>] LoggerResponse data, response status code and response headers
-    def update_logger_with_http_info(id, logger_response, opts = {})
+    def update_logger_with_http_info(id, logger_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: LoggersApi.update_logger ...'
       end
@@ -304,9 +304,9 @@ module SmplkitGeneratedClient::Logging
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling LoggersApi.update_logger"
       end
-      # verify the required parameter 'logger_response' is set
-      if @api_client.config.client_side_validation && logger_response.nil?
-        fail ArgumentError, "Missing the required parameter 'logger_response' when calling LoggersApi.update_logger"
+      # verify the required parameter 'logger_request' is set
+      if @api_client.config.client_side_validation && logger_request.nil?
+        fail ArgumentError, "Missing the required parameter 'logger_request' when calling LoggersApi.update_logger"
       end
       # resource path
       local_var_path = '/api/v1/loggers/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -328,7 +328,7 @@ module SmplkitGeneratedClient::Logging
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(logger_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(logger_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'LoggerResponse'

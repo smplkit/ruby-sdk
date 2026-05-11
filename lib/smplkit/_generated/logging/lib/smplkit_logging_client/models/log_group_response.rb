@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # JSON:API single-resource response envelope for a log group.
   class LogGroupResponse < ApiModelBase
     attr_accessor :data
 

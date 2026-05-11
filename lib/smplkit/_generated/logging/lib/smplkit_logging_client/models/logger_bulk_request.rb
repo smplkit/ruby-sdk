@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # Payload for bulk registration of loggers discovered by an SDK.
   class LoggerBulkRequest < ApiModelBase
+    # Loggers to register or refresh observations for.
     attr_accessor :loggers
 
     # Attribute mapping from ruby-style variable name to JSON key.

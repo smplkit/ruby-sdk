@@ -68,11 +68,11 @@ SmplkitGeneratedClient::Logging.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Logging::LogGroupsApi.new
-log_group_response = SmplkitGeneratedClient::Logging::LogGroupResponse.new({data: SmplkitGeneratedClient::Logging::LogGroupResource.new({type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupResponse | 
+log_group_request = SmplkitGeneratedClient::Logging::LogGroupRequest.new({data: SmplkitGeneratedClient::Logging::LogGroupResource.new({type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupRequest | 
 
 begin
   #Create Log Group
-  result = api_instance.create_log_group(log_group_response)
+  result = api_instance.create_log_group(log_group_request)
   p result
 rescue SmplkitGeneratedClient::Logging::ApiError => e
   puts "Exception when calling LogGroupsApi->create_log_group: #{e}"
@@ -108,6 +108,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Logging::ErrorResponse](docs/ErrorResponse.md)
  - [SmplkitGeneratedClient::Logging::LogGroup](docs/LogGroup.md)
  - [SmplkitGeneratedClient::Logging::LogGroupListResponse](docs/LogGroupListResponse.md)
+ - [SmplkitGeneratedClient::Logging::LogGroupRequest](docs/LogGroupRequest.md)
  - [SmplkitGeneratedClient::Logging::LogGroupResource](docs/LogGroupResource.md)
  - [SmplkitGeneratedClient::Logging::LogGroupResponse](docs/LogGroupResponse.md)
  - [SmplkitGeneratedClient::Logging::Logger](docs/Logger.md)
@@ -115,6 +116,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Logging::LoggerBulkRequest](docs/LoggerBulkRequest.md)
  - [SmplkitGeneratedClient::Logging::LoggerBulkResponse](docs/LoggerBulkResponse.md)
  - [SmplkitGeneratedClient::Logging::LoggerListResponse](docs/LoggerListResponse.md)
+ - [SmplkitGeneratedClient::Logging::LoggerRequest](docs/LoggerRequest.md)
  - [SmplkitGeneratedClient::Logging::LoggerResource](docs/LoggerResource.md)
  - [SmplkitGeneratedClient::Logging::LoggerResponse](docs/LoggerResponse.md)
  - [SmplkitGeneratedClient::Logging::LoggerSource](docs/LoggerSource.md)
