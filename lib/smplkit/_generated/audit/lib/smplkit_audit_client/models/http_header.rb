@@ -14,10 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # A single header on a forwarder's HTTP destination.
+  # A single HTTP header attached to a forwarder delivery request.
   class HttpHeader < ApiModelBase
+    # Header name.
     attr_accessor :name
 
+    # Header value.
     attr_accessor :value
 
     # Attribute mapping from ruby-style variable name to JSON key.

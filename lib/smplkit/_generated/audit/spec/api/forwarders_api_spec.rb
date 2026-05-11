@@ -34,8 +34,8 @@ describe 'ForwardersApi' do
 
   # unit tests for create_forwarder
   # Create Forwarder
-  # Create a forwarder. Requires the &#x60;&#x60;audit.siem_streaming&#x60;&#x60; entitlement on the account; lower-tier accounts get 402.
-  # @param forwarder_response 
+  # Create a forwarder for this account.
+  # @param forwarder_request 
   # @param [Hash] opts the optional parameters
   # @return [ForwarderResponse]
   describe 'create_forwarder test' do
@@ -46,7 +46,7 @@ describe 'ForwardersApi' do
 
   # unit tests for delete_forwarder
   # Delete Forwarder
-  # Soft-delete a forwarder. Delivery rows are retained per the normal forwarder_delivery retention; a future create with the same slug is allowed (the unique index is partial on deleted_at IS NULL).
+  # Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same name.
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
   # @return [nil]
@@ -58,7 +58,7 @@ describe 'ForwardersApi' do
 
   # unit tests for execute_test_forwarder
   # Execute Test Forwarder
-  # Execute a prepared HTTP request server-side and return the response.  The same SSRF guard that gates the in-line forwarder loop is applied here — internal/private addresses, link-local IPs (including the EC2 metadata service at 169.254.169.254), unique-local IPv6, and ports outside the configured allowlist are all rejected.
+  # Send a test HTTP request to a forwarder destination and return the result.  Useful for verifying a destination URL, credentials, or transform before saving the forwarder. The same network-safety rules that apply to live deliveries (private/internal address blocking, port allowlist) apply here.
   # @param test_forwarder_request 
   # @param [Hash] opts the optional parameters
   # @return [TestForwarderResponse]
@@ -70,7 +70,7 @@ describe 'ForwardersApi' do
 
   # unit tests for get_forwarder
   # Get Forwarder
-  # Retrieve a single forwarder by id.  Returns 404 if no forwarder with that id exists in the caller&#39;s account, including if the forwarder is soft-deleted. Header values in the response are returned in plaintext so callers can perform a GET-modify-PUT round-trip without re-entering secrets (ADR-014). The persisted &#x60;&#x60;forwarder_delivery.request&#x60;&#x60; log column is what keeps redaction; that read path is unaffected by this route.
+  # Retrieve a single forwarder by id.  Header values are returned in plaintext so the resource can be round-tripped with &#x60;GET&#x60;, mutate, &#x60;PUT&#x60; without re-entering secrets.
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
   # @return [ForwarderResponse]
@@ -82,7 +82,7 @@ describe 'ForwardersApi' do
 
   # unit tests for list_forwarder_deliveries
   # List Forwarder Deliveries
-  # List delivery rows for a forwarder.  Default sort is &#x60;&#x60;-created_at&#x60;&#x60;. Cursor pagination via &#x60;&#x60;page[after]&#x60;&#x60;. Filter by status (&#x60;&#x60;SUCCEEDED&#x60;&#x60; / &#x60;&#x60;FAILED&#x60;&#x60; / &#x60;&#x60;FILTERED_OUT&#x60;&#x60; / &#x60;&#x60;SKIPPED_DO_NOT_FORWARD&#x60;&#x60;, case-insensitive) or by a &#x60;&#x60;created_at&#x60;&#x60; range using the platform&#39;s interval notation (&#x60;&#x60;[2026-01-01T00:00:00Z,*)&#x60;&#x60;). Reads do not require the entitlement — a downgraded account can still inspect historical deliveries from when the forwarder was active.
+  # List delivery log entries for a forwarder.  Default sort is newest first. Filter by &#x60;status&#x60; (one of &#x60;SUCCEEDED&#x60;, &#x60;FAILED&#x60;, &#x60;FILTERED_OUT&#x60;, &#x60;SKIPPED_DO_NOT_FORWARD&#x60; — case-insensitive), by &#x60;event_id&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_status 
@@ -99,7 +99,7 @@ describe 'ForwardersApi' do
 
   # unit tests for list_forwarders
   # List Forwarders
-  # List forwarders for the authenticated account.  Reads do not require the entitlement — a downgraded account can still inspect what they configured, they just can&#39;t create new ones.
+  # List forwarders for this account.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_forwarder_type 
   # @option opts [Boolean] :filter_enabled 
@@ -114,7 +114,7 @@ describe 'ForwardersApi' do
 
   # unit tests for retry_failed_forwarder_deliveries
   # Retry Failed Forwarder Deliveries
-  # Retry every failed delivery for the forwarder.  For each failed delivery row, re-attempt with the latest forwarder configuration and the original event payload. Returns counts.
+  # Retry every failed delivery for this forwarder.  Each failed delivery is re-attempted using the forwarder&#39;s current configuration and the original event. Returns the counts.
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
   # @return [RetryFailedDeliveriesSummary]
@@ -126,7 +126,7 @@ describe 'ForwardersApi' do
 
   # unit tests for retry_forwarder_delivery
   # Retry Forwarder Delivery
-  # Retry a single failed delivery. Returns the new delivery row with its outcome. Prior delivery rows are not modified.
+  # Retry a single failed delivery.  Returns the new delivery log entry. The prior entry is left in place.
   # @param forwarder_id 
   # @param delivery_id 
   # @param [Hash] opts the optional parameters
@@ -139,9 +139,9 @@ describe 'ForwardersApi' do
 
   # unit tests for update_forwarder
   # Update Forwarder
-  # Full-replace update. PUT semantics — every field is overwritten.  The GET path returns plaintext header values, so the standard get-mutate-put round-trip (ADR-014) preserves secrets without any extra work from the caller: GET, change one field, PUT the result.
+  # Replace an existing forwarder. Every writable field is overwritten.
   # @param forwarder_id 
-  # @param forwarder_response 
+  # @param forwarder_request 
   # @param [Hash] opts the optional parameters
   # @return [ForwarderResponse]
   describe 'update_forwarder test' do

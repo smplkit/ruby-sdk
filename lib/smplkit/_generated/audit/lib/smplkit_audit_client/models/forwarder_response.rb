@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
+  # JSON:API single-resource response envelope for a forwarder.
   class ForwarderResponse < ApiModelBase
     attr_accessor :data
 

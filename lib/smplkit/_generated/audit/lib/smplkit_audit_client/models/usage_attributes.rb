@@ -14,12 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # Attribute set for a usage resource.  The shape mirrors the ``/api/v1/usage`` contract used by config, flags, and logging — three fields, no per-product extras. Per-period limits live in the product catalog (``GET /api/v1/products``); the usage endpoint reports counts only.
+  # Usage counter for a single metered limit.
   class UsageAttributes < ApiModelBase
+    # Identifier of the metered limit, e.g. `audit.customer_events_per_month`.
     attr_accessor :limit_key
 
+    # Period the counter covers. `current` is the only supported value.
     attr_accessor :period
 
+    # Count for the period.
     attr_accessor :value
 
     # Attribute mapping from ruby-style variable name to JSON key.

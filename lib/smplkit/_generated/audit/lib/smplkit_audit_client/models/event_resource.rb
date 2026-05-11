@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # JSON:API resource envelope for an audit event.
+  # JSON:API resource envelope for an audit event.  `id` must not be specified for create requests (the server assigns it).
   class EventResource < ApiModelBase
     attr_accessor :id
 
@@ -53,6 +53,7 @@ module SmplkitGeneratedClient::Audit
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'id',
       ])
     end
 
@@ -74,8 +75,6 @@ module SmplkitGeneratedClient::Audit
 
       if attributes.key?(:'id')
         self.id = attributes[:'id']
-      else
-        self.id = nil
       end
 
       if attributes.key?(:'type')
@@ -96,10 +95,6 @@ module SmplkitGeneratedClient::Audit
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @id.nil?
-        invalid_properties.push('invalid value for "id", id cannot be nil.')
-      end
-
       if @attributes.nil?
         invalid_properties.push('invalid value for "attributes", attributes cannot be nil.')
       end
@@ -111,19 +106,8 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @id.nil?
       return false if @attributes.nil?
       true
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] id Value to be assigned
-    def id=(id)
-      if id.nil?
-        fail ArgumentError, 'id cannot be nil'
-      end
-
-      @id = id
     end
 
     # Custom attribute writer method with validation

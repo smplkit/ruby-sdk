@@ -20,8 +20,8 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # List Usage
-    # Current-period usage and quota for the audit product.  Only ``filter[period]=current`` is supported; historical usage is a follow-up.
-    # @param filter_period [String] 
+    # Report the current-period usage counters for this account.
+    # @param filter_period [String] Period to report. &#x60;current&#x60; is the only supported value.
     # @param [Hash] opts the optional parameters
     # @return [UsageResponse]
     def list_usage(filter_period, opts = {})
@@ -30,8 +30,8 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Usage
-    # Current-period usage and quota for the audit product.  Only &#x60;&#x60;filter[period]&#x3D;current&#x60;&#x60; is supported; historical usage is a follow-up.
-    # @param filter_period [String] 
+    # Report the current-period usage counters for this account.
+    # @param filter_period [String] Period to report. &#x60;current&#x60; is the only supported value.
     # @param [Hash] opts the optional parameters
     # @return [Array<(UsageResponse, Integer, Hash)>] UsageResponse data, response status code and response headers
     def list_usage_with_http_info(filter_period, opts = {})

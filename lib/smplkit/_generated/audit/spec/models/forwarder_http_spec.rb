@@ -30,6 +30,10 @@ describe SmplkitGeneratedClient::Audit::ForwarderHttp do
   describe 'test attribute "method"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["GET", "POST", "PUT", "PATCH", "DELETE"])
+      # validator.allowable_values.each do |value|
+      #   expect { instance.method = value }.not_to raise_error
+      # end
     end
   end
 

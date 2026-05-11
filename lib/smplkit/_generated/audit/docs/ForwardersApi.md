@@ -17,11 +17,11 @@ All URIs are relative to *http://localhost*
 
 ## create_forwarder
 
-> <ForwarderResponse> create_forwarder(forwarder_response)
+> <ForwarderResponse> create_forwarder(forwarder_request)
 
 Create Forwarder
 
-Create a forwarder. Requires the ``audit.siem_streaming`` entitlement on the account; lower-tier accounts get 402.
+Create a forwarder for this account.
 
 ### Examples
 
@@ -35,11 +35,11 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_response = SmplkitGeneratedClient::Audit::ForwarderResponse.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::HTTP, http: SmplkitGeneratedClient::Audit::ForwarderHttp.new({url: 'url_example'})})})}) # ForwarderResponse | 
+forwarder_request = SmplkitGeneratedClient::Audit::ForwarderRequest.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::HTTP, http: SmplkitGeneratedClient::Audit::ForwarderHttp.new({url: 'url_example'})})})}) # ForwarderRequest | 
 
 begin
   # Create Forwarder
-  result = api_instance.create_forwarder(forwarder_response)
+  result = api_instance.create_forwarder(forwarder_request)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
   puts "Error when calling ForwardersApi->create_forwarder: #{e}"
@@ -50,12 +50,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ForwarderResponse>, Integer, Hash)> create_forwarder_with_http_info(forwarder_response)
+> <Array(<ForwarderResponse>, Integer, Hash)> create_forwarder_with_http_info(forwarder_request)
 
 ```ruby
 begin
   # Create Forwarder
-  data, status_code, headers = api_instance.create_forwarder_with_http_info(forwarder_response)
+  data, status_code, headers = api_instance.create_forwarder_with_http_info(forwarder_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ForwarderResponse>
@@ -68,7 +68,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **forwarder_response** | [**ForwarderResponse**](ForwarderResponse.md) |  |  |
+| **forwarder_request** | [**ForwarderRequest**](ForwarderRequest.md) |  |  |
 
 ### Return type
 
@@ -90,7 +90,7 @@ end
 
 Delete Forwarder
 
-Soft-delete a forwarder. Delivery rows are retained per the normal forwarder_delivery retention; a future create with the same slug is allowed (the unique index is partial on deleted_at IS NULL).
+Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same name.
 
 ### Examples
 
@@ -158,7 +158,7 @@ nil (empty response body)
 
 Execute Test Forwarder
 
-Execute a prepared HTTP request server-side and return the response.  The same SSRF guard that gates the in-line forwarder loop is applied here — internal/private addresses, link-local IPs (including the EC2 metadata service at 169.254.169.254), unique-local IPv6, and ports outside the configured allowlist are all rejected.
+Send a test HTTP request to a forwarder destination and return the result.  Useful for verifying a destination URL, credentials, or transform before saving the forwarder. The same network-safety rules that apply to live deliveries (private/internal address blocking, port allowlist) apply here.
 
 ### Examples
 
@@ -227,7 +227,7 @@ end
 
 Get Forwarder
 
-Retrieve a single forwarder by id.  Returns 404 if no forwarder with that id exists in the caller's account, including if the forwarder is soft-deleted. Header values in the response are returned in plaintext so callers can perform a GET-modify-PUT round-trip without re-entering secrets (ADR-014). The persisted ``forwarder_delivery.request`` log column is what keeps redaction; that read path is unaffected by this route.
+Retrieve a single forwarder by id.  Header values are returned in plaintext so the resource can be round-tripped with `GET`, mutate, `PUT` without re-entering secrets.
 
 ### Examples
 
@@ -296,7 +296,7 @@ end
 
 List Forwarder Deliveries
 
-List delivery rows for a forwarder.  Default sort is ``-created_at``. Cursor pagination via ``page[after]``. Filter by status (``SUCCEEDED`` / ``FAILED`` / ``FILTERED_OUT`` / ``SKIPPED_DO_NOT_FORWARD``, case-insensitive) or by a ``created_at`` range using the platform's interval notation (``[2026-01-01T00:00:00Z,*)``). Reads do not require the entitlement — a downgraded account can still inspect historical deliveries from when the forwarder was active.
+List delivery log entries for a forwarder.  Default sort is newest first. Filter by `status` (one of `SUCCEEDED`, `FAILED`, `FILTERED_OUT`, `SKIPPED_DO_NOT_FORWARD` — case-insensitive), by `event_id`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
 
 ### Examples
 
@@ -377,7 +377,7 @@ end
 
 List Forwarders
 
-List forwarders for the authenticated account.  Reads do not require the entitlement — a downgraded account can still inspect what they configured, they just can't create new ones.
+List forwarders for this account.
 
 ### Examples
 
@@ -454,7 +454,7 @@ end
 
 Retry Failed Forwarder Deliveries
 
-Retry every failed delivery for the forwarder.  For each failed delivery row, re-attempt with the latest forwarder configuration and the original event payload. Returns counts.
+Retry every failed delivery for this forwarder.  Each failed delivery is re-attempted using the forwarder's current configuration and the original event. Returns the counts.
 
 ### Examples
 
@@ -523,7 +523,7 @@ end
 
 Retry Forwarder Delivery
 
-Retry a single failed delivery. Returns the new delivery row with its outcome. Prior delivery rows are not modified.
+Retry a single failed delivery.  Returns the new delivery log entry. The prior entry is left in place.
 
 ### Examples
 
@@ -590,11 +590,11 @@ end
 
 ## update_forwarder
 
-> <ForwarderResponse> update_forwarder(forwarder_id, forwarder_response)
+> <ForwarderResponse> update_forwarder(forwarder_id, forwarder_request)
 
 Update Forwarder
 
-Full-replace update. PUT semantics — every field is overwritten.  The GET path returns plaintext header values, so the standard get-mutate-put round-trip (ADR-014) preserves secrets without any extra work from the caller: GET, change one field, PUT the result.
+Replace an existing forwarder. Every writable field is overwritten.
 
 ### Examples
 
@@ -609,11 +609,11 @@ end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
 forwarder_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
-forwarder_response = SmplkitGeneratedClient::Audit::ForwarderResponse.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::HTTP, http: SmplkitGeneratedClient::Audit::ForwarderHttp.new({url: 'url_example'})})})}) # ForwarderResponse | 
+forwarder_request = SmplkitGeneratedClient::Audit::ForwarderRequest.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::HTTP, http: SmplkitGeneratedClient::Audit::ForwarderHttp.new({url: 'url_example'})})})}) # ForwarderRequest | 
 
 begin
   # Update Forwarder
-  result = api_instance.update_forwarder(forwarder_id, forwarder_response)
+  result = api_instance.update_forwarder(forwarder_id, forwarder_request)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
   puts "Error when calling ForwardersApi->update_forwarder: #{e}"
@@ -624,12 +624,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ForwarderResponse>, Integer, Hash)> update_forwarder_with_http_info(forwarder_id, forwarder_response)
+> <Array(<ForwarderResponse>, Integer, Hash)> update_forwarder_with_http_info(forwarder_id, forwarder_request)
 
 ```ruby
 begin
   # Update Forwarder
-  data, status_code, headers = api_instance.update_forwarder_with_http_info(forwarder_id, forwarder_response)
+  data, status_code, headers = api_instance.update_forwarder_with_http_info(forwarder_id, forwarder_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ForwarderResponse>
@@ -643,7 +643,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **forwarder_id** | **String** |  |  |
-| **forwarder_response** | [**ForwarderResponse**](ForwarderResponse.md) |  |  |
+| **forwarder_request** | [**ForwarderRequest**](ForwarderRequest.md) |  |  |
 
 ### Return type
 

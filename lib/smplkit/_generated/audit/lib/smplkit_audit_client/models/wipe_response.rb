@@ -14,11 +14,14 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
+  # Summary of a completed wipe action.
   class WipeResponse < ApiModelBase
+    # Always `true` for a successful wipe.
     attr_accessor :wiped
 
     attr_accessor :tables
 
+    # When the wipe completed.
     attr_accessor :completed_at
 
     # Attribute mapping from ruby-style variable name to JSON key.

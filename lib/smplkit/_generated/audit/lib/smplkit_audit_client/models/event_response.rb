@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # JSON:API single-resource response.
+  # JSON:API single-resource response for an audit event.
   class EventResponse < ApiModelBase
     attr_accessor :data
 

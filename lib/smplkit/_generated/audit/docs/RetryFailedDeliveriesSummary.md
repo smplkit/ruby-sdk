@@ -4,9 +4,9 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **attempted** | **Integer** |  |  |
-| **succeeded** | **Integer** |  |  |
-| **failed** | **Integer** |  |  |
+| **attempted** | **Integer** | Number of failed deliveries that were re-attempted. |  |
+| **succeeded** | **Integer** | Number of re-attempts that succeeded. |  |
+| **failed** | **Integer** | Number of re-attempts that failed again. |  |
 
 ## Example
 

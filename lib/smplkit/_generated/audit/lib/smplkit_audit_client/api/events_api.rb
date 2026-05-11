@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # Get Event
-    # Retrieve a single audit event by id.  Returns 404 if no event with that id exists in the caller's account — RLS enforces tenant isolation; this endpoint never leaks the existence of another tenant's event.
+    # Retrieve a single audit event by id.
     # @param event_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [EventResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Get Event
-    # Retrieve a single audit event by id.  Returns 404 if no event with that id exists in the caller&#39;s account — RLS enforces tenant isolation; this endpoint never leaks the existence of another tenant&#39;s event.
+    # Retrieve a single audit event by id.
     # @param event_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(EventResponse, Integer, Hash)>] EventResponse data, response status code and response headers
@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for the authenticated account.  Default sort is ``-created_at``; cursor pagination via ``page[after]`` (the opaque cursor returned in ``links.next``). Filters are exact-match except ``filter[occurred_at]`` which uses the platform's range notation (``[2026-01-01T00:00:00Z,*)``) and ``filter[search]`` which is a case-insensitive substring match (per ADR-014; targets ``resource_id`` only at this revision).
+    # List audit events for this account.  Default sort is newest first. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,*)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id`.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -91,7 +91,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_action 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
-    # @option opts [String] :filter_search Case-insensitive substring match. Searches against &#x60;&#x60;resource_id&#x60;&#x60; only — see ADR-014 for the platform-wide &#x60;&#x60;filter[search]&#x60;&#x60; convention. Use &#x60;&#x60;filter[resource_id]&#x60;&#x60; for an exact match.
+    # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match.
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
     # @return [EventListResponse]
@@ -101,7 +101,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for the authenticated account.  Default sort is &#x60;&#x60;-created_at&#x60;&#x60;; cursor pagination via &#x60;&#x60;page[after]&#x60;&#x60; (the opaque cursor returned in &#x60;&#x60;links.next&#x60;&#x60;). Filters are exact-match except &#x60;&#x60;filter[occurred_at]&#x60;&#x60; which uses the platform&#39;s range notation (&#x60;&#x60;[2026-01-01T00:00:00Z,*)&#x60;&#x60;) and &#x60;&#x60;filter[search]&#x60;&#x60; which is a case-insensitive substring match (per ADR-014; targets &#x60;&#x60;resource_id&#x60;&#x60; only at this revision).
+    # List audit events for this account.  Default sort is newest first. Filters are exact-match except &#x60;filter[occurred_at]&#x60;, which uses interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;), and &#x60;filter[search]&#x60;, which is a case-insensitive substring match against &#x60;resource_id&#x60;.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -109,7 +109,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_action 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
-    # @option opts [String] :filter_search Case-insensitive substring match. Searches against &#x60;&#x60;resource_id&#x60;&#x60; only — see ADR-014 for the platform-wide &#x60;&#x60;filter[search]&#x60;&#x60; convention. Use &#x60;&#x60;filter[resource_id]&#x60;&#x60; for an exact match.
+    # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match.
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
     # @return [Array<(EventListResponse, Integer, Hash)>] EventListResponse data, response status code and response headers
@@ -171,29 +171,29 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Record Event
-    # Record an audit event for the authenticated account.  Returns ``201 Created`` on first write, ``200 OK`` if the request was a duplicate (matched by ``Idempotency-Key`` or auto-derived key).  Customers may not emit events whose ``resource_type`` starts with ``smpl.`` — that namespace is reserved for smplkit-emitted events about platform resources.
-    # @param event_response [EventResponse] 
+    # Record an audit event for this account.  Returns `201 Created` on first write, `200 OK` if the request was a duplicate (matched by `Idempotency-Key` or a key derived from the event's content).  `resource_type` values beginning with `smpl.` are reserved for events that smplkit emits about its own resources and cannot be used here.
+    # @param event_request [EventRequest] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :idempotency_key 
     # @return [EventResponse]
-    def record_event(event_response, opts = {})
-      data, _status_code, _headers = record_event_with_http_info(event_response, opts)
+    def record_event(event_request, opts = {})
+      data, _status_code, _headers = record_event_with_http_info(event_request, opts)
       data
     end
 
     # Record Event
-    # Record an audit event for the authenticated account.  Returns &#x60;&#x60;201 Created&#x60;&#x60; on first write, &#x60;&#x60;200 OK&#x60;&#x60; if the request was a duplicate (matched by &#x60;&#x60;Idempotency-Key&#x60;&#x60; or auto-derived key).  Customers may not emit events whose &#x60;&#x60;resource_type&#x60;&#x60; starts with &#x60;&#x60;smpl.&#x60;&#x60; — that namespace is reserved for smplkit-emitted events about platform resources.
-    # @param event_response [EventResponse] 
+    # Record an audit event for this account.  Returns &#x60;201 Created&#x60; on first write, &#x60;200 OK&#x60; if the request was a duplicate (matched by &#x60;Idempotency-Key&#x60; or a key derived from the event&#39;s content).  &#x60;resource_type&#x60; values beginning with &#x60;smpl.&#x60; are reserved for events that smplkit emits about its own resources and cannot be used here.
+    # @param event_request [EventRequest] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :idempotency_key 
     # @return [Array<(EventResponse, Integer, Hash)>] EventResponse data, response status code and response headers
-    def record_event_with_http_info(event_response, opts = {})
+    def record_event_with_http_info(event_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: EventsApi.record_event ...'
       end
-      # verify the required parameter 'event_response' is set
-      if @api_client.config.client_side_validation && event_response.nil?
-        fail ArgumentError, "Missing the required parameter 'event_response' when calling EventsApi.record_event"
+      # verify the required parameter 'event_request' is set
+      if @api_client.config.client_side_validation && event_request.nil?
+        fail ArgumentError, "Missing the required parameter 'event_request' when calling EventsApi.record_event"
       end
       # resource path
       local_var_path = '/api/v1/events'
@@ -216,7 +216,7 @@ module SmplkitGeneratedClient::Audit
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(event_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(event_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'EventResponse'

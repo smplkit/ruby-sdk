@@ -14,19 +14,47 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # Plain-JSON body for the test_forwarder execute action.  Mirrors the encrypted ``ForwarderHttp`` shape with one addition — ``timeout_ms``, capped server-side.
+  # Inputs to the test-forwarder action.  Mirrors a forwarder's HTTP destination configuration with one addition: `timeout_ms`, applied per-request and capped server-side.
   class TestForwarderRequest < ApiModelBase
+    # HTTP method used for the test request.
     attr_accessor :method
 
+    # Destination URL.
     attr_accessor :url
 
+    # HTTP headers attached to the test request.
     attr_accessor :headers
 
+    # Request body. If omitted, an empty body is sent.
     attr_accessor :body
 
+    # HTTP response status that indicates success. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
     attr_accessor :success_status
 
+    # Per-request timeout in milliseconds. Capped at 30 seconds.
     attr_accessor :timeout_ms
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -159,6 +187,8 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      method_validator = EnumAttributeValidator.new('String', ["GET", "POST", "PUT", "PATCH", "DELETE"])
+      return false unless method_validator.valid?(@method)
       return false if @url.nil?
       return false if @url.to_s.length > 2048
       return false if @url.to_s.length < 1
@@ -167,6 +197,16 @@ module SmplkitGeneratedClient::Audit
       return false if !@timeout_ms.nil? && @timeout_ms > 30000
       return false if !@timeout_ms.nil? && @timeout_ms < 1
       true
+    end
+
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] method Object to be assigned
+    def method=(method)
+      validator = EnumAttributeValidator.new('String', ["GET", "POST", "PUT", "PATCH", "DELETE"])
+      unless validator.valid?(method)
+        fail ArgumentError, "invalid value for \"method\", must be one of #{validator.allowable_values}."
+      end
+      @method = method
     end
 
     # Custom attribute writer method with validation

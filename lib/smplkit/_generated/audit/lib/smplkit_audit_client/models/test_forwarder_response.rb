@@ -14,18 +14,24 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # Plain-JSON response body. Headers are echoed back unredacted because the caller already supplied them — the response is for the caller, not persisted into the delivery log.
+  # Result of a test-forwarder execution.
   class TestForwarderResponse < ApiModelBase
+    # True if the destination responded with a status matching `success_status`.
     attr_accessor :succeeded
 
+    # HTTP status code returned by the destination.
     attr_accessor :response_status
 
+    # Headers returned by the destination.
     attr_accessor :response_headers
 
+    # Response body returned by the destination.
     attr_accessor :response_body
 
+    # Elapsed time of the request in milliseconds.
     attr_accessor :latency_ms
 
+    # Error message if the request did not complete.
     attr_accessor :error
 
     # Attribute mapping from ruby-style variable name to JSON key.

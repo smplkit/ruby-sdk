@@ -34,26 +34,13 @@ describe 'ActionsApi' do
 
   # unit tests for list_actions
   # List Actions
-  # List the distinct &#x60;&#x60;action&#x60;&#x60; slugs seen in the account.  Without &#x60;&#x60;filter[resource_type]&#x60;&#x60;, returns one row per distinct action — the same action may have been recorded with multiple resource types and the unfiltered dropdown shows it once.  With &#x60;&#x60;filter[resource_type]&#x60;&#x60;, returns the actions seen with that specific resource type, powering the Activity tab&#39;s cascading filter behavior.
+  # List the distinct &#x60;action&#x60; slugs recorded for this account.  Without &#x60;filter[resource_type]&#x60;, returns one row per distinct action. With &#x60;filter[resource_type]&#x60;, returns the actions recorded for that specific resource type.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_resource_type 
   # @option opts [Integer] :page_size 
   # @option opts [String] :page_after 
   # @return [ActionListResponse]
   describe 'list_actions test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  # unit tests for list_resource_types
-  # List Resource Types
-  # List the distinct &#x60;&#x60;resource_type&#x60;&#x60; slugs seen in the account.  Each row&#39;s &#x60;&#x60;id&#x60;&#x60; is the slug itself, mirroring the smplkit convention of using customer-provided identifiers as the public-facing resource id (ADR-014).
-  # @param [Hash] opts the optional parameters
-  # @option opts [Integer] :page_size 
-  # @option opts [String] :page_after 
-  # @return [ResourceTypeListResponse]
-  describe 'list_resource_types test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
