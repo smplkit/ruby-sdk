@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for the authenticated account.  Default sort is ``-created_at``; cursor pagination via ``page[after]`` (the opaque cursor returned in ``links.next``). Filters are exact-match except ``filter[occurred_at]`` which uses the platform's range notation (``[2026-01-01T00:00:00Z,*)``).
+    # List audit events for the authenticated account.  Default sort is ``-created_at``; cursor pagination via ``page[after]`` (the opaque cursor returned in ``links.next``). Filters are exact-match except ``filter[occurred_at]`` which uses the platform's range notation (``[2026-01-01T00:00:00Z,*)``) and ``filter[search]`` which is a case-insensitive substring match (per ADR-014; targets ``resource_id`` only at this revision).
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -91,6 +91,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_action 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
+    # @option opts [String] :filter_search Case-insensitive substring match. Searches against &#x60;&#x60;resource_id&#x60;&#x60; only — see ADR-014 for the platform-wide &#x60;&#x60;filter[search]&#x60;&#x60; convention. Use &#x60;&#x60;filter[resource_id]&#x60;&#x60; for an exact match.
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
     # @return [EventListResponse]
@@ -100,7 +101,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for the authenticated account.  Default sort is &#x60;&#x60;-created_at&#x60;&#x60;; cursor pagination via &#x60;&#x60;page[after]&#x60;&#x60; (the opaque cursor returned in &#x60;&#x60;links.next&#x60;&#x60;). Filters are exact-match except &#x60;&#x60;filter[occurred_at]&#x60;&#x60; which uses the platform&#39;s range notation (&#x60;&#x60;[2026-01-01T00:00:00Z,*)&#x60;&#x60;).
+    # List audit events for the authenticated account.  Default sort is &#x60;&#x60;-created_at&#x60;&#x60;; cursor pagination via &#x60;&#x60;page[after]&#x60;&#x60; (the opaque cursor returned in &#x60;&#x60;links.next&#x60;&#x60;). Filters are exact-match except &#x60;&#x60;filter[occurred_at]&#x60;&#x60; which uses the platform&#39;s range notation (&#x60;&#x60;[2026-01-01T00:00:00Z,*)&#x60;&#x60;) and &#x60;&#x60;filter[search]&#x60;&#x60; which is a case-insensitive substring match (per ADR-014; targets &#x60;&#x60;resource_id&#x60;&#x60; only at this revision).
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -108,6 +109,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_action 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
+    # @option opts [String] :filter_search Case-insensitive substring match. Searches against &#x60;&#x60;resource_id&#x60;&#x60; only — see ADR-014 for the platform-wide &#x60;&#x60;filter[search]&#x60;&#x60; convention. Use &#x60;&#x60;filter[resource_id]&#x60;&#x60; for an exact match.
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
     # @return [Array<(EventListResponse, Integer, Hash)>] EventListResponse data, response status code and response headers
@@ -130,6 +132,7 @@ module SmplkitGeneratedClient::Audit
       query_params[:'filter[action]'] = opts[:'filter_action'] if !opts[:'filter_action'].nil?
       query_params[:'filter[resource_type]'] = opts[:'filter_resource_type'] if !opts[:'filter_resource_type'].nil?
       query_params[:'filter[resource_id]'] = opts[:'filter_resource_id'] if !opts[:'filter_resource_id'].nil?
+      query_params[:'filter[search]'] = opts[:'filter_search'] if !opts[:'filter_search'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
       query_params[:'page[after]'] = opts[:'page_after'] if !opts[:'page_after'].nil?
 
