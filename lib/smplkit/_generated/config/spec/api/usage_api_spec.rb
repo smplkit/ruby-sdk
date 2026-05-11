@@ -34,9 +34,9 @@ describe 'UsageApi' do
 
   # unit tests for list_config_usage
   # List Config Usage
-  # Return current resource usage counts for the authenticated account.
+  # Report the current-period usage counters for this account.
   # @param [Hash] opts the optional parameters
-  # @option opts [String] :filter_period 
+  # @option opts [String] :filter_period Period to report. &#x60;current&#x60; is the only supported value.
   # @return [UsageListResponse]
   describe 'list_config_usage test' do
     it 'should work' do

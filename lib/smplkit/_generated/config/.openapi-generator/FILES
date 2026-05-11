@@ -11,6 +11,7 @@ docs/Config.md
 docs/ConfigItemDefinition.md
 docs/ConfigItemOverride.md
 docs/ConfigListResponse.md
+docs/ConfigRequest.md
 docs/ConfigResource.md
 docs/ConfigResponse.md
 docs/ConfigsApi.md
@@ -31,6 +32,7 @@ lib/smplkit_config_client/models/config.rb
 lib/smplkit_config_client/models/config_item_definition.rb
 lib/smplkit_config_client/models/config_item_override.rb
 lib/smplkit_config_client/models/config_list_response.rb
+lib/smplkit_config_client/models/config_request.rb
 lib/smplkit_config_client/models/config_resource.rb
 lib/smplkit_config_client/models/config_response.rb
 lib/smplkit_config_client/models/environment_override.rb
@@ -44,6 +46,7 @@ spec/api/usage_api_spec.rb
 spec/models/config_item_definition_spec.rb
 spec/models/config_item_override_spec.rb
 spec/models/config_list_response_spec.rb
+spec/models/config_request_spec.rb
 spec/models/config_resource_spec.rb
 spec/models/config_response_spec.rb
 spec/models/config_spec.rb

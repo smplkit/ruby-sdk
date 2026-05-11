@@ -34,8 +34,8 @@ describe 'ConfigsApi' do
 
   # unit tests for create_config
   # Create Config
-  # Create a new configuration. The caller provides the id (key) in the request body.
-  # @param config_response 
+  # Create a config for this account.  The caller supplies the config&#39;s key as &#x60;data.id&#x60;. Keys are unique within an account and immutable for the lifetime of the config.
+  # @param config_request 
   # @param [Hash] opts the optional parameters
   # @return [ConfigResponse]
   describe 'create_config test' do
@@ -46,7 +46,7 @@ describe 'ConfigsApi' do
 
   # unit tests for delete_config
   # Delete Config
-  # Delete a configuration by its key.
+  # Delete a config by its key.  A config that is referenced as &#x60;parent&#x60; by another config cannot be deleted; reparent or remove the parent reference on every child first. The &#x60;common&#x60; config cannot be deleted.
   # @param id 
   # @param [Hash] opts the optional parameters
   # @return [nil]
@@ -58,7 +58,7 @@ describe 'ConfigsApi' do
 
   # unit tests for get_config
   # Get Config
-  # Return a configuration by its key.
+  # Retrieve a single config by its key.
   # @param id 
   # @param [Hash] opts the optional parameters
   # @return [ConfigResponse]
@@ -70,7 +70,7 @@ describe 'ConfigsApi' do
 
   # unit tests for list_configs
   # List Configs
-  # List all configurations for the authenticated account.
+  # List configs for this account.  Pass &#x60;filter[parent]&#x3D;&lt;parent_key&gt;&#x60; to return only the direct children of a specific config.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_parent 
   # @return [ConfigListResponse]
@@ -82,9 +82,9 @@ describe 'ConfigsApi' do
 
   # unit tests for update_config
   # Update Config
-  # Replace a configuration entirely.
+  # Replace a config entirely. Every writable field is overwritten.
   # @param id 
-  # @param config_response 
+  # @param config_request 
   # @param [Hash] opts the optional parameters
   # @return [ConfigResponse]
   describe 'update_config test' do

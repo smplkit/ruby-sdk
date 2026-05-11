@@ -13,11 +13,11 @@ All URIs are relative to *http://localhost*
 
 ## create_config
 
-> <ConfigResponse> create_config(config_response)
+> <ConfigResponse> create_config(config_request)
 
 Create Config
 
-Create a new configuration. The caller provides the id (key) in the request body.
+Create a config for this account.  The caller supplies the config's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the config.
 
 ### Examples
 
@@ -31,11 +31,11 @@ SmplkitGeneratedClient::Config.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Config::ConfigsApi.new
-config_response = SmplkitGeneratedClient::Config::ConfigResponse.new({data: SmplkitGeneratedClient::Config::ConfigResource.new({type: 'config', attributes: SmplkitGeneratedClient::Config::Config.new({name: 'name_example'})})}) # ConfigResponse | 
+config_request = SmplkitGeneratedClient::Config::ConfigRequest.new({data: SmplkitGeneratedClient::Config::ConfigResource.new({type: 'config', attributes: SmplkitGeneratedClient::Config::Config.new({name: 'name_example'})})}) # ConfigRequest | 
 
 begin
   # Create Config
-  result = api_instance.create_config(config_response)
+  result = api_instance.create_config(config_request)
   p result
 rescue SmplkitGeneratedClient::Config::ApiError => e
   puts "Error when calling ConfigsApi->create_config: #{e}"
@@ -46,12 +46,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ConfigResponse>, Integer, Hash)> create_config_with_http_info(config_response)
+> <Array(<ConfigResponse>, Integer, Hash)> create_config_with_http_info(config_request)
 
 ```ruby
 begin
   # Create Config
-  data, status_code, headers = api_instance.create_config_with_http_info(config_response)
+  data, status_code, headers = api_instance.create_config_with_http_info(config_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ConfigResponse>
@@ -64,7 +64,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **config_response** | [**ConfigResponse**](ConfigResponse.md) |  |  |
+| **config_request** | [**ConfigRequest**](ConfigRequest.md) |  |  |
 
 ### Return type
 
@@ -86,7 +86,7 @@ end
 
 Delete Config
 
-Delete a configuration by its key.
+Delete a config by its key.  A config that is referenced as `parent` by another config cannot be deleted; reparent or remove the parent reference on every child first. The `common` config cannot be deleted.
 
 ### Examples
 
@@ -154,7 +154,7 @@ nil (empty response body)
 
 Get Config
 
-Return a configuration by its key.
+Retrieve a single config by its key.
 
 ### Examples
 
@@ -223,7 +223,7 @@ end
 
 List Configs
 
-List all configurations for the authenticated account.
+List configs for this account.  Pass `filter[parent]=<parent_key>` to return only the direct children of a specific config.
 
 ### Examples
 
@@ -290,11 +290,11 @@ end
 
 ## update_config
 
-> <ConfigResponse> update_config(id, config_response)
+> <ConfigResponse> update_config(id, config_request)
 
 Update Config
 
-Replace a configuration entirely.
+Replace a config entirely. Every writable field is overwritten.
 
 ### Examples
 
@@ -309,11 +309,11 @@ end
 
 api_instance = SmplkitGeneratedClient::Config::ConfigsApi.new
 id = 'id_example' # String | 
-config_response = SmplkitGeneratedClient::Config::ConfigResponse.new({data: SmplkitGeneratedClient::Config::ConfigResource.new({type: 'config', attributes: SmplkitGeneratedClient::Config::Config.new({name: 'name_example'})})}) # ConfigResponse | 
+config_request = SmplkitGeneratedClient::Config::ConfigRequest.new({data: SmplkitGeneratedClient::Config::ConfigResource.new({type: 'config', attributes: SmplkitGeneratedClient::Config::Config.new({name: 'name_example'})})}) # ConfigRequest | 
 
 begin
   # Update Config
-  result = api_instance.update_config(id, config_response)
+  result = api_instance.update_config(id, config_request)
   p result
 rescue SmplkitGeneratedClient::Config::ApiError => e
   puts "Error when calling ConfigsApi->update_config: #{e}"
@@ -324,12 +324,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ConfigResponse>, Integer, Hash)> update_config_with_http_info(id, config_response)
+> <Array(<ConfigResponse>, Integer, Hash)> update_config_with_http_info(id, config_request)
 
 ```ruby
 begin
   # Update Config
-  data, status_code, headers = api_instance.update_config_with_http_info(id, config_response)
+  data, status_code, headers = api_instance.update_config_with_http_info(id, config_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ConfigResponse>
@@ -343,7 +343,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **config_response** | [**ConfigResponse**](ConfigResponse.md) |  |  |
+| **config_request** | [**ConfigRequest**](ConfigRequest.md) |  |  |
 
 ### Return type
 

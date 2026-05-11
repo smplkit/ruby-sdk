@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Config Usage
 
-Return current resource usage counts for the authenticated account.
+Report the current-period usage counters for this account.
 
 ### Examples
 
@@ -28,7 +28,7 @@ end
 
 api_instance = SmplkitGeneratedClient::Config::UsageApi.new
 opts = {
-  filter_period: 'filter_period_example' # String | 
+  filter_period: 'filter_period_example' # String | Period to report. `current` is the only supported value.
 }
 
 begin
@@ -62,7 +62,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **filter_period** | **String** |  | [optional] |
+| **filter_period** | **String** | Period to report. &#x60;current&#x60; is the only supported value. | [optional] |
 
 ### Return type
 

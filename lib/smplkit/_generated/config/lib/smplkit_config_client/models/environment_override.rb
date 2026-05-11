@@ -14,8 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Config
-  # Schema for per-environment overrides.
+  # Per-environment override set for a config.
   class EnvironmentOverride < ApiModelBase
+    # Map of item keys to override values that apply when this environment is resolved. Each key must already be declared (with a type) on this config or one of its ancestors.
     attr_accessor :values
 
     # Attribute mapping from ruby-style variable name to JSON key.

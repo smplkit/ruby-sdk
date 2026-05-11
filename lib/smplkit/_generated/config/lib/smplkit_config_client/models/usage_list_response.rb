@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Config
+  # JSON:API collection response for usage counters.
   class UsageListResponse < ApiModelBase
     attr_accessor :data
 

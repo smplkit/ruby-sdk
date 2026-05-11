@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Config
-  # Schema for an environment override — value only, no type/description.
+  # Per-environment override of a single item value.
   class ConfigItemOverride < ApiModelBase
     attr_accessor :value
 

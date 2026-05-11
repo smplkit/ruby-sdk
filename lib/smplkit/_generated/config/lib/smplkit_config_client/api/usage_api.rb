@@ -20,9 +20,9 @@ module SmplkitGeneratedClient::Config
       @api_client = api_client
     end
     # List Config Usage
-    # Return current resource usage counts for the authenticated account.
+    # Report the current-period usage counters for this account.
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :filter_period 
+    # @option opts [String] :filter_period Period to report. &#x60;current&#x60; is the only supported value.
     # @return [UsageListResponse]
     def list_config_usage(opts = {})
       data, _status_code, _headers = list_config_usage_with_http_info(opts)
@@ -30,9 +30,9 @@ module SmplkitGeneratedClient::Config
     end
 
     # List Config Usage
-    # Return current resource usage counts for the authenticated account.
+    # Report the current-period usage counters for this account.
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :filter_period 
+    # @option opts [String] :filter_period Period to report. &#x60;current&#x60; is the only supported value.
     # @return [Array<(UsageListResponse, Integer, Hash)>] UsageListResponse data, response status code and response headers
     def list_config_usage_with_http_info(opts = {})
       if @api_client.config.debugging
