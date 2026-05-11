@@ -373,7 +373,10 @@ RSpec.describe Smplkit::Audit::AuditClient do
     it "passes filter[search] to the generated client" do
       captured_uri = nil
       stub_request(:get, %r{#{Regexp.escape(base_url)}/api/v1/events})
-        .with { |req| captured_uri = req.uri.to_s; true }
+        .with do |req|
+          captured_uri = req.uri.to_s
+          true
+        end
         .to_return(status: 200, body: { data: [], meta: { page_size: 50 } }.to_json,
                    headers: { "Content-Type" => "application/vnd.api+json" })
 

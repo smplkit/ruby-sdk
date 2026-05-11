@@ -176,7 +176,10 @@ RSpec.describe Smplkit::Audit::Forwarders do
     it "passes filter[event_id] to the generated client" do
       captured_uri = nil
       stub_request(:get, %r{#{base_url}/api/v1/forwarders/#{fwd_id}/deliveries\b})
-        .with { |req| captured_uri = req.uri.to_s; true }
+        .with do |req|
+          captured_uri = req.uri.to_s
+          true
+        end
         .to_return(
           status: 200,
           body: { data: [], meta: { page_size: 50 } }.to_json,
