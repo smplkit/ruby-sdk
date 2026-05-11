@@ -14,11 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Config
+  # Usage counter for a single metered limit.
   class UsageAttributes < ApiModelBase
+    # Identifier of the metered limit, e.g. `config.items` or `config.inheritance_depth`.
     attr_accessor :limit_key
 
+    # Period the counter covers. `current` is the only supported value.
     attr_accessor :period
 
+    # Count for the period.
     attr_accessor :value
 
     # Attribute mapping from ruby-style variable name to JSON key.

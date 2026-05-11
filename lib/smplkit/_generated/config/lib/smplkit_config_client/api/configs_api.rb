@@ -20,27 +20,27 @@ module SmplkitGeneratedClient::Config
       @api_client = api_client
     end
     # Create Config
-    # Create a new configuration. The caller provides the id (key) in the request body.
-    # @param config_response [ConfigResponse] 
+    # Create a config for this account.  The caller supplies the config's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the config.
+    # @param config_request [ConfigRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ConfigResponse]
-    def create_config(config_response, opts = {})
-      data, _status_code, _headers = create_config_with_http_info(config_response, opts)
+    def create_config(config_request, opts = {})
+      data, _status_code, _headers = create_config_with_http_info(config_request, opts)
       data
     end
 
     # Create Config
-    # Create a new configuration. The caller provides the id (key) in the request body.
-    # @param config_response [ConfigResponse] 
+    # Create a config for this account.  The caller supplies the config&#39;s key as &#x60;data.id&#x60;. Keys are unique within an account and immutable for the lifetime of the config.
+    # @param config_request [ConfigRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ConfigResponse, Integer, Hash)>] ConfigResponse data, response status code and response headers
-    def create_config_with_http_info(config_response, opts = {})
+    def create_config_with_http_info(config_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ConfigsApi.create_config ...'
       end
-      # verify the required parameter 'config_response' is set
-      if @api_client.config.client_side_validation && config_response.nil?
-        fail ArgumentError, "Missing the required parameter 'config_response' when calling ConfigsApi.create_config"
+      # verify the required parameter 'config_request' is set
+      if @api_client.config.client_side_validation && config_request.nil?
+        fail ArgumentError, "Missing the required parameter 'config_request' when calling ConfigsApi.create_config"
       end
       # resource path
       local_var_path = '/api/v1/configs'
@@ -62,7 +62,7 @@ module SmplkitGeneratedClient::Config
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(config_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(config_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ConfigResponse'
@@ -88,7 +88,7 @@ module SmplkitGeneratedClient::Config
     end
 
     # Delete Config
-    # Delete a configuration by its key.
+    # Delete a config by its key.  A config that is referenced as `parent` by another config cannot be deleted; reparent or remove the parent reference on every child first. The `common` config cannot be deleted.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [nil]
@@ -98,7 +98,7 @@ module SmplkitGeneratedClient::Config
     end
 
     # Delete Config
-    # Delete a configuration by its key.
+    # Delete a config by its key.  A config that is referenced as &#x60;parent&#x60; by another config cannot be deleted; reparent or remove the parent reference on every child first. The &#x60;common&#x60; config cannot be deleted.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers
@@ -149,7 +149,7 @@ module SmplkitGeneratedClient::Config
     end
 
     # Get Config
-    # Return a configuration by its key.
+    # Retrieve a single config by its key.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [ConfigResponse]
@@ -159,7 +159,7 @@ module SmplkitGeneratedClient::Config
     end
 
     # Get Config
-    # Return a configuration by its key.
+    # Retrieve a single config by its key.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ConfigResponse, Integer, Hash)>] ConfigResponse data, response status code and response headers
@@ -212,7 +212,7 @@ module SmplkitGeneratedClient::Config
     end
 
     # List Configs
-    # List all configurations for the authenticated account.
+    # List configs for this account.  Pass `filter[parent]=<parent_key>` to return only the direct children of a specific config.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_parent 
     # @return [ConfigListResponse]
@@ -222,7 +222,7 @@ module SmplkitGeneratedClient::Config
     end
 
     # List Configs
-    # List all configurations for the authenticated account.
+    # List configs for this account.  Pass &#x60;filter[parent]&#x3D;&lt;parent_key&gt;&#x60; to return only the direct children of a specific config.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_parent 
     # @return [Array<(ConfigListResponse, Integer, Hash)>] ConfigListResponse data, response status code and response headers
@@ -272,23 +272,23 @@ module SmplkitGeneratedClient::Config
     end
 
     # Update Config
-    # Replace a configuration entirely.
+    # Replace a config entirely. Every writable field is overwritten.
     # @param id [String] 
-    # @param config_response [ConfigResponse] 
+    # @param config_request [ConfigRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ConfigResponse]
-    def update_config(id, config_response, opts = {})
-      data, _status_code, _headers = update_config_with_http_info(id, config_response, opts)
+    def update_config(id, config_request, opts = {})
+      data, _status_code, _headers = update_config_with_http_info(id, config_request, opts)
       data
     end
 
     # Update Config
-    # Replace a configuration entirely.
+    # Replace a config entirely. Every writable field is overwritten.
     # @param id [String] 
-    # @param config_response [ConfigResponse] 
+    # @param config_request [ConfigRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ConfigResponse, Integer, Hash)>] ConfigResponse data, response status code and response headers
-    def update_config_with_http_info(id, config_response, opts = {})
+    def update_config_with_http_info(id, config_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ConfigsApi.update_config ...'
       end
@@ -296,9 +296,9 @@ module SmplkitGeneratedClient::Config
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling ConfigsApi.update_config"
       end
-      # verify the required parameter 'config_response' is set
-      if @api_client.config.client_side_validation && config_response.nil?
-        fail ArgumentError, "Missing the required parameter 'config_response' when calling ConfigsApi.update_config"
+      # verify the required parameter 'config_request' is set
+      if @api_client.config.client_side_validation && config_request.nil?
+        fail ArgumentError, "Missing the required parameter 'config_request' when calling ConfigsApi.update_config"
       end
       # resource path
       local_var_path = '/api/v1/configs/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -320,7 +320,7 @@ module SmplkitGeneratedClient::Config
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(config_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(config_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ConfigResponse'

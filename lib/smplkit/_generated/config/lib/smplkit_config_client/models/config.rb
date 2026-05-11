@@ -14,19 +14,27 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Config
+  # A named bag of configuration items, optionally inheriting from another config.  Items are typed key/value pairs (`STRING`, `NUMBER`, `BOOLEAN`, `JSON`). Configs may declare per-environment overrides for any item declared on the config itself or anywhere in its inheritance chain; resolving a config against an environment merges the chain top-down and then applies the matching overrides.
   class Config < ApiModelBase
+    # Human-readable name for the config.
     attr_accessor :name
 
+    # Optional human-readable description of what this config holds.
     attr_accessor :description
 
+    # Key of another config to inherit items from. Inherited items appear as if declared on this config; locally declared items with the same key shadow them. Omit or set to `null` for a standalone config with no parent.
     attr_accessor :parent
 
+    # Map of item keys to item definitions declared on this config. Keys must be unique within the config; declared types are immutable once set and must match any type declared for the same key on an ancestor.
     attr_accessor :items
 
+    # Map of environment keys to per-environment override sets. An environment override applies when this config is resolved against that environment.
     attr_accessor :environments
 
+    # When the config was created.
     attr_accessor :created_at
 
+    # When the config was last modified.
     attr_accessor :updated_at
 
     # Attribute mapping from ruby-style variable name to JSON key.

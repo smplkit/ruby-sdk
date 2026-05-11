@@ -68,11 +68,11 @@ SmplkitGeneratedClient::Config.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Config::ConfigsApi.new
-config_response = SmplkitGeneratedClient::Config::ConfigResponse.new({data: SmplkitGeneratedClient::Config::ConfigResource.new({type: 'config', attributes: SmplkitGeneratedClient::Config::Config.new({name: 'name_example'})})}) # ConfigResponse | 
+config_request = SmplkitGeneratedClient::Config::ConfigRequest.new({data: SmplkitGeneratedClient::Config::ConfigResource.new({type: 'config', attributes: SmplkitGeneratedClient::Config::Config.new({name: 'name_example'})})}) # ConfigRequest | 
 
 begin
   #Create Config
-  result = api_instance.create_config(config_response)
+  result = api_instance.create_config(config_request)
   p result
 rescue SmplkitGeneratedClient::Config::ApiError => e
   puts "Exception when calling ConfigsApi->create_config: #{e}"
@@ -100,6 +100,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Config::ConfigItemDefinition](docs/ConfigItemDefinition.md)
  - [SmplkitGeneratedClient::Config::ConfigItemOverride](docs/ConfigItemOverride.md)
  - [SmplkitGeneratedClient::Config::ConfigListResponse](docs/ConfigListResponse.md)
+ - [SmplkitGeneratedClient::Config::ConfigRequest](docs/ConfigRequest.md)
  - [SmplkitGeneratedClient::Config::ConfigResource](docs/ConfigResource.md)
  - [SmplkitGeneratedClient::Config::ConfigResponse](docs/ConfigResponse.md)
  - [SmplkitGeneratedClient::Config::EnvironmentOverride](docs/EnvironmentOverride.md)

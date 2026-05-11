@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Config
+  # JSON:API resource envelope for a config.  `id` is the human-readable key for the config and must be supplied by the caller on create. It is unique within the account.
   class ConfigResource < ApiModelBase
     attr_accessor :id
 
