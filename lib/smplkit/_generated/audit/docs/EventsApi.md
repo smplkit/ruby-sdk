@@ -84,7 +84,7 @@ end
 
 List Events
 
-List audit events for the authenticated account.  Default sort is ``-created_at``; cursor pagination via ``page[after]`` (the opaque cursor returned in ``links.next``). Filters are exact-match except ``filter[occurred_at]`` which uses the platform's range notation (``[2026-01-01T00:00:00Z,*)``).
+List audit events for the authenticated account.  Default sort is ``-created_at``; cursor pagination via ``page[after]`` (the opaque cursor returned in ``links.next``). Filters are exact-match except ``filter[occurred_at]`` which uses the platform's range notation (``[2026-01-01T00:00:00Z,*)``) and ``filter[search]`` which is a case-insensitive substring match (per ADR-014; targets ``resource_id`` only at this revision).
 
 ### Examples
 
@@ -105,6 +105,7 @@ opts = {
   filter_action: 'filter_action_example', # String | 
   filter_resource_type: 'filter_resource_type_example', # String | 
   filter_resource_id: 'filter_resource_id_example', # String | 
+  filter_search: 'filter_search_example', # String | Case-insensitive substring match. Searches against ``resource_id`` only — see ADR-014 for the platform-wide ``filter[search]`` convention. Use ``filter[resource_id]`` for an exact match.
   page_size: 56, # Integer | 
   page_after: 'page_after_example' # String | 
 }
@@ -146,6 +147,7 @@ end
 | **filter_action** | **String** |  | [optional] |
 | **filter_resource_type** | **String** |  | [optional] |
 | **filter_resource_id** | **String** |  | [optional] |
+| **filter_search** | **String** | Case-insensitive substring match. Searches against &#x60;&#x60;resource_id&#x60;&#x60; only — see ADR-014 for the platform-wide &#x60;&#x60;filter[search]&#x60;&#x60; convention. Use &#x60;&#x60;filter[resource_id]&#x60;&#x60; for an exact match. | [optional] |
 | **page_size** | **Integer** |  | [optional] |
 | **page_after** | **String** |  | [optional] |
 
