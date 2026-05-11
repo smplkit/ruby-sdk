@@ -500,7 +500,7 @@ nil (empty response body)
 
 ## update_current_user
 
-> <UserResponse> update_current_user(user_response)
+> <UserResponse> update_current_user(user_request)
 
 Update Current User
 
@@ -518,11 +518,11 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::UsersApi.new
-user_response = SmplkitGeneratedClient::App::UserResponse.new({data: SmplkitGeneratedClient::App::UserResource.new({type: 'user', attributes: SmplkitGeneratedClient::App::User.new({email: 'email_example', display_name: 'display_name_example'})})}) # UserResponse | 
+user_request = SmplkitGeneratedClient::App::UserRequest.new({data: SmplkitGeneratedClient::App::UserResource.new({type: 'user', attributes: SmplkitGeneratedClient::App::User.new({display_name: 'display_name_example'})})}) # UserRequest | 
 
 begin
   # Update Current User
-  result = api_instance.update_current_user(user_response)
+  result = api_instance.update_current_user(user_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling UsersApi->update_current_user: #{e}"
@@ -533,12 +533,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<UserResponse>, Integer, Hash)> update_current_user_with_http_info(user_response)
+> <Array(<UserResponse>, Integer, Hash)> update_current_user_with_http_info(user_request)
 
 ```ruby
 begin
   # Update Current User
-  data, status_code, headers = api_instance.update_current_user_with_http_info(user_response)
+  data, status_code, headers = api_instance.update_current_user_with_http_info(user_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <UserResponse>
@@ -551,7 +551,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **user_response** | [**UserResponse**](UserResponse.md) |  |  |
+| **user_request** | [**UserRequest**](UserRequest.md) |  |  |
 
 ### Return type
 
@@ -569,7 +569,7 @@ end
 
 ## update_user_role
 
-> <UserResponse> update_user_role(id, user_response)
+> <UserResponse> update_user_role(id, user_request)
 
 Update User Role
 
@@ -588,11 +588,11 @@ end
 
 api_instance = SmplkitGeneratedClient::App::UsersApi.new
 id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
-user_response = SmplkitGeneratedClient::App::UserResponse.new({data: SmplkitGeneratedClient::App::UserResource.new({type: 'user', attributes: SmplkitGeneratedClient::App::User.new({email: 'email_example', display_name: 'display_name_example'})})}) # UserResponse | 
+user_request = SmplkitGeneratedClient::App::UserRequest.new({data: SmplkitGeneratedClient::App::UserResource.new({type: 'user', attributes: SmplkitGeneratedClient::App::User.new({display_name: 'display_name_example'})})}) # UserRequest | 
 
 begin
   # Update User Role
-  result = api_instance.update_user_role(id, user_response)
+  result = api_instance.update_user_role(id, user_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling UsersApi->update_user_role: #{e}"
@@ -603,12 +603,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<UserResponse>, Integer, Hash)> update_user_role_with_http_info(id, user_response)
+> <Array(<UserResponse>, Integer, Hash)> update_user_role_with_http_info(id, user_request)
 
 ```ruby
 begin
   # Update User Role
-  data, status_code, headers = api_instance.update_user_role_with_http_info(id, user_response)
+  data, status_code, headers = api_instance.update_user_role_with_http_info(id, user_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <UserResponse>
@@ -622,7 +622,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **user_response** | [**UserResponse**](UserResponse.md) |  |  |
+| **user_request** | [**UserRequest**](UserRequest.md) |  |  |
 
 ### Return type
 

@@ -4,8 +4,8 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **name** | **String** |  |  |
-| **unit** | **String** |  | [optional] |
+| **name** | **String** | Distinct metric series name. |  |
+| **unit** | **String** | Representative unit observed for this series. | [optional] |
 
 ## Example
 

@@ -4,11 +4,11 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **subtotal_cents** | **Integer** |  |  |
-| **discount_pct** | **Integer** |  |  |
-| **discount_amount_cents** | **Integer** |  |  |
-| **discount_source** | **String** |  |  |
-| **total_cents** | **Integer** |  |  |
+| **subtotal_cents** | **Integer** | Sum of list prices across all subscriptions in cents. |  |
+| **discount_pct** | **Integer** | Effective discount percentage applied. |  |
+| **discount_amount_cents** | **Integer** | Discount amount in cents. |  |
+| **discount_source** | **String** | Source of the discount. &#x60;VOLUME&#x60; indicates the standard volume-discount schedule; &#x60;OVERRIDE&#x60; indicates a custom discount set on the account. |  |
+| **total_cents** | **Integer** | Final monthly total in cents after the discount. |  |
 | **next_tier** | [**NextTierMeta**](NextTierMeta.md) |  | [optional] |
 
 ## Example

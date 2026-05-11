@@ -14,11 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Information about the next volume-discount tier.
   class NextTierMeta < ApiModelBase
+    # Number of additional subscribed products needed to reach the next tier.
     attr_accessor :products_needed
 
+    # Discount percentage that would apply at the next tier.
     attr_accessor :discount_pct
 
+    # Additional monthly savings in cents at the next tier.
     attr_accessor :additional_savings_cents
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **token** | **String** |  |  |
+| **token** | **String** | Invitation token from the email link. |  |
 
 ## Example
 

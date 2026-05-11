@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API resource envelope for a product catalog entry.
   class ProductResource < ApiModelBase
     attr_accessor :id
 

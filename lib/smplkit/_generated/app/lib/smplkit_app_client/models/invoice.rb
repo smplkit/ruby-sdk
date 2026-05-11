@@ -14,29 +14,42 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A billing invoice issued for the account.
   class Invoice < ApiModelBase
+    # Invoice number assigned by the billing provider.
     attr_accessor :number
 
+    # Invoice lifecycle state, e.g. `draft`, `open`, `paid`, `uncollectible`, `void`.
     attr_accessor :status
 
+    # Amount owed on the invoice in the smallest currency unit (e.g. cents).
     attr_accessor :amount_due
 
+    # Amount paid against the invoice in the smallest currency unit.
     attr_accessor :amount_paid
 
+    # ISO 4217 currency code, e.g. `usd`.
     attr_accessor :currency
 
+    # Human-readable summary of the invoice's line items.
     attr_accessor :description
 
+    # Start of the service period the invoice covers (ISO 8601).
     attr_accessor :period_start
 
+    # End of the service period the invoice covers (ISO 8601).
     attr_accessor :period_end
 
+    # When the invoice was created (ISO 8601).
     attr_accessor :created_at
 
+    # When the invoice was paid in full (ISO 8601), or `null` if unpaid.
     attr_accessor :paid_at
 
+    # Link to the hosted invoice page.
     attr_accessor :hosted_invoice_url
 
+    # Link to the PDF rendering of the invoice.
     attr_accessor :invoice_pdf
 
     # Attribute mapping from ruby-style variable name to JSON key.

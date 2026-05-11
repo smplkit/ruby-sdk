@@ -14,37 +14,45 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A tenant of smplkit — the unit of isolation that owns all of a customer's resources (environments, contexts, API keys, and so on).
   class Account < ApiModelBase
+    # Human-readable name for the account.
     attr_accessor :name
 
+    # Stable URL-safe identifier for the account, derived from the account name at creation. Used in console URLs and other places that prefer a human-readable handle.
     attr_accessor :key
 
+    # `true` once the account has been linked to a billing provider customer record.
     attr_accessor :has_stripe_customer
 
+    # When the account is scheduled to expire. `null` for accounts with no expiry.
     attr_accessor :expires_at
 
+    # When the account was created.
     attr_accessor :created_at
 
+    # When the account was deleted. `null` for active accounts.
     attr_accessor :deleted_at
 
+    # Map of product key to the account's subscription summary for that product, including plan, status, and entitlement limits.
     attr_accessor :product_subscriptions
 
-    # Registration entry point (from account.data)
+    # How the account first reached smplkit (e.g. `LOGIN`, `GET_STARTED`, `LIVE_DEMO`).
     attr_accessor :entry_point
 
-    # Whether sample data is active (from account.settings)
+    # Whether the account is currently configured to display the sample dataset alongside the customer's own resources.
     attr_accessor :show_sample_data
 
-    # Custom discount percentage that overrides the volume schedule. Null means the volume schedule applies.
+    # Custom discount percentage applied to the account in place of the volume-based discount schedule. `null` means the volume schedule applies.
     attr_accessor :discount_override_pct
 
     # Free-form note explaining why the override was set.
     attr_accessor :discount_override_reason
 
-    # UUID of the admin user who set the override.
+    # UUID of the user who set the override.
     attr_accessor :discount_override_set_by_user_id
 
-    # Timestamp when the override was last changed.
+    # When the override was last changed.
     attr_accessor :discount_override_set_at
 
     # Attribute mapping from ruby-style variable name to JSON key.
@@ -98,6 +106,7 @@ module SmplkitGeneratedClient::App
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'key',
         :'expires_at',
         :'created_at',
         :'deleted_at',
@@ -135,8 +144,6 @@ module SmplkitGeneratedClient::App
 
       if attributes.key?(:'key')
         self.key = attributes[:'key']
-      else
-        self.key = nil
       end
 
       if attributes.key?(:'has_stripe_customer')
@@ -201,14 +208,6 @@ module SmplkitGeneratedClient::App
         invalid_properties.push('invalid value for "name", the character length must be smaller than or equal to 255.')
       end
 
-      if @key.nil?
-        invalid_properties.push('invalid value for "key", key cannot be nil.')
-      end
-
-      if @key.to_s.length > 255
-        invalid_properties.push('invalid value for "key", the character length must be smaller than or equal to 255.')
-      end
-
       invalid_properties
     end
 
@@ -218,8 +217,6 @@ module SmplkitGeneratedClient::App
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @name.nil?
       return false if @name.to_s.length > 255
-      return false if @key.nil?
-      return false if @key.to_s.length > 255
       true
     end
 
@@ -235,20 +232,6 @@ module SmplkitGeneratedClient::App
       end
 
       @name = name
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] key Value to be assigned
-    def key=(key)
-      if key.nil?
-        fail ArgumentError, 'key cannot be nil'
-      end
-
-      if key.to_s.length > 255
-        fail ArgumentError, 'invalid value for "key", the character length must be smaller than or equal to 255.'
-      end
-
-      @key = key
     end
 
     # Checks equality by comparing each attribute.

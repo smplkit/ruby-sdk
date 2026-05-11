@@ -10,6 +10,7 @@ Rakefile
 docs/APIKeysApi.md
 docs/Account.md
 docs/AccountApi.md
+docs/AccountRequest.md
 docs/AccountResource.md
 docs/AccountResponse.md
 docs/AccountWipeRequest.md
@@ -18,6 +19,7 @@ docs/AddPaymentMethodBody.md
 docs/AddPaymentMethodData.md
 docs/ApiKey.md
 docs/ApiKeyListResponse.md
+docs/ApiKeyRequest.md
 docs/ApiKeyResource.md
 docs/ApiKeyResponse.md
 docs/AuthApi.md
@@ -29,10 +31,12 @@ docs/ContextBatchResponse.md
 docs/ContextBulkItem.md
 docs/ContextBulkRegister.md
 docs/ContextListResponse.md
+docs/ContextRequest.md
 docs/ContextResource.md
 docs/ContextResponse.md
 docs/ContextType.md
 docs/ContextTypeListResponse.md
+docs/ContextTypeRequest.md
 docs/ContextTypeResource.md
 docs/ContextTypeResponse.md
 docs/ContextTypesApi.md
@@ -47,6 +51,7 @@ docs/EmailResponse.md
 docs/EmailsApi.md
 docs/Environment.md
 docs/EnvironmentListResponse.md
+docs/EnvironmentRequest.md
 docs/EnvironmentResource.md
 docs/EnvironmentResponse.md
 docs/EnvironmentsApi.md
@@ -81,6 +86,7 @@ docs/OidcProvider.md
 docs/PageMeta.md
 docs/PaymentMethod.md
 docs/PaymentMethodListResponse.md
+docs/PaymentMethodRequest.md
 docs/PaymentMethodResource.md
 docs/PaymentMethodResponse.md
 docs/Plan.md
@@ -96,6 +102,7 @@ docs/ProductsApi.md
 docs/RegisterRequest.md
 docs/Service.md
 docs/ServiceListResponse.md
+docs/ServiceRequest.md
 docs/ServiceResource.md
 docs/ServiceResponse.md
 docs/ServicesApi.md
@@ -110,6 +117,7 @@ docs/SubscriptionResponse.md
 docs/User.md
 docs/UserListMeta.md
 docs/UserListResponse.md
+docs/UserRequest.md
 docs/UserResource.md
 docs/UserResponse.md
 docs/UsersApi.md
@@ -137,6 +145,7 @@ lib/smplkit_app_client/api_error.rb
 lib/smplkit_app_client/api_model_base.rb
 lib/smplkit_app_client/configuration.rb
 lib/smplkit_app_client/models/account.rb
+lib/smplkit_app_client/models/account_request.rb
 lib/smplkit_app_client/models/account_resource.rb
 lib/smplkit_app_client/models/account_response.rb
 lib/smplkit_app_client/models/account_wipe_request.rb
@@ -145,6 +154,7 @@ lib/smplkit_app_client/models/add_payment_method_body.rb
 lib/smplkit_app_client/models/add_payment_method_data.rb
 lib/smplkit_app_client/models/api_key.rb
 lib/smplkit_app_client/models/api_key_list_response.rb
+lib/smplkit_app_client/models/api_key_request.rb
 lib/smplkit_app_client/models/api_key_resource.rb
 lib/smplkit_app_client/models/api_key_response.rb
 lib/smplkit_app_client/models/auth_token_response.rb
@@ -154,10 +164,12 @@ lib/smplkit_app_client/models/context_batch_response.rb
 lib/smplkit_app_client/models/context_bulk_item.rb
 lib/smplkit_app_client/models/context_bulk_register.rb
 lib/smplkit_app_client/models/context_list_response.rb
+lib/smplkit_app_client/models/context_request.rb
 lib/smplkit_app_client/models/context_resource.rb
 lib/smplkit_app_client/models/context_response.rb
 lib/smplkit_app_client/models/context_type.rb
 lib/smplkit_app_client/models/context_type_list_response.rb
+lib/smplkit_app_client/models/context_type_request.rb
 lib/smplkit_app_client/models/context_type_resource.rb
 lib/smplkit_app_client/models/context_type_response.rb
 lib/smplkit_app_client/models/create_subscription_attributes.rb
@@ -168,6 +180,7 @@ lib/smplkit_app_client/models/email_resource.rb
 lib/smplkit_app_client/models/email_response.rb
 lib/smplkit_app_client/models/environment.rb
 lib/smplkit_app_client/models/environment_list_response.rb
+lib/smplkit_app_client/models/environment_request.rb
 lib/smplkit_app_client/models/environment_resource.rb
 lib/smplkit_app_client/models/environment_response.rb
 lib/smplkit_app_client/models/error.rb
@@ -199,6 +212,7 @@ lib/smplkit_app_client/models/oidc_provider.rb
 lib/smplkit_app_client/models/page_meta.rb
 lib/smplkit_app_client/models/payment_method.rb
 lib/smplkit_app_client/models/payment_method_list_response.rb
+lib/smplkit_app_client/models/payment_method_request.rb
 lib/smplkit_app_client/models/payment_method_resource.rb
 lib/smplkit_app_client/models/payment_method_response.rb
 lib/smplkit_app_client/models/plan.rb
@@ -212,6 +226,7 @@ lib/smplkit_app_client/models/product_resource.rb
 lib/smplkit_app_client/models/register_request.rb
 lib/smplkit_app_client/models/service.rb
 lib/smplkit_app_client/models/service_list_response.rb
+lib/smplkit_app_client/models/service_request.rb
 lib/smplkit_app_client/models/service_resource.rb
 lib/smplkit_app_client/models/service_response.rb
 lib/smplkit_app_client/models/setup_intent_attributes.rb
@@ -225,6 +240,7 @@ lib/smplkit_app_client/models/subscription_response.rb
 lib/smplkit_app_client/models/user.rb
 lib/smplkit_app_client/models/user_list_meta.rb
 lib/smplkit_app_client/models/user_list_response.rb
+lib/smplkit_app_client/models/user_request.rb
 lib/smplkit_app_client/models/user_resource.rb
 lib/smplkit_app_client/models/user_response.rb
 lib/smplkit_app_client/models/value.rb
@@ -246,6 +262,7 @@ spec/api/plans_api_spec.rb
 spec/api/products_api_spec.rb
 spec/api/services_api_spec.rb
 spec/api/users_api_spec.rb
+spec/models/account_request_spec.rb
 spec/models/account_resource_spec.rb
 spec/models/account_response_spec.rb
 spec/models/account_spec.rb
@@ -254,6 +271,7 @@ spec/models/add_payment_method_attributes_spec.rb
 spec/models/add_payment_method_body_spec.rb
 spec/models/add_payment_method_data_spec.rb
 spec/models/api_key_list_response_spec.rb
+spec/models/api_key_request_spec.rb
 spec/models/api_key_resource_spec.rb
 spec/models/api_key_response_spec.rb
 spec/models/api_key_spec.rb
@@ -263,10 +281,12 @@ spec/models/context_batch_response_spec.rb
 spec/models/context_bulk_item_spec.rb
 spec/models/context_bulk_register_spec.rb
 spec/models/context_list_response_spec.rb
+spec/models/context_request_spec.rb
 spec/models/context_resource_spec.rb
 spec/models/context_response_spec.rb
 spec/models/context_spec.rb
 spec/models/context_type_list_response_spec.rb
+spec/models/context_type_request_spec.rb
 spec/models/context_type_resource_spec.rb
 spec/models/context_type_response_spec.rb
 spec/models/context_type_spec.rb
@@ -277,6 +297,7 @@ spec/models/email_resource_spec.rb
 spec/models/email_response_spec.rb
 spec/models/email_spec.rb
 spec/models/environment_list_response_spec.rb
+spec/models/environment_request_spec.rb
 spec/models/environment_resource_spec.rb
 spec/models/environment_response_spec.rb
 spec/models/environment_spec.rb
@@ -308,6 +329,7 @@ spec/models/next_tier_meta_spec.rb
 spec/models/oidc_provider_spec.rb
 spec/models/page_meta_spec.rb
 spec/models/payment_method_list_response_spec.rb
+spec/models/payment_method_request_spec.rb
 spec/models/payment_method_resource_spec.rb
 spec/models/payment_method_response_spec.rb
 spec/models/payment_method_spec.rb
@@ -321,6 +343,7 @@ spec/models/product_resource_spec.rb
 spec/models/product_spec.rb
 spec/models/register_request_spec.rb
 spec/models/service_list_response_spec.rb
+spec/models/service_request_spec.rb
 spec/models/service_resource_spec.rb
 spec/models/service_response_spec.rb
 spec/models/service_spec.rb
@@ -334,6 +357,7 @@ spec/models/subscription_resource_spec.rb
 spec/models/subscription_response_spec.rb
 spec/models/user_list_meta_spec.rb
 spec/models/user_list_response_spec.rb
+spec/models/user_request_spec.rb
 spec/models/user_resource_spec.rb
 spec/models/user_response_spec.rb
 spec/models/user_spec.rb

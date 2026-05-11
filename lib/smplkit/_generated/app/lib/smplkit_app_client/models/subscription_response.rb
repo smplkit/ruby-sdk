@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API single-resource response envelope for a subscription.
   class SubscriptionResponse < ApiModelBase
     attr_accessor :data
 

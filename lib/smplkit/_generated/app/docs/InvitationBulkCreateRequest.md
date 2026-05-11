@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **invitations** | [**Array&lt;InvitationCreateItem&gt;**](InvitationCreateItem.md) |  |  |
+| **invitations** | [**Array&lt;InvitationCreateItem&gt;**](InvitationCreateItem.md) | One to fifty invitations to send in a single request. |  |
 
 ## Example
 

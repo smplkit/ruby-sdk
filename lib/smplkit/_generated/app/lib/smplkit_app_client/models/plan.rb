@@ -14,11 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A plan tier offered across smplkit products.
   class Plan < ApiModelBase
+    # Human-readable plan name.
     attr_accessor :display_name
 
+    # Long-form plan description.
     attr_accessor :description
 
+    # Order in which the plan should be shown in customer-facing lists. Lower values sort first.
     attr_accessor :sort_order
 
     # Attribute mapping from ruby-style variable name to JSON key.

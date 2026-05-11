@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API resource envelope for an invoice.
   class InvoiceResource < ApiModelBase
     attr_accessor :id
 

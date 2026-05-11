@@ -14,17 +14,18 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Pagination metadata returned with a collection response.
   class PageMeta < ApiModelBase
-    # Page size used for this response
+    # Page size used for this response.
     attr_accessor :size
 
-    # 1-based page number returned
+    # 1-based page number returned.
     attr_accessor :number
 
-    # Total number of matching items across all pages
+    # Total number of matching items across all pages.
     attr_accessor :total_items
 
-    # Total number of pages at the current page size
+    # Total number of pages at the current page size.
     attr_accessor :total_pages
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -465,26 +465,26 @@ module SmplkitGeneratedClient::App
 
     # Update Current User
     # Update the currently authenticated user's profile.
-    # @param user_response [UserResponse] 
+    # @param user_request [UserRequest] 
     # @param [Hash] opts the optional parameters
     # @return [UserResponse]
-    def update_current_user(user_response, opts = {})
-      data, _status_code, _headers = update_current_user_with_http_info(user_response, opts)
+    def update_current_user(user_request, opts = {})
+      data, _status_code, _headers = update_current_user_with_http_info(user_request, opts)
       data
     end
 
     # Update Current User
     # Update the currently authenticated user&#39;s profile.
-    # @param user_response [UserResponse] 
+    # @param user_request [UserRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(UserResponse, Integer, Hash)>] UserResponse data, response status code and response headers
-    def update_current_user_with_http_info(user_response, opts = {})
+    def update_current_user_with_http_info(user_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: UsersApi.update_current_user ...'
       end
-      # verify the required parameter 'user_response' is set
-      if @api_client.config.client_side_validation && user_response.nil?
-        fail ArgumentError, "Missing the required parameter 'user_response' when calling UsersApi.update_current_user"
+      # verify the required parameter 'user_request' is set
+      if @api_client.config.client_side_validation && user_request.nil?
+        fail ArgumentError, "Missing the required parameter 'user_request' when calling UsersApi.update_current_user"
       end
       # resource path
       local_var_path = '/api/v1/users/current'
@@ -506,7 +506,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(user_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(user_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'UserResponse'
@@ -534,21 +534,21 @@ module SmplkitGeneratedClient::App
     # Update User Role
     # Update a user's role in the account.
     # @param id [String] 
-    # @param user_response [UserResponse] 
+    # @param user_request [UserRequest] 
     # @param [Hash] opts the optional parameters
     # @return [UserResponse]
-    def update_user_role(id, user_response, opts = {})
-      data, _status_code, _headers = update_user_role_with_http_info(id, user_response, opts)
+    def update_user_role(id, user_request, opts = {})
+      data, _status_code, _headers = update_user_role_with_http_info(id, user_request, opts)
       data
     end
 
     # Update User Role
     # Update a user&#39;s role in the account.
     # @param id [String] 
-    # @param user_response [UserResponse] 
+    # @param user_request [UserRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(UserResponse, Integer, Hash)>] UserResponse data, response status code and response headers
-    def update_user_role_with_http_info(id, user_response, opts = {})
+    def update_user_role_with_http_info(id, user_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: UsersApi.update_user_role ...'
       end
@@ -556,9 +556,9 @@ module SmplkitGeneratedClient::App
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling UsersApi.update_user_role"
       end
-      # verify the required parameter 'user_response' is set
-      if @api_client.config.client_side_validation && user_response.nil?
-        fail ArgumentError, "Missing the required parameter 'user_response' when calling UsersApi.update_user_role"
+      # verify the required parameter 'user_request' is set
+      if @api_client.config.client_side_validation && user_request.nil?
+        fail ArgumentError, "Missing the required parameter 'user_request' when calling UsersApi.update_user_role"
       end
       # resource path
       local_var_path = '/api/v1/users/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -580,7 +580,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(user_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(user_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'UserResponse'

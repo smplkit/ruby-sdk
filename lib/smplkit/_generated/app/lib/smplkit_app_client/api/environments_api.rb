@@ -21,26 +21,26 @@ module SmplkitGeneratedClient::App
     end
     # Create Environment
     # Create a new environment. The caller provides the id (key) in the request body.
-    # @param environment_response [EnvironmentResponse] 
+    # @param environment_request [EnvironmentRequest] 
     # @param [Hash] opts the optional parameters
     # @return [EnvironmentResponse]
-    def create_environment(environment_response, opts = {})
-      data, _status_code, _headers = create_environment_with_http_info(environment_response, opts)
+    def create_environment(environment_request, opts = {})
+      data, _status_code, _headers = create_environment_with_http_info(environment_request, opts)
       data
     end
 
     # Create Environment
     # Create a new environment. The caller provides the id (key) in the request body.
-    # @param environment_response [EnvironmentResponse] 
+    # @param environment_request [EnvironmentRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(EnvironmentResponse, Integer, Hash)>] EnvironmentResponse data, response status code and response headers
-    def create_environment_with_http_info(environment_response, opts = {})
+    def create_environment_with_http_info(environment_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: EnvironmentsApi.create_environment ...'
       end
-      # verify the required parameter 'environment_response' is set
-      if @api_client.config.client_side_validation && environment_response.nil?
-        fail ArgumentError, "Missing the required parameter 'environment_response' when calling EnvironmentsApi.create_environment"
+      # verify the required parameter 'environment_request' is set
+      if @api_client.config.client_side_validation && environment_request.nil?
+        fail ArgumentError, "Missing the required parameter 'environment_request' when calling EnvironmentsApi.create_environment"
       end
       # resource path
       local_var_path = '/api/v1/environments'
@@ -62,7 +62,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(environment_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(environment_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'EnvironmentResponse'
@@ -273,21 +273,21 @@ module SmplkitGeneratedClient::App
     # Update Environment
     # Update an environment by id.
     # @param id [String] 
-    # @param environment_response [EnvironmentResponse] 
+    # @param environment_request [EnvironmentRequest] 
     # @param [Hash] opts the optional parameters
     # @return [EnvironmentResponse]
-    def update_environment(id, environment_response, opts = {})
-      data, _status_code, _headers = update_environment_with_http_info(id, environment_response, opts)
+    def update_environment(id, environment_request, opts = {})
+      data, _status_code, _headers = update_environment_with_http_info(id, environment_request, opts)
       data
     end
 
     # Update Environment
     # Update an environment by id.
     # @param id [String] 
-    # @param environment_response [EnvironmentResponse] 
+    # @param environment_request [EnvironmentRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(EnvironmentResponse, Integer, Hash)>] EnvironmentResponse data, response status code and response headers
-    def update_environment_with_http_info(id, environment_response, opts = {})
+    def update_environment_with_http_info(id, environment_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: EnvironmentsApi.update_environment ...'
       end
@@ -295,9 +295,9 @@ module SmplkitGeneratedClient::App
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling EnvironmentsApi.update_environment"
       end
-      # verify the required parameter 'environment_response' is set
-      if @api_client.config.client_side_validation && environment_response.nil?
-        fail ArgumentError, "Missing the required parameter 'environment_response' when calling EnvironmentsApi.update_environment"
+      # verify the required parameter 'environment_request' is set
+      if @api_client.config.client_side_validation && environment_request.nil?
+        fail ArgumentError, "Missing the required parameter 'environment_request' when calling EnvironmentsApi.update_environment"
       end
       # resource path
       local_var_path = '/api/v1/environments/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -319,7 +319,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(environment_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(environment_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'EnvironmentResponse'

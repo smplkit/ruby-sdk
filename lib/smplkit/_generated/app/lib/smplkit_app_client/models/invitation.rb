@@ -14,25 +14,36 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # An invitation for a person to join an account.  Invitations carry a time-limited token; the recipient redeems the token to become a member of the inviting account at the assigned role.
   class Invitation < ApiModelBase
+    # Email address the invitation was sent to.
     attr_accessor :email
 
+    # Role to assign on acceptance. One of `ADMIN`, `MEMBER`, or `VIEWER`.
     attr_accessor :role
 
+    # Lifecycle state of the invitation. One of `PENDING`, `ACCEPTED`, `REVOKED`, or `EXPIRED`.
     attr_accessor :status
 
+    # UUID of the user who sent the invitation.
     attr_accessor :invited_by
 
+    # Name of the account the recipient is being invited to join.
     attr_accessor :account_name
 
+    # Display name of the user who sent the invitation.
     attr_accessor :inviter_display_name
 
+    # Single-use token that the recipient redeems to accept the invitation. Echoed on responses so the inviting client can construct the acceptance link.
     attr_accessor :token
 
+    # When the invitation token stops being redeemable.
     attr_accessor :expires_at
 
+    # When the invitation was issued.
     attr_accessor :created_at
 
+    # When the invitation record was last modified.
     attr_accessor :updated_at
 
     # Attribute mapping from ruby-style variable name to JSON key.

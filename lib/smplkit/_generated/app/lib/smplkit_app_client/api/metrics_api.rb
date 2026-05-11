@@ -88,7 +88,7 @@ module SmplkitGeneratedClient::App
     end
 
     # List Metric Names
-    # Return distinct metric names (with a representative unit) for this account.  Used by the dashboard to discover which product sections to render. Plain JSON response (not JSON:API) — this is metadata, not a metric resource.
+    # Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.
     # @param [Hash] opts the optional parameters
     # @return [MetricNamesResponse]
     def list_metric_names(opts = {})
@@ -97,7 +97,7 @@ module SmplkitGeneratedClient::App
     end
 
     # List Metric Names
-    # Return distinct metric names (with a representative unit) for this account.  Used by the dashboard to discover which product sections to render. Plain JSON response (not JSON:API) — this is metadata, not a metric resource.
+    # Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.
     # @param [Hash] opts the optional parameters
     # @return [Array<(MetricNamesResponse, Integer, Hash)>] MetricNamesResponse data, response status code and response headers
     def list_metric_names_with_http_info(opts = {})

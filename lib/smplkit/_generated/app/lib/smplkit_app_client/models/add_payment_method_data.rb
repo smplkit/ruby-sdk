@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Resource object for the add-payment-method request.
   class AddPaymentMethodData < ApiModelBase
     attr_accessor :type
 

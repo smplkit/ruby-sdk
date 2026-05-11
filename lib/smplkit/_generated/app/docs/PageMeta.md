@@ -4,10 +4,10 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **size** | **Integer** | Page size used for this response |  |
-| **number** | **Integer** | 1-based page number returned |  |
-| **total_items** | **Integer** | Total number of matching items across all pages |  |
-| **total_pages** | **Integer** | Total number of pages at the current page size |  |
+| **size** | **Integer** | Page size used for this response. |  |
+| **number** | **Integer** | 1-based page number returned. |  |
+| **total_items** | **Integer** | Total number of matching items across all pages. |  |
+| **total_pages** | **Integer** | Total number of pages at the current page size. |  |
 
 ## Example
 

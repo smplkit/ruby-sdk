@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **contexts** | [**Array&lt;ContextBulkItem&gt;**](ContextBulkItem.md) |  |  |
+| **contexts** | [**Array&lt;ContextBulkItem&gt;**](ContextBulkItem.md) | One context instance per entry. |  |
 
 ## Example
 

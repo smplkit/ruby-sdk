@@ -14,19 +14,27 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A subscription that grants the account access to a product on a plan.
   class SubscriptionAttributes < ApiModelBase
+    # Product key the subscription is for, e.g. `flags`.
     attr_accessor :product
 
+    # Plan key the subscription is on, e.g. `pro`.
     attr_accessor :plan
 
+    # Lifecycle state of the subscription, e.g. `active`, `trialing`, `past_due`, `canceled`.
     attr_accessor :status
 
+    # When `true`, the subscription is complimentary and is not billed through the billing provider.
     attr_accessor :comped
 
+    # When `true`, the subscription is billed through Stripe; otherwise it is a free or complimentary subscription that does not produce invoices.
     attr_accessor :stripe_managed
 
+    # End of the current billing period (ISO 8601 timestamp).
     attr_accessor :current_period_end
 
+    # Stripe payment intent client secret returned when a subscription create requires additional authentication (3DS). Returned only on create.
     attr_accessor :client_secret
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -14,10 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # Attributes for POST /api/v1/payment_methods.  Distinct from ``PaymentMethod`` because this shape takes the Stripe ``pm_...`` ID at registration time; the persistent resource does not expose that ID.
+  # Attributes accepted when registering a new payment method.  The customer first creates a Stripe payment method client-side using Stripe Elements, then submits its `pm_...` identifier here to persist it on the account.
   class AddPaymentMethodAttributes < ApiModelBase
+    # Identifier of the Stripe payment method to register on the account, e.g. `pm_1234567890abcdef`.
     attr_accessor :stripe_payment_method_id
 
+    # When `true`, make the newly registered payment method the account's default. The first payment method on an account is always set as default regardless of this field.
     attr_accessor :default
 
     # Attribute mapping from ruby-style variable name to JSON key.

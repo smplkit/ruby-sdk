@@ -277,7 +277,7 @@ This endpoint does not need any parameter.
 
 ## update_account
 
-> <AccountResponse> update_account(account_response)
+> <AccountResponse> update_account(account_request)
 
 Update Current Account
 
@@ -295,11 +295,11 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::AccountApi.new
-account_response = SmplkitGeneratedClient::App::AccountResponse.new({data: SmplkitGeneratedClient::App::AccountResource.new({type: 'account', attributes: SmplkitGeneratedClient::App::Account.new({name: 'name_example', key: 'key_example'})})}) # AccountResponse | 
+account_request = SmplkitGeneratedClient::App::AccountRequest.new({data: SmplkitGeneratedClient::App::AccountResource.new({type: 'account', attributes: SmplkitGeneratedClient::App::Account.new({name: 'name_example'})})}) # AccountRequest | 
 
 begin
   # Update Current Account
-  result = api_instance.update_account(account_response)
+  result = api_instance.update_account(account_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling AccountApi->update_account: #{e}"
@@ -310,12 +310,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<AccountResponse>, Integer, Hash)> update_account_with_http_info(account_response)
+> <Array(<AccountResponse>, Integer, Hash)> update_account_with_http_info(account_request)
 
 ```ruby
 begin
   # Update Current Account
-  data, status_code, headers = api_instance.update_account_with_http_info(account_response)
+  data, status_code, headers = api_instance.update_account_with_http_info(account_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <AccountResponse>
@@ -328,7 +328,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **account_response** | [**AccountResponse**](AccountResponse.md) |  |  |
+| **account_request** | [**AccountRequest**](AccountRequest.md) |  |  |
 
 ### Return type
 
@@ -350,7 +350,7 @@ end
 
 Wipe Account Data
 
-Delete every config, flag, logger, log group, context, context type, environment, and customer API key (except the caller's current key) on the account. The ``common`` config is preserved as a structural anchor but its items are reset. Requires ``OWNER`` role and a ``{\"confirm\": true}`` body — anything else returns 400. Pass ``\"generate_sample_data\": true`` to re-seed the account with the standard sample dataset after the wipe completes (best-effort; seed failures are logged but do not fail the wipe). Returns 204 on success; if any sub-delete fails the response is 500.
+Delete every config, flag, logger, log group, context, context type, environment, and customer API key (except the caller's current key) on the account. The `common` config is preserved as a structural anchor but its items are reset. Requires `OWNER` role and a body of `{\"confirm\": true}` — any other value returns 400. Pass `\"generate_sample_data\": true` to re-seed the account with the standard sample dataset after the wipe (best-effort; seeding failures are logged but do not fail the wipe). Returns 204 on success; 500 if any sub-delete fails.
 
 ### Examples
 

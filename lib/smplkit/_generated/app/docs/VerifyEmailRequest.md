@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **token** | **String** |  |  |
+| **token** | **String** | Verification token previously delivered to the user&#39;s email. |  |
 
 ## Example
 

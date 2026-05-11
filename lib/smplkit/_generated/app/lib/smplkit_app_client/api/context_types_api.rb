@@ -21,26 +21,26 @@ module SmplkitGeneratedClient::App
     end
     # Create Context Type
     # Create a new context type. The caller provides the id (key) in the request body.
-    # @param context_type_response [ContextTypeResponse] 
+    # @param context_type_request [ContextTypeRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ContextTypeResponse]
-    def create_context_type(context_type_response, opts = {})
-      data, _status_code, _headers = create_context_type_with_http_info(context_type_response, opts)
+    def create_context_type(context_type_request, opts = {})
+      data, _status_code, _headers = create_context_type_with_http_info(context_type_request, opts)
       data
     end
 
     # Create Context Type
     # Create a new context type. The caller provides the id (key) in the request body.
-    # @param context_type_response [ContextTypeResponse] 
+    # @param context_type_request [ContextTypeRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ContextTypeResponse, Integer, Hash)>] ContextTypeResponse data, response status code and response headers
-    def create_context_type_with_http_info(context_type_response, opts = {})
+    def create_context_type_with_http_info(context_type_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ContextTypesApi.create_context_type ...'
       end
-      # verify the required parameter 'context_type_response' is set
-      if @api_client.config.client_side_validation && context_type_response.nil?
-        fail ArgumentError, "Missing the required parameter 'context_type_response' when calling ContextTypesApi.create_context_type"
+      # verify the required parameter 'context_type_request' is set
+      if @api_client.config.client_side_validation && context_type_request.nil?
+        fail ArgumentError, "Missing the required parameter 'context_type_request' when calling ContextTypesApi.create_context_type"
       end
       # resource path
       local_var_path = '/api/v1/context_types'
@@ -62,7 +62,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(context_type_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(context_type_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ContextTypeResponse'
@@ -273,21 +273,21 @@ module SmplkitGeneratedClient::App
     # Update Context Type
     # Update a context type by id.
     # @param id [String] 
-    # @param context_type_response [ContextTypeResponse] 
+    # @param context_type_request [ContextTypeRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ContextTypeResponse]
-    def update_context_type(id, context_type_response, opts = {})
-      data, _status_code, _headers = update_context_type_with_http_info(id, context_type_response, opts)
+    def update_context_type(id, context_type_request, opts = {})
+      data, _status_code, _headers = update_context_type_with_http_info(id, context_type_request, opts)
       data
     end
 
     # Update Context Type
     # Update a context type by id.
     # @param id [String] 
-    # @param context_type_response [ContextTypeResponse] 
+    # @param context_type_request [ContextTypeRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ContextTypeResponse, Integer, Hash)>] ContextTypeResponse data, response status code and response headers
-    def update_context_type_with_http_info(id, context_type_response, opts = {})
+    def update_context_type_with_http_info(id, context_type_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ContextTypesApi.update_context_type ...'
       end
@@ -295,9 +295,9 @@ module SmplkitGeneratedClient::App
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling ContextTypesApi.update_context_type"
       end
-      # verify the required parameter 'context_type_response' is set
-      if @api_client.config.client_side_validation && context_type_response.nil?
-        fail ArgumentError, "Missing the required parameter 'context_type_response' when calling ContextTypesApi.update_context_type"
+      # verify the required parameter 'context_type_request' is set
+      if @api_client.config.client_side_validation && context_type_request.nil?
+        fail ArgumentError, "Missing the required parameter 'context_type_request' when calling ContextTypesApi.update_context_type"
       end
       # resource path
       local_var_path = '/api/v1/context_types/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -319,7 +319,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(context_type_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(context_type_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ContextTypeResponse'

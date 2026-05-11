@@ -290,11 +290,11 @@ end
 
 ## update_context
 
-> <ContextResponse> update_context(id, context_response)
+> <ContextResponse> update_context(id, context_request)
 
 Update Context
 
-Update a context instance by composite id (type:key). Only the human-readable display name is mutable through this endpoint; context_type and observed attributes are written by the SDK ingestion path.
+Update a context instance by composite id (type:key). Only the human-readable display name is mutable here; `context_type` and observed `attributes` are written by SDK registration and ignored on this endpoint.
 
 ### Examples
 
@@ -309,11 +309,11 @@ end
 
 api_instance = SmplkitGeneratedClient::App::ContextsApi.new
 id = 'id_example' # String | 
-context_response = SmplkitGeneratedClient::App::ContextResponse.new({data: SmplkitGeneratedClient::App::ContextResource.new({type: 'context', attributes: SmplkitGeneratedClient::App::Context.new({context_type: 'context_type_example'})})}) # ContextResponse | 
+context_request = SmplkitGeneratedClient::App::ContextRequest.new({data: SmplkitGeneratedClient::App::ContextResource.new({type: 'context', attributes: SmplkitGeneratedClient::App::Context.new({context_type: 'context_type_example'})})}) # ContextRequest | 
 
 begin
   # Update Context
-  result = api_instance.update_context(id, context_response)
+  result = api_instance.update_context(id, context_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling ContextsApi->update_context: #{e}"
@@ -324,12 +324,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ContextResponse>, Integer, Hash)> update_context_with_http_info(id, context_response)
+> <Array(<ContextResponse>, Integer, Hash)> update_context_with_http_info(id, context_request)
 
 ```ruby
 begin
   # Update Context
-  data, status_code, headers = api_instance.update_context_with_http_info(id, context_response)
+  data, status_code, headers = api_instance.update_context_with_http_info(id, context_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ContextResponse>
@@ -343,7 +343,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **context_response** | [**ContextResponse**](ContextResponse.md) |  |  |
+| **context_request** | [**ContextRequest**](ContextRequest.md) |  |  |
 
 ### Return type
 

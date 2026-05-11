@@ -14,22 +14,30 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # Attributes for a saved card payment method.  ``default`` is the API-facing name; the underlying column is ``is_default`` per ADR-013 (reserved-word exception) and ADR-014 (unprefixed API fields).
+  # A saved card on file for the account, used to charge subscription invoices.  The default payment method is changed via the `set_default` action rather than by updating this field through PUT.
   class PaymentMethod < ApiModelBase
+    # Card network brand, e.g. `visa`, `mastercard`, `amex`.
     attr_accessor :brand
 
+    # Last four digits of the card number.
     attr_accessor :last4
 
+    # Expiry month (1-12).
     attr_accessor :exp_month
 
+    # Expiry year (four-digit).
     attr_accessor :exp_year
 
+    # Whether this payment method is the account's default for subscription charges. Use the `set_default` action to change which payment method is default — this field is not writable via PUT.
     attr_accessor :default
 
+    # Billing details (name, email, phone, address) associated with the card.
     attr_accessor :billing_details
 
+    # When the payment method was registered.
     attr_accessor :created_at
 
+    # When the payment method was last modified.
     attr_accessor :updated_at
 
     # Attribute mapping from ruby-style variable name to JSON key.

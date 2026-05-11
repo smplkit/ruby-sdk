@@ -4,8 +4,8 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **price_monthly_cents** | **Integer** |  |  |
-| **limits** | **Hash&lt;String, Integer&gt;** |  |  |
+| **price_monthly_cents** | **Integer** | Monthly list price in cents. &#x60;0&#x60; for free plans. |  |
+| **limits** | **Hash&lt;String, Integer&gt;** | Map of limit key to the cap that applies on this plan. &#x60;-1&#x60; indicates an unlimited cap. |  |
 
 ## Example
 

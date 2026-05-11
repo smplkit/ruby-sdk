@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Plain-JSON response listing distinct metric names for the account.
   class MetricNamesResponse < ApiModelBase
     attr_accessor :data
 

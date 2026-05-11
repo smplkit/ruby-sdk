@@ -14,9 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Body for the email + password login endpoint.
   class LoginRequest < ApiModelBase
+    # Email address of the user signing in.
     attr_accessor :email
 
+    # Password supplied for authentication.
     attr_accessor :password
 
     # Attribute mapping from ruby-style variable name to JSON key.

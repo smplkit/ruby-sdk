@@ -4,16 +4,15 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **name** | **String** |  |  |
-| **status** | **String** |  | [optional][readonly] |
-| **key** | **String** |  | [optional][readonly] |
-| **scopes** | **Hash&lt;String, Object&gt;** |  | [optional] |
-| **created_by** | **String** |  | [optional][readonly] |
-| **expires_at** | **Time** |  | [optional] |
-| **last_used_at** | **Time** |  | [optional][readonly] |
-| **created_at** | **Time** |  | [optional][readonly] |
-| **updated_at** | **Time** |  | [optional][readonly] |
-| **data** | **Hash&lt;String, Object&gt;** |  | [optional][readonly] |
+| **name** | **String** | Human-readable name for the key. |  |
+| **status** | **String** | Lifecycle state of the key. &#x60;ACTIVE&#x60; keys may be used to authenticate; &#x60;REVOKED&#x60; keys are rejected. | [optional][readonly] |
+| **key** | **String** | The bearer token value. Returned in plaintext on the create response so the caller can capture it; subsequent reads return the same value for round-tripping. | [optional][readonly] |
+| **scopes** | **Hash&lt;String, Object&gt;** | Scope restrictions applied to the key. Empty object grants full account access; populated forms are reserved for future scope syntax. | [optional] |
+| **created_by** | **String** | UUID of the user who created the key. | [optional][readonly] |
+| **expires_at** | **Time** | Optional expiry timestamp. After this time, the key is rejected. Omit for keys that do not expire. | [optional] |
+| **last_used_at** | **Time** | When the key was most recently used to authenticate. | [optional][readonly] |
+| **created_at** | **Time** | When the key was created. | [optional][readonly] |
+| **updated_at** | **Time** | When the key was last modified. | [optional][readonly] |
 
 ## Example
 
@@ -29,8 +28,7 @@ instance = SmplkitGeneratedClient::App::ApiKey.new(
   expires_at: null,
   last_used_at: null,
   created_at: null,
-  updated_at: null,
-  data: null
+  updated_at: null
 )
 ```
 

@@ -68,11 +68,11 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::APIKeysApi.new
-api_key_response = SmplkitGeneratedClient::App::ApiKeyResponse.new({data: SmplkitGeneratedClient::App::ApiKeyResource.new({type: 'api_key', attributes: SmplkitGeneratedClient::App::ApiKey.new({name: 'name_example'})})}) # ApiKeyResponse | 
+api_key_request = SmplkitGeneratedClient::App::ApiKeyRequest.new({data: SmplkitGeneratedClient::App::ApiKeyResource.new({type: 'api_key', attributes: SmplkitGeneratedClient::App::ApiKey.new({name: 'name_example'})})}) # ApiKeyRequest | 
 
 begin
   #Create API Key
-  result = api_instance.create_api_key(api_key_response)
+  result = api_instance.create_api_key(api_key_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Exception when calling APIKeysApi->create_api_key: #{e}"
@@ -167,6 +167,7 @@ Class | Method | HTTP request | Description
 ## Documentation for Models
 
  - [SmplkitGeneratedClient::App::Account](docs/Account.md)
+ - [SmplkitGeneratedClient::App::AccountRequest](docs/AccountRequest.md)
  - [SmplkitGeneratedClient::App::AccountResource](docs/AccountResource.md)
  - [SmplkitGeneratedClient::App::AccountResponse](docs/AccountResponse.md)
  - [SmplkitGeneratedClient::App::AccountWipeRequest](docs/AccountWipeRequest.md)
@@ -175,6 +176,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::AddPaymentMethodData](docs/AddPaymentMethodData.md)
  - [SmplkitGeneratedClient::App::ApiKey](docs/ApiKey.md)
  - [SmplkitGeneratedClient::App::ApiKeyListResponse](docs/ApiKeyListResponse.md)
+ - [SmplkitGeneratedClient::App::ApiKeyRequest](docs/ApiKeyRequest.md)
  - [SmplkitGeneratedClient::App::ApiKeyResource](docs/ApiKeyResource.md)
  - [SmplkitGeneratedClient::App::ApiKeyResponse](docs/ApiKeyResponse.md)
  - [SmplkitGeneratedClient::App::AuthTokenResponse](docs/AuthTokenResponse.md)
@@ -184,10 +186,12 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::ContextBulkItem](docs/ContextBulkItem.md)
  - [SmplkitGeneratedClient::App::ContextBulkRegister](docs/ContextBulkRegister.md)
  - [SmplkitGeneratedClient::App::ContextListResponse](docs/ContextListResponse.md)
+ - [SmplkitGeneratedClient::App::ContextRequest](docs/ContextRequest.md)
  - [SmplkitGeneratedClient::App::ContextResource](docs/ContextResource.md)
  - [SmplkitGeneratedClient::App::ContextResponse](docs/ContextResponse.md)
  - [SmplkitGeneratedClient::App::ContextType](docs/ContextType.md)
  - [SmplkitGeneratedClient::App::ContextTypeListResponse](docs/ContextTypeListResponse.md)
+ - [SmplkitGeneratedClient::App::ContextTypeRequest](docs/ContextTypeRequest.md)
  - [SmplkitGeneratedClient::App::ContextTypeResource](docs/ContextTypeResource.md)
  - [SmplkitGeneratedClient::App::ContextTypeResponse](docs/ContextTypeResponse.md)
  - [SmplkitGeneratedClient::App::CreateSubscriptionAttributes](docs/CreateSubscriptionAttributes.md)
@@ -198,6 +202,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::EmailResponse](docs/EmailResponse.md)
  - [SmplkitGeneratedClient::App::Environment](docs/Environment.md)
  - [SmplkitGeneratedClient::App::EnvironmentListResponse](docs/EnvironmentListResponse.md)
+ - [SmplkitGeneratedClient::App::EnvironmentRequest](docs/EnvironmentRequest.md)
  - [SmplkitGeneratedClient::App::EnvironmentResource](docs/EnvironmentResource.md)
  - [SmplkitGeneratedClient::App::EnvironmentResponse](docs/EnvironmentResponse.md)
  - [SmplkitGeneratedClient::App::Error](docs/Error.md)
@@ -229,6 +234,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::PageMeta](docs/PageMeta.md)
  - [SmplkitGeneratedClient::App::PaymentMethod](docs/PaymentMethod.md)
  - [SmplkitGeneratedClient::App::PaymentMethodListResponse](docs/PaymentMethodListResponse.md)
+ - [SmplkitGeneratedClient::App::PaymentMethodRequest](docs/PaymentMethodRequest.md)
  - [SmplkitGeneratedClient::App::PaymentMethodResource](docs/PaymentMethodResource.md)
  - [SmplkitGeneratedClient::App::PaymentMethodResponse](docs/PaymentMethodResponse.md)
  - [SmplkitGeneratedClient::App::Plan](docs/Plan.md)
@@ -242,6 +248,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::RegisterRequest](docs/RegisterRequest.md)
  - [SmplkitGeneratedClient::App::Service](docs/Service.md)
  - [SmplkitGeneratedClient::App::ServiceListResponse](docs/ServiceListResponse.md)
+ - [SmplkitGeneratedClient::App::ServiceRequest](docs/ServiceRequest.md)
  - [SmplkitGeneratedClient::App::ServiceResource](docs/ServiceResource.md)
  - [SmplkitGeneratedClient::App::ServiceResponse](docs/ServiceResponse.md)
  - [SmplkitGeneratedClient::App::SetupIntentAttributes](docs/SetupIntentAttributes.md)
@@ -255,6 +262,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::User](docs/User.md)
  - [SmplkitGeneratedClient::App::UserListMeta](docs/UserListMeta.md)
  - [SmplkitGeneratedClient::App::UserListResponse](docs/UserListResponse.md)
+ - [SmplkitGeneratedClient::App::UserRequest](docs/UserRequest.md)
  - [SmplkitGeneratedClient::App::UserResource](docs/UserResource.md)
  - [SmplkitGeneratedClient::App::UserResponse](docs/UserResponse.md)
  - [SmplkitGeneratedClient::App::Value](docs/Value.md)

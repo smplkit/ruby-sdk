@@ -4,9 +4,9 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **display_name** | **String** |  |  |
-| **description** | **String** |  |  |
-| **sort_order** | **Integer** |  |  |
+| **display_name** | **String** | Human-readable plan name. |  |
+| **description** | **String** | Long-form plan description. |  |
+| **sort_order** | **Integer** | Order in which the plan should be shown in customer-facing lists. Lower values sort first. |  |
 
 ## Example
 

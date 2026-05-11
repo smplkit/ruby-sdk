@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API request envelope for registering a new payment method.
   class AddPaymentMethodBody < ApiModelBase
     attr_accessor :data
 

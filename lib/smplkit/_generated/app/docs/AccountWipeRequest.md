@@ -4,8 +4,8 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **confirm** | **Boolean** | Must be &#x60;&#x60;true&#x60;&#x60; to proceed. Anything else returns 400. The frontend gates the call behind a confirmation dialog; this field is the server-side seatbelt. |  |
-| **generate_sample_data** | **Boolean** | When &#x60;&#x60;true&#x60;&#x60;, the wipe re-seeds the account with the same Acme Commerce sample dataset that new accounts are bootstrapped with. Best-effort: any seeding failures are logged but do not fail the wipe. | [optional][default to false] |
+| **confirm** | **Boolean** | Must be &#x60;true&#x60; for the wipe to proceed. Any other value returns 400. |  |
+| **generate_sample_data** | **Boolean** | When &#x60;true&#x60;, re-seed the account with the standard sample dataset after wiping. Best-effort: any seeding failure is logged but does not fail the wipe. | [optional][default to false] |
 
 ## Example
 

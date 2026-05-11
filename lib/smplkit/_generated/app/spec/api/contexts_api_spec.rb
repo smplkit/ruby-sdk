@@ -82,9 +82,9 @@ describe 'ContextsApi' do
 
   # unit tests for update_context
   # Update Context
-  # Update a context instance by composite id (type:key). Only the human-readable display name is mutable through this endpoint; context_type and observed attributes are written by the SDK ingestion path.
+  # Update a context instance by composite id (type:key). Only the human-readable display name is mutable here; &#x60;context_type&#x60; and observed &#x60;attributes&#x60; are written by SDK registration and ignored on this endpoint.
   # @param id 
-  # @param context_response 
+  # @param context_request 
   # @param [Hash] opts the optional parameters
   # @return [ContextResponse]
   describe 'update_context test' do

@@ -14,19 +14,26 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # A pre-aggregated metric data point recorded for the account.
   class MetricAttributes < ApiModelBase
+    # Metric series name, e.g. `flags.evaluations`. Dot-separated.
     attr_accessor :name
 
     attr_accessor :value
 
+    # Unit the value is expressed in, e.g. `evaluations`, `ms`, `bytes`.
     attr_accessor :unit
 
+    # Length of the aggregation window in seconds (e.g. `60` for a one-minute roll-up).
     attr_accessor :period_seconds
 
+    # Optional dimension keys that scope the data point, e.g. `environment`, `service`. Used as filter targets on the list endpoint via `filter[dimensions.<key>]=...`.
     attr_accessor :dimensions
 
+    # Start of the aggregation window this data point covers.
     attr_accessor :recorded_at
 
+    # When the data point was ingested.
     attr_accessor :created_at
 
     # Attribute mapping from ruby-style variable name to JSON key.

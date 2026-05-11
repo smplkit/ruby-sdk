@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API request envelope for creating a subscription.
   class CreateSubscriptionBody < ApiModelBase
     attr_accessor :data
 

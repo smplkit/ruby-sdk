@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API collection response for metric rollups.
   class MetricRollupListResponse < ApiModelBase
     attr_accessor :data
 

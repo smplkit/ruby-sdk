@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Add Payment Method
-    # Register a Stripe payment method (``pm_...``) as a persistent resource. The frontend obtains the Stripe ID via SetupIntent + Stripe Elements, then POSTs it here. Body shape and server behavior per ADR-044 §5.1.
+    # Register a Stripe payment method (`pm_...`) on the account. The client first creates the Stripe payment method using a SetupIntent and Stripe Elements, then submits its identifier here to persist it.
     # @param add_payment_method_body [AddPaymentMethodBody] 
     # @param [Hash] opts the optional parameters
     # @return [PaymentMethodResponse]
@@ -93,7 +93,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Add Payment Method
-    # Register a Stripe payment method (&#x60;&#x60;pm_...&#x60;&#x60;) as a persistent resource. The frontend obtains the Stripe ID via SetupIntent + Stripe Elements, then POSTs it here. Body shape and server behavior per ADR-044 §5.1.
+    # Register a Stripe payment method (&#x60;pm_...&#x60;) on the account. The client first creates the Stripe payment method using a SetupIntent and Stripe Elements, then submits its identifier here to persist it.
     # @param add_payment_method_body [AddPaymentMethodBody] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(PaymentMethodResponse, Integer, Hash)>] PaymentMethodResponse data, response status code and response headers
@@ -219,7 +219,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Delete Payment Method
-    # Detach the payment method from Stripe and soft-delete the local row. Returns 409 if this is the only PM and the account has an active paid subscription. If the deleted row was default, the oldest remaining row is promoted.
+    # Delete a payment method. Returns 409 if this is the only payment method on file and the account has an active paid subscription. If the deleted payment method was the default, the oldest remaining payment method is promoted to default.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [nil]
@@ -229,7 +229,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Delete Payment Method
-    # Detach the payment method from Stripe and soft-delete the local row. Returns 409 if this is the only PM and the account has an active paid subscription. If the deleted row was default, the oldest remaining row is promoted.
+    # Delete a payment method. Returns 409 if this is the only payment method on file and the account has an active paid subscription. If the deleted payment method was the default, the oldest remaining payment method is promoted to default.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers
@@ -356,7 +356,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Execute Setup Intent
-    # Create a Stripe SetupIntent for saving a payment method.  Returns a ``client_secret`` that the frontend passes to Stripe's Payment Element so the customer can securely enter card details without an immediate charge.
+    # Create a Stripe SetupIntent for adding a payment method without an immediate charge. Returns the `client_secret` to pass to Stripe Elements in the browser.
     # @param [Hash] opts the optional parameters
     # @return [SetupIntentResponse]
     def execute_setup_intent(opts = {})
@@ -365,7 +365,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Execute Setup Intent
-    # Create a Stripe SetupIntent for saving a payment method.  Returns a &#x60;&#x60;client_secret&#x60;&#x60; that the frontend passes to Stripe&#39;s Payment Element so the customer can securely enter card details without an immediate charge.
+    # Create a Stripe SetupIntent for adding a payment method without an immediate charge. Returns the &#x60;client_secret&#x60; to pass to Stripe Elements in the browser.
     # @param [Hash] opts the optional parameters
     # @return [Array<(SetupIntentResponse, Integer, Hash)>] SetupIntentResponse data, response status code and response headers
     def execute_setup_intent_with_http_info(opts = {})
@@ -413,7 +413,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Get Invoice
-    # Return a single invoice by ID. Supports content negotiation via Accept header:  - ``application/pdf`` — PDF bytes proxy-streamed from Stripe - ``application/vnd.api+json`` / ``application/json`` / absent — JSON:API resource - Any other value — 406 Not Acceptable
+    # Return a single invoice by id. Supports content negotiation via the `Accept` header:  - `application/pdf` — streams the invoice PDF. - `application/vnd.api+json`, `application/json`, or absent — returns   the JSON:API invoice resource. - Any other value — `406 Not Acceptable`.
     # @param invoice_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [InvoiceSingleResponse]
@@ -423,7 +423,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Get Invoice
-    # Return a single invoice by ID. Supports content negotiation via Accept header:  - &#x60;&#x60;application/pdf&#x60;&#x60; — PDF bytes proxy-streamed from Stripe - &#x60;&#x60;application/vnd.api+json&#x60;&#x60; / &#x60;&#x60;application/json&#x60;&#x60; / absent — JSON:API resource - Any other value — 406 Not Acceptable
+    # Return a single invoice by id. Supports content negotiation via the &#x60;Accept&#x60; header:  - &#x60;application/pdf&#x60; — streams the invoice PDF. - &#x60;application/vnd.api+json&#x60;, &#x60;application/json&#x60;, or absent — returns   the JSON:API invoice resource. - Any other value — &#x60;406 Not Acceptable&#x60;.
     # @param invoice_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(InvoiceSingleResponse, Integer, Hash)>] InvoiceSingleResponse data, response status code and response headers
@@ -710,7 +710,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Set Default Payment Method
-    # Mark this payment method as the account's default. Idempotent — a no-op 200 if already default.
+    # Mark this payment method as the account's default. Idempotent: returns 200 with no changes when the payment method is already the default.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [PaymentMethodResponse]
@@ -720,7 +720,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Set Default Payment Method
-    # Mark this payment method as the account&#39;s default. Idempotent — a no-op 200 if already default.
+    # Mark this payment method as the account&#39;s default. Idempotent: returns 200 with no changes when the payment method is already the default.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(PaymentMethodResponse, Integer, Hash)>] PaymentMethodResponse data, response status code and response headers
@@ -899,23 +899,23 @@ module SmplkitGeneratedClient::App
     end
 
     # Update Payment Method
-    # Update the mutable fields (``billing_details``, ``exp_month``, ``exp_year``). The ``default`` field is not mutable via PUT — see ADR-044 §5.2; use the ``set_default`` action instead.
+    # Update the mutable fields of a payment method (`billing_details`, `exp_month`, `exp_year`). The `default` flag is not mutable via PUT — use the `set_default` action instead.
     # @param id [String] 
-    # @param payment_method_response [PaymentMethodResponse] 
+    # @param payment_method_request [PaymentMethodRequest] 
     # @param [Hash] opts the optional parameters
     # @return [PaymentMethodResponse]
-    def update_payment_method(id, payment_method_response, opts = {})
-      data, _status_code, _headers = update_payment_method_with_http_info(id, payment_method_response, opts)
+    def update_payment_method(id, payment_method_request, opts = {})
+      data, _status_code, _headers = update_payment_method_with_http_info(id, payment_method_request, opts)
       data
     end
 
     # Update Payment Method
-    # Update the mutable fields (&#x60;&#x60;billing_details&#x60;&#x60;, &#x60;&#x60;exp_month&#x60;&#x60;, &#x60;&#x60;exp_year&#x60;&#x60;). The &#x60;&#x60;default&#x60;&#x60; field is not mutable via PUT — see ADR-044 §5.2; use the &#x60;&#x60;set_default&#x60;&#x60; action instead.
+    # Update the mutable fields of a payment method (&#x60;billing_details&#x60;, &#x60;exp_month&#x60;, &#x60;exp_year&#x60;). The &#x60;default&#x60; flag is not mutable via PUT — use the &#x60;set_default&#x60; action instead.
     # @param id [String] 
-    # @param payment_method_response [PaymentMethodResponse] 
+    # @param payment_method_request [PaymentMethodRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(PaymentMethodResponse, Integer, Hash)>] PaymentMethodResponse data, response status code and response headers
-    def update_payment_method_with_http_info(id, payment_method_response, opts = {})
+    def update_payment_method_with_http_info(id, payment_method_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: BillingApi.update_payment_method ...'
       end
@@ -923,9 +923,9 @@ module SmplkitGeneratedClient::App
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling BillingApi.update_payment_method"
       end
-      # verify the required parameter 'payment_method_response' is set
-      if @api_client.config.client_side_validation && payment_method_response.nil?
-        fail ArgumentError, "Missing the required parameter 'payment_method_response' when calling BillingApi.update_payment_method"
+      # verify the required parameter 'payment_method_request' is set
+      if @api_client.config.client_side_validation && payment_method_request.nil?
+        fail ArgumentError, "Missing the required parameter 'payment_method_request' when calling BillingApi.update_payment_method"
       end
       # resource path
       local_var_path = '/api/v1/payment_methods/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -947,7 +947,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(payment_method_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(payment_method_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'PaymentMethodResponse'

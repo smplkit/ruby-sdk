@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API collection response for products.
   class ProductListResponse < ApiModelBase
     attr_accessor :data
 

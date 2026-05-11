@@ -14,15 +14,21 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # An aggregated metric value over a fixed-size time bucket.
   class MetricRollupAttributes < ApiModelBase
+    # Metric series name the rollup is computed from.
     attr_accessor :name
 
+    # Sum of the underlying metric values over the bucket.
     attr_accessor :value
 
+    # Unit the value is expressed in.
     attr_accessor :unit
 
+    # Start of the time bucket this rollup covers.
     attr_accessor :bucket
 
+    # Rollup interval. One of `1m`, `5m`, `15m`, `1h`, `6h`, `1d`.
     attr_accessor :rollup
 
     # Attribute mapping from ruby-style variable name to JSON key.

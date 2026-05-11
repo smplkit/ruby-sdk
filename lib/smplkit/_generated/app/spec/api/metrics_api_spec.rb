@@ -46,7 +46,7 @@ describe 'MetricsApi' do
 
   # unit tests for list_metric_names
   # List Metric Names
-  # Return distinct metric names (with a representative unit) for this account.  Used by the dashboard to discover which product sections to render. Plain JSON response (not JSON:API) — this is metadata, not a metric resource.
+  # Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.
   # @param [Hash] opts the optional parameters
   # @return [MetricNamesResponse]
   describe 'list_metric_names test' do

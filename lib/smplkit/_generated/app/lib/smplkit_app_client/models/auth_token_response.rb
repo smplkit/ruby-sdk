@@ -14,9 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Authentication token issued on successful login or registration.
   class AuthTokenResponse < ApiModelBase
+    # Bearer token to pass in the `Authorization` header.
     attr_accessor :token
 
+    # Seconds until the token expires.
     attr_accessor :expires_in
 
     # Attribute mapping from ruby-style variable name to JSON key.

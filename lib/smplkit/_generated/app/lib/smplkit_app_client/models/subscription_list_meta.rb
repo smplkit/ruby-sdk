@@ -14,16 +14,21 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # Discount and totals summary attached to GET /api/v1/subscriptions.
+  # Discount and totals summary attached to a subscription collection response.
   class SubscriptionListMeta < ApiModelBase
+    # Sum of list prices across all subscriptions in cents.
     attr_accessor :subtotal_cents
 
+    # Effective discount percentage applied.
     attr_accessor :discount_pct
 
+    # Discount amount in cents.
     attr_accessor :discount_amount_cents
 
+    # Source of the discount. `VOLUME` indicates the standard volume-discount schedule; `OVERRIDE` indicates a custom discount set on the account.
     attr_accessor :discount_source
 
+    # Final monthly total in cents after the discount.
     attr_accessor :total_cents
 
     attr_accessor :next_tier

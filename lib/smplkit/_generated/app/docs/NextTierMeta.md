@@ -4,9 +4,9 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **products_needed** | **Integer** |  |  |
-| **discount_pct** | **Integer** |  |  |
-| **additional_savings_cents** | **Integer** |  |  |
+| **products_needed** | **Integer** | Number of additional subscribed products needed to reach the next tier. |  |
+| **discount_pct** | **Integer** | Discount percentage that would apply at the next tier. |  |
+| **additional_savings_cents** | **Integer** | Additional monthly savings in cents at the next tier. |  |
 
 ## Example
 

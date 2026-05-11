@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **plan** | **String** |  |  |
+| **plan** | **String** | Plan key to change the subscription to. |  |
 
 ## Example
 

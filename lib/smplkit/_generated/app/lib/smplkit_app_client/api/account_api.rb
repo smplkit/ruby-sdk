@@ -249,26 +249,26 @@ module SmplkitGeneratedClient::App
 
     # Update Current Account
     # Update the current account's settings.
-    # @param account_response [AccountResponse] 
+    # @param account_request [AccountRequest] 
     # @param [Hash] opts the optional parameters
     # @return [AccountResponse]
-    def update_account(account_response, opts = {})
-      data, _status_code, _headers = update_account_with_http_info(account_response, opts)
+    def update_account(account_request, opts = {})
+      data, _status_code, _headers = update_account_with_http_info(account_request, opts)
       data
     end
 
     # Update Current Account
     # Update the current account&#39;s settings.
-    # @param account_response [AccountResponse] 
+    # @param account_request [AccountRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(AccountResponse, Integer, Hash)>] AccountResponse data, response status code and response headers
-    def update_account_with_http_info(account_response, opts = {})
+    def update_account_with_http_info(account_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: AccountApi.update_account ...'
       end
-      # verify the required parameter 'account_response' is set
-      if @api_client.config.client_side_validation && account_response.nil?
-        fail ArgumentError, "Missing the required parameter 'account_response' when calling AccountApi.update_account"
+      # verify the required parameter 'account_request' is set
+      if @api_client.config.client_side_validation && account_request.nil?
+        fail ArgumentError, "Missing the required parameter 'account_request' when calling AccountApi.update_account"
       end
       # resource path
       local_var_path = '/api/v1/accounts/current'
@@ -290,7 +290,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(account_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(account_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'AccountResponse'
@@ -316,7 +316,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Wipe Account Data
-    # Delete every config, flag, logger, log group, context, context type, environment, and customer API key (except the caller's current key) on the account. The ``common`` config is preserved as a structural anchor but its items are reset. Requires ``OWNER`` role and a ``{\"confirm\": true}`` body — anything else returns 400. Pass ``\"generate_sample_data\": true`` to re-seed the account with the standard sample dataset after the wipe completes (best-effort; seed failures are logged but do not fail the wipe). Returns 204 on success; if any sub-delete fails the response is 500.
+    # Delete every config, flag, logger, log group, context, context type, environment, and customer API key (except the caller's current key) on the account. The `common` config is preserved as a structural anchor but its items are reset. Requires `OWNER` role and a body of `{\"confirm\": true}` — any other value returns 400. Pass `\"generate_sample_data\": true` to re-seed the account with the standard sample dataset after the wipe (best-effort; seeding failures are logged but do not fail the wipe). Returns 204 on success; 500 if any sub-delete fails.
     # @param account_wipe_request [AccountWipeRequest] 
     # @param [Hash] opts the optional parameters
     # @return [nil]
@@ -326,7 +326,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Wipe Account Data
-    # Delete every config, flag, logger, log group, context, context type, environment, and customer API key (except the caller&#39;s current key) on the account. The &#x60;&#x60;common&#x60;&#x60; config is preserved as a structural anchor but its items are reset. Requires &#x60;&#x60;OWNER&#x60;&#x60; role and a &#x60;&#x60;{\&quot;confirm\&quot;: true}&#x60;&#x60; body — anything else returns 400. Pass &#x60;&#x60;\&quot;generate_sample_data\&quot;: true&#x60;&#x60; to re-seed the account with the standard sample dataset after the wipe completes (best-effort; seed failures are logged but do not fail the wipe). Returns 204 on success; if any sub-delete fails the response is 500.
+    # Delete every config, flag, logger, log group, context, context type, environment, and customer API key (except the caller&#39;s current key) on the account. The &#x60;common&#x60; config is preserved as a structural anchor but its items are reset. Requires &#x60;OWNER&#x60; role and a body of &#x60;{\&quot;confirm\&quot;: true}&#x60; — any other value returns 400. Pass &#x60;\&quot;generate_sample_data\&quot;: true&#x60; to re-seed the account with the standard sample dataset after the wipe (best-effort; seeding failures are logged but do not fail the wipe). Returns 204 on success; 500 if any sub-delete fails.
     # @param account_wipe_request [AccountWipeRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers

@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # JSON:API single-resource response envelope for a user.
   class UserResponse < ApiModelBase
     attr_accessor :data
 

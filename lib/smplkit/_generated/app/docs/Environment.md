@@ -4,11 +4,11 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **name** | **String** |  |  |
-| **color** | **String** |  | [optional] |
-| **classification** | **String** |  | [optional][default to &#39;AD_HOC&#39;] |
-| **created_at** | **Time** |  | [optional][readonly] |
-| **updated_at** | **Time** |  | [optional][readonly] |
+| **name** | **String** | Human-readable name for the environment. |  |
+| **color** | **String** | Display color used by the console to badge the environment. Accepts any CSS color string. | [optional] |
+| **classification** | **String** | &#x60;STANDARD&#x60; for environments the customer explicitly manages; &#x60;AD_HOC&#x60; for environments auto-created from SDK traffic. Case-insensitive on input. | [optional][default to &#39;AD_HOC&#39;] |
+| **created_at** | **Time** | When the environment was created. | [optional][readonly] |
+| **updated_at** | **Time** | When the environment was last modified. | [optional][readonly] |
 
 ## Example
 

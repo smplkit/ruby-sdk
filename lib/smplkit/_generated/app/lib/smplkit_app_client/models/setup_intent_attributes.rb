@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
+  # Result of executing the setup-intent function.
   class SetupIntentAttributes < ApiModelBase
+    # Client secret to pass to Stripe Elements so the customer can complete payment-method setup in the browser.
     attr_accessor :client_secret
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -4,9 +4,9 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **type** | **String** | Context type key: &#39;user&#39;, &#39;account&#39;, &#39;device&#39; |  |
-| **key** | **String** | Entity identifier: &#39;user-123&#39;, &#39;acme-corp&#39; |  |
-| **attributes** | **Hash&lt;String, Object&gt;** |  | [optional] |
+| **type** | **String** | Key of the context type this instance belongs to (e.g. &#x60;user&#x60;, &#x60;account&#x60;, &#x60;device&#x60;). |  |
+| **key** | **String** | Entity identifier within the context type, e.g. &#x60;user-123&#x60;. |  |
+| **attributes** | **Hash&lt;String, Object&gt;** | Observed attribute values for this context instance. | [optional] |
 
 ## Example
 

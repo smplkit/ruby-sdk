@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **data** | [**Array&lt;MetricResource&gt;**](MetricResource.md) |  |  |
+| **data** | [**Array&lt;MetricResource&gt;**](MetricResource.md) | Metric data points to ingest in a single request. |  |
 
 ## Example
 
