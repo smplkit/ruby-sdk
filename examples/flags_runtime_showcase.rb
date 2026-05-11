@@ -150,8 +150,10 @@ Smplkit::Client.open(environment: "staging", service: "showcase-service") do |cl
   )
   current_banner.save
 
-  # wait a moment for the event to be delivered
-  sleep(0.2)
+  # wait a moment for the event to be delivered (typical WS round-trip
+  # is well under 200ms; 400ms is plenty of headroom and anything past
+  # that is a real signal, not noise to absorb).
+  sleep(0.4)
 
   raise "Expected at least one global change" if all_changes.empty?
   raise "Expected at least one banner change" if banner_changes.empty?
