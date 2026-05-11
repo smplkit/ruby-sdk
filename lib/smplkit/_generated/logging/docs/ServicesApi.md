@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Services
 
-Return the distinct service names observed across all logger sources for the account.
+List the services that have reported a logger for this account.
 
 ### Examples
 

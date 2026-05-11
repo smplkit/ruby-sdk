@@ -14,21 +14,30 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # A single service / environment observation of a logger.  A source row exists for every (service, environment) pair that has reported the logger via the bulk registration endpoint. The row's levels reflect what the SDK saw on the most recent report.
   class LoggerSource < ApiModelBase
+    # Service that reported the logger.
     attr_accessor :service
 
+    # Environment the service was running in when it reported the logger.
     attr_accessor :environment
 
+    # Level explicitly set on the logger in the source runtime. `null` when the runtime inherits its level.
     attr_accessor :level
 
+    # Effective level the runtime resolved for the logger.
     attr_accessor :resolved_level
 
+    # When this service / environment combination first reported the logger.
     attr_accessor :first_observed
 
+    # Most recent report received for this service / environment combination.
     attr_accessor :last_seen
 
+    # When the source row was created.
     attr_accessor :created_at
 
+    # When the source row was last refreshed.
     attr_accessor :updated_at
 
     # Attribute mapping from ruby-style variable name to JSON key.

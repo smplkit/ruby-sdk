@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **loggers** | [**Array&lt;LoggerBulkItem&gt;**](LoggerBulkItem.md) |  |  |
+| **loggers** | [**Array&lt;LoggerBulkItem&gt;**](LoggerBulkItem.md) | Loggers to register or refresh observations for. |  |
 
 ## Example
 

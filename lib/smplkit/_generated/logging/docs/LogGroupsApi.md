@@ -13,11 +13,11 @@ All URIs are relative to *http://localhost*
 
 ## create_log_group
 
-> <LogGroupResponse> create_log_group(log_group_response)
+> <LogGroupResponse> create_log_group(log_group_request)
 
 Create Log Group
 
-Create a new log group. The caller provides the key in data.id, or it is auto-generated from name.
+Create a log group.  The caller may supply a key in `data.id`; if omitted, the server generates one from `name`.
 
 ### Examples
 
@@ -31,11 +31,11 @@ SmplkitGeneratedClient::Logging.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Logging::LogGroupsApi.new
-log_group_response = SmplkitGeneratedClient::Logging::LogGroupResponse.new({data: SmplkitGeneratedClient::Logging::LogGroupResource.new({type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupResponse | 
+log_group_request = SmplkitGeneratedClient::Logging::LogGroupRequest.new({data: SmplkitGeneratedClient::Logging::LogGroupResource.new({type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupRequest | 
 
 begin
   # Create Log Group
-  result = api_instance.create_log_group(log_group_response)
+  result = api_instance.create_log_group(log_group_request)
   p result
 rescue SmplkitGeneratedClient::Logging::ApiError => e
   puts "Error when calling LogGroupsApi->create_log_group: #{e}"
@@ -46,12 +46,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<LogGroupResponse>, Integer, Hash)> create_log_group_with_http_info(log_group_response)
+> <Array(<LogGroupResponse>, Integer, Hash)> create_log_group_with_http_info(log_group_request)
 
 ```ruby
 begin
   # Create Log Group
-  data, status_code, headers = api_instance.create_log_group_with_http_info(log_group_response)
+  data, status_code, headers = api_instance.create_log_group_with_http_info(log_group_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <LogGroupResponse>
@@ -64,7 +64,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **log_group_response** | [**LogGroupResponse**](LogGroupResponse.md) |  |  |
+| **log_group_request** | [**LogGroupRequest**](LogGroupRequest.md) |  |  |
 
 ### Return type
 
@@ -86,7 +86,7 @@ end
 
 Delete Log Group
 
-Delete a log group by its key.
+Delete a log group.  Loggers that referenced this group are detached; they remain in the account with no group assignment.
 
 ### Examples
 
@@ -154,7 +154,7 @@ nil (empty response body)
 
 Get Log Group
 
-Return a log group by its key.
+Retrieve a log group by its key.
 
 ### Examples
 
@@ -223,7 +223,7 @@ end
 
 List Log Groups
 
-List all log groups for the authenticated account.
+List log groups for this account.
 
 ### Examples
 
@@ -285,11 +285,11 @@ This endpoint does not need any parameter.
 
 ## update_log_group
 
-> <LogGroupResponse> update_log_group(id, log_group_response)
+> <LogGroupResponse> update_log_group(id, log_group_request)
 
 Update Log Group
 
-Replace a log group entirely.
+Replace a log group. Every writable field is overwritten.
 
 ### Examples
 
@@ -304,11 +304,11 @@ end
 
 api_instance = SmplkitGeneratedClient::Logging::LogGroupsApi.new
 id = 'id_example' # String | 
-log_group_response = SmplkitGeneratedClient::Logging::LogGroupResponse.new({data: SmplkitGeneratedClient::Logging::LogGroupResource.new({type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupResponse | 
+log_group_request = SmplkitGeneratedClient::Logging::LogGroupRequest.new({data: SmplkitGeneratedClient::Logging::LogGroupResource.new({type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupRequest | 
 
 begin
   # Update Log Group
-  result = api_instance.update_log_group(id, log_group_response)
+  result = api_instance.update_log_group(id, log_group_request)
   p result
 rescue SmplkitGeneratedClient::Logging::ApiError => e
   puts "Error when calling LogGroupsApi->update_log_group: #{e}"
@@ -319,12 +319,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<LogGroupResponse>, Integer, Hash)> update_log_group_with_http_info(id, log_group_response)
+> <Array(<LogGroupResponse>, Integer, Hash)> update_log_group_with_http_info(id, log_group_request)
 
 ```ruby
 begin
   # Update Log Group
-  data, status_code, headers = api_instance.update_log_group_with_http_info(id, log_group_response)
+  data, status_code, headers = api_instance.update_log_group_with_http_info(id, log_group_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <LogGroupResponse>
@@ -338,7 +338,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **log_group_response** | [**LogGroupResponse**](LogGroupResponse.md) |  |  |
+| **log_group_request** | [**LogGroupRequest**](LogGroupRequest.md) |  |  |
 
 ### Return type
 

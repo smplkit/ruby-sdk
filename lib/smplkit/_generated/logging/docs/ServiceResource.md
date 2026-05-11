@@ -6,7 +6,7 @@
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
 | **type** | **String** |  |  |
-| **attributes** | **Object** |  | [optional] |
+| **attributes** | **Object** | A discovered service has no attributes beyond its name (the &#x60;id&#x60;). | [optional] |
 
 ## Example
 

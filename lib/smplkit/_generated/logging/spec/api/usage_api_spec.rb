@@ -34,7 +34,7 @@ describe 'UsageApi' do
 
   # unit tests for list_logging_usage
   # List Logging Usage
-  # Return current resource usage counts for the authenticated account.
+  # Report the current-period usage counters for this account.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_period 
   # @return [UsageListResponse]

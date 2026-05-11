@@ -14,18 +14,47 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # A named collection of loggers that share a level configuration.  Assigning a logger to a group ties the logger's effective level to the group's level (and per-environment overrides). Loggers can move between groups or be detached from a group entirely.
   class LogGroup < ApiModelBase
+    # Human-readable label for the group.
     attr_accessor :name
 
+    # Default level applied to every logger in the group. `null` leaves member loggers to inherit from elsewhere.
     attr_accessor :level
 
+    # Reserved for nested groups. Must be `null` in this version; nested groups are not yet supported.
     attr_accessor :parent_id
 
+    # Per-environment level overrides keyed by environment name. Each value is an object with an optional `level` field, e.g. `{\"production\": {\"level\": \"ERROR\"}}`. Member loggers inherit the per-environment level unless they set their own override.
     attr_accessor :environments
 
+    # When the group was created.
     attr_accessor :created_at
 
+    # When the group was last modified.
     attr_accessor :updated_at
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -130,10 +159,6 @@ module SmplkitGeneratedClient::Logging
         invalid_properties.push('invalid value for "name", the character length must be smaller than or equal to 255.')
       end
 
-      if !@level.nil? && @level.to_s.length > 10
-        invalid_properties.push('invalid value for "level", the character length must be smaller than or equal to 10.')
-      end
-
       invalid_properties
     end
 
@@ -143,7 +168,8 @@ module SmplkitGeneratedClient::Logging
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @name.nil?
       return false if @name.to_s.length > 255
-      return false if !@level.nil? && @level.to_s.length > 10
+      level_validator = EnumAttributeValidator.new('String', ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "SILENT"])
+      return false unless level_validator.valid?(@level)
       true
     end
 
@@ -161,13 +187,13 @@ module SmplkitGeneratedClient::Logging
       @name = name
     end
 
-    # Custom attribute writer method with validation
-    # @param [Object] level Value to be assigned
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] level Object to be assigned
     def level=(level)
-      if !level.nil? && level.to_s.length > 10
-        fail ArgumentError, 'invalid value for "level", the character length must be smaller than or equal to 10.'
+      validator = EnumAttributeValidator.new('String', ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "SILENT"])
+      unless validator.valid?(level)
+        fail ArgumentError, "invalid value for \"level\", must be one of #{validator.allowable_values}."
       end
-
       @level = level
     end
 

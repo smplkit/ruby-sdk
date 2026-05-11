@@ -14,20 +14,21 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # One logger discovered by an SDK during a bulk registration call.
   class LoggerBulkItem < ApiModelBase
-    # Normalized logger name
+    # Dot-separated logger key as the SDK saw it.
     attr_accessor :id
 
-    # The explicitly-set level on this logger. Null if inherited.
+    # Level explicitly set on the logger by application code. `null` when the level is inherited.
     attr_accessor :level
 
-    # The effective level after framework inheritance. Never null in compliant SDKs.
+    # Effective level after framework inheritance. SDKs should always report this; the server falls back to `level` when `resolved_level` is missing.
     attr_accessor :resolved_level
 
-    # Service name that discovered this logger
+    # Service name that observed the logger.
     attr_accessor :service
 
-    # Environment where this logger was observed
+    # Environment where the logger was observed.
     attr_accessor :environment
 
     # Attribute mapping from ruby-style variable name to JSON key.

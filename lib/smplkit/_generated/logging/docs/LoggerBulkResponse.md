@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **registered** | **Integer** |  |  |
+| **registered** | **Integer** | Number of loggers that were created or had a source observation refreshed. |  |
 
 ## Example
 

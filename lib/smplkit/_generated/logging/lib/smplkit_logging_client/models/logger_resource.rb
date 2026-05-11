@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Logging
+  # JSON:API resource envelope for a logger.  `id` is the logger's dot-separated key (e.g. `sqlalchemy.engine`). On a `PUT /api/v1/loggers/{id}` create, the id is taken from the URL path; on update, an `id` in the body renames the logger.
   class LoggerResource < ApiModelBase
     attr_accessor :id
 

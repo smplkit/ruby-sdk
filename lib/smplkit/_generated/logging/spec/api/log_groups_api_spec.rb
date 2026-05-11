@@ -34,8 +34,8 @@ describe 'LogGroupsApi' do
 
   # unit tests for create_log_group
   # Create Log Group
-  # Create a new log group. The caller provides the key in data.id, or it is auto-generated from name.
-  # @param log_group_response 
+  # Create a log group.  The caller may supply a key in &#x60;data.id&#x60;; if omitted, the server generates one from &#x60;name&#x60;.
+  # @param log_group_request 
   # @param [Hash] opts the optional parameters
   # @return [LogGroupResponse]
   describe 'create_log_group test' do
@@ -46,7 +46,7 @@ describe 'LogGroupsApi' do
 
   # unit tests for delete_log_group
   # Delete Log Group
-  # Delete a log group by its key.
+  # Delete a log group.  Loggers that referenced this group are detached; they remain in the account with no group assignment.
   # @param id 
   # @param [Hash] opts the optional parameters
   # @return [nil]
@@ -58,7 +58,7 @@ describe 'LogGroupsApi' do
 
   # unit tests for get_log_group
   # Get Log Group
-  # Return a log group by its key.
+  # Retrieve a log group by its key.
   # @param id 
   # @param [Hash] opts the optional parameters
   # @return [LogGroupResponse]
@@ -70,7 +70,7 @@ describe 'LogGroupsApi' do
 
   # unit tests for list_log_groups
   # List Log Groups
-  # List all log groups for the authenticated account.
+  # List log groups for this account.
   # @param [Hash] opts the optional parameters
   # @return [LogGroupListResponse]
   describe 'list_log_groups test' do
@@ -81,9 +81,9 @@ describe 'LogGroupsApi' do
 
   # unit tests for update_log_group
   # Update Log Group
-  # Replace a log group entirely.
+  # Replace a log group. Every writable field is overwritten.
   # @param id 
-  # @param log_group_response 
+  # @param log_group_request 
   # @param [Hash] opts the optional parameters
   # @return [LogGroupResponse]
   describe 'update_log_group test' do
