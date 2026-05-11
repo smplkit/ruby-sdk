@@ -14,29 +14,62 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # A record of an SDK observing a feature flag from a particular service and environment.  The flags service auto-registers a source the first time an SDK reports a flag from a given service/environment pair and refreshes `last_seen` on every subsequent report. Each source captures the value type and default value the SDK declared in source code at that location, which makes it possible to detect when service code has drifted from the flag's authoritative configuration.
   class FlagSource < ApiModelBase
+    # Service that declared the flag.
     attr_accessor :service
 
+    # Environment in which the service declared the flag.
     attr_accessor :environment
 
+    # Value type the SDK reported when registering the flag from this service/environment. May differ from the flag's authoritative `type` if the service is running stale code.
+    attr_accessor :declared_type
+
+    attr_accessor :declared_default
+
+    # When this source was first observed.
     attr_accessor :first_observed
 
+    # Most recent time the SDK re-registered this source.
     attr_accessor :last_seen
 
-    attr_accessor :data
-
+    # When the source record was created.
     attr_accessor :created_at
 
+    # When the source record was last modified.
     attr_accessor :updated_at
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'service' => :'service',
         :'environment' => :'environment',
+        :'declared_type' => :'declared_type',
+        :'declared_default' => :'declared_default',
         :'first_observed' => :'first_observed',
         :'last_seen' => :'last_seen',
-        :'data' => :'data',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at'
       }
@@ -57,9 +90,10 @@ module SmplkitGeneratedClient::Flags
       {
         :'service' => :'String',
         :'environment' => :'String',
+        :'declared_type' => :'String',
+        :'declared_default' => :'Object',
         :'first_observed' => :'Time',
         :'last_seen' => :'Time',
-        :'data' => :'Hash<String, Object>',
         :'created_at' => :'Time',
         :'updated_at' => :'Time'
       }
@@ -68,9 +102,12 @@ module SmplkitGeneratedClient::Flags
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'service',
+        :'environment',
+        :'declared_type',
+        :'declared_default',
         :'first_observed',
         :'last_seen',
-        :'data',
         :'created_at',
         :'updated_at'
       ])
@@ -100,18 +137,20 @@ module SmplkitGeneratedClient::Flags
         self.environment = attributes[:'environment']
       end
 
+      if attributes.key?(:'declared_type')
+        self.declared_type = attributes[:'declared_type']
+      end
+
+      if attributes.key?(:'declared_default')
+        self.declared_default = attributes[:'declared_default']
+      end
+
       if attributes.key?(:'first_observed')
         self.first_observed = attributes[:'first_observed']
       end
 
       if attributes.key?(:'last_seen')
         self.last_seen = attributes[:'last_seen']
-      end
-
-      if attributes.key?(:'data')
-        if (value = attributes[:'data']).is_a?(Hash)
-          self.data = value
-        end
       end
 
       if attributes.key?(:'created_at')
@@ -135,7 +174,19 @@ module SmplkitGeneratedClient::Flags
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      declared_type_validator = EnumAttributeValidator.new('String', ["BOOLEAN", "STRING", "NUMERIC", "JSON"])
+      return false unless declared_type_validator.valid?(@declared_type)
       true
+    end
+
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] declared_type Object to be assigned
+    def declared_type=(declared_type)
+      validator = EnumAttributeValidator.new('String', ["BOOLEAN", "STRING", "NUMERIC", "JSON"])
+      unless validator.valid?(declared_type)
+        fail ArgumentError, "invalid value for \"declared_type\", must be one of #{validator.allowable_values}."
+      end
+      @declared_type = declared_type
     end
 
     # Checks equality by comparing each attribute.
@@ -145,9 +196,10 @@ module SmplkitGeneratedClient::Flags
       self.class == o.class &&
           service == o.service &&
           environment == o.environment &&
+          declared_type == o.declared_type &&
+          declared_default == o.declared_default &&
           first_observed == o.first_observed &&
           last_seen == o.last_seen &&
-          data == o.data &&
           created_at == o.created_at &&
           updated_at == o.updated_at
     end
@@ -161,7 +213,7 @@ module SmplkitGeneratedClient::Flags
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [service, environment, first_observed, last_seen, data, created_at, updated_at].hash
+      [service, environment, declared_type, declared_default, first_observed, last_seen, created_at, updated_at].hash
     end
 
     # Builds the object from hash

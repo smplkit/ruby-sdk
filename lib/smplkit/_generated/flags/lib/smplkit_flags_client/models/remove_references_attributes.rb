@@ -14,11 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # Counts and follow-ups returned by the remove-references action.
   class RemoveReferencesAttributes < ApiModelBase
+    # Keys of flags whose rules were modified.
     attr_accessor :flags_modified
 
+    # Total number of rules removed across all flags.
     attr_accessor :rules_removed
 
+    # Rules that referenced the context but could not be removed automatically (typically because the reference is inside an `and` expression where removal would broaden the rule).
     attr_accessor :rules_needing_manual_review
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -4,8 +4,8 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **description** | **String** |  | [optional] |
-| **logic** | **Hash&lt;String, Object&gt;** |  |  |
+| **description** | **String** | Human-readable description of the rule. | [optional] |
+| **logic** | **Hash&lt;String, Object&gt;** | JSON Logic expression evaluated against the evaluation context. The rule fires when the expression is truthy. |  |
 | **value** | **Object** |  |  |
 
 ## Example

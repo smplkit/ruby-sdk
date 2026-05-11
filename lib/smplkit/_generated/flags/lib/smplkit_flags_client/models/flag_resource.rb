@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # JSON:API resource envelope for a flag.  `id` is the flag key. For create requests, `id` is required and is chosen by the caller. For update requests, `id` may be omitted (the server reads the key from the URL) or supplied to rename the flag.
   class FlagResource < ApiModelBase
     attr_accessor :id
 

@@ -39,6 +39,22 @@ describe SmplkitGeneratedClient::Flags::FlagSource do
     end
   end
 
+  describe 'test attribute "declared_type"' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["BOOLEAN", "STRING", "NUMERIC", "JSON"])
+      # validator.allowable_values.each do |value|
+      #   expect { instance.declared_type = value }.not_to raise_error
+      # end
+    end
+  end
+
+  describe 'test attribute "declared_default"' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   describe 'test attribute "first_observed"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
@@ -46,12 +62,6 @@ describe SmplkitGeneratedClient::Flags::FlagSource do
   end
 
   describe 'test attribute "last_seen"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  describe 'test attribute "data"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

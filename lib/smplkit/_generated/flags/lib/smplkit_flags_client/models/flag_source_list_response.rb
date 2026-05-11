@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # JSON:API collection response envelope for flag sources.
   class FlagSourceListResponse < ApiModelBase
     attr_accessor :data
 

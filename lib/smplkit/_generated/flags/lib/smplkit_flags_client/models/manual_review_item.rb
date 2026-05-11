@@ -14,13 +14,18 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # A flag rule that could not be safely modified by the bulk remove-references action.
   class ManualReviewItem < ApiModelBase
+    # Key of the flag containing the rule.
     attr_accessor :flag
 
+    # Environment containing the rule.
     attr_accessor :environment
 
+    # Position of the rule within the environment's `rules` array.
     attr_accessor :rule_index
 
+    # Why the rule needs manual review.
     attr_accessor :reason
 
     # Attribute mapping from ruby-style variable name to JSON key.

@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **flags** | [**Array&lt;FlagBulkItem&gt;**](FlagBulkItem.md) |  |  |
+| **flags** | [**Array&lt;FlagBulkItem&gt;**](FlagBulkItem.md) | Flags reported by the SDK in this batch. |  |
 
 ## Example
 

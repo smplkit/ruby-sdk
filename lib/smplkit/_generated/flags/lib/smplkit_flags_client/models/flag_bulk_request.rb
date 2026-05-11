@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # Inputs to the bulk-register-flags action.
   class FlagBulkRequest < ApiModelBase
+    # Flags reported by the SDK in this batch.
     attr_accessor :flags
 
     # Attribute mapping from ruby-style variable name to JSON key.

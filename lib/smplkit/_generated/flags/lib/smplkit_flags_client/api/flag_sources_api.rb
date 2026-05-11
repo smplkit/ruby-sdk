@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Flags
       @api_client = api_client
     end
     # List All Flag Sources
-    # List all flag sources across all flags. Optionally filter by environment or service.
+    # List service/environment observations across all flags for this account.  Filter by `environment` or `service` (or both) to narrow the result.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_environment 
     # @option opts [String] :filter_service 
@@ -31,7 +31,7 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List All Flag Sources
-    # List all flag sources across all flags. Optionally filter by environment or service.
+    # List service/environment observations across all flags for this account.  Filter by &#x60;environment&#x60; or &#x60;service&#x60; (or both) to narrow the result.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_environment 
     # @option opts [String] :filter_service 
@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List Flag Sources
-    # List all sources (service/environment observations) for a specific flag.
+    # List the service/environment observations recorded for a single flag.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [FlagSourceListResponse]
@@ -93,7 +93,7 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List Flag Sources
-    # List all sources (service/environment observations) for a specific flag.
+    # List the service/environment observations recorded for a single flag.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(FlagSourceListResponse, Integer, Hash)>] FlagSourceListResponse data, response status code and response headers

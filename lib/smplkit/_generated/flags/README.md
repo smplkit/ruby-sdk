@@ -109,6 +109,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Flags::FlagBulkResponse](docs/FlagBulkResponse.md)
  - [SmplkitGeneratedClient::Flags::FlagEnvironment](docs/FlagEnvironment.md)
  - [SmplkitGeneratedClient::Flags::FlagListResponse](docs/FlagListResponse.md)
+ - [SmplkitGeneratedClient::Flags::FlagRequest](docs/FlagRequest.md)
  - [SmplkitGeneratedClient::Flags::FlagResource](docs/FlagResource.md)
  - [SmplkitGeneratedClient::Flags::FlagResponse](docs/FlagResponse.md)
  - [SmplkitGeneratedClient::Flags::FlagRule](docs/FlagRule.md)

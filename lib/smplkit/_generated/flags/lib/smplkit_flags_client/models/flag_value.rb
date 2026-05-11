@@ -14,7 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # A named value in a constrained flag's value set.
   class FlagValue < ApiModelBase
+    # Human-readable label for the value.
     attr_accessor :name
 
     attr_accessor :value

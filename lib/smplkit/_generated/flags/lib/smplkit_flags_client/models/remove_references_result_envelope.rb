@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # JSON:API single-resource response envelope for the remove-references action.
   class RemoveReferencesResultEnvelope < ApiModelBase
     attr_accessor :data
 

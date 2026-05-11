@@ -34,7 +34,7 @@ describe 'FunctionsApi' do
 
   # unit tests for remove_references
   # Execute Remove References
-  # Bulk-remove context references from flag rules.  Traverses every flag in the account, removes rules that reference the specified context, and emits a single flags_changed event when done.
+  # Remove every rule that references a specific context across every flag.  Provide exactly one of &#x60;context&#x60; (matches a single instance, formatted as &#x60;{type}:{key}&#x60;) or &#x60;context_type&#x60; (matches any attribute of that context type). Rules whose reference sits inside an AND expression are not removed automatically; they are returned in &#x60;rules_needing_manual_review&#x60; for the caller to handle.
   # @param remove_references_request 
   # @param [Hash] opts the optional parameters
   # @return [RemoveReferencesResultEnvelope]

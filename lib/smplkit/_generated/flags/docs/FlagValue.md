@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **name** | **String** |  |  |
+| **name** | **String** | Human-readable label for the value. |  |
 | **value** | **Object** |  |  |
 
 ## Example

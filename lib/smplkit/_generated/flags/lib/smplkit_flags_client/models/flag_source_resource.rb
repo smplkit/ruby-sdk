@@ -14,6 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # JSON:API resource envelope for a flag source.  `id` is the source record's UUID. Sources are not created or modified directly — the flags service registers and refreshes them in response to SDK bulk-register requests.
   class FlagSourceResource < ApiModelBase
     attr_accessor :id
 

@@ -13,6 +13,7 @@ docs/FlagBulkRequest.md
 docs/FlagBulkResponse.md
 docs/FlagEnvironment.md
 docs/FlagListResponse.md
+docs/FlagRequest.md
 docs/FlagResource.md
 docs/FlagResponse.md
 docs/FlagRule.md
@@ -48,6 +49,7 @@ lib/smplkit_flags_client/models/flag_bulk_request.rb
 lib/smplkit_flags_client/models/flag_bulk_response.rb
 lib/smplkit_flags_client/models/flag_environment.rb
 lib/smplkit_flags_client/models/flag_list_response.rb
+lib/smplkit_flags_client/models/flag_request.rb
 lib/smplkit_flags_client/models/flag_resource.rb
 lib/smplkit_flags_client/models/flag_response.rb
 lib/smplkit_flags_client/models/flag_rule.rb
@@ -74,6 +76,7 @@ spec/models/flag_bulk_request_spec.rb
 spec/models/flag_bulk_response_spec.rb
 spec/models/flag_environment_spec.rb
 spec/models/flag_list_response_spec.rb
+spec/models/flag_request_spec.rb
 spec/models/flag_resource_spec.rb
 spec/models/flag_response_spec.rb
 spec/models/flag_rule_spec.rb

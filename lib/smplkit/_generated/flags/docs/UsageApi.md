@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Flags Usage
 
-Return current resource usage counts for the authenticated account.
+Report current-period usage counters for this account.
 
 ### Examples
 

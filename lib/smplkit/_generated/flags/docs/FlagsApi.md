@@ -18,7 +18,7 @@ All URIs are relative to *http://localhost*
 
 Bulk Register Flags
 
-Register flags discovered by an SDK. Creates new flags or updates source observations on existing ones.
+Register flags discovered by an SDK.  Creates a new flag for each unreported key and refreshes the service/environment source observation on each already-known key.
 
 ### Examples
 
@@ -32,7 +32,7 @@ SmplkitGeneratedClient::Flags.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
-flag_bulk_request = SmplkitGeneratedClient::Flags::FlagBulkRequest.new({flags: [SmplkitGeneratedClient::Flags::FlagBulkItem.new({id: 'id_example', type: 'type_example', default: 3.56})]}) # FlagBulkRequest | 
+flag_bulk_request = SmplkitGeneratedClient::Flags::FlagBulkRequest.new({flags: [SmplkitGeneratedClient::Flags::FlagBulkItem.new({id: 'id_example', type: 'BOOLEAN', default: 3.56})]}) # FlagBulkRequest | 
 
 begin
   # Bulk Register Flags
@@ -83,11 +83,11 @@ end
 
 ## create_flag
 
-> <FlagResponse> create_flag(flag_response)
+> <FlagResponse> create_flag(flag_request)
 
 Create Flag
 
-Create a new feature flag. The caller provides the id (key) in the request body.
+Create a new feature flag. The caller provides the id (the flag key) in the request body.
 
 ### Examples
 
@@ -101,11 +101,11 @@ SmplkitGeneratedClient::Flags.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
-flag_response = SmplkitGeneratedClient::Flags::FlagResponse.new({data: SmplkitGeneratedClient::Flags::FlagResource.new({type: 'flag', attributes: SmplkitGeneratedClient::Flags::Flag.new({name: 'name_example', type: 'type_example', default: 3.56})})}) # FlagResponse | 
+flag_request = SmplkitGeneratedClient::Flags::FlagRequest.new({data: SmplkitGeneratedClient::Flags::FlagResource.new({type: 'flag', attributes: SmplkitGeneratedClient::Flags::Flag.new({name: 'name_example', type: 'BOOLEAN', default: 3.56})})}) # FlagRequest | 
 
 begin
   # Create Flag
-  result = api_instance.create_flag(flag_response)
+  result = api_instance.create_flag(flag_request)
   p result
 rescue SmplkitGeneratedClient::Flags::ApiError => e
   puts "Error when calling FlagsApi->create_flag: #{e}"
@@ -116,12 +116,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<FlagResponse>, Integer, Hash)> create_flag_with_http_info(flag_response)
+> <Array(<FlagResponse>, Integer, Hash)> create_flag_with_http_info(flag_request)
 
 ```ruby
 begin
   # Create Flag
-  data, status_code, headers = api_instance.create_flag_with_http_info(flag_response)
+  data, status_code, headers = api_instance.create_flag_with_http_info(flag_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <FlagResponse>
@@ -134,7 +134,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **flag_response** | [**FlagResponse**](FlagResponse.md) |  |  |
+| **flag_request** | [**FlagRequest**](FlagRequest.md) |  |  |
 
 ### Return type
 
@@ -224,7 +224,7 @@ nil (empty response body)
 
 Get Flag
 
-Return a feature flag by its key.
+Retrieve a feature flag by its key.
 
 ### Examples
 
@@ -293,7 +293,7 @@ end
 
 List Flags
 
-List all feature flags for the authenticated account.
+List feature flags for this account.
 
 ### Examples
 
@@ -366,11 +366,11 @@ end
 
 ## update_flag
 
-> <FlagResponse> update_flag(id, flag_response)
+> <FlagResponse> update_flag(id, flag_request)
 
 Update Flag
 
-Replace a feature flag entirely.
+Replace a feature flag entirely. Every writable field is overwritten.
 
 ### Examples
 
@@ -385,11 +385,11 @@ end
 
 api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
 id = 'id_example' # String | 
-flag_response = SmplkitGeneratedClient::Flags::FlagResponse.new({data: SmplkitGeneratedClient::Flags::FlagResource.new({type: 'flag', attributes: SmplkitGeneratedClient::Flags::Flag.new({name: 'name_example', type: 'type_example', default: 3.56})})}) # FlagResponse | 
+flag_request = SmplkitGeneratedClient::Flags::FlagRequest.new({data: SmplkitGeneratedClient::Flags::FlagResource.new({type: 'flag', attributes: SmplkitGeneratedClient::Flags::Flag.new({name: 'name_example', type: 'BOOLEAN', default: 3.56})})}) # FlagRequest | 
 
 begin
   # Update Flag
-  result = api_instance.update_flag(id, flag_response)
+  result = api_instance.update_flag(id, flag_request)
   p result
 rescue SmplkitGeneratedClient::Flags::ApiError => e
   puts "Error when calling FlagsApi->update_flag: #{e}"
@@ -400,12 +400,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<FlagResponse>, Integer, Hash)> update_flag_with_http_info(id, flag_response)
+> <Array(<FlagResponse>, Integer, Hash)> update_flag_with_http_info(id, flag_request)
 
 ```ruby
 begin
   # Update Flag
-  data, status_code, headers = api_instance.update_flag_with_http_info(id, flag_response)
+  data, status_code, headers = api_instance.update_flag_with_http_info(id, flag_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <FlagResponse>
@@ -419,7 +419,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
-| **flag_response** | [**FlagResponse**](FlagResponse.md) |  |  |
+| **flag_request** | [**FlagRequest**](FlagRequest.md) |  |  |
 
 ### Return type
 

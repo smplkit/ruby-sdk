@@ -14,9 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
+  # A targeting rule that overrides the default within an environment.
   class FlagRule < ApiModelBase
+    # Human-readable description of the rule.
     attr_accessor :description
 
+    # JSON Logic expression evaluated against the evaluation context. The rule fires when the expression is truthy.
     attr_accessor :logic
 
     attr_accessor :value

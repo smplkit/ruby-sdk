@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Flags
       @api_client = api_client
     end
     # Bulk Register Flags
-    # Register flags discovered by an SDK. Creates new flags or updates source observations on existing ones.
+    # Register flags discovered by an SDK.  Creates a new flag for each unreported key and refreshes the service/environment source observation on each already-known key.
     # @param flag_bulk_request [FlagBulkRequest] 
     # @param [Hash] opts the optional parameters
     # @return [FlagBulkResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Flags
     end
 
     # Bulk Register Flags
-    # Register flags discovered by an SDK. Creates new flags or updates source observations on existing ones.
+    # Register flags discovered by an SDK.  Creates a new flag for each unreported key and refreshes the service/environment source observation on each already-known key.
     # @param flag_bulk_request [FlagBulkRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(FlagBulkResponse, Integer, Hash)>] FlagBulkResponse data, response status code and response headers
@@ -88,27 +88,27 @@ module SmplkitGeneratedClient::Flags
     end
 
     # Create Flag
-    # Create a new feature flag. The caller provides the id (key) in the request body.
-    # @param flag_response [FlagResponse] 
+    # Create a new feature flag. The caller provides the id (the flag key) in the request body.
+    # @param flag_request [FlagRequest] 
     # @param [Hash] opts the optional parameters
     # @return [FlagResponse]
-    def create_flag(flag_response, opts = {})
-      data, _status_code, _headers = create_flag_with_http_info(flag_response, opts)
+    def create_flag(flag_request, opts = {})
+      data, _status_code, _headers = create_flag_with_http_info(flag_request, opts)
       data
     end
 
     # Create Flag
-    # Create a new feature flag. The caller provides the id (key) in the request body.
-    # @param flag_response [FlagResponse] 
+    # Create a new feature flag. The caller provides the id (the flag key) in the request body.
+    # @param flag_request [FlagRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(FlagResponse, Integer, Hash)>] FlagResponse data, response status code and response headers
-    def create_flag_with_http_info(flag_response, opts = {})
+    def create_flag_with_http_info(flag_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: FlagsApi.create_flag ...'
       end
-      # verify the required parameter 'flag_response' is set
-      if @api_client.config.client_side_validation && flag_response.nil?
-        fail ArgumentError, "Missing the required parameter 'flag_response' when calling FlagsApi.create_flag"
+      # verify the required parameter 'flag_request' is set
+      if @api_client.config.client_side_validation && flag_request.nil?
+        fail ArgumentError, "Missing the required parameter 'flag_request' when calling FlagsApi.create_flag"
       end
       # resource path
       local_var_path = '/api/v1/flags'
@@ -130,7 +130,7 @@ module SmplkitGeneratedClient::Flags
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(flag_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(flag_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'FlagResponse'
@@ -217,7 +217,7 @@ module SmplkitGeneratedClient::Flags
     end
 
     # Get Flag
-    # Return a feature flag by its key.
+    # Retrieve a feature flag by its key.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [FlagResponse]
@@ -227,7 +227,7 @@ module SmplkitGeneratedClient::Flags
     end
 
     # Get Flag
-    # Return a feature flag by its key.
+    # Retrieve a feature flag by its key.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(FlagResponse, Integer, Hash)>] FlagResponse data, response status code and response headers
@@ -280,7 +280,7 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List Flags
-    # List all feature flags for the authenticated account.
+    # List feature flags for this account.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_type 
     # @option opts [Boolean] :filter_managed 
@@ -293,7 +293,7 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List Flags
-    # List all feature flags for the authenticated account.
+    # List feature flags for this account.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_type 
     # @option opts [Boolean] :filter_managed 
@@ -349,23 +349,23 @@ module SmplkitGeneratedClient::Flags
     end
 
     # Update Flag
-    # Replace a feature flag entirely.
+    # Replace a feature flag entirely. Every writable field is overwritten.
     # @param id [String] 
-    # @param flag_response [FlagResponse] 
+    # @param flag_request [FlagRequest] 
     # @param [Hash] opts the optional parameters
     # @return [FlagResponse]
-    def update_flag(id, flag_response, opts = {})
-      data, _status_code, _headers = update_flag_with_http_info(id, flag_response, opts)
+    def update_flag(id, flag_request, opts = {})
+      data, _status_code, _headers = update_flag_with_http_info(id, flag_request, opts)
       data
     end
 
     # Update Flag
-    # Replace a feature flag entirely.
+    # Replace a feature flag entirely. Every writable field is overwritten.
     # @param id [String] 
-    # @param flag_response [FlagResponse] 
+    # @param flag_request [FlagRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(FlagResponse, Integer, Hash)>] FlagResponse data, response status code and response headers
-    def update_flag_with_http_info(id, flag_response, opts = {})
+    def update_flag_with_http_info(id, flag_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: FlagsApi.update_flag ...'
       end
@@ -373,9 +373,9 @@ module SmplkitGeneratedClient::Flags
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling FlagsApi.update_flag"
       end
-      # verify the required parameter 'flag_response' is set
-      if @api_client.config.client_side_validation && flag_response.nil?
-        fail ArgumentError, "Missing the required parameter 'flag_response' when calling FlagsApi.update_flag"
+      # verify the required parameter 'flag_request' is set
+      if @api_client.config.client_side_validation && flag_request.nil?
+        fail ArgumentError, "Missing the required parameter 'flag_request' when calling FlagsApi.update_flag"
       end
       # resource path
       local_var_path = '/api/v1/flags/{id}'.sub('{id}', CGI.escape(id.to_s))
@@ -397,7 +397,7 @@ module SmplkitGeneratedClient::Flags
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(flag_response)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(flag_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'FlagResponse'
