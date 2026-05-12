@@ -103,7 +103,6 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**retry_failed_forwarder_deliveries**](docs/ForwardersApi.md#retry_failed_forwarder_deliveries) | **POST** /api/v1/forwarders/{forwarder_id}/actions/retry_failed_deliveries | Retry Failed Forwarder Deliveries
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**retry_forwarder_delivery**](docs/ForwardersApi.md#retry_forwarder_delivery) | **POST** /api/v1/forwarders/{forwarder_id}/deliveries/{delivery_id}/actions/retry | Retry Forwarder Delivery
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**update_forwarder**](docs/ForwardersApi.md#update_forwarder) | **PUT** /api/v1/forwarders/{forwarder_id} | Update Forwarder
-*SmplkitGeneratedClient::Audit::FunctionsApi* | [**execute_wipe**](docs/FunctionsApi.md#execute_wipe) | **POST** /api/v1/functions/wipe/actions/execute | Execute Wipe
 *SmplkitGeneratedClient::Audit::ResourceTypesApi* | [**list_resource_types**](docs/ResourceTypesApi.md#list_resource_types) | **GET** /api/v1/resource_types | List Resource Types
 *SmplkitGeneratedClient::Audit::UsageApi* | [**list_usage**](docs/UsageApi.md#list_usage) | **GET** /api/v1/usage | List Usage
 
@@ -147,8 +146,6 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::UsageAttributes](docs/UsageAttributes.md)
  - [SmplkitGeneratedClient::Audit::UsageResource](docs/UsageResource.md)
  - [SmplkitGeneratedClient::Audit::UsageResponse](docs/UsageResponse.md)
- - [SmplkitGeneratedClient::Audit::WipeResponse](docs/WipeResponse.md)
- - [SmplkitGeneratedClient::Audit::WipeTablesSummary](docs/WipeTablesSummary.md)
 
 
 ## Documentation for Authorization

@@ -55,14 +55,11 @@ require 'smplkit_audit_client/models/test_forwarder_response'
 require 'smplkit_audit_client/models/usage_attributes'
 require 'smplkit_audit_client/models/usage_resource'
 require 'smplkit_audit_client/models/usage_response'
-require 'smplkit_audit_client/models/wipe_response'
-require 'smplkit_audit_client/models/wipe_tables_summary'
 
 # APIs
 require 'smplkit_audit_client/api/actions_api'
 require 'smplkit_audit_client/api/events_api'
 require 'smplkit_audit_client/api/forwarders_api'
-require 'smplkit_audit_client/api/functions_api'
 require 'smplkit_audit_client/api/resource_types_api'
 require 'smplkit_audit_client/api/usage_api'
 
