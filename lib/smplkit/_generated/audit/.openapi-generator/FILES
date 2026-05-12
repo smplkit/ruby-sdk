@@ -35,7 +35,6 @@ docs/ForwarderResource.md
 docs/ForwarderResponse.md
 docs/ForwarderType.md
 docs/ForwardersApi.md
-docs/FunctionsApi.md
 docs/HttpHeader.md
 docs/ResourceTypeAttributes.md
 docs/ResourceTypeListLinks.md
@@ -50,14 +49,11 @@ docs/UsageApi.md
 docs/UsageAttributes.md
 docs/UsageResource.md
 docs/UsageResponse.md
-docs/WipeResponse.md
-docs/WipeTablesSummary.md
 git_push.sh
 lib/smplkit_audit_client.rb
 lib/smplkit_audit_client/api/actions_api.rb
 lib/smplkit_audit_client/api/events_api.rb
 lib/smplkit_audit_client/api/forwarders_api.rb
-lib/smplkit_audit_client/api/functions_api.rb
 lib/smplkit_audit_client/api/resource_types_api.rb
 lib/smplkit_audit_client/api/usage_api.rb
 lib/smplkit_audit_client/api_client.rb
@@ -101,14 +97,11 @@ lib/smplkit_audit_client/models/test_forwarder_response.rb
 lib/smplkit_audit_client/models/usage_attributes.rb
 lib/smplkit_audit_client/models/usage_resource.rb
 lib/smplkit_audit_client/models/usage_response.rb
-lib/smplkit_audit_client/models/wipe_response.rb
-lib/smplkit_audit_client/models/wipe_tables_summary.rb
 lib/smplkit_audit_client/version.rb
 smplkit_audit_client.gemspec
 spec/api/actions_api_spec.rb
 spec/api/events_api_spec.rb
 spec/api/forwarders_api_spec.rb
-spec/api/functions_api_spec.rb
 spec/api/resource_types_api_spec.rb
 spec/api/usage_api_spec.rb
 spec/models/action_attributes_spec.rb
@@ -148,6 +141,4 @@ spec/models/test_forwarder_response_spec.rb
 spec/models/usage_attributes_spec.rb
 spec/models/usage_resource_spec.rb
 spec/models/usage_response_spec.rb
-spec/models/wipe_response_spec.rb
-spec/models/wipe_tables_summary_spec.rb
 spec/spec_helper.rb
