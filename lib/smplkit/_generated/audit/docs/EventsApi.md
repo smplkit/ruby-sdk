@@ -84,7 +84,7 @@ end
 
 List Events
 
-List audit events for this account.  Default sort is newest first. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,*)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id`.
+List audit events for this account.  Default sort is newest first. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id` or `description`.  To bound the rows scanned per request, the endpoint requires either:  - `filter[resource_id]` (which must be accompanied by   `filter[resource_type]`), or - `filter[occurred_at]` with a span no greater than 30 days.  `page[size]` defaults to 50 and must not exceed 1000.
 
 ### Examples
 
@@ -105,7 +105,7 @@ opts = {
   filter_action: 'filter_action_example', # String | 
   filter_resource_type: 'filter_resource_type_example', # String | 
   filter_resource_id: 'filter_resource_id_example', # String | 
-  filter_search: 'filter_search_example', # String | Case-insensitive substring match against `resource_id`. Use `filter[resource_id]` for an exact match.
+  filter_search: 'filter_search_example', # String | Case-insensitive substring match against `resource_id` or `description`. Use `filter[resource_id]` for an exact match on `resource_id`.
   page_size: 56, # Integer | 
   page_after: 'page_after_example' # String | 
 }
@@ -147,7 +147,7 @@ end
 | **filter_action** | **String** |  | [optional] |
 | **filter_resource_type** | **String** |  | [optional] |
 | **filter_resource_id** | **String** |  | [optional] |
-| **filter_search** | **String** | Case-insensitive substring match against &#x60;resource_id&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match. | [optional] |
+| **filter_search** | **String** | Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;. | [optional] |
 | **page_size** | **Integer** |  | [optional] |
 | **page_after** | **String** |  | [optional] |
 

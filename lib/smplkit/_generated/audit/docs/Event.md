@@ -7,6 +7,7 @@
 | **action** | **String** | Slug for what happened, e.g. &#x60;user.created&#x60;. Lowercase, dot-separated. |  |
 | **resource_type** | **String** | Slug for the kind of resource the event is about, e.g. &#x60;user&#x60;. Lowercase, dot-separated. |  |
 | **resource_id** | **String** | Identifier of the specific resource the event is about. |  |
+| **description** | **String** | Free-text description of the event. Included alongside &#x60;resource_id&#x60; in the &#x60;filter[search]&#x60; substring target. | [optional] |
 | **occurred_at** | **Time** | When the event actually happened. Defaults to the server receipt time (&#x60;created_at&#x60;). | [optional] |
 | **data** | **Hash&lt;String, Object&gt;** | Free-form payload attached to the event. Use it for resource snapshots (by convention under &#x60;data.snapshot&#x60;), request identifiers, or any other context the event needs to carry. | [optional] |
 | **do_not_forward** | **Boolean** | When &#x60;true&#x60;, the event is recorded but not delivered to any forwarder. A delivery log entry with status &#x60;SKIPPED_DO_NOT_FORWARD&#x60; is written for each enabled forwarder so the skip is visible in the delivery log. | [optional][default to false] |
@@ -25,6 +26,7 @@ instance = SmplkitGeneratedClient::Audit::Event.new(
   action: null,
   resource_type: null,
   resource_id: null,
+  description: null,
   occurred_at: null,
   data: null,
   do_not_forward: null,

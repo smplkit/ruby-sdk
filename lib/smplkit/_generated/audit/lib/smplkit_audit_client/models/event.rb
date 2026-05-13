@@ -25,6 +25,9 @@ module SmplkitGeneratedClient::Audit
     # Identifier of the specific resource the event is about.
     attr_accessor :resource_id
 
+    # Free-text description of the event. Included alongside `resource_id` in the `filter[search]` substring target.
+    attr_accessor :description
+
     # When the event actually happened. Defaults to the server receipt time (`created_at`).
     attr_accessor :occurred_at
 
@@ -55,6 +58,7 @@ module SmplkitGeneratedClient::Audit
         :'action' => :'action',
         :'resource_type' => :'resource_type',
         :'resource_id' => :'resource_id',
+        :'description' => :'description',
         :'occurred_at' => :'occurred_at',
         :'data' => :'data',
         :'do_not_forward' => :'do_not_forward',
@@ -82,6 +86,7 @@ module SmplkitGeneratedClient::Audit
         :'action' => :'String',
         :'resource_type' => :'String',
         :'resource_id' => :'String',
+        :'description' => :'String',
         :'occurred_at' => :'Time',
         :'data' => :'Hash<String, Object>',
         :'do_not_forward' => :'Boolean',
@@ -96,6 +101,7 @@ module SmplkitGeneratedClient::Audit
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'description',
         :'occurred_at',
         :'created_at',
         :'actor_type',
@@ -137,6 +143,10 @@ module SmplkitGeneratedClient::Audit
         self.resource_id = attributes[:'resource_id']
       else
         self.resource_id = nil
+      end
+
+      if attributes.key?(:'description')
+        self.description = attributes[:'description']
       end
 
       if attributes.key?(:'occurred_at')
@@ -271,6 +281,7 @@ module SmplkitGeneratedClient::Audit
           action == o.action &&
           resource_type == o.resource_type &&
           resource_id == o.resource_id &&
+          description == o.description &&
           occurred_at == o.occurred_at &&
           data == o.data &&
           do_not_forward == o.do_not_forward &&
@@ -290,7 +301,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [action, resource_type, resource_id, occurred_at, data, do_not_forward, created_at, actor_type, actor_id, actor_label, idempotency_key].hash
+      [action, resource_type, resource_id, description, occurred_at, data, do_not_forward, created_at, actor_type, actor_id, actor_label, idempotency_key].hash
     end
 
     # Builds the object from hash

@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for this account.  Default sort is newest first. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,*)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id`.
+    # List audit events for this account.  Default sort is newest first. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id` or `description`.  To bound the rows scanned per request, the endpoint requires either:  - `filter[resource_id]` (which must be accompanied by   `filter[resource_type]`), or - `filter[occurred_at]` with a span no greater than 30 days.  `page[size]` defaults to 50 and must not exceed 1000.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -91,7 +91,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_action 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
-    # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match.
+    # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
     # @return [EventListResponse]
@@ -101,7 +101,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for this account.  Default sort is newest first. Filters are exact-match except &#x60;filter[occurred_at]&#x60;, which uses interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;), and &#x60;filter[search]&#x60;, which is a case-insensitive substring match against &#x60;resource_id&#x60;.
+    # List audit events for this account.  Default sort is newest first. Filters are exact-match except &#x60;filter[occurred_at]&#x60;, which uses interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)&#x60;), and &#x60;filter[search]&#x60;, which is a case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;.  To bound the rows scanned per request, the endpoint requires either:  - &#x60;filter[resource_id]&#x60; (which must be accompanied by   &#x60;filter[resource_type]&#x60;), or - &#x60;filter[occurred_at]&#x60; with a span no greater than 30 days.  &#x60;page[size]&#x60; defaults to 50 and must not exceed 1000.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -109,7 +109,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_action 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
-    # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match.
+    # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
     # @return [Array<(EventListResponse, Integer, Hash)>] EventListResponse data, response status code and response headers
