@@ -20,8 +20,9 @@ module SmplkitGeneratedClient::App
       @api_client = api_client
     end
     # List Plans
-    # Return all plan tier definitions as JSON:API resources.
+    # Return all plan tier definitions as JSON:API resources.  Default sort is `sort_order` ascending — the natural ladder defined in `plans.yaml`. Pass `sort=display_name` for an alphabetical view.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;sort_order&#x60;. Allowed values: &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;id&#x60;, &#x60;-id&#x60;, &#x60;sort_order&#x60;, &#x60;-sort_order&#x60;. (default to 'sort_order')
     # @return [PlanListResponse]
     def list_plans(opts = {})
       data, _status_code, _headers = list_plans_with_http_info(opts)
@@ -29,18 +30,24 @@ module SmplkitGeneratedClient::App
     end
 
     # List Plans
-    # Return all plan tier definitions as JSON:API resources.
+    # Return all plan tier definitions as JSON:API resources.  Default sort is &#x60;sort_order&#x60; ascending — the natural ladder defined in &#x60;plans.yaml&#x60;. Pass &#x60;sort&#x3D;display_name&#x60; for an alphabetical view.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;sort_order&#x60;. Allowed values: &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;id&#x60;, &#x60;-id&#x60;, &#x60;sort_order&#x60;, &#x60;-sort_order&#x60;. (default to 'sort_order')
     # @return [Array<(PlanListResponse, Integer, Hash)>] PlanListResponse data, response status code and response headers
     def list_plans_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: PlansApi.list_plans ...'
+      end
+      allowable_values = ["display_name", "-display_name", "id", "-id", "sort_order", "-sort_order"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/plans'
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

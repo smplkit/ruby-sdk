@@ -130,8 +130,9 @@ describe 'BillingApi' do
 
   # unit tests for list_invoices
   # List Invoices
-  # Return invoice history for the account from Stripe.
+  # Return invoice history for the account from Stripe.  Default sort is &#x60;-created_at&#x60; (newest first).
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;, &#x60;total&#x60;, &#x60;-total&#x60;.
   # @return [InvoiceListResponse]
   describe 'list_invoices test' do
     it 'should work' do
@@ -143,6 +144,7 @@ describe 'BillingApi' do
   # List Payment Methods
   # List all payment methods for the account. Default is returned first, then newest first.
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;exp_year&#x60;, &#x60;-exp_year&#x60;, &#x60;is_default&#x60;, &#x60;-is_default&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
   # @return [PaymentMethodListResponse]
   describe 'list_payment_methods test' do
     it 'should work' do
@@ -152,8 +154,9 @@ describe 'BillingApi' do
 
   # unit tests for list_subscriptions
   # List Subscriptions
-  # Return subscription rows for the authenticated account.
+  # Return subscription rows for the authenticated account.  Default sort is &#x60;product&#x60; ascending.
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;product&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;plan&#x60;, &#x60;-plan&#x60;, &#x60;product&#x60;, &#x60;-product&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;.
   # @return [SubscriptionListResponse]
   describe 'list_subscriptions test' do
     it 'should work' do

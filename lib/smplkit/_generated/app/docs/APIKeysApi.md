@@ -239,7 +239,8 @@ end
 
 api_instance = SmplkitGeneratedClient::App::APIKeysApi.new
 opts = {
-  filter_status: 'filter_status_example' # String | 
+  filter_status: 'filter_status_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `name`. Allowed values: `created_at`, `-created_at`, `expires_at`, `-expires_at`, `last_used_at`, `-last_used_at`, `name`, `-name`, `status`, `-status`.
 }
 
 begin
@@ -274,6 +275,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **filter_status** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;expires_at&#x60;, &#x60;-expires_at&#x60;, &#x60;last_used_at&#x60;, &#x60;-last_used_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. | [optional][default to &#39;name&#39;] |
 
 ### Return type
 

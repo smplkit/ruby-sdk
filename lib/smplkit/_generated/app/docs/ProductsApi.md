@@ -9,11 +9,11 @@ All URIs are relative to *http://localhost*
 
 ## list_products
 
-> <ProductListResponse> list_products
+> <ProductListResponse> list_products(opts)
 
 List Products
 
-Return all flag-enabled products with their plans, limits, and marketing content.
+Return all flag-enabled products with their plans, limits, and marketing content.  Default sort is `display_name` ascending.
 
 ### Examples
 
@@ -22,10 +22,13 @@ require 'time'
 require 'smplkit_app_client'
 
 api_instance = SmplkitGeneratedClient::App::ProductsApi.new
+opts = {
+  sort: 'display_name' # String | Field to sort by. Prefix with `-` for descending order. Default: `display_name`. Allowed values: `display_name`, `-display_name`, `id`, `-id`.
+}
 
 begin
   # List Products
-  result = api_instance.list_products
+  result = api_instance.list_products(opts)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling ProductsApi->list_products: #{e}"
@@ -36,12 +39,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ProductListResponse>, Integer, Hash)> list_products_with_http_info
+> <Array(<ProductListResponse>, Integer, Hash)> list_products_with_http_info(opts)
 
 ```ruby
 begin
   # List Products
-  data, status_code, headers = api_instance.list_products_with_http_info
+  data, status_code, headers = api_instance.list_products_with_http_info(opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ProductListResponse>
@@ -52,7 +55,9 @@ end
 
 ### Parameters
 
-This endpoint does not need any parameter.
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;display_name&#x60;. Allowed values: &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;id&#x60;, &#x60;-id&#x60;. | [optional][default to &#39;display_name&#39;] |
 
 ### Return type
 

@@ -80,11 +80,11 @@ nil (empty response body)
 
 ## list_metric_names
 
-> <MetricNamesResponse> list_metric_names
+> <MetricNamesResponse> list_metric_names(opts)
 
 List Metric Names
 
-Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.
+Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.  Default sort is `name` ascending.
 
 ### Examples
 
@@ -98,10 +98,13 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::MetricsApi.new
+opts = {
+  sort: 'name' # String | Field to sort by. Prefix with `-` for descending order. Default: `name`. Allowed values: `name`, `-name`.
+}
 
 begin
   # List Metric Names
-  result = api_instance.list_metric_names
+  result = api_instance.list_metric_names(opts)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling MetricsApi->list_metric_names: #{e}"
@@ -112,12 +115,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<MetricNamesResponse>, Integer, Hash)> list_metric_names_with_http_info
+> <Array(<MetricNamesResponse>, Integer, Hash)> list_metric_names_with_http_info(opts)
 
 ```ruby
 begin
   # List Metric Names
-  data, status_code, headers = api_instance.list_metric_names_with_http_info
+  data, status_code, headers = api_instance.list_metric_names_with_http_info(opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <MetricNamesResponse>
@@ -128,7 +131,9 @@ end
 
 ### Parameters
 
-This endpoint does not need any parameter.
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;name&#x60;, &#x60;-name&#x60;. | [optional][default to &#39;name&#39;] |
 
 ### Return type
 
@@ -167,7 +172,8 @@ api_instance = SmplkitGeneratedClient::App::MetricsApi.new
 filter_name = 'filter_name_example' # String | 
 filter_rollup = 'filter_rollup_example' # String | 
 opts = {
-  filter_recorded_at: 'filter_recorded_at_example' # String | 
+  filter_recorded_at: 'filter_recorded_at_example', # String | 
+  sort: 'bucket' # String | Field to sort by. Prefix with `-` for descending order. Default: `bucket`. Allowed values: `bucket`, `-bucket`.
 }
 
 begin
@@ -204,6 +210,7 @@ end
 | **filter_name** | **String** |  |  |
 | **filter_rollup** | **String** |  |  |
 | **filter_recorded_at** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;bucket&#x60;. Allowed values: &#x60;bucket&#x60;, &#x60;-bucket&#x60;. | [optional][default to &#39;bucket&#39;] |
 
 ### Return type
 
@@ -241,7 +248,8 @@ end
 api_instance = SmplkitGeneratedClient::App::MetricsApi.new
 filter_name = 'filter_name_example' # String | 
 opts = {
-  filter_recorded_at: 'filter_recorded_at_example' # String | 
+  filter_recorded_at: 'filter_recorded_at_example', # String | 
+  sort: 'recorded_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-recorded_at`. Allowed values: `recorded_at`, `-recorded_at`, `value`, `-value`.
 }
 
 begin
@@ -277,6 +285,7 @@ end
 | ---- | ---- | ----------- | ----- |
 | **filter_name** | **String** |  |  |
 | **filter_recorded_at** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-recorded_at&#x60;. Allowed values: &#x60;recorded_at&#x60;, &#x60;-recorded_at&#x60;, &#x60;value&#x60;, &#x60;-value&#x60;. | [optional][default to &#39;-recorded_at&#39;] |
 
 ### Return type
 

@@ -20,8 +20,9 @@ module SmplkitGeneratedClient::App
       @api_client = api_client
     end
     # List Products
-    # Return all flag-enabled products with their plans, limits, and marketing content.
+    # Return all flag-enabled products with their plans, limits, and marketing content.  Default sort is `display_name` ascending.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;display_name&#x60;. Allowed values: &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;id&#x60;, &#x60;-id&#x60;. (default to 'display_name')
     # @return [ProductListResponse]
     def list_products(opts = {})
       data, _status_code, _headers = list_products_with_http_info(opts)
@@ -29,18 +30,24 @@ module SmplkitGeneratedClient::App
     end
 
     # List Products
-    # Return all flag-enabled products with their plans, limits, and marketing content.
+    # Return all flag-enabled products with their plans, limits, and marketing content.  Default sort is &#x60;display_name&#x60; ascending.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;display_name&#x60;. Allowed values: &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;id&#x60;, &#x60;-id&#x60;. (default to 'display_name')
     # @return [Array<(ProductListResponse, Integer, Hash)>] ProductListResponse data, response status code and response headers
     def list_products_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ProductsApi.list_products ...'
+      end
+      allowable_values = ["display_name", "-display_name", "id", "-id"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/products'
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

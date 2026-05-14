@@ -34,8 +34,9 @@ describe 'PlansApi' do
 
   # unit tests for list_plans
   # List Plans
-  # Return all plan tier definitions as JSON:API resources.
+  # Return all plan tier definitions as JSON:API resources.  Default sort is &#x60;sort_order&#x60; ascending — the natural ladder defined in &#x60;plans.yaml&#x60;. Pass &#x60;sort&#x3D;display_name&#x60; for an alphabetical view.
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;sort_order&#x60;. Allowed values: &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;id&#x60;, &#x60;-id&#x60;, &#x60;sort_order&#x60;, &#x60;-sort_order&#x60;.
   # @return [PlanListResponse]
   describe 'list_plans test' do
     it 'should work' do

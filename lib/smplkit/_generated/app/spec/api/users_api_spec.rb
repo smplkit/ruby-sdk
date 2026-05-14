@@ -75,6 +75,7 @@ describe 'UsersApi' do
   # @option opts [String] :filter_search Case-insensitive substring match against display_name and email. If the value is a valid UUID, also matches user id exactly.
   # @option opts [Integer] :page_number 1-based page number
   # @option opts [Integer] :page_size Items per page
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;email&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;email&#x60;, &#x60;-email&#x60;.
   # @return [UserListResponse]
   describe 'list_users test' do
     it 'should work' do

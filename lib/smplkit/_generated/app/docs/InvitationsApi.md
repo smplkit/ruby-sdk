@@ -171,7 +171,8 @@ end
 api_instance = SmplkitGeneratedClient::App::InvitationsApi.new
 opts = {
   filter_status: 'filter_status_example', # String | 
-  filter_token: 'filter_token_example' # String | 
+  filter_token: 'filter_token_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-created_at`. Allowed values: `created_at`, `-created_at`, `email`, `-email`, `status`, `-status`.
 }
 
 begin
@@ -207,6 +208,7 @@ end
 | ---- | ---- | ----------- | ----- |
 | **filter_status** | **String** |  | [optional] |
 | **filter_token** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;email&#x60;, &#x60;-email&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. | [optional][default to &#39;-created_at&#39;] |
 
 ### Return type
 
