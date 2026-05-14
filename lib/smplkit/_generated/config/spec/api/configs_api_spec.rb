@@ -70,9 +70,10 @@ describe 'ConfigsApi' do
 
   # unit tests for list_configs
   # List Configs
-  # List configs for this account.  Pass &#x60;filter[parent]&#x3D;&lt;parent_key&gt;&#x60; to return only the direct children of a specific config.
+  # List configs for this account.  Default sort is &#x60;key&#x60; ascending. Pass &#x60;filter[parent]&#x3D;&lt;parent_key&gt;&#x60; to return only the direct children of a specific config.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_parent 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
   # @return [ConfigListResponse]
   describe 'list_configs test' do
     it 'should work' do

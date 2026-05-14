@@ -223,7 +223,7 @@ end
 
 List Configs
 
-List configs for this account.  Pass `filter[parent]=<parent_key>` to return only the direct children of a specific config.
+List configs for this account.  Default sort is `key` ascending. Pass `filter[parent]=<parent_key>` to return only the direct children of a specific config.
 
 ### Examples
 
@@ -238,7 +238,8 @@ end
 
 api_instance = SmplkitGeneratedClient::Config::ConfigsApi.new
 opts = {
-  filter_parent: 'filter_parent_example' # String | 
+  filter_parent: 'filter_parent_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `created_at`, `-created_at`, `key`, `-key`, `name`, `-name`, `updated_at`, `-updated_at`.
 }
 
 begin
@@ -273,6 +274,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **filter_parent** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;key&#39;] |
 
 ### Return type
 
