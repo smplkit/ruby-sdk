@@ -160,6 +160,7 @@ module SmplkitGeneratedClient::App
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_status 
     # @option opts [String] :filter_token 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;email&#x60;, &#x60;-email&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. (default to '-created_at')
     # @return [InvitationListResponse]
     def list_invitations(opts = {})
       data, _status_code, _headers = list_invitations_with_http_info(opts)
@@ -171,10 +172,15 @@ module SmplkitGeneratedClient::App
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_status 
     # @option opts [String] :filter_token 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;email&#x60;, &#x60;-email&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. (default to '-created_at')
     # @return [Array<(InvitationListResponse, Integer, Hash)>] InvitationListResponse data, response status code and response headers
     def list_invitations_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: InvitationsApi.list_invitations ...'
+      end
+      allowable_values = ["created_at", "-created_at", "email", "-email", "status", "-status"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/invitations'
@@ -183,6 +189,7 @@ module SmplkitGeneratedClient::App
       query_params = opts[:query_params] || {}
       query_params[:'filter[status]'] = opts[:'filter_status'] if !opts[:'filter_status'].nil?
       query_params[:'filter[token]'] = opts[:'filter_token'] if !opts[:'filter_token'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

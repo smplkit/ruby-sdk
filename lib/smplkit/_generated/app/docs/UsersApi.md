@@ -241,7 +241,8 @@ opts = {
   filter_email: 'filter_email_example', # String | 
   filter_search: 'filter_search_example', # String | Case-insensitive substring match against display_name and email. If the value is a valid UUID, also matches user id exactly.
   page_number: 56, # Integer | 1-based page number
-  page_size: 56 # Integer | Items per page
+  page_size: 56, # Integer | Items per page
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `email`. Allowed values: `created_at`, `-created_at`, `display_name`, `-display_name`, `email`, `-email`.
 }
 
 begin
@@ -280,6 +281,7 @@ end
 | **filter_search** | **String** | Case-insensitive substring match against display_name and email. If the value is a valid UUID, also matches user id exactly. | [optional] |
 | **page_number** | **Integer** | 1-based page number | [optional][default to 1] |
 | **page_size** | **Integer** | Items per page | [optional][default to 50] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;email&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;email&#x60;, &#x60;-email&#x60;. | [optional][default to &#39;email&#39;] |
 
 ### Return type
 

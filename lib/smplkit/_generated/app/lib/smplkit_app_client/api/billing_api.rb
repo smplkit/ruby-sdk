@@ -539,8 +539,9 @@ module SmplkitGeneratedClient::App
     end
 
     # List Invoices
-    # Return invoice history for the account from Stripe.
+    # Return invoice history for the account from Stripe.  Default sort is `-created_at` (newest first).
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;, &#x60;total&#x60;, &#x60;-total&#x60;. (default to '-created_at')
     # @return [InvoiceListResponse]
     def list_invoices(opts = {})
       data, _status_code, _headers = list_invoices_with_http_info(opts)
@@ -548,18 +549,24 @@ module SmplkitGeneratedClient::App
     end
 
     # List Invoices
-    # Return invoice history for the account from Stripe.
+    # Return invoice history for the account from Stripe.  Default sort is &#x60;-created_at&#x60; (newest first).
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;, &#x60;total&#x60;, &#x60;-total&#x60;. (default to '-created_at')
     # @return [Array<(InvoiceListResponse, Integer, Hash)>] InvoiceListResponse data, response status code and response headers
     def list_invoices_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: BillingApi.list_invoices ...'
+      end
+      allowable_values = ["created_at", "-created_at", "status", "-status", "total", "-total"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/invoices'
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
@@ -598,6 +605,7 @@ module SmplkitGeneratedClient::App
     # List Payment Methods
     # List all payment methods for the account. Default is returned first, then newest first.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;exp_year&#x60;, &#x60;-exp_year&#x60;, &#x60;is_default&#x60;, &#x60;-is_default&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to '-created_at')
     # @return [PaymentMethodListResponse]
     def list_payment_methods(opts = {})
       data, _status_code, _headers = list_payment_methods_with_http_info(opts)
@@ -607,16 +615,22 @@ module SmplkitGeneratedClient::App
     # List Payment Methods
     # List all payment methods for the account. Default is returned first, then newest first.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;exp_year&#x60;, &#x60;-exp_year&#x60;, &#x60;is_default&#x60;, &#x60;-is_default&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to '-created_at')
     # @return [Array<(PaymentMethodListResponse, Integer, Hash)>] PaymentMethodListResponse data, response status code and response headers
     def list_payment_methods_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: BillingApi.list_payment_methods ...'
+      end
+      allowable_values = ["created_at", "-created_at", "exp_year", "-exp_year", "is_default", "-is_default", "updated_at", "-updated_at"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/payment_methods'
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
@@ -653,8 +667,9 @@ module SmplkitGeneratedClient::App
     end
 
     # List Subscriptions
-    # Return subscription rows for the authenticated account.
+    # Return subscription rows for the authenticated account.  Default sort is `product` ascending.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;product&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;plan&#x60;, &#x60;-plan&#x60;, &#x60;product&#x60;, &#x60;-product&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. (default to 'product')
     # @return [SubscriptionListResponse]
     def list_subscriptions(opts = {})
       data, _status_code, _headers = list_subscriptions_with_http_info(opts)
@@ -662,18 +677,24 @@ module SmplkitGeneratedClient::App
     end
 
     # List Subscriptions
-    # Return subscription rows for the authenticated account.
+    # Return subscription rows for the authenticated account.  Default sort is &#x60;product&#x60; ascending.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;product&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;plan&#x60;, &#x60;-plan&#x60;, &#x60;product&#x60;, &#x60;-product&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. (default to 'product')
     # @return [Array<(SubscriptionListResponse, Integer, Hash)>] SubscriptionListResponse data, response status code and response headers
     def list_subscriptions_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: BillingApi.list_subscriptions ...'
+      end
+      allowable_values = ["created_at", "-created_at", "plan", "-plan", "product", "-product", "status", "-status"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/subscriptions'
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

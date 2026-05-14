@@ -73,6 +73,7 @@ describe 'ContextsApi' do
   # List all context instances for the authenticated account.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_context_type 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
   # @return [ContextListResponse]
   describe 'list_contexts test' do
     it 'should work' do

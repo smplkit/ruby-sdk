@@ -219,7 +219,7 @@ end
 
 ## list_services
 
-> <ServiceListResponse> list_services
+> <ServiceListResponse> list_services(opts)
 
 List Services
 
@@ -237,10 +237,13 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::ServicesApi.new
+opts = {
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `name`. Allowed values: `created_at`, `-created_at`, `key`, `-key`, `name`, `-name`, `updated_at`, `-updated_at`.
+}
 
 begin
   # List Services
-  result = api_instance.list_services
+  result = api_instance.list_services(opts)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling ServicesApi->list_services: #{e}"
@@ -251,12 +254,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ServiceListResponse>, Integer, Hash)> list_services_with_http_info
+> <Array(<ServiceListResponse>, Integer, Hash)> list_services_with_http_info(opts)
 
 ```ruby
 begin
   # List Services
-  data, status_code, headers = api_instance.list_services_with_http_info
+  data, status_code, headers = api_instance.list_services_with_http_info(opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ServiceListResponse>
@@ -267,7 +270,9 @@ end
 
 ### Parameters
 
-This endpoint does not need any parameter.
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;name&#39;] |
 
 ### Return type
 

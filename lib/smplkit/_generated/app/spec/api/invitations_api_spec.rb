@@ -62,6 +62,7 @@ describe 'InvitationsApi' do
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_status 
   # @option opts [String] :filter_token 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;email&#x60;, &#x60;-email&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;.
   # @return [InvitationListResponse]
   describe 'list_invitations test' do
     it 'should work' do

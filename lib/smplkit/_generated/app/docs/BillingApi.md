@@ -574,11 +574,11 @@ end
 
 ## list_invoices
 
-> <InvoiceListResponse> list_invoices
+> <InvoiceListResponse> list_invoices(opts)
 
 List Invoices
 
-Return invoice history for the account from Stripe.
+Return invoice history for the account from Stripe.  Default sort is `-created_at` (newest first).
 
 ### Examples
 
@@ -592,10 +592,13 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::BillingApi.new
+opts = {
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-created_at`. Allowed values: `created_at`, `-created_at`, `status`, `-status`, `total`, `-total`.
+}
 
 begin
   # List Invoices
-  result = api_instance.list_invoices
+  result = api_instance.list_invoices(opts)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling BillingApi->list_invoices: #{e}"
@@ -606,12 +609,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<InvoiceListResponse>, Integer, Hash)> list_invoices_with_http_info
+> <Array(<InvoiceListResponse>, Integer, Hash)> list_invoices_with_http_info(opts)
 
 ```ruby
 begin
   # List Invoices
-  data, status_code, headers = api_instance.list_invoices_with_http_info
+  data, status_code, headers = api_instance.list_invoices_with_http_info(opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <InvoiceListResponse>
@@ -622,7 +625,9 @@ end
 
 ### Parameters
 
-This endpoint does not need any parameter.
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;, &#x60;total&#x60;, &#x60;-total&#x60;. | [optional][default to &#39;-created_at&#39;] |
 
 ### Return type
 
@@ -640,7 +645,7 @@ This endpoint does not need any parameter.
 
 ## list_payment_methods
 
-> <PaymentMethodListResponse> list_payment_methods
+> <PaymentMethodListResponse> list_payment_methods(opts)
 
 List Payment Methods
 
@@ -658,10 +663,13 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::BillingApi.new
+opts = {
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-created_at`. Allowed values: `created_at`, `-created_at`, `exp_year`, `-exp_year`, `is_default`, `-is_default`, `updated_at`, `-updated_at`.
+}
 
 begin
   # List Payment Methods
-  result = api_instance.list_payment_methods
+  result = api_instance.list_payment_methods(opts)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling BillingApi->list_payment_methods: #{e}"
@@ -672,12 +680,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<PaymentMethodListResponse>, Integer, Hash)> list_payment_methods_with_http_info
+> <Array(<PaymentMethodListResponse>, Integer, Hash)> list_payment_methods_with_http_info(opts)
 
 ```ruby
 begin
   # List Payment Methods
-  data, status_code, headers = api_instance.list_payment_methods_with_http_info
+  data, status_code, headers = api_instance.list_payment_methods_with_http_info(opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <PaymentMethodListResponse>
@@ -688,7 +696,9 @@ end
 
 ### Parameters
 
-This endpoint does not need any parameter.
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;exp_year&#x60;, &#x60;-exp_year&#x60;, &#x60;is_default&#x60;, &#x60;-is_default&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;-created_at&#39;] |
 
 ### Return type
 
@@ -706,11 +716,11 @@ This endpoint does not need any parameter.
 
 ## list_subscriptions
 
-> <SubscriptionListResponse> list_subscriptions
+> <SubscriptionListResponse> list_subscriptions(opts)
 
 List Subscriptions
 
-Return subscription rows for the authenticated account.
+Return subscription rows for the authenticated account.  Default sort is `product` ascending.
 
 ### Examples
 
@@ -724,10 +734,13 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::BillingApi.new
+opts = {
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `product`. Allowed values: `created_at`, `-created_at`, `plan`, `-plan`, `product`, `-product`, `status`, `-status`.
+}
 
 begin
   # List Subscriptions
-  result = api_instance.list_subscriptions
+  result = api_instance.list_subscriptions(opts)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling BillingApi->list_subscriptions: #{e}"
@@ -738,12 +751,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<SubscriptionListResponse>, Integer, Hash)> list_subscriptions_with_http_info
+> <Array(<SubscriptionListResponse>, Integer, Hash)> list_subscriptions_with_http_info(opts)
 
 ```ruby
 begin
   # List Subscriptions
-  data, status_code, headers = api_instance.list_subscriptions_with_http_info
+  data, status_code, headers = api_instance.list_subscriptions_with_http_info(opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <SubscriptionListResponse>
@@ -754,7 +767,9 @@ end
 
 ### Parameters
 
-This endpoint does not need any parameter.
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;product&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;plan&#x60;, &#x60;-plan&#x60;, &#x60;product&#x60;, &#x60;-product&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. | [optional][default to &#39;product&#39;] |
 
 ### Return type
 

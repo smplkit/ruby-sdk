@@ -88,8 +88,9 @@ module SmplkitGeneratedClient::App
     end
 
     # List Metric Names
-    # Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.
+    # Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.  Default sort is `name` ascending.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;name&#x60;, &#x60;-name&#x60;. (default to 'name')
     # @return [MetricNamesResponse]
     def list_metric_names(opts = {})
       data, _status_code, _headers = list_metric_names_with_http_info(opts)
@@ -97,18 +98,24 @@ module SmplkitGeneratedClient::App
     end
 
     # List Metric Names
-    # Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.
+    # Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.  Default sort is &#x60;name&#x60; ascending.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;name&#x60;, &#x60;-name&#x60;. (default to 'name')
     # @return [Array<(MetricNamesResponse, Integer, Hash)>] MetricNamesResponse data, response status code and response headers
     def list_metric_names_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: MetricsApi.list_metric_names ...'
+      end
+      allowable_values = ["name", "-name"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/metric_names'
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
@@ -150,6 +157,7 @@ module SmplkitGeneratedClient::App
     # @param filter_rollup [String] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_recorded_at 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;bucket&#x60;. Allowed values: &#x60;bucket&#x60;, &#x60;-bucket&#x60;. (default to 'bucket')
     # @return [MetricRollupListResponse]
     def list_metric_rollups(filter_name, filter_rollup, opts = {})
       data, _status_code, _headers = list_metric_rollups_with_http_info(filter_name, filter_rollup, opts)
@@ -162,6 +170,7 @@ module SmplkitGeneratedClient::App
     # @param filter_rollup [String] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_recorded_at 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;bucket&#x60;. Allowed values: &#x60;bucket&#x60;, &#x60;-bucket&#x60;. (default to 'bucket')
     # @return [Array<(MetricRollupListResponse, Integer, Hash)>] MetricRollupListResponse data, response status code and response headers
     def list_metric_rollups_with_http_info(filter_name, filter_rollup, opts = {})
       if @api_client.config.debugging
@@ -175,6 +184,10 @@ module SmplkitGeneratedClient::App
       if @api_client.config.client_side_validation && filter_rollup.nil?
         fail ArgumentError, "Missing the required parameter 'filter_rollup' when calling MetricsApi.list_metric_rollups"
       end
+      allowable_values = ["bucket", "-bucket"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
+      end
       # resource path
       local_var_path = '/api/v1/metric_rollups'
 
@@ -183,6 +196,7 @@ module SmplkitGeneratedClient::App
       query_params[:'filter[name]'] = filter_name
       query_params[:'filter[rollup]'] = filter_rollup
       query_params[:'filter[recorded_at]'] = opts[:'filter_recorded_at'] if !opts[:'filter_recorded_at'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
@@ -223,6 +237,7 @@ module SmplkitGeneratedClient::App
     # @param filter_name [String] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_recorded_at 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-recorded_at&#x60;. Allowed values: &#x60;recorded_at&#x60;, &#x60;-recorded_at&#x60;, &#x60;value&#x60;, &#x60;-value&#x60;. (default to '-recorded_at')
     # @return [MetricListResponse]
     def list_metrics(filter_name, opts = {})
       data, _status_code, _headers = list_metrics_with_http_info(filter_name, opts)
@@ -234,6 +249,7 @@ module SmplkitGeneratedClient::App
     # @param filter_name [String] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_recorded_at 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-recorded_at&#x60;. Allowed values: &#x60;recorded_at&#x60;, &#x60;-recorded_at&#x60;, &#x60;value&#x60;, &#x60;-value&#x60;. (default to '-recorded_at')
     # @return [Array<(MetricListResponse, Integer, Hash)>] MetricListResponse data, response status code and response headers
     def list_metrics_with_http_info(filter_name, opts = {})
       if @api_client.config.debugging
@@ -243,6 +259,10 @@ module SmplkitGeneratedClient::App
       if @api_client.config.client_side_validation && filter_name.nil?
         fail ArgumentError, "Missing the required parameter 'filter_name' when calling MetricsApi.list_metrics"
       end
+      allowable_values = ["recorded_at", "-recorded_at", "value", "-value"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
+      end
       # resource path
       local_var_path = '/api/v1/metrics'
 
@@ -250,6 +270,7 @@ module SmplkitGeneratedClient::App
       query_params = opts[:query_params] || {}
       query_params[:'filter[name]'] = filter_name
       query_params[:'filter[recorded_at]'] = opts[:'filter_recorded_at'] if !opts[:'filter_recorded_at'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

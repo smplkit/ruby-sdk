@@ -46,8 +46,9 @@ describe 'MetricsApi' do
 
   # unit tests for list_metric_names
   # List Metric Names
-  # Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.
+  # Return distinct metric names recorded for the account, each with a representative unit. Plain-JSON response (not JSON:API) — this is metadata for discovery, not a metric resource.  Default sort is &#x60;name&#x60; ascending.
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;name&#x60;, &#x60;-name&#x60;.
   # @return [MetricNamesResponse]
   describe 'list_metric_names test' do
     it 'should work' do
@@ -62,6 +63,7 @@ describe 'MetricsApi' do
   # @param filter_rollup 
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_recorded_at 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;bucket&#x60;. Allowed values: &#x60;bucket&#x60;, &#x60;-bucket&#x60;.
   # @return [MetricRollupListResponse]
   describe 'list_metric_rollups test' do
     it 'should work' do
@@ -75,6 +77,7 @@ describe 'MetricsApi' do
   # @param filter_name 
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_recorded_at 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-recorded_at&#x60;. Allowed values: &#x60;recorded_at&#x60;, &#x60;-recorded_at&#x60;, &#x60;value&#x60;, &#x60;-value&#x60;.
   # @return [MetricListResponse]
   describe 'list_metrics test' do
     it 'should work' do

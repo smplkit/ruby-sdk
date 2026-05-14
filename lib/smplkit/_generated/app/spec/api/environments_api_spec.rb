@@ -85,6 +85,7 @@ describe 'EnvironmentsApi' do
   # List Environments
   # List all environments for the authenticated account.
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
   # @return [EnvironmentListResponse]
   describe 'list_environments test' do
     it 'should work' do
