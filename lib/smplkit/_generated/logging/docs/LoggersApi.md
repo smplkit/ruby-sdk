@@ -223,7 +223,7 @@ end
 
 List Loggers
 
-List loggers for this account.  Supports `filter[managed]` to narrow to managed (or unmanaged) loggers, `filter[service]` to keep only loggers observed in a specific service, and `filter[last_seen]` (interval notation `[<from>,*)`) to keep only loggers with a source observation at or after the given timestamp.
+List loggers for this account.  Default sort is `key` ascending. Supports `filter[managed]` to narrow to managed (or unmanaged) loggers, `filter[service]` to keep only loggers observed in a specific service, and `filter[last_seen]` (interval notation `[<from>,*)`) to keep only loggers with a source observation at or after the given timestamp.
 
 ### Examples
 
@@ -240,7 +240,8 @@ api_instance = SmplkitGeneratedClient::Logging::LoggersApi.new
 opts = {
   filter_managed: true, # Boolean | 
   filter_service: 'filter_service_example', # String | 
-  filter_last_seen: 'filter_last_seen_example' # String | 
+  filter_last_seen: 'filter_last_seen_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `created_at`, `-created_at`, `key`, `-key`, `name`, `-name`, `updated_at`, `-updated_at`.
 }
 
 begin
@@ -277,6 +278,7 @@ end
 | **filter_managed** | **Boolean** |  | [optional] |
 | **filter_service** | **String** |  | [optional] |
 | **filter_last_seen** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;key&#39;] |
 
 ### Return type
 

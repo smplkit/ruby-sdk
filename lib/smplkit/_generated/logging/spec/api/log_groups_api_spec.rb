@@ -70,8 +70,9 @@ describe 'LogGroupsApi' do
 
   # unit tests for list_log_groups
   # List Log Groups
-  # List log groups for this account.
+  # List log groups for this account.  Default sort is &#x60;key&#x60; ascending.
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
   # @return [LogGroupListResponse]
   describe 'list_log_groups test' do
     it 'should work' do

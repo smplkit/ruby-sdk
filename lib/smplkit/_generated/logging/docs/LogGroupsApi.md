@@ -219,11 +219,11 @@ end
 
 ## list_log_groups
 
-> <LogGroupListResponse> list_log_groups
+> <LogGroupListResponse> list_log_groups(opts)
 
 List Log Groups
 
-List log groups for this account.
+List log groups for this account.  Default sort is `key` ascending.
 
 ### Examples
 
@@ -237,10 +237,13 @@ SmplkitGeneratedClient::Logging.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Logging::LogGroupsApi.new
+opts = {
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `created_at`, `-created_at`, `key`, `-key`, `name`, `-name`, `updated_at`, `-updated_at`.
+}
 
 begin
   # List Log Groups
-  result = api_instance.list_log_groups
+  result = api_instance.list_log_groups(opts)
   p result
 rescue SmplkitGeneratedClient::Logging::ApiError => e
   puts "Error when calling LogGroupsApi->list_log_groups: #{e}"
@@ -251,12 +254,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<LogGroupListResponse>, Integer, Hash)> list_log_groups_with_http_info
+> <Array(<LogGroupListResponse>, Integer, Hash)> list_log_groups_with_http_info(opts)
 
 ```ruby
 begin
   # List Log Groups
-  data, status_code, headers = api_instance.list_log_groups_with_http_info
+  data, status_code, headers = api_instance.list_log_groups_with_http_info(opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <LogGroupListResponse>
@@ -267,7 +270,9 @@ end
 
 ### Parameters
 
-This endpoint does not need any parameter.
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;key&#39;] |
 
 ### Return type
 
