@@ -280,7 +280,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarder Deliveries
-    # List delivery log entries for a forwarder.  Default sort is newest first. Filter by `status` (one of `SUCCEEDED`, `FAILED`, `FILTERED_OUT`, `SKIPPED_DO_NOT_FORWARD` — case-insensitive), by `event_id`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
+    # List delivery log entries for a forwarder.  Default sort is `-created_at` (newest first). Filter by `status` (one of `SUCCEEDED`, `FAILED`, `FILTERED_OUT`, `SKIPPED_DO_NOT_FORWARD` — case-insensitive), by `event_id`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_status 
@@ -288,6 +288,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_event_id 
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;. (default to '-created_at')
     # @return [ForwarderDeliveryListResponse]
     def list_forwarder_deliveries(forwarder_id, opts = {})
       data, _status_code, _headers = list_forwarder_deliveries_with_http_info(forwarder_id, opts)
@@ -295,7 +296,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarder Deliveries
-    # List delivery log entries for a forwarder.  Default sort is newest first. Filter by &#x60;status&#x60; (one of &#x60;SUCCEEDED&#x60;, &#x60;FAILED&#x60;, &#x60;FILTERED_OUT&#x60;, &#x60;SKIPPED_DO_NOT_FORWARD&#x60; — case-insensitive), by &#x60;event_id&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
+    # List delivery log entries for a forwarder.  Default sort is &#x60;-created_at&#x60; (newest first). Filter by &#x60;status&#x60; (one of &#x60;SUCCEEDED&#x60;, &#x60;FAILED&#x60;, &#x60;FILTERED_OUT&#x60;, &#x60;SKIPPED_DO_NOT_FORWARD&#x60; — case-insensitive), by &#x60;event_id&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_status 
@@ -303,6 +304,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_event_id 
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;. (default to '-created_at')
     # @return [Array<(ForwarderDeliveryListResponse, Integer, Hash)>] ForwarderDeliveryListResponse data, response status code and response headers
     def list_forwarder_deliveries_with_http_info(forwarder_id, opts = {})
       if @api_client.config.debugging
@@ -316,6 +318,10 @@ module SmplkitGeneratedClient::Audit
         fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling ForwardersApi.list_forwarder_deliveries, must be greater than or equal to 1.'
       end
 
+      allowable_values = ["created_at", "-created_at"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
+      end
       # resource path
       local_var_path = '/api/v1/forwarders/{forwarder_id}/deliveries'.sub('{forwarder_id}', CGI.escape(forwarder_id.to_s))
 
@@ -326,6 +332,7 @@ module SmplkitGeneratedClient::Audit
       query_params[:'filter[event_id]'] = opts[:'filter_event_id'] if !opts[:'filter_event_id'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
       query_params[:'page[after]'] = opts[:'page_after'] if !opts[:'page_after'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
@@ -362,12 +369,13 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarders
-    # List forwarders for this account.
+    # List forwarders for this account.  Default sort is `-created_at` (newest first). Pagination uses cursor tokens; keep the same `sort` value across paginated requests.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_forwarder_type 
     # @option opts [Boolean] :filter_enabled 
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to '-created_at')
     # @return [ForwarderListResponse]
     def list_forwarders(opts = {})
       data, _status_code, _headers = list_forwarders_with_http_info(opts)
@@ -375,12 +383,13 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarders
-    # List forwarders for this account.
+    # List forwarders for this account.  Default sort is &#x60;-created_at&#x60; (newest first). Pagination uses cursor tokens; keep the same &#x60;sort&#x60; value across paginated requests.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_forwarder_type 
     # @option opts [Boolean] :filter_enabled 
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to '-created_at')
     # @return [Array<(ForwarderListResponse, Integer, Hash)>] ForwarderListResponse data, response status code and response headers
     def list_forwarders_with_http_info(opts = {})
       if @api_client.config.debugging
@@ -390,6 +399,10 @@ module SmplkitGeneratedClient::Audit
         fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling ForwardersApi.list_forwarders, must be greater than or equal to 1.'
       end
 
+      allowable_values = ["created_at", "-created_at", "updated_at", "-updated_at"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
+      end
       # resource path
       local_var_path = '/api/v1/forwarders'
 
@@ -399,6 +412,7 @@ module SmplkitGeneratedClient::Audit
       query_params[:'filter[enabled]'] = opts[:'filter_enabled'] if !opts[:'filter_enabled'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
       query_params[:'page[after]'] = opts[:'page_after'] if !opts[:'page_after'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

@@ -296,7 +296,7 @@ end
 
 List Forwarder Deliveries
 
-List delivery log entries for a forwarder.  Default sort is newest first. Filter by `status` (one of `SUCCEEDED`, `FAILED`, `FILTERED_OUT`, `SKIPPED_DO_NOT_FORWARD` — case-insensitive), by `event_id`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
+List delivery log entries for a forwarder.  Default sort is `-created_at` (newest first). Filter by `status` (one of `SUCCEEDED`, `FAILED`, `FILTERED_OUT`, `SKIPPED_DO_NOT_FORWARD` — case-insensitive), by `event_id`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
 
 ### Examples
 
@@ -316,7 +316,8 @@ opts = {
   filter_created_at: 'filter_created_at_example', # String | 
   filter_event_id: 'filter_event_id_example', # String | 
   page_size: 56, # Integer | 
-  page_after: 'page_after_example' # String | 
+  page_after: 'page_after_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-created_at`. Allowed values: `created_at`, `-created_at`.
 }
 
 begin
@@ -356,6 +357,7 @@ end
 | **filter_event_id** | **String** |  | [optional] |
 | **page_size** | **Integer** |  | [optional] |
 | **page_after** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;. | [optional][default to &#39;-created_at&#39;] |
 
 ### Return type
 
@@ -377,7 +379,7 @@ end
 
 List Forwarders
 
-List forwarders for this account.
+List forwarders for this account.  Default sort is `-created_at` (newest first). Pagination uses cursor tokens; keep the same `sort` value across paginated requests.
 
 ### Examples
 
@@ -395,7 +397,8 @@ opts = {
   filter_forwarder_type: 'filter_forwarder_type_example', # String | 
   filter_enabled: true, # Boolean | 
   page_size: 56, # Integer | 
-  page_after: 'page_after_example' # String | 
+  page_after: 'page_after_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-created_at`. Allowed values: `created_at`, `-created_at`, `updated_at`, `-updated_at`.
 }
 
 begin
@@ -433,6 +436,7 @@ end
 | **filter_enabled** | **Boolean** |  | [optional] |
 | **page_size** | **Integer** |  | [optional] |
 | **page_after** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;-created_at&#39;] |
 
 ### Return type
 

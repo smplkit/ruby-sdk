@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Actions
 
-List the distinct `action` slugs recorded for this account.  Without `filter[resource_type]`, returns one row per distinct action. With `filter[resource_type]`, returns the actions recorded for that specific resource type.
+List the distinct `action` slugs recorded for this account.  Default sort is `key` ascending; pass `sort=-key` for descending. Without `filter[resource_type]`, returns one row per distinct action. With `filter[resource_type]`, returns the actions recorded for that specific resource type.
 
 ### Examples
 
@@ -30,7 +30,8 @@ api_instance = SmplkitGeneratedClient::Audit::ActionsApi.new
 opts = {
   filter_resource_type: 'filter_resource_type_example', # String | 
   page_size: 56, # Integer | 
-  page_after: 'page_after_example' # String | 
+  page_after: 'page_after_example', # String | 
+  sort: 'key' # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `key`, `-key`.
 }
 
 begin
@@ -67,6 +68,7 @@ end
 | **filter_resource_type** | **String** |  | [optional] |
 | **page_size** | **Integer** |  | [optional] |
 | **page_after** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;. | [optional][default to &#39;key&#39;] |
 
 ### Return type
 

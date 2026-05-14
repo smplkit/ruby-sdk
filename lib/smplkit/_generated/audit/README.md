@@ -71,7 +71,8 @@ api_instance = SmplkitGeneratedClient::Audit::ActionsApi.new
 opts = {
   filter_resource_type: 'filter_resource_type_example', # String | 
   page_size: 56, # Integer | 
-  page_after: 'page_after_example' # String | 
+  page_after: 'page_after_example', # String | 
+  sort: 'key' # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `key`, `-key`.
 }
 
 begin

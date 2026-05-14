@@ -34,11 +34,12 @@ describe 'ActionsApi' do
 
   # unit tests for list_actions
   # List Actions
-  # List the distinct &#x60;action&#x60; slugs recorded for this account.  Without &#x60;filter[resource_type]&#x60;, returns one row per distinct action. With &#x60;filter[resource_type]&#x60;, returns the actions recorded for that specific resource type.
+  # List the distinct &#x60;action&#x60; slugs recorded for this account.  Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Without &#x60;filter[resource_type]&#x60;, returns one row per distinct action. With &#x60;filter[resource_type]&#x60;, returns the actions recorded for that specific resource type.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_resource_type 
   # @option opts [Integer] :page_size 
   # @option opts [String] :page_after 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;.
   # @return [ActionListResponse]
   describe 'list_actions test' do
     it 'should work' do
