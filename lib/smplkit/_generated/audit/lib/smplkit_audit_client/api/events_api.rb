@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for this account.  Default sort is newest first. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id` or `description`.  To bound the rows scanned per request, the endpoint requires either:  - `filter[resource_id]` (which must be accompanied by   `filter[resource_type]`), or - `filter[occurred_at]` with a span no greater than 30 days.  `page[size]` defaults to 50 and must not exceed 1000.
+    # List audit events for this account.  Default sort is `-occurred_at` (newest occurrence first). Sort by `occurred_at` or `created_at`, ascending or descending — keep the same `sort` value across paginated requests so the cursor stays consistent. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id` or `description`.  To bound the rows scanned per request, the endpoint requires either:  - `filter[resource_id]` (which must be accompanied by   `filter[resource_type]`), or - `filter[occurred_at]` with a span no greater than 30 days.  `page[size]` defaults to 50 and must not exceed 1000.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -94,6 +94,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-occurred_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;occurred_at&#x60;, &#x60;-occurred_at&#x60;. (default to '-occurred_at')
     # @return [EventListResponse]
     def list_events(opts = {})
       data, _status_code, _headers = list_events_with_http_info(opts)
@@ -101,7 +102,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for this account.  Default sort is newest first. Filters are exact-match except &#x60;filter[occurred_at]&#x60;, which uses interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)&#x60;), and &#x60;filter[search]&#x60;, which is a case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;.  To bound the rows scanned per request, the endpoint requires either:  - &#x60;filter[resource_id]&#x60; (which must be accompanied by   &#x60;filter[resource_type]&#x60;), or - &#x60;filter[occurred_at]&#x60; with a span no greater than 30 days.  &#x60;page[size]&#x60; defaults to 50 and must not exceed 1000.
+    # List audit events for this account.  Default sort is &#x60;-occurred_at&#x60; (newest occurrence first). Sort by &#x60;occurred_at&#x60; or &#x60;created_at&#x60;, ascending or descending — keep the same &#x60;sort&#x60; value across paginated requests so the cursor stays consistent. Filters are exact-match except &#x60;filter[occurred_at]&#x60;, which uses interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)&#x60;), and &#x60;filter[search]&#x60;, which is a case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;.  To bound the rows scanned per request, the endpoint requires either:  - &#x60;filter[resource_id]&#x60; (which must be accompanied by   &#x60;filter[resource_type]&#x60;), or - &#x60;filter[occurred_at]&#x60; with a span no greater than 30 days.  &#x60;page[size]&#x60; defaults to 50 and must not exceed 1000.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -112,6 +113,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-occurred_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;occurred_at&#x60;, &#x60;-occurred_at&#x60;. (default to '-occurred_at')
     # @return [Array<(EventListResponse, Integer, Hash)>] EventListResponse data, response status code and response headers
     def list_events_with_http_info(opts = {})
       if @api_client.config.debugging
@@ -121,6 +123,10 @@ module SmplkitGeneratedClient::Audit
         fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling EventsApi.list_events, must be greater than or equal to 1.'
       end
 
+      allowable_values = ["created_at", "-created_at", "occurred_at", "-occurred_at"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
+      end
       # resource path
       local_var_path = '/api/v1/events'
 
@@ -135,6 +141,7 @@ module SmplkitGeneratedClient::Audit
       query_params[:'filter[search]'] = opts[:'filter_search'] if !opts[:'filter_search'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
       query_params[:'page[after]'] = opts[:'page_after'] if !opts[:'page_after'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

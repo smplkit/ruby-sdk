@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Resource Types
 
-List the distinct `resource_type` slugs recorded for this account.  The resource `id` is the slug itself. Useful for populating filter dropdowns in a UI.
+List the distinct `resource_type` slugs recorded for this account.  The resource `id` is the slug itself. Default sort is `key` ascending; pass `sort=-key` for descending. Useful for populating filter dropdowns in a UI.
 
 ### Examples
 
@@ -29,7 +29,8 @@ end
 api_instance = SmplkitGeneratedClient::Audit::ResourceTypesApi.new
 opts = {
   page_size: 56, # Integer | 
-  page_after: 'page_after_example' # String | 
+  page_after: 'page_after_example', # String | 
+  sort: 'key' # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `key`, `-key`.
 }
 
 begin
@@ -65,6 +66,7 @@ end
 | ---- | ---- | ----------- | ----- |
 | **page_size** | **Integer** |  | [optional] |
 | **page_after** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;. | [optional][default to &#39;key&#39;] |
 
 ### Return type
 

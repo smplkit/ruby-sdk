@@ -34,10 +34,11 @@ describe 'ResourceTypesApi' do
 
   # unit tests for list_resource_types
   # List Resource Types
-  # List the distinct &#x60;resource_type&#x60; slugs recorded for this account.  The resource &#x60;id&#x60; is the slug itself. Useful for populating filter dropdowns in a UI.
+  # List the distinct &#x60;resource_type&#x60; slugs recorded for this account.  The resource &#x60;id&#x60; is the slug itself. Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Useful for populating filter dropdowns in a UI.
   # @param [Hash] opts the optional parameters
   # @option opts [Integer] :page_size 
   # @option opts [String] :page_after 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;.
   # @return [ResourceTypeListResponse]
   describe 'list_resource_types test' do
     it 'should work' do

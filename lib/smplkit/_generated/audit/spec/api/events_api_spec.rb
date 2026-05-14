@@ -46,7 +46,7 @@ describe 'EventsApi' do
 
   # unit tests for list_events
   # List Events
-  # List audit events for this account.  Default sort is newest first. Filters are exact-match except &#x60;filter[occurred_at]&#x60;, which uses interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)&#x60;), and &#x60;filter[search]&#x60;, which is a case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;.  To bound the rows scanned per request, the endpoint requires either:  - &#x60;filter[resource_id]&#x60; (which must be accompanied by   &#x60;filter[resource_type]&#x60;), or - &#x60;filter[occurred_at]&#x60; with a span no greater than 30 days.  &#x60;page[size]&#x60; defaults to 50 and must not exceed 1000.
+  # List audit events for this account.  Default sort is &#x60;-occurred_at&#x60; (newest occurrence first). Sort by &#x60;occurred_at&#x60; or &#x60;created_at&#x60;, ascending or descending — keep the same &#x60;sort&#x60; value across paginated requests so the cursor stays consistent. Filters are exact-match except &#x60;filter[occurred_at]&#x60;, which uses interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)&#x60;), and &#x60;filter[search]&#x60;, which is a case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;.  To bound the rows scanned per request, the endpoint requires either:  - &#x60;filter[resource_id]&#x60; (which must be accompanied by   &#x60;filter[resource_type]&#x60;), or - &#x60;filter[occurred_at]&#x60; with a span no greater than 30 days.  &#x60;page[size]&#x60; defaults to 50 and must not exceed 1000.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_occurred_at 
   # @option opts [String] :filter_actor_type 
@@ -57,6 +57,7 @@ describe 'EventsApi' do
   # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
   # @option opts [Integer] :page_size 
   # @option opts [String] :page_after 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-occurred_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;occurred_at&#x60;, &#x60;-occurred_at&#x60;.
   # @return [EventListResponse]
   describe 'list_events test' do
     it 'should work' do
