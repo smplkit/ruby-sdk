@@ -88,9 +88,10 @@ module SmplkitGeneratedClient::App
     end
 
     # Delete Environment
-    # Delete an environment by id.
+    # Delete an environment by id. When `cascade=true` is set, also remove every per-environment reference held by flags, configs, and loggers in the corresponding services before deleting the environment row. The default `cascade=false` deletes only the environment row, leaving downstream references in place.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [Boolean] :cascade When &#x60;true&#x60;, remove every flag rule, env-level flag default, config override, and logger override scoped to this environment before deleting the environment row. (default to false)
     # @return [nil]
     def delete_environment(id, opts = {})
       delete_environment_with_http_info(id, opts)
@@ -98,9 +99,10 @@ module SmplkitGeneratedClient::App
     end
 
     # Delete Environment
-    # Delete an environment by id.
+    # Delete an environment by id. When &#x60;cascade&#x3D;true&#x60; is set, also remove every per-environment reference held by flags, configs, and loggers in the corresponding services before deleting the environment row. The default &#x60;cascade&#x3D;false&#x60; deletes only the environment row, leaving downstream references in place.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [Boolean] :cascade When &#x60;true&#x60;, remove every flag rule, env-level flag default, config override, and logger override scoped to this environment before deleting the environment row. (default to false)
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers
     def delete_environment_with_http_info(id, opts = {})
       if @api_client.config.debugging
@@ -115,6 +117,7 @@ module SmplkitGeneratedClient::App
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'cascade'] = opts[:'cascade'] if !opts[:'cascade'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
@@ -209,6 +212,69 @@ module SmplkitGeneratedClient::App
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: EnvironmentsApi#get_environment\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Report Environment Usage
+    # Report how many flag rules, env-level flag defaults, config overrides, and logger overrides reference this environment. Used by the console's delete dialog so the user can see what would survive a non-cascading delete.
+    # @param id [String] 
+    # @param [Hash] opts the optional parameters
+    # @return [EnvironmentUsageResponse]
+    def get_environment_usage(id, opts = {})
+      data, _status_code, _headers = get_environment_usage_with_http_info(id, opts)
+      data
+    end
+
+    # Report Environment Usage
+    # Report how many flag rules, env-level flag defaults, config overrides, and logger overrides reference this environment. Used by the console&#39;s delete dialog so the user can see what would survive a non-cascading delete.
+    # @param id [String] 
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(EnvironmentUsageResponse, Integer, Hash)>] EnvironmentUsageResponse data, response status code and response headers
+    def get_environment_usage_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: EnvironmentsApi.get_environment_usage ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling EnvironmentsApi.get_environment_usage"
+      end
+      # resource path
+      local_var_path = '/api/v1/environments/{id}/usage'.sub('{id}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'EnvironmentUsageResponse'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['HTTPBearer']
+
+      new_options = opts.merge(
+        :operation => :"EnvironmentsApi.get_environment_usage",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: EnvironmentsApi#get_environment_usage\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

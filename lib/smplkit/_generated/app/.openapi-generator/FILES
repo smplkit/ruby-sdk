@@ -54,6 +54,9 @@ docs/EnvironmentListResponse.md
 docs/EnvironmentRequest.md
 docs/EnvironmentResource.md
 docs/EnvironmentResponse.md
+docs/EnvironmentUsage.md
+docs/EnvironmentUsageResource.md
+docs/EnvironmentUsageResponse.md
 docs/EnvironmentsApi.md
 docs/Error.md
 docs/ErrorResponse.md
@@ -183,6 +186,9 @@ lib/smplkit_app_client/models/environment_list_response.rb
 lib/smplkit_app_client/models/environment_request.rb
 lib/smplkit_app_client/models/environment_resource.rb
 lib/smplkit_app_client/models/environment_response.rb
+lib/smplkit_app_client/models/environment_usage.rb
+lib/smplkit_app_client/models/environment_usage_resource.rb
+lib/smplkit_app_client/models/environment_usage_response.rb
 lib/smplkit_app_client/models/error.rb
 lib/smplkit_app_client/models/error_response.rb
 lib/smplkit_app_client/models/invitation.rb
@@ -301,6 +307,9 @@ spec/models/environment_request_spec.rb
 spec/models/environment_resource_spec.rb
 spec/models/environment_response_spec.rb
 spec/models/environment_spec.rb
+spec/models/environment_usage_resource_spec.rb
+spec/models/environment_usage_response_spec.rb
+spec/models/environment_usage_spec.rb
 spec/models/error_response_spec.rb
 spec/models/error_spec.rb
 spec/models/invitation_accept_request_spec.rb
