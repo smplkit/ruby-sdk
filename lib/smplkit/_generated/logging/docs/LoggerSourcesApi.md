@@ -14,7 +14,7 @@ All URIs are relative to *http://localhost*
 
 List All Logger Sources
 
-List every logger source observation for this account.  Supports `filter[environment]` and `filter[service]` to narrow to a specific environment or service.
+List every logger source observation for this account.  Default sort is `-last_seen` (most recently observed first). Supports `filter[environment]` and `filter[service]` to narrow to a specific environment or service.
 
 ### Examples
 
@@ -30,7 +30,8 @@ end
 api_instance = SmplkitGeneratedClient::Logging::LoggerSourcesApi.new
 opts = {
   filter_environment: 'filter_environment_example', # String | 
-  filter_service: 'filter_service_example' # String | 
+  filter_service: 'filter_service_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-last_seen`. Allowed values: `created_at`, `-created_at`, `environment`, `-environment`, `last_seen`, `-last_seen`, `service`, `-service`.
 }
 
 begin
@@ -66,6 +67,7 @@ end
 | ---- | ---- | ----------- | ----- |
 | **filter_environment** | **String** |  | [optional] |
 | **filter_service** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. | [optional][default to &#39;-last_seen&#39;] |
 
 ### Return type
 
@@ -83,11 +85,11 @@ end
 
 ## list_logger_sources
 
-> <LoggerSourceListResponse> list_logger_sources(id)
+> <LoggerSourceListResponse> list_logger_sources(id, opts)
 
 List Logger Sources
 
-List the service / environment observations recorded for a logger.
+List the service / environment observations recorded for a logger.  Default sort is `-last_seen` (most recently observed first).
 
 ### Examples
 
@@ -102,10 +104,13 @@ end
 
 api_instance = SmplkitGeneratedClient::Logging::LoggerSourcesApi.new
 id = 'id_example' # String | 
+opts = {
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-last_seen`. Allowed values: `created_at`, `-created_at`, `environment`, `-environment`, `last_seen`, `-last_seen`, `service`, `-service`.
+}
 
 begin
   # List Logger Sources
-  result = api_instance.list_logger_sources(id)
+  result = api_instance.list_logger_sources(id, opts)
   p result
 rescue SmplkitGeneratedClient::Logging::ApiError => e
   puts "Error when calling LoggerSourcesApi->list_logger_sources: #{e}"
@@ -116,12 +121,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<LoggerSourceListResponse>, Integer, Hash)> list_logger_sources_with_http_info(id)
+> <Array(<LoggerSourceListResponse>, Integer, Hash)> list_logger_sources_with_http_info(id, opts)
 
 ```ruby
 begin
   # List Logger Sources
-  data, status_code, headers = api_instance.list_logger_sources_with_http_info(id)
+  data, status_code, headers = api_instance.list_logger_sources_with_http_info(id, opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <LoggerSourceListResponse>
@@ -135,6 +140,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. | [optional][default to &#39;-last_seen&#39;] |
 
 ### Return type
 

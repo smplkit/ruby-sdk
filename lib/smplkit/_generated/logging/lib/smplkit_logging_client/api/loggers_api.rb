@@ -214,11 +214,12 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Loggers
-    # List loggers for this account.  Supports `filter[managed]` to narrow to managed (or unmanaged) loggers, `filter[service]` to keep only loggers observed in a specific service, and `filter[last_seen]` (interval notation `[<from>,*)`) to keep only loggers with a source observation at or after the given timestamp.
+    # List loggers for this account.  Default sort is `key` ascending. Supports `filter[managed]` to narrow to managed (or unmanaged) loggers, `filter[service]` to keep only loggers observed in a specific service, and `filter[last_seen]` (interval notation `[<from>,*)`) to keep only loggers with a source observation at or after the given timestamp.
     # @param [Hash] opts the optional parameters
     # @option opts [Boolean] :filter_managed 
     # @option opts [String] :filter_service 
     # @option opts [String] :filter_last_seen 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'key')
     # @return [LoggerListResponse]
     def list_loggers(opts = {})
       data, _status_code, _headers = list_loggers_with_http_info(opts)
@@ -226,15 +227,20 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Loggers
-    # List loggers for this account.  Supports &#x60;filter[managed]&#x60; to narrow to managed (or unmanaged) loggers, &#x60;filter[service]&#x60; to keep only loggers observed in a specific service, and &#x60;filter[last_seen]&#x60; (interval notation &#x60;[&lt;from&gt;,*)&#x60;) to keep only loggers with a source observation at or after the given timestamp.
+    # List loggers for this account.  Default sort is &#x60;key&#x60; ascending. Supports &#x60;filter[managed]&#x60; to narrow to managed (or unmanaged) loggers, &#x60;filter[service]&#x60; to keep only loggers observed in a specific service, and &#x60;filter[last_seen]&#x60; (interval notation &#x60;[&lt;from&gt;,*)&#x60;) to keep only loggers with a source observation at or after the given timestamp.
     # @param [Hash] opts the optional parameters
     # @option opts [Boolean] :filter_managed 
     # @option opts [String] :filter_service 
     # @option opts [String] :filter_last_seen 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'key')
     # @return [Array<(LoggerListResponse, Integer, Hash)>] LoggerListResponse data, response status code and response headers
     def list_loggers_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: LoggersApi.list_loggers ...'
+      end
+      allowable_values = ["created_at", "-created_at", "key", "-key", "name", "-name", "updated_at", "-updated_at"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/loggers'
@@ -244,6 +250,7 @@ module SmplkitGeneratedClient::Logging
       query_params[:'filter[managed]'] = opts[:'filter_managed'] if !opts[:'filter_managed'].nil?
       query_params[:'filter[service]'] = opts[:'filter_service'] if !opts[:'filter_service'].nil?
       query_params[:'filter[last_seen]'] = opts[:'filter_last_seen'] if !opts[:'filter_last_seen'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

@@ -34,8 +34,9 @@ describe 'ServicesApi' do
 
   # unit tests for list_services
   # List Services
-  # List the services that have reported a logger for this account.
+  # List the services that have reported a logger for this account.  Default sort is &#x60;name&#x60; ascending.
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;name&#x60;, &#x60;-name&#x60;.
   # @return [ServiceListResponse]
   describe 'list_services test' do
     it 'should work' do

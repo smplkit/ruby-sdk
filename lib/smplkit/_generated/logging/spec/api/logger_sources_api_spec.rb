@@ -34,10 +34,11 @@ describe 'LoggerSourcesApi' do
 
   # unit tests for list_all_logger_sources
   # List All Logger Sources
-  # List every logger source observation for this account.  Supports &#x60;filter[environment]&#x60; and &#x60;filter[service]&#x60; to narrow to a specific environment or service.
+  # List every logger source observation for this account.  Default sort is &#x60;-last_seen&#x60; (most recently observed first). Supports &#x60;filter[environment]&#x60; and &#x60;filter[service]&#x60; to narrow to a specific environment or service.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_environment 
   # @option opts [String] :filter_service 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;.
   # @return [LoggerSourceListResponse]
   describe 'list_all_logger_sources test' do
     it 'should work' do
@@ -47,9 +48,10 @@ describe 'LoggerSourcesApi' do
 
   # unit tests for list_logger_sources
   # List Logger Sources
-  # List the service / environment observations recorded for a logger.
+  # List the service / environment observations recorded for a logger.  Default sort is &#x60;-last_seen&#x60; (most recently observed first).
   # @param id 
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;.
   # @return [LoggerSourceListResponse]
   describe 'list_logger_sources test' do
     it 'should work' do

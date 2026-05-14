@@ -20,10 +20,11 @@ module SmplkitGeneratedClient::Logging
       @api_client = api_client
     end
     # List All Logger Sources
-    # List every logger source observation for this account.  Supports `filter[environment]` and `filter[service]` to narrow to a specific environment or service.
+    # List every logger source observation for this account.  Default sort is `-last_seen` (most recently observed first). Supports `filter[environment]` and `filter[service]` to narrow to a specific environment or service.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_environment 
     # @option opts [String] :filter_service 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. (default to '-last_seen')
     # @return [LoggerSourceListResponse]
     def list_all_logger_sources(opts = {})
       data, _status_code, _headers = list_all_logger_sources_with_http_info(opts)
@@ -31,14 +32,19 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List All Logger Sources
-    # List every logger source observation for this account.  Supports &#x60;filter[environment]&#x60; and &#x60;filter[service]&#x60; to narrow to a specific environment or service.
+    # List every logger source observation for this account.  Default sort is &#x60;-last_seen&#x60; (most recently observed first). Supports &#x60;filter[environment]&#x60; and &#x60;filter[service]&#x60; to narrow to a specific environment or service.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_environment 
     # @option opts [String] :filter_service 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. (default to '-last_seen')
     # @return [Array<(LoggerSourceListResponse, Integer, Hash)>] LoggerSourceListResponse data, response status code and response headers
     def list_all_logger_sources_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: LoggerSourcesApi.list_all_logger_sources ...'
+      end
+      allowable_values = ["created_at", "-created_at", "environment", "-environment", "last_seen", "-last_seen", "service", "-service"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/logger_sources'
@@ -47,6 +53,7 @@ module SmplkitGeneratedClient::Logging
       query_params = opts[:query_params] || {}
       query_params[:'filter[environment]'] = opts[:'filter_environment'] if !opts[:'filter_environment'].nil?
       query_params[:'filter[service]'] = opts[:'filter_service'] if !opts[:'filter_service'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
@@ -83,9 +90,10 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Logger Sources
-    # List the service / environment observations recorded for a logger.
+    # List the service / environment observations recorded for a logger.  Default sort is `-last_seen` (most recently observed first).
     # @param id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. (default to '-last_seen')
     # @return [LoggerSourceListResponse]
     def list_logger_sources(id, opts = {})
       data, _status_code, _headers = list_logger_sources_with_http_info(id, opts)
@@ -93,9 +101,10 @@ module SmplkitGeneratedClient::Logging
     end
 
     # List Logger Sources
-    # List the service / environment observations recorded for a logger.
+    # List the service / environment observations recorded for a logger.  Default sort is &#x60;-last_seen&#x60; (most recently observed first).
     # @param id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. (default to '-last_seen')
     # @return [Array<(LoggerSourceListResponse, Integer, Hash)>] LoggerSourceListResponse data, response status code and response headers
     def list_logger_sources_with_http_info(id, opts = {})
       if @api_client.config.debugging
@@ -105,11 +114,16 @@ module SmplkitGeneratedClient::Logging
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling LoggerSourcesApi.list_logger_sources"
       end
+      allowable_values = ["created_at", "-created_at", "environment", "-environment", "last_seen", "-last_seen", "service", "-service"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
+      end
       # resource path
       local_var_path = '/api/v1/loggers/{id}/sources'.sub('{id}', CGI.escape(id.to_s))
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
