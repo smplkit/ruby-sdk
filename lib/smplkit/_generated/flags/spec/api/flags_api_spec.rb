@@ -82,12 +82,13 @@ describe 'FlagsApi' do
 
   # unit tests for list_flags
   # List Flags
-  # List feature flags for this account.
+  # List feature flags for this account.  Default sort is &#x60;key&#x60; ascending.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_type 
   # @option opts [Boolean] :filter_managed 
   # @option opts [String] :filter_references_context Return flags whose rules reference this context instance. Format: {type}:{key}
   # @option opts [String] :filter_references_context_type Return flags whose rules reference any attribute of the given context type.
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;type&#x60;, &#x60;-type&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
   # @return [FlagListResponse]
   describe 'list_flags test' do
     it 'should work' do

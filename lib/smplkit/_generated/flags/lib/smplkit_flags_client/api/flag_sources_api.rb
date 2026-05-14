@@ -20,10 +20,11 @@ module SmplkitGeneratedClient::Flags
       @api_client = api_client
     end
     # List All Flag Sources
-    # List service/environment observations across all flags for this account.  Filter by `environment` or `service` (or both) to narrow the result.
+    # List service/environment observations across all flags for this account.  Default sort is `-last_seen` (most recently seen first). Filter by `environment` or `service` (or both) to narrow the result.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_environment 
     # @option opts [String] :filter_service 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. (default to '-last_seen')
     # @return [FlagSourceListResponse]
     def list_all_flag_sources(opts = {})
       data, _status_code, _headers = list_all_flag_sources_with_http_info(opts)
@@ -31,14 +32,19 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List All Flag Sources
-    # List service/environment observations across all flags for this account.  Filter by &#x60;environment&#x60; or &#x60;service&#x60; (or both) to narrow the result.
+    # List service/environment observations across all flags for this account.  Default sort is &#x60;-last_seen&#x60; (most recently seen first). Filter by &#x60;environment&#x60; or &#x60;service&#x60; (or both) to narrow the result.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_environment 
     # @option opts [String] :filter_service 
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. (default to '-last_seen')
     # @return [Array<(FlagSourceListResponse, Integer, Hash)>] FlagSourceListResponse data, response status code and response headers
     def list_all_flag_sources_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: FlagSourcesApi.list_all_flag_sources ...'
+      end
+      allowable_values = ["created_at", "-created_at", "environment", "-environment", "last_seen", "-last_seen", "service", "-service"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/flag_sources'
@@ -47,6 +53,7 @@ module SmplkitGeneratedClient::Flags
       query_params = opts[:query_params] || {}
       query_params[:'filter[environment]'] = opts[:'filter_environment'] if !opts[:'filter_environment'].nil?
       query_params[:'filter[service]'] = opts[:'filter_service'] if !opts[:'filter_service'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
@@ -83,9 +90,10 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List Flag Sources
-    # List the service/environment observations recorded for a single flag.
+    # List the service/environment observations recorded for a single flag.  Default sort is `-last_seen` (most recently seen first).
     # @param id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. (default to '-last_seen')
     # @return [FlagSourceListResponse]
     def list_flag_sources(id, opts = {})
       data, _status_code, _headers = list_flag_sources_with_http_info(id, opts)
@@ -93,9 +101,10 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List Flag Sources
-    # List the service/environment observations recorded for a single flag.
+    # List the service/environment observations recorded for a single flag.  Default sort is &#x60;-last_seen&#x60; (most recently seen first).
     # @param id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. (default to '-last_seen')
     # @return [Array<(FlagSourceListResponse, Integer, Hash)>] FlagSourceListResponse data, response status code and response headers
     def list_flag_sources_with_http_info(id, opts = {})
       if @api_client.config.debugging
@@ -105,11 +114,16 @@ module SmplkitGeneratedClient::Flags
       if @api_client.config.client_side_validation && id.nil?
         fail ArgumentError, "Missing the required parameter 'id' when calling FlagSourcesApi.list_flag_sources"
       end
+      allowable_values = ["created_at", "-created_at", "environment", "-environment", "last_seen", "-last_seen", "service", "-service"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
+      end
       # resource path
       local_var_path = '/api/v1/flags/{id}/sources'.sub('{id}', CGI.escape(id.to_s))
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

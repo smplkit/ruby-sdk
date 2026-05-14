@@ -14,7 +14,7 @@ All URIs are relative to *http://localhost*
 
 List All Flag Sources
 
-List service/environment observations across all flags for this account.  Filter by `environment` or `service` (or both) to narrow the result.
+List service/environment observations across all flags for this account.  Default sort is `-last_seen` (most recently seen first). Filter by `environment` or `service` (or both) to narrow the result.
 
 ### Examples
 
@@ -30,7 +30,8 @@ end
 api_instance = SmplkitGeneratedClient::Flags::FlagSourcesApi.new
 opts = {
   filter_environment: 'filter_environment_example', # String | 
-  filter_service: 'filter_service_example' # String | 
+  filter_service: 'filter_service_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-last_seen`. Allowed values: `created_at`, `-created_at`, `environment`, `-environment`, `last_seen`, `-last_seen`, `service`, `-service`.
 }
 
 begin
@@ -66,6 +67,7 @@ end
 | ---- | ---- | ----------- | ----- |
 | **filter_environment** | **String** |  | [optional] |
 | **filter_service** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. | [optional][default to &#39;-last_seen&#39;] |
 
 ### Return type
 
@@ -83,11 +85,11 @@ end
 
 ## list_flag_sources
 
-> <FlagSourceListResponse> list_flag_sources(id)
+> <FlagSourceListResponse> list_flag_sources(id, opts)
 
 List Flag Sources
 
-List the service/environment observations recorded for a single flag.
+List the service/environment observations recorded for a single flag.  Default sort is `-last_seen` (most recently seen first).
 
 ### Examples
 
@@ -102,10 +104,13 @@ end
 
 api_instance = SmplkitGeneratedClient::Flags::FlagSourcesApi.new
 id = 'id_example' # String | 
+opts = {
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-last_seen`. Allowed values: `created_at`, `-created_at`, `environment`, `-environment`, `last_seen`, `-last_seen`, `service`, `-service`.
+}
 
 begin
   # List Flag Sources
-  result = api_instance.list_flag_sources(id)
+  result = api_instance.list_flag_sources(id, opts)
   p result
 rescue SmplkitGeneratedClient::Flags::ApiError => e
   puts "Error when calling FlagSourcesApi->list_flag_sources: #{e}"
@@ -116,12 +121,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<FlagSourceListResponse>, Integer, Hash)> list_flag_sources_with_http_info(id)
+> <Array(<FlagSourceListResponse>, Integer, Hash)> list_flag_sources_with_http_info(id, opts)
 
 ```ruby
 begin
   # List Flag Sources
-  data, status_code, headers = api_instance.list_flag_sources_with_http_info(id)
+  data, status_code, headers = api_instance.list_flag_sources_with_http_info(id, opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <FlagSourceListResponse>
@@ -135,6 +140,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;. | [optional][default to &#39;-last_seen&#39;] |
 
 ### Return type
 

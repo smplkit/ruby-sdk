@@ -34,10 +34,11 @@ describe 'FlagSourcesApi' do
 
   # unit tests for list_all_flag_sources
   # List All Flag Sources
-  # List service/environment observations across all flags for this account.  Filter by &#x60;environment&#x60; or &#x60;service&#x60; (or both) to narrow the result.
+  # List service/environment observations across all flags for this account.  Default sort is &#x60;-last_seen&#x60; (most recently seen first). Filter by &#x60;environment&#x60; or &#x60;service&#x60; (or both) to narrow the result.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_environment 
   # @option opts [String] :filter_service 
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;.
   # @return [FlagSourceListResponse]
   describe 'list_all_flag_sources test' do
     it 'should work' do
@@ -47,9 +48,10 @@ describe 'FlagSourcesApi' do
 
   # unit tests for list_flag_sources
   # List Flag Sources
-  # List the service/environment observations recorded for a single flag.
+  # List the service/environment observations recorded for a single flag.  Default sort is &#x60;-last_seen&#x60; (most recently seen first).
   # @param id 
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-last_seen&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;environment&#x60;, &#x60;-environment&#x60;, &#x60;last_seen&#x60;, &#x60;-last_seen&#x60;, &#x60;service&#x60;, &#x60;-service&#x60;.
   # @return [FlagSourceListResponse]
   describe 'list_flag_sources test' do
     it 'should work' do

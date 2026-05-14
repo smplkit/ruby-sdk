@@ -70,7 +70,8 @@ end
 api_instance = SmplkitGeneratedClient::Flags::FlagSourcesApi.new
 opts = {
   filter_environment: 'filter_environment_example', # String | 
-  filter_service: 'filter_service_example' # String | 
+  filter_service: 'filter_service_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-last_seen`. Allowed values: `created_at`, `-created_at`, `environment`, `-environment`, `last_seen`, `-last_seen`, `service`, `-service`.
 }
 
 begin
