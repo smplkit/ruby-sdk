@@ -280,12 +280,13 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List Flags
-    # List feature flags for this account.
+    # List feature flags for this account.  Default sort is `key` ascending.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_type 
     # @option opts [Boolean] :filter_managed 
     # @option opts [String] :filter_references_context Return flags whose rules reference this context instance. Format: {type}:{key}
     # @option opts [String] :filter_references_context_type Return flags whose rules reference any attribute of the given context type.
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;type&#x60;, &#x60;-type&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'key')
     # @return [FlagListResponse]
     def list_flags(opts = {})
       data, _status_code, _headers = list_flags_with_http_info(opts)
@@ -293,16 +294,21 @@ module SmplkitGeneratedClient::Flags
     end
 
     # List Flags
-    # List feature flags for this account.
+    # List feature flags for this account.  Default sort is &#x60;key&#x60; ascending.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_type 
     # @option opts [Boolean] :filter_managed 
     # @option opts [String] :filter_references_context Return flags whose rules reference this context instance. Format: {type}:{key}
     # @option opts [String] :filter_references_context_type Return flags whose rules reference any attribute of the given context type.
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;type&#x60;, &#x60;-type&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'key')
     # @return [Array<(FlagListResponse, Integer, Hash)>] FlagListResponse data, response status code and response headers
     def list_flags_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: FlagsApi.list_flags ...'
+      end
+      allowable_values = ["created_at", "-created_at", "key", "-key", "name", "-name", "type", "-type", "updated_at", "-updated_at"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
       # resource path
       local_var_path = '/api/v1/flags'
@@ -313,6 +319,7 @@ module SmplkitGeneratedClient::Flags
       query_params[:'filter[managed]'] = opts[:'filter_managed'] if !opts[:'filter_managed'].nil?
       query_params[:'filter[references_context]'] = opts[:'filter_references_context'] if !opts[:'filter_references_context'].nil?
       query_params[:'filter[references_context_type]'] = opts[:'filter_references_context_type'] if !opts[:'filter_references_context_type'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
