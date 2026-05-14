@@ -46,9 +46,10 @@ describe 'EnvironmentsApi' do
 
   # unit tests for delete_environment
   # Delete Environment
-  # Delete an environment by id.
+  # Delete an environment by id. When &#x60;cascade&#x3D;true&#x60; is set, also remove every per-environment reference held by flags, configs, and loggers in the corresponding services before deleting the environment row. The default &#x60;cascade&#x3D;false&#x60; deletes only the environment row, leaving downstream references in place.
   # @param id 
   # @param [Hash] opts the optional parameters
+  # @option opts [Boolean] :cascade When &#x60;true&#x60;, remove every flag rule, env-level flag default, config override, and logger override scoped to this environment before deleting the environment row.
   # @return [nil]
   describe 'delete_environment test' do
     it 'should work' do
@@ -63,6 +64,18 @@ describe 'EnvironmentsApi' do
   # @param [Hash] opts the optional parameters
   # @return [EnvironmentResponse]
   describe 'get_environment test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_environment_usage
+  # Report Environment Usage
+  # Report how many flag rules, env-level flag defaults, config overrides, and logger overrides reference this environment. Used by the console&#39;s delete dialog so the user can see what would survive a non-cascading delete.
+  # @param id 
+  # @param [Hash] opts the optional parameters
+  # @return [EnvironmentUsageResponse]
+  describe 'get_environment_usage test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

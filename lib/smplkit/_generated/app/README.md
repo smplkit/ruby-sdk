@@ -135,6 +135,7 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::EnvironmentsApi* | [**create_environment**](docs/EnvironmentsApi.md#create_environment) | **POST** /api/v1/environments | Create Environment
 *SmplkitGeneratedClient::App::EnvironmentsApi* | [**delete_environment**](docs/EnvironmentsApi.md#delete_environment) | **DELETE** /api/v1/environments/{id} | Delete Environment
 *SmplkitGeneratedClient::App::EnvironmentsApi* | [**get_environment**](docs/EnvironmentsApi.md#get_environment) | **GET** /api/v1/environments/{id} | Get Environment
+*SmplkitGeneratedClient::App::EnvironmentsApi* | [**get_environment_usage**](docs/EnvironmentsApi.md#get_environment_usage) | **GET** /api/v1/environments/{id}/usage | Report Environment Usage
 *SmplkitGeneratedClient::App::EnvironmentsApi* | [**list_environments**](docs/EnvironmentsApi.md#list_environments) | **GET** /api/v1/environments | List Environments
 *SmplkitGeneratedClient::App::EnvironmentsApi* | [**update_environment**](docs/EnvironmentsApi.md#update_environment) | **PUT** /api/v1/environments/{id} | Update Environment
 *SmplkitGeneratedClient::App::InvitationsApi* | [**accept_invitation**](docs/InvitationsApi.md#accept_invitation) | **POST** /api/v1/invitations/accept | Accept Invitation
@@ -205,6 +206,9 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::EnvironmentRequest](docs/EnvironmentRequest.md)
  - [SmplkitGeneratedClient::App::EnvironmentResource](docs/EnvironmentResource.md)
  - [SmplkitGeneratedClient::App::EnvironmentResponse](docs/EnvironmentResponse.md)
+ - [SmplkitGeneratedClient::App::EnvironmentUsage](docs/EnvironmentUsage.md)
+ - [SmplkitGeneratedClient::App::EnvironmentUsageResource](docs/EnvironmentUsageResource.md)
+ - [SmplkitGeneratedClient::App::EnvironmentUsageResponse](docs/EnvironmentUsageResponse.md)
  - [SmplkitGeneratedClient::App::Error](docs/Error.md)
  - [SmplkitGeneratedClient::App::ErrorResponse](docs/ErrorResponse.md)
  - [SmplkitGeneratedClient::App::Invitation](docs/Invitation.md)

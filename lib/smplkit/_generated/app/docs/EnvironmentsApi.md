@@ -7,6 +7,7 @@ All URIs are relative to *http://localhost*
 | [**create_environment**](EnvironmentsApi.md#create_environment) | **POST** /api/v1/environments | Create Environment |
 | [**delete_environment**](EnvironmentsApi.md#delete_environment) | **DELETE** /api/v1/environments/{id} | Delete Environment |
 | [**get_environment**](EnvironmentsApi.md#get_environment) | **GET** /api/v1/environments/{id} | Get Environment |
+| [**get_environment_usage**](EnvironmentsApi.md#get_environment_usage) | **GET** /api/v1/environments/{id}/usage | Report Environment Usage |
 | [**list_environments**](EnvironmentsApi.md#list_environments) | **GET** /api/v1/environments | List Environments |
 | [**update_environment**](EnvironmentsApi.md#update_environment) | **PUT** /api/v1/environments/{id} | Update Environment |
 
@@ -82,11 +83,11 @@ end
 
 ## delete_environment
 
-> delete_environment(id)
+> delete_environment(id, opts)
 
 Delete Environment
 
-Delete an environment by id.
+Delete an environment by id. When `cascade=true` is set, also remove every per-environment reference held by flags, configs, and loggers in the corresponding services before deleting the environment row. The default `cascade=false` deletes only the environment row, leaving downstream references in place.
 
 ### Examples
 
@@ -101,10 +102,13 @@ end
 
 api_instance = SmplkitGeneratedClient::App::EnvironmentsApi.new
 id = 'id_example' # String | 
+opts = {
+  cascade: true # Boolean | When `true`, remove every flag rule, env-level flag default, config override, and logger override scoped to this environment before deleting the environment row.
+}
 
 begin
   # Delete Environment
-  api_instance.delete_environment(id)
+  api_instance.delete_environment(id, opts)
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling EnvironmentsApi->delete_environment: #{e}"
 end
@@ -114,12 +118,12 @@ end
 
 This returns an Array which contains the response data (`nil` in this case), status code and headers.
 
-> <Array(nil, Integer, Hash)> delete_environment_with_http_info(id)
+> <Array(nil, Integer, Hash)> delete_environment_with_http_info(id, opts)
 
 ```ruby
 begin
   # Delete Environment
-  data, status_code, headers = api_instance.delete_environment_with_http_info(id)
+  data, status_code, headers = api_instance.delete_environment_with_http_info(id, opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => nil
@@ -133,6 +137,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
+| **cascade** | **Boolean** | When &#x60;true&#x60;, remove every flag rule, env-level flag default, config override, and logger override scoped to this environment before deleting the environment row. | [optional][default to false] |
 
 ### Return type
 
@@ -206,6 +211,75 @@ end
 ### Return type
 
 [**EnvironmentResponse**](EnvironmentResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/vnd.api+json
+
+
+## get_environment_usage
+
+> <EnvironmentUsageResponse> get_environment_usage(id)
+
+Report Environment Usage
+
+Report how many flag rules, env-level flag defaults, config overrides, and logger overrides reference this environment. Used by the console's delete dialog so the user can see what would survive a non-cascading delete.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_app_client'
+# setup authorization
+SmplkitGeneratedClient::App.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::App::EnvironmentsApi.new
+id = 'id_example' # String | 
+
+begin
+  # Report Environment Usage
+  result = api_instance.get_environment_usage(id)
+  p result
+rescue SmplkitGeneratedClient::App::ApiError => e
+  puts "Error when calling EnvironmentsApi->get_environment_usage: #{e}"
+end
+```
+
+#### Using the get_environment_usage_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<EnvironmentUsageResponse>, Integer, Hash)> get_environment_usage_with_http_info(id)
+
+```ruby
+begin
+  # Report Environment Usage
+  data, status_code, headers = api_instance.get_environment_usage_with_http_info(id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <EnvironmentUsageResponse>
+rescue SmplkitGeneratedClient::App::ApiError => e
+  puts "Error when calling EnvironmentsApi->get_environment_usage_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **id** | **String** |  |  |
+
+### Return type
+
+[**EnvironmentUsageResponse**](EnvironmentUsageResponse.md)
 
 ### Authorization
 
