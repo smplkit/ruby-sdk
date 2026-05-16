@@ -34,7 +34,7 @@ Smplkit::Client.open(environment: "production", service: "showcase-service") do 
   puts "Recorded events for invoice #{some_resource_id}"
 
   # list events
-  page = client.audit.events.list(resource_id: some_resource_id)
+  page = client.audit.events.list(resource_type: "invoice", resource_id: some_resource_id)
   raise "expected event for #{some_resource_id}" unless page.events.any? { |e| e.resource_id == some_resource_id }
 
   recorded_event_id = page.events[0].id
