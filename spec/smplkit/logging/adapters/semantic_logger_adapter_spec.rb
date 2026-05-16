@@ -83,9 +83,16 @@ RSpec.describe Smplkit::Logging::LoggingClient do
   end
 
   let(:loggers_ns) do
-    instance_double(Smplkit::ManagementClient::LoggersNamespace, register: nil, get: nil, list: [], delete: true)
+    instance_double(Smplkit::ManagementClient::LoggersNamespace,
+                    register: nil, get: nil, list: [], delete: true,
+                    flush: nil, list_logger_entries: {})
   end
-  let(:management) { instance_double(Smplkit::ManagementClient, loggers: loggers_ns) }
+  let(:groups_ns) do
+    instance_double(Smplkit::ManagementClient::LogGroupsNamespace, list_group_entries: {})
+  end
+  let(:management) do
+    instance_double(Smplkit::ManagementClient, loggers: loggers_ns, log_groups: groups_ns)
+  end
   let(:ws) { Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
   let(:parent) { double(_service: "svc", _environment: "stg", _ensure_ws: ws) }
 

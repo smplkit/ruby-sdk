@@ -51,27 +51,6 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     expect(loggers_ns).to have_received(:list).with(page_number: 2, page_size: 50)
   end
 
-  it "handle_logger_changed normalizes the incoming name and applies levels" do
-    adapter = instance_double(Smplkit::Logging::Adapters::Base, apply_level: nil)
-    client.instance_variable_set(:@adapters, [adapter])
-    seen = []
-    client.on_change { |event| seen << [event.name, event.level&.name] }
-    client.send(:handle_logger_changed, { "id" => "Rails/Middleware", "resolved_level" => "WARN" })
-    expect(seen.first).to eq(["rails.middleware", "WARN"])
-    expect(adapter).to have_received(:apply_level).with("rails.middleware", Smplkit::LogLevel::WARN)
-  end
-
-  it "handle_logger_changed ignores empty names" do
-    expect { client.send(:handle_logger_changed, {}) }.not_to raise_error
-  end
-
-  it "handle_logger_changed survives a listener that raises" do
-    client.on_change("rails") { raise "boom" }
-    expect do
-      client.send(:handle_logger_changed, { "id" => "rails", "resolved_level" => "INFO" })
-    end.not_to raise_error
-  end
-
   it "auto-load adapters debug-logs when semantic_logger is missing" do
     Smplkit::Debug.enabled = true
     fresh = described_class.new(parent, manage: management, metrics: nil,
@@ -90,6 +69,12 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       c = Smplkit::Logging::LoggerChangeEvent.new(name: "y", level: Smplkit::LogLevel::INFO, source: "ws")
       expect(a).to eq(b)
       expect(a).not_to eq(c)
+    end
+
+    it "distinguishes deletion events by the deleted flag" do
+      live = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: nil, source: "ws")
+      dead = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: nil, source: "ws", deleted: true)
+      expect(live).not_to eq(dead)
     end
   end
 end

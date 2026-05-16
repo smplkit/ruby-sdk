@@ -816,7 +816,37 @@ module Smplkit
         Smplkit::Logging::Helpers.logger_resource_to_model(self, ResourceShim.from_model(response.data))
       end
 
+      # Runtime entry — walks every page and returns an id-keyed Hash of
+      # resolution-cache entries (+level+, +group+, +managed+,
+      # +environments+). Mirrors the Python SDK's
+      # +LoggingClient._fetch_and_apply+ loggers branch.
+      def list_logger_entries
+        rows = PaginatedFetch.collect { |opts| @api.list_loggers(opts) }
+        rows.to_h { |r| logger_entry_from_resource(ResourceShim.from_model(r)) }
+      end
+
+      # Fetch one logger as a resolution-cache entry. Used by the
+      # +logger_changed+ WS handler.
+      def get_logger_entry(id)
+        normalized = Smplkit::Logging::Normalize.normalize_logger_name(id)
+        response = ErrorMapping.call { @api.get_logger(normalized) }
+        logger_entry_from_resource(ResourceShim.from_model(response.data))
+      end
+
       private
+
+      def logger_entry_from_resource(resource)
+        attrs = resource["attributes"] || {}
+        [
+          resource["id"],
+          {
+            "level" => attrs["level"],
+            "group" => attrs["group"],
+            "managed" => attrs.key?("managed") ? attrs["managed"] : true,
+            "environments" => attrs["environments"] || {}
+          }
+        ]
+      end
 
       def logger_body(logger)
         # Logger server schema: name, level, group, managed.
@@ -880,7 +910,34 @@ module Smplkit
         Smplkit::Logging::Helpers.log_group_resource_to_model(self, ResourceShim.from_model(response.data))
       end
 
+      # Runtime entry — walks every page and returns an id-keyed Hash of
+      # resolution-cache entries (+level+, +group+, +environments+). The
+      # +group+ key carries the *parent group id* so the resolution
+      # algorithm can walk the chain with the same key shape it uses for
+      # loggers.
+      def list_group_entries
+        rows = PaginatedFetch.collect { |opts| @api.list_log_groups(opts) }
+        rows.to_h { |r| group_entry_from_resource(ResourceShim.from_model(r)) }
+      end
+
+      def get_group_entry(key)
+        response = ErrorMapping.call { @api.get_log_group(key) }
+        group_entry_from_resource(ResourceShim.from_model(response.data))
+      end
+
       private
+
+      def group_entry_from_resource(resource)
+        attrs = resource["attributes"] || {}
+        [
+          resource["id"],
+          {
+            "level" => attrs["level"],
+            "group" => attrs["parent_id"],
+            "environments" => attrs["environments"] || {}
+          }
+        ]
+      end
 
       def log_group_body(group)
         # LogGroup server schema: name, level, parent_id (no description).

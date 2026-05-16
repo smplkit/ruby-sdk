@@ -536,6 +536,53 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       mgmt.loggers.flush
       expect(WebMock).to have_requested(:post, "https://logging.smplkit.test/api/v1/loggers/bulk")
     end
+
+    it "list_logger_entries returns resolution-cache shape and walks every page" do
+      page_size = Smplkit::ManagementClient::RUNTIME_PAGE_SIZE
+      first = (1..page_size).map do |i|
+        { "id" => "filler-#{i}", "type" => "logger",
+          "attributes" => { "name" => "F#{i}", "level" => "INFO", "managed" => true,
+                            "group" => nil, "environments" => {} } }
+      end
+      second = [{
+        "id" => "rails", "type" => "logger",
+        "attributes" => { "name" => "rails", "level" => "DEBUG", "managed" => true,
+                          "group" => "app", "environments" => { "prod" => { "level" => "WARN" } } }
+      }]
+      stub_request(:get, %r{https://logging\.smplkit\.test/api/v1/loggers\b.*page%5Bnumber%5D=1\b})
+        .to_return(status: 200,
+                   body: JSON.generate({ "data" => first,
+                                         "meta" => { "pagination" => { "page" => 1, "size" => page_size } } }),
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+      stub_request(:get, %r{https://logging\.smplkit\.test/api/v1/loggers\b.*page%5Bnumber%5D=2\b})
+        .to_return(status: 200,
+                   body: JSON.generate({ "data" => second,
+                                         "meta" => { "pagination" => { "page" => 2, "size" => page_size } } }),
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+
+      entries = mgmt.loggers.list_logger_entries
+      expect(entries.length).to eq(page_size + 1)
+      expect(entries["rails"]).to eq("level" => "DEBUG", "group" => "app", "managed" => true,
+                                     "environments" => { "prod" => { "level" => "WARN" } })
+    end
+
+    it "get_logger_entry returns the resolution-cache shape after normalizing the name" do
+      stub_get("logging", "/api/v1/loggers/rails.middleware",
+               { "data" => { "id" => "rails.middleware", "type" => "logger",
+                             "attributes" => { "name" => "rails.middleware", "level" => "DEBUG",
+                                               "managed" => false, "group" => nil, "environments" => {} } } })
+      id, entry = mgmt.loggers.get_logger_entry("Rails/Middleware")
+      expect(id).to eq("rails.middleware")
+      expect(entry).to eq("level" => "DEBUG", "group" => nil, "managed" => false, "environments" => {})
+    end
+
+    it "get_logger_entry defaults managed to true when the field is omitted" do
+      stub_get("logging", "/api/v1/loggers/x",
+               { "data" => { "id" => "x", "type" => "logger",
+                             "attributes" => { "name" => "x", "level" => nil } } })
+      _id, entry = mgmt.loggers.get_logger_entry("x")
+      expect(entry["managed"]).to be(true)
+    end
   end
 
   describe "LogGroupsNamespace" do
@@ -589,6 +636,34 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       group = mgmt.log_groups.new_log_group("app", level: "WARN")
       mgmt.log_groups._update_log_group(group)
       expect(WebMock).to have_requested(:put, "https://logging.smplkit.test/api/v1/log_groups/app")
+    end
+
+    it "list_group_entries returns resolution-cache shape with parent_id mapped onto +group+" do
+      stub_request(:get, %r{https://logging\.smplkit\.test/api/v1/log_groups\b})
+        .to_return(status: 200,
+                   body: JSON.generate({
+                                         "data" => [{ "id" => "child", "type" => "log_group",
+                                                      "attributes" => { "name" => "Child", "level" => nil,
+                                                                        "parent_id" => "root",
+                                                                        "environments" => {
+                                                                          "prod" => { "level" => "WARN" }
+                                                                        } } }],
+                                         "meta" => { "pagination" => { "page" => 1, "size" => 1000 } }
+                                       }),
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+      entries = mgmt.log_groups.list_group_entries
+      expect(entries["child"]).to eq("level" => nil, "group" => "root",
+                                     "environments" => { "prod" => { "level" => "WARN" } })
+    end
+
+    it "get_group_entry returns the resolution-cache shape" do
+      stub_get("logging", "/api/v1/log_groups/app",
+               { "data" => { "id" => "app", "type" => "log_group",
+                             "attributes" => { "name" => "App", "level" => "INFO",
+                                               "parent_id" => nil, "environments" => {} } } })
+      id, entry = mgmt.log_groups.get_group_entry("app")
+      expect(id).to eq("app")
+      expect(entry).to eq("level" => "INFO", "group" => nil, "environments" => {})
     end
   end
 
