@@ -14,10 +14,13 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # A destination that receives audit events recorded for the account.  Each event recorded for the account is evaluated against every enabled forwarder. If the filter expression evaluates truthy — or is absent — the event is delivered to the destination using the configured HTTP request. The slug, derived from `name` at create time, is the stable identifier used by the console and other tooling.
+  # A destination that receives audit events recorded for the account.  Each event recorded for the account is evaluated against every enabled forwarder. If the filter expression evaluates truthy — or is absent — the event is shaped by the configured transform and delivered to the destination defined by ``configuration``.
   class Forwarder < ApiModelBase
     # Human-readable name for the forwarder.
     attr_accessor :name
+
+    # Free-text description for the forwarder.
+    attr_accessor :description
 
     # Destination type.
     attr_accessor :forwarder_type
@@ -28,14 +31,14 @@ module SmplkitGeneratedClient::Audit
     # JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event.
     attr_accessor :filter
 
-    # JSONata template applied to each event before delivery. Omit to deliver the event unchanged.
+    # Engine used to evaluate ``transform``. Must be set whenever ``transform`` is set. Today only `JSONATA` is supported.
+    attr_accessor :transform_type
+
+    # Template applied to each event before delivery. The shape depends on ``transform_type``: for `JSONATA`, a string containing a JSONata expression. Omit to deliver the event JSON unchanged.
     attr_accessor :transform
 
-    # HTTP request used to deliver each event to the destination.
-    attr_accessor :http
-
-    # URL-safe identifier derived from `name` at create time. Stable for the lifetime of the forwarder.
-    attr_accessor :slug
+    # Transport-specific delivery configuration. Shape is discriminated by ``forwarder_type``; today all destination types use ``HttpConfiguration``.
+    attr_accessor :configuration
 
     # When the forwarder was created.
     attr_accessor :created_at
@@ -75,12 +78,13 @@ module SmplkitGeneratedClient::Audit
     def self.attribute_map
       {
         :'name' => :'name',
+        :'description' => :'description',
         :'forwarder_type' => :'forwarder_type',
         :'enabled' => :'enabled',
         :'filter' => :'filter',
+        :'transform_type' => :'transform_type',
         :'transform' => :'transform',
-        :'http' => :'http',
-        :'slug' => :'slug',
+        :'configuration' => :'configuration',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at',
         :'deleted_at' => :'deleted_at',
@@ -102,12 +106,13 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_types
       {
         :'name' => :'String',
+        :'description' => :'String',
         :'forwarder_type' => :'ForwarderType',
         :'enabled' => :'Boolean',
         :'filter' => :'Hash<String, Object>',
-        :'transform' => :'String',
-        :'http' => :'ForwarderHttp',
-        :'slug' => :'String',
+        :'transform_type' => :'String',
+        :'transform' => :'Object',
+        :'configuration' => :'HttpConfiguration',
         :'created_at' => :'Time',
         :'updated_at' => :'Time',
         :'deleted_at' => :'Time',
@@ -118,9 +123,10 @@ module SmplkitGeneratedClient::Audit
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'description',
         :'filter',
+        :'transform_type',
         :'transform',
-        :'slug',
         :'created_at',
         :'updated_at',
         :'deleted_at',
@@ -150,6 +156,10 @@ module SmplkitGeneratedClient::Audit
         self.name = nil
       end
 
+      if attributes.key?(:'description')
+        self.description = attributes[:'description']
+      end
+
       if attributes.key?(:'forwarder_type')
         self.forwarder_type = attributes[:'forwarder_type']
       else
@@ -168,18 +178,18 @@ module SmplkitGeneratedClient::Audit
         end
       end
 
+      if attributes.key?(:'transform_type')
+        self.transform_type = attributes[:'transform_type']
+      end
+
       if attributes.key?(:'transform')
         self.transform = attributes[:'transform']
       end
 
-      if attributes.key?(:'http')
-        self.http = attributes[:'http']
+      if attributes.key?(:'configuration')
+        self.configuration = attributes[:'configuration']
       else
-        self.http = nil
-      end
-
-      if attributes.key?(:'slug')
-        self.slug = attributes[:'slug']
+        self.configuration = nil
       end
 
       if attributes.key?(:'created_at')
@@ -216,16 +226,16 @@ module SmplkitGeneratedClient::Audit
         invalid_properties.push('invalid value for "name", the character length must be greater than or equal to 1.')
       end
 
+      if !@description.nil? && @description.to_s.length > 2000
+        invalid_properties.push('invalid value for "description", the character length must be smaller than or equal to 2000.')
+      end
+
       if @forwarder_type.nil?
         invalid_properties.push('invalid value for "forwarder_type", forwarder_type cannot be nil.')
       end
 
-      if !@transform.nil? && @transform.to_s.length > 16384
-        invalid_properties.push('invalid value for "transform", the character length must be smaller than or equal to 16384.')
-      end
-
-      if @http.nil?
-        invalid_properties.push('invalid value for "http", http cannot be nil.')
+      if @configuration.nil?
+        invalid_properties.push('invalid value for "configuration", configuration cannot be nil.')
       end
 
       invalid_properties
@@ -238,9 +248,11 @@ module SmplkitGeneratedClient::Audit
       return false if @name.nil?
       return false if @name.to_s.length > 200
       return false if @name.to_s.length < 1
+      return false if !@description.nil? && @description.to_s.length > 2000
       return false if @forwarder_type.nil?
-      return false if !@transform.nil? && @transform.to_s.length > 16384
-      return false if @http.nil?
+      transform_type_validator = EnumAttributeValidator.new('String', ["JSONATA"])
+      return false unless transform_type_validator.valid?(@transform_type)
+      return false if @configuration.nil?
       true
     end
 
@@ -263,6 +275,16 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Custom attribute writer method with validation
+    # @param [Object] description Value to be assigned
+    def description=(description)
+      if !description.nil? && description.to_s.length > 2000
+        fail ArgumentError, 'invalid value for "description", the character length must be smaller than or equal to 2000.'
+      end
+
+      @description = description
+    end
+
+    # Custom attribute writer method with validation
     # @param [Object] forwarder_type Value to be assigned
     def forwarder_type=(forwarder_type)
       if forwarder_type.nil?
@@ -272,24 +294,24 @@ module SmplkitGeneratedClient::Audit
       @forwarder_type = forwarder_type
     end
 
-    # Custom attribute writer method with validation
-    # @param [Object] transform Value to be assigned
-    def transform=(transform)
-      if !transform.nil? && transform.to_s.length > 16384
-        fail ArgumentError, 'invalid value for "transform", the character length must be smaller than or equal to 16384.'
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] transform_type Object to be assigned
+    def transform_type=(transform_type)
+      validator = EnumAttributeValidator.new('String', ["JSONATA"])
+      unless validator.valid?(transform_type)
+        fail ArgumentError, "invalid value for \"transform_type\", must be one of #{validator.allowable_values}."
       end
-
-      @transform = transform
+      @transform_type = transform_type
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] http Value to be assigned
-    def http=(http)
-      if http.nil?
-        fail ArgumentError, 'http cannot be nil'
+    # @param [Object] configuration Value to be assigned
+    def configuration=(configuration)
+      if configuration.nil?
+        fail ArgumentError, 'configuration cannot be nil'
       end
 
-      @http = http
+      @configuration = configuration
     end
 
     # Checks equality by comparing each attribute.
@@ -298,12 +320,13 @@ module SmplkitGeneratedClient::Audit
       return true if self.equal?(o)
       self.class == o.class &&
           name == o.name &&
+          description == o.description &&
           forwarder_type == o.forwarder_type &&
           enabled == o.enabled &&
           filter == o.filter &&
+          transform_type == o.transform_type &&
           transform == o.transform &&
-          http == o.http &&
-          slug == o.slug &&
+          configuration == o.configuration &&
           created_at == o.created_at &&
           updated_at == o.updated_at &&
           deleted_at == o.deleted_at &&
@@ -319,7 +342,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, forwarder_type, enabled, filter, transform, http, slug, created_at, updated_at, deleted_at, version].hash
+      [name, description, forwarder_type, enabled, filter, transform_type, transform, configuration, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash
