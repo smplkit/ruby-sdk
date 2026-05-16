@@ -23,6 +23,9 @@ module SmplkitGeneratedClient::Logging
     # List the services that have reported a logger for this account.  Default sort is `name` ascending.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;name&#x60;, &#x60;-name&#x60;. (default to 'name')
+    # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
+    # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
+    # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
     # @return [ServiceListResponse]
     def list_services(opts = {})
       data, _status_code, _headers = list_services_with_http_info(opts)
@@ -33,6 +36,9 @@ module SmplkitGeneratedClient::Logging
     # List the services that have reported a logger for this account.  Default sort is &#x60;name&#x60; ascending.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;name&#x60;, &#x60;-name&#x60;. (default to 'name')
+    # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
+    # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
+    # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
     # @return [Array<(ServiceListResponse, Integer, Hash)>] ServiceListResponse data, response status code and response headers
     def list_services_with_http_info(opts = {})
       if @api_client.config.debugging
@@ -48,6 +54,9 @@ module SmplkitGeneratedClient::Logging
       # query parameters
       query_params = opts[:query_params] || {}
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
+      query_params[:'page[number]'] = opts[:'page_number'] if !opts[:'page_number'].nil?
+      query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
+      query_params[:'meta[total]'] = opts[:'meta_total'] if !opts[:'meta_total'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
