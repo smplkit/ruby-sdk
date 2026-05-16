@@ -38,7 +38,8 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "list returns Smplkit::Context instances" do
-      stub_get("app", "/api/v1/contexts", { "data" => [ctx_data] })
+      stub_get("app", "/api/v1/contexts",
+               { "data" => [ctx_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       result = mgmt.contexts.list
       expect(result.first.id).to eq("user:u-1")
     end
@@ -88,7 +89,8 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "list returns ContextType instances" do
-      stub_get("app", "/api/v1/context_types", { "data" => [ct_data] })
+      stub_get("app", "/api/v1/context_types",
+               { "data" => [ct_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       list = mgmt.context_types.list
       expect(list.first.key).to eq("user")
     end
@@ -125,7 +127,8 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "list returns Environments" do
-      stub_get("app", "/api/v1/environments", { "data" => [env_data] })
+      stub_get("app", "/api/v1/environments",
+               { "data" => [env_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       expect(mgmt.environments.list.first.color).to be_a(Smplkit::Color)
     end
 
