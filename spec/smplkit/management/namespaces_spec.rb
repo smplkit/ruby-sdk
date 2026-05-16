@@ -364,7 +364,8 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "list returns SmplLogger instances" do
-      stub_get("logging", "/api/v1/loggers", { "data" => [logger_data] })
+      stub_get("logging", "/api/v1/loggers",
+               { "data" => [logger_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       expect(mgmt.loggers.list.first.name).to eq("rails")
     end
 
@@ -409,7 +410,8 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "list returns SmplLogGroup instances" do
-      stub_get("logging", "/api/v1/log_groups", { "data" => [group_data] })
+      stub_get("logging", "/api/v1/log_groups",
+               { "data" => [group_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       list = mgmt.log_groups.list
       expect(list.first.key).to eq("app")
     end
