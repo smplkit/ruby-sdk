@@ -16,6 +16,9 @@ require 'time'
 module SmplkitGeneratedClient::App
   # A specific instance of a context type — for example, a particular user, account, or device — together with the attributes observed on it.  Context instances are addressed by a composite identifier of the form `context_type:key` (e.g. `user:alice-123`).
   class Context < ApiModelBase
+    # Entity identifier within the context type (e.g. `alice-123`). Together with `context_type` it forms the composite `id` `context_type:key`. Always populated in responses; declared optional only so SDK consumers can construct a draft Context without a key. Set by the bulk-register API; not editable.
+    attr_accessor :key
+
     # Human-readable display name for the context instance.
     attr_accessor :name
 
@@ -34,6 +37,7 @@ module SmplkitGeneratedClient::App
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'key' => :'key',
         :'name' => :'name',
         :'context_type' => :'context_type',
         :'attributes' => :'attributes',
@@ -55,6 +59,7 @@ module SmplkitGeneratedClient::App
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'key' => :'String',
         :'name' => :'String',
         :'context_type' => :'String',
         :'attributes' => :'Hash<String, Object>',
@@ -66,6 +71,7 @@ module SmplkitGeneratedClient::App
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'key',
         :'name',
         :'created_at',
         :'updated_at'
@@ -87,6 +93,10 @@ module SmplkitGeneratedClient::App
         end
         h[k.to_sym] = v
       }
+
+      if attributes.key?(:'key')
+        self.key = attributes[:'key']
+      end
 
       if attributes.key?(:'name')
         self.name = attributes[:'name']
@@ -148,6 +158,7 @@ module SmplkitGeneratedClient::App
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          key == o.key &&
           name == o.name &&
           context_type == o.context_type &&
           attributes == o.attributes &&
@@ -164,7 +175,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, context_type, attributes, created_at, updated_at].hash
+      [key, name, context_type, attributes, created_at, updated_at].hash
     end
 
     # Builds the object from hash

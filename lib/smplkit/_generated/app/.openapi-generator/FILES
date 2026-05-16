@@ -43,6 +43,10 @@ docs/ContextTypeRequest.md
 docs/ContextTypeResource.md
 docs/ContextTypeResponse.md
 docs/ContextTypesApi.md
+docs/ContextValue.md
+docs/ContextValueListResponse.md
+docs/ContextValueResource.md
+docs/ContextValuesApi.md
 docs/ContextsApi.md
 docs/Email.md
 docs/EmailRegistrationsApi.md
@@ -73,6 +77,7 @@ docs/InvoiceListResponse.md
 docs/InvoiceResource.md
 docs/InvoiceSingleResponse.md
 docs/LimitDefinition.md
+docs/ListMeta.md
 docs/LoginRequest.md
 docs/MetricAttributes.md
 docs/MetricBulkRequest.md
@@ -86,7 +91,7 @@ docs/MetricRollupResource.md
 docs/MetricsApi.md
 docs/NextTierResponse.md
 docs/OidcProvider.md
-docs/PageMeta.md
+docs/PaginationMeta.md
 docs/PaymentMethod.md
 docs/PaymentMethodListResponse.md
 docs/PaymentMethodRequest.md
@@ -125,7 +130,6 @@ docs/SubscriptionResource.md
 docs/SubscriptionResponse.md
 docs/SubscriptionResponseAttributes.md
 docs/User.md
-docs/UserListMeta.md
 docs/UserListResponse.md
 docs/UserRequest.md
 docs/UserResource.md
@@ -140,6 +144,7 @@ lib/smplkit_app_client/api/api_keys_api.rb
 lib/smplkit_app_client/api/auth_api.rb
 lib/smplkit_app_client/api/billing_api.rb
 lib/smplkit_app_client/api/context_types_api.rb
+lib/smplkit_app_client/api/context_values_api.rb
 lib/smplkit_app_client/api/contexts_api.rb
 lib/smplkit_app_client/api/email_registrations_api.rb
 lib/smplkit_app_client/api/emails_api.rb
@@ -186,6 +191,9 @@ lib/smplkit_app_client/models/context_type_list_response.rb
 lib/smplkit_app_client/models/context_type_request.rb
 lib/smplkit_app_client/models/context_type_resource.rb
 lib/smplkit_app_client/models/context_type_response.rb
+lib/smplkit_app_client/models/context_value.rb
+lib/smplkit_app_client/models/context_value_list_response.rb
+lib/smplkit_app_client/models/context_value_resource.rb
 lib/smplkit_app_client/models/email.rb
 lib/smplkit_app_client/models/email_resource.rb
 lib/smplkit_app_client/models/email_response.rb
@@ -211,6 +219,7 @@ lib/smplkit_app_client/models/invoice_list_response.rb
 lib/smplkit_app_client/models/invoice_resource.rb
 lib/smplkit_app_client/models/invoice_single_response.rb
 lib/smplkit_app_client/models/limit_definition.rb
+lib/smplkit_app_client/models/list_meta.rb
 lib/smplkit_app_client/models/login_request.rb
 lib/smplkit_app_client/models/metric_attributes.rb
 lib/smplkit_app_client/models/metric_bulk_request.rb
@@ -223,7 +232,7 @@ lib/smplkit_app_client/models/metric_rollup_list_response.rb
 lib/smplkit_app_client/models/metric_rollup_resource.rb
 lib/smplkit_app_client/models/next_tier_response.rb
 lib/smplkit_app_client/models/oidc_provider.rb
-lib/smplkit_app_client/models/page_meta.rb
+lib/smplkit_app_client/models/pagination_meta.rb
 lib/smplkit_app_client/models/payment_method.rb
 lib/smplkit_app_client/models/payment_method_list_response.rb
 lib/smplkit_app_client/models/payment_method_request.rb
@@ -258,7 +267,6 @@ lib/smplkit_app_client/models/subscription_resource.rb
 lib/smplkit_app_client/models/subscription_response.rb
 lib/smplkit_app_client/models/subscription_response_attributes.rb
 lib/smplkit_app_client/models/user.rb
-lib/smplkit_app_client/models/user_list_meta.rb
 lib/smplkit_app_client/models/user_list_response.rb
 lib/smplkit_app_client/models/user_request.rb
 lib/smplkit_app_client/models/user_resource.rb
@@ -272,6 +280,7 @@ spec/api/api_keys_api_spec.rb
 spec/api/auth_api_spec.rb
 spec/api/billing_api_spec.rb
 spec/api/context_types_api_spec.rb
+spec/api/context_values_api_spec.rb
 spec/api/contexts_api_spec.rb
 spec/api/email_registrations_api_spec.rb
 spec/api/emails_api_spec.rb
@@ -314,6 +323,9 @@ spec/models/context_type_request_spec.rb
 spec/models/context_type_resource_spec.rb
 spec/models/context_type_response_spec.rb
 spec/models/context_type_spec.rb
+spec/models/context_value_list_response_spec.rb
+spec/models/context_value_resource_spec.rb
+spec/models/context_value_spec.rb
 spec/models/email_resource_spec.rb
 spec/models/email_response_spec.rb
 spec/models/email_spec.rb
@@ -339,6 +351,7 @@ spec/models/invoice_resource_spec.rb
 spec/models/invoice_single_response_spec.rb
 spec/models/invoice_spec.rb
 spec/models/limit_definition_spec.rb
+spec/models/list_meta_spec.rb
 spec/models/login_request_spec.rb
 spec/models/metric_attributes_spec.rb
 spec/models/metric_bulk_request_spec.rb
@@ -351,7 +364,7 @@ spec/models/metric_rollup_list_response_spec.rb
 spec/models/metric_rollup_resource_spec.rb
 spec/models/next_tier_response_spec.rb
 spec/models/oidc_provider_spec.rb
-spec/models/page_meta_spec.rb
+spec/models/pagination_meta_spec.rb
 spec/models/payment_method_list_response_spec.rb
 spec/models/payment_method_request_spec.rb
 spec/models/payment_method_resource_spec.rb
@@ -385,7 +398,6 @@ spec/models/subscription_request_spec.rb
 spec/models/subscription_resource_spec.rb
 spec/models/subscription_response_attributes_spec.rb
 spec/models/subscription_response_spec.rb
-spec/models/user_list_meta_spec.rb
 spec/models/user_list_response_spec.rb
 spec/models/user_request_spec.rb
 spec/models/user_resource_spec.rb

@@ -5,6 +5,7 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **data** | [**Array&lt;ContextResource&gt;**](ContextResource.md) |  |  |
+| **meta** | [**ListMeta**](ListMeta.md) |  |  |
 
 ## Example
 
@@ -12,7 +13,8 @@
 require 'smplkit_app_client'
 
 instance = SmplkitGeneratedClient::App::ContextListResponse.new(
-  data: null
+  data: null,
+  meta: null
 )
 ```
 

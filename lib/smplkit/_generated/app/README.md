@@ -118,6 +118,7 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::ContextTypesApi* | [**get_context_type**](docs/ContextTypesApi.md#get_context_type) | **GET** /api/v1/context_types/{id} | Get Context Type
 *SmplkitGeneratedClient::App::ContextTypesApi* | [**list_context_types**](docs/ContextTypesApi.md#list_context_types) | **GET** /api/v1/context_types | List Context Types
 *SmplkitGeneratedClient::App::ContextTypesApi* | [**update_context_type**](docs/ContextTypesApi.md#update_context_type) | **PUT** /api/v1/context_types/{id} | Update Context Type
+*SmplkitGeneratedClient::App::ContextValuesApi* | [**list_context_values**](docs/ContextValuesApi.md#list_context_values) | **GET** /api/v1/context_values | List Context Values
 *SmplkitGeneratedClient::App::ContextsApi* | [**bulk_register_contexts**](docs/ContextsApi.md#bulk_register_contexts) | **POST** /api/v1/contexts/bulk | Bulk Register Contexts
 *SmplkitGeneratedClient::App::ContextsApi* | [**delete_context**](docs/ContextsApi.md#delete_context) | **DELETE** /api/v1/contexts/{id} | Delete Context
 *SmplkitGeneratedClient::App::ContextsApi* | [**get_context**](docs/ContextsApi.md#get_context) | **GET** /api/v1/contexts/{id} | Get Context
@@ -195,6 +196,9 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::ContextTypeRequest](docs/ContextTypeRequest.md)
  - [SmplkitGeneratedClient::App::ContextTypeResource](docs/ContextTypeResource.md)
  - [SmplkitGeneratedClient::App::ContextTypeResponse](docs/ContextTypeResponse.md)
+ - [SmplkitGeneratedClient::App::ContextValue](docs/ContextValue.md)
+ - [SmplkitGeneratedClient::App::ContextValueListResponse](docs/ContextValueListResponse.md)
+ - [SmplkitGeneratedClient::App::ContextValueResource](docs/ContextValueResource.md)
  - [SmplkitGeneratedClient::App::Email](docs/Email.md)
  - [SmplkitGeneratedClient::App::EmailResource](docs/EmailResource.md)
  - [SmplkitGeneratedClient::App::EmailResponse](docs/EmailResponse.md)
@@ -220,6 +224,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::InvoiceResource](docs/InvoiceResource.md)
  - [SmplkitGeneratedClient::App::InvoiceSingleResponse](docs/InvoiceSingleResponse.md)
  - [SmplkitGeneratedClient::App::LimitDefinition](docs/LimitDefinition.md)
+ - [SmplkitGeneratedClient::App::ListMeta](docs/ListMeta.md)
  - [SmplkitGeneratedClient::App::LoginRequest](docs/LoginRequest.md)
  - [SmplkitGeneratedClient::App::MetricAttributes](docs/MetricAttributes.md)
  - [SmplkitGeneratedClient::App::MetricBulkRequest](docs/MetricBulkRequest.md)
@@ -232,7 +237,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::MetricRollupResource](docs/MetricRollupResource.md)
  - [SmplkitGeneratedClient::App::NextTierResponse](docs/NextTierResponse.md)
  - [SmplkitGeneratedClient::App::OidcProvider](docs/OidcProvider.md)
- - [SmplkitGeneratedClient::App::PageMeta](docs/PageMeta.md)
+ - [SmplkitGeneratedClient::App::PaginationMeta](docs/PaginationMeta.md)
  - [SmplkitGeneratedClient::App::PaymentMethod](docs/PaymentMethod.md)
  - [SmplkitGeneratedClient::App::PaymentMethodListResponse](docs/PaymentMethodListResponse.md)
  - [SmplkitGeneratedClient::App::PaymentMethodRequest](docs/PaymentMethodRequest.md)
@@ -267,7 +272,6 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::SubscriptionResponse](docs/SubscriptionResponse.md)
  - [SmplkitGeneratedClient::App::SubscriptionResponseAttributes](docs/SubscriptionResponseAttributes.md)
  - [SmplkitGeneratedClient::App::User](docs/User.md)
- - [SmplkitGeneratedClient::App::UserListMeta](docs/UserListMeta.md)
  - [SmplkitGeneratedClient::App::UserListResponse](docs/UserListResponse.md)
  - [SmplkitGeneratedClient::App::UserRequest](docs/UserRequest.md)
  - [SmplkitGeneratedClient::App::UserResource](docs/UserResource.md)
