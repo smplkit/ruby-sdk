@@ -76,21 +76,27 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
   end
 
   describe "#list" do
-    it "paginates and extracts the cursor from links.next" do
-      page1 = {
-        data: [forwarder_resource(name: "A", slug: "a")],
-        links: { next: "/api/v1/forwarders?page[size]=1&page[after]=tok-2" },
-        meta: { page_size: 1 }
-      }.to_json
-      page2 = { data: [forwarder_resource(name: "B", slug: "b")], meta: { page_size: 1 } }.to_json
-      stub_request(:get, %r{#{base_url}/api/v1/forwarders\b}).to_return(
-        { status: 200, body: page1, headers: json_api },
-        { status: 200, body: page2, headers: json_api }
-      )
-      first = forwarders.list(forwarder_type: "DATADOG", enabled: true, page_size: 1)
-      expect(first.next_cursor).to eq("tok-2")
-      second = forwarders.list(page_after: first.next_cursor)
-      expect(second.next_cursor).to be_nil
+    it "forwards offset params and surfaces pagination metadata" do
+      captured_uri = nil
+      stub_request(:get, %r{#{base_url}/api/v1/forwarders\b})
+        .with do |req|
+          captured_uri = req.uri.to_s
+          true
+        end
+        .to_return(
+          status: 200,
+          body: {
+            data: [forwarder_resource(name: "A", slug: "a")],
+            meta: { pagination: { page: 2, size: 1, total: 3, total_pages: 3 } }
+          }.to_json,
+          headers: json_api
+        )
+      page = forwarders.list(forwarder_type: "DATADOG", enabled: true,
+                             page_number: 2, page_size: 1, meta_total: true)
+      expect(captured_uri).to include("page%5Bnumber%5D=2")
+      expect(captured_uri).to include("page%5Bsize%5D=1")
+      expect(captured_uri).to include("meta%5Btotal%5D=true")
+      expect(page.pagination).to eq(page: 2, size: 1, total: 3, total_pages: 3)
     end
 
     it "passes filter[forwarder_type] and filter[enabled] through to the generated client" do
@@ -100,19 +106,23 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
           captured_uri = req.uri.to_s
           true
         end
-        .to_return(status: 200, body: { data: [], meta: { page_size: 50 } }.to_json, headers: json_api)
+        .to_return(status: 200,
+                   body: { data: [], meta: { pagination: { page: 1, size: 1000 } } }.to_json,
+                   headers: json_api)
       forwarders.list(forwarder_type: "DATADOG", enabled: false)
       expect(captured_uri).to include("filter%5Bforwarder_type%5D=DATADOG")
       expect(captured_uri).to include("filter%5Benabled%5D=false")
     end
 
-    it "returns empty list and nil cursor on empty data" do
+    it "returns empty list and bare pagination on empty data" do
       stub_request(:get, %r{#{base_url}/api/v1/forwarders\b}).to_return(
-        status: 200, body: { data: [], meta: { page_size: 1 } }.to_json, headers: json_api
+        status: 200,
+        body: { data: [], meta: { pagination: { page: 1, size: 1000 } } }.to_json,
+        headers: json_api
       )
       page = forwarders.list
       expect(page.forwarders).to be_empty
-      expect(page.next_cursor).to be_nil
+      expect(page.pagination).to eq(page: 1, size: 1000)
     end
 
     it "rejects an invalid forwarder_type at the wrapper before any HTTP" do

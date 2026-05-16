@@ -49,16 +49,17 @@ module Smplkit
         Smplkit::Audit::Forwarder.from_resource(resp.data)
       end
 
-      def list(forwarder_type: nil, enabled: nil, page_size: nil, page_after: nil)
+      def list(forwarder_type: nil, enabled: nil, page_number: nil, page_size: nil, meta_total: nil)
         opts = {}
         opts[:filter_forwarder_type] = Smplkit::Audit::ForwarderType.coerce(forwarder_type) if forwarder_type
         opts[:filter_enabled] = enabled unless enabled.nil?
+        opts[:page_number] = page_number if page_number
         opts[:page_size] = page_size if page_size
-        opts[:page_after] = page_after if page_after
+        opts[:meta_total] = meta_total unless meta_total.nil?
 
         resp = Smplkit::Audit.call_api { @api.list_forwarders(opts) }
         forwarders = (resp.data || []).map { |r| Smplkit::Audit::Forwarder.from_resource(r) }
-        ForwarderListPage.new(forwarders, Smplkit::Audit.next_cursor(resp.links&._next))
+        ForwarderListPage.new(forwarders, Smplkit::Audit.extract_pagination(resp.meta))
       end
 
       def get(forwarder_id)
@@ -106,6 +107,6 @@ module Smplkit
       end
     end
 
-    ForwarderListPage = Struct.new(:forwarders, :next_cursor)
+    ForwarderListPage = Struct.new(:forwarders, :pagination)
   end
 end

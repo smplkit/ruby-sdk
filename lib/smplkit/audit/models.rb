@@ -35,6 +35,20 @@ module Smplkit
       amp ? token[0...amp] : token
     end
 
+    # Pull the offset-pagination block out of a JSON:API +meta+ envelope.
+    # Returns a hash with +:page+/+:size+ (and +:total+/+:total_pages+ when
+    # the request opted into +meta[total]=true+). Always returns a hash so
+    # callers don't have to nil-check before reading individual keys.
+    def self.extract_pagination(meta)
+      pagination = meta&.pagination
+      return {} if pagination.nil?
+
+      out = { page: pagination.page, size: pagination.size }
+      out[:total] = pagination.total unless pagination.total.nil?
+      out[:total_pages] = pagination.total_pages unless pagination.total_pages.nil?
+      out
+    end
+
     # Public-facing enum for SIEM streaming destination types.
     #
     # Mirrors the +ForwarderType+ enum the audit OpenAPI spec emits

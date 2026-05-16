@@ -21,16 +21,16 @@ RSpec.describe Smplkit::Audit::ResourceTypes do
     stub_request(:get, %r{#{base_url}/api/v1/resource_types\b}).to_return(
       status: 200,
       body: { data: [resource_type_resource("account"), resource_type_resource("user")],
-              meta: { page_size: 50 } }.to_json,
+              meta: { pagination: { page: 1, size: 1000 } } }.to_json,
       headers: { "Content-Type" => "application/vnd.api+json" }
     )
     page = client.resource_types.list
     expect(page).to be_a(Smplkit::Audit::ResourceTypeListPage)
     expect(page.resource_types.map(&:id)).to eq(%w[account user])
-    expect(page.next_cursor).to be_nil
+    expect(page.pagination).to eq(page: 1, size: 1000)
   end
 
-  it "propagates pagination cursor and forwards page_after on subsequent calls" do
+  it "forwards offset params and surfaces totals when meta_total is requested" do
     captured_uri = nil
     stub_request(:get, %r{#{base_url}/api/v1/resource_types\b})
       .with do |req|
@@ -41,25 +41,26 @@ RSpec.describe Smplkit::Audit::ResourceTypes do
         status: 200,
         body: {
           data: [resource_type_resource("alpha")],
-          links: { next: "/api/v1/resource_types?page[size]=1&page[after]=tok-2" },
-          meta: { page_size: 1 }
+          meta: { pagination: { page: 2, size: 1, total: 3, total_pages: 3 } }
         }.to_json,
         headers: { "Content-Type" => "application/vnd.api+json" }
       )
-    page = client.resource_types.list(page_size: 1, page_after: "tok-1")
+    page = client.resource_types.list(page_number: 2, page_size: 1, meta_total: true)
+    expect(captured_uri).to include("page%5Bnumber%5D=2")
     expect(captured_uri).to include("page%5Bsize%5D=1")
-    expect(captured_uri).to include("page%5Bafter%5D=tok-1")
-    expect(page.next_cursor).to eq("tok-2")
+    expect(captured_uri).to include("meta%5Btotal%5D=true")
+    expect(page.pagination).to eq(page: 2, size: 1, total: 3, total_pages: 3)
   end
 
   it "handles an empty response" do
     stub_request(:get, %r{#{base_url}/api/v1/resource_types\b}).to_return(
-      status: 200, body: { data: [], meta: { page_size: 50 } }.to_json,
+      status: 200,
+      body: { data: [], meta: { pagination: { page: 1, size: 1000 } } }.to_json,
       headers: { "Content-Type" => "application/vnd.api+json" }
     )
     page = client.resource_types.list
     expect(page.resource_types).to be_empty
-    expect(page.next_cursor).to be_nil
+    expect(page.pagination).to eq(page: 1, size: 1000)
   end
 
   it "maps 5xx to the generic Smplkit::Error" do
