@@ -4,9 +4,9 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **id** | **String** |  | [optional] |
-| **type** | **String** |  |  |
-| **attributes** | [**SubscriptionAttributes**](SubscriptionAttributes.md) |  |  |
+| **id** | **String** | Subscription identifier. Always &#x60;current&#x60; on response; absent on create-style requests. | [optional] |
+| **type** | **String** | JSON:API resource type. |  |
+| **attributes** | [**SubscriptionResponseAttributes**](SubscriptionResponseAttributes.md) |  |  |
 
 ## Example
 

@@ -14,10 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # JSON:API resource envelope for a subscription.  `id` must not be specified for create requests (the server assigns it).
+  # JSON:API resource object for a subscription.
   class SubscriptionResource < ApiModelBase
+    # Subscription identifier. Always `current` on response; absent on create-style requests.
     attr_accessor :id
 
+    # JSON:API resource type.
     attr_accessor :type
 
     attr_accessor :attributes
@@ -68,7 +70,7 @@ module SmplkitGeneratedClient::App
       {
         :'id' => :'String',
         :'type' => :'String',
-        :'attributes' => :'SubscriptionAttributes'
+        :'attributes' => :'SubscriptionResponseAttributes'
       }
     end
 

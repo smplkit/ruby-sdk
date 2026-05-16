@@ -104,22 +104,15 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::AuthApi* | [**register**](docs/AuthApi.md#register) | **POST** /api/v1/auth/register | Register
 *SmplkitGeneratedClient::App::AuthApi* | [**resend_verification**](docs/AuthApi.md#resend_verification) | **POST** /api/v1/auth/resend-verification | Resend Verification Email
 *SmplkitGeneratedClient::App::AuthApi* | [**verify_email**](docs/AuthApi.md#verify_email) | **POST** /api/v1/auth/verify-email | Verify Email
-*SmplkitGeneratedClient::App::BillingApi* | [**cancel_subscription**](docs/BillingApi.md#cancel_subscription) | **POST** /api/v1/subscriptions/{id}/actions/cancel | Cancel Subscription
 *SmplkitGeneratedClient::App::BillingApi* | [**create_payment_method**](docs/BillingApi.md#create_payment_method) | **POST** /api/v1/payment_methods | Add Payment Method
-*SmplkitGeneratedClient::App::BillingApi* | [**create_subscription**](docs/BillingApi.md#create_subscription) | **POST** /api/v1/subscriptions | Create Subscription
 *SmplkitGeneratedClient::App::BillingApi* | [**delete_payment_method**](docs/BillingApi.md#delete_payment_method) | **DELETE** /api/v1/payment_methods/{id} | Delete Payment Method
-*SmplkitGeneratedClient::App::BillingApi* | [**downgrade_subscription**](docs/BillingApi.md#downgrade_subscription) | **POST** /api/v1/subscriptions/{id}/actions/downgrade | Downgrade Subscription
 *SmplkitGeneratedClient::App::BillingApi* | [**execute_setup_intent**](docs/BillingApi.md#execute_setup_intent) | **POST** /api/v1/functions/setup_intent/actions/execute | Execute Setup Intent
 *SmplkitGeneratedClient::App::BillingApi* | [**get_invoice**](docs/BillingApi.md#get_invoice) | **GET** /api/v1/invoices/{invoice_id} | Get Invoice
 *SmplkitGeneratedClient::App::BillingApi* | [**get_payment_method**](docs/BillingApi.md#get_payment_method) | **GET** /api/v1/payment_methods/{id} | Get Payment Method
 *SmplkitGeneratedClient::App::BillingApi* | [**list_invoices**](docs/BillingApi.md#list_invoices) | **GET** /api/v1/invoices | List Invoices
 *SmplkitGeneratedClient::App::BillingApi* | [**list_payment_methods**](docs/BillingApi.md#list_payment_methods) | **GET** /api/v1/payment_methods | List Payment Methods
-*SmplkitGeneratedClient::App::BillingApi* | [**list_subscriptions**](docs/BillingApi.md#list_subscriptions) | **GET** /api/v1/subscriptions | List Subscriptions
 *SmplkitGeneratedClient::App::BillingApi* | [**set_default_payment_method**](docs/BillingApi.md#set_default_payment_method) | **POST** /api/v1/payment_methods/{id}/actions/set_default | Set Default Payment Method
-*SmplkitGeneratedClient::App::BillingApi* | [**uncancel_subscription**](docs/BillingApi.md#uncancel_subscription) | **POST** /api/v1/subscriptions/{id}/actions/uncancel | Undo Cancellation
-*SmplkitGeneratedClient::App::BillingApi* | [**undowngrade_subscription**](docs/BillingApi.md#undowngrade_subscription) | **POST** /api/v1/subscriptions/{id}/actions/undowngrade | Undo Pending Downgrade
 *SmplkitGeneratedClient::App::BillingApi* | [**update_payment_method**](docs/BillingApi.md#update_payment_method) | **PUT** /api/v1/payment_methods/{id} | Update Payment Method
-*SmplkitGeneratedClient::App::BillingApi* | [**upgrade_subscription**](docs/BillingApi.md#upgrade_subscription) | **POST** /api/v1/subscriptions/{id}/actions/upgrade | Upgrade Subscription
 *SmplkitGeneratedClient::App::ContextTypesApi* | [**create_context_type**](docs/ContextTypesApi.md#create_context_type) | **POST** /api/v1/context_types | Create Context Type
 *SmplkitGeneratedClient::App::ContextTypesApi* | [**delete_context_type**](docs/ContextTypesApi.md#delete_context_type) | **DELETE** /api/v1/context_types/{id} | Delete Context Type
 *SmplkitGeneratedClient::App::ContextTypesApi* | [**get_context_type**](docs/ContextTypesApi.md#get_context_type) | **GET** /api/v1/context_types/{id} | Get Context Type
@@ -154,6 +147,10 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::ServicesApi* | [**get_service**](docs/ServicesApi.md#get_service) | **GET** /api/v1/services/{id} | Get Service
 *SmplkitGeneratedClient::App::ServicesApi* | [**list_services**](docs/ServicesApi.md#list_services) | **GET** /api/v1/services | List Services
 *SmplkitGeneratedClient::App::ServicesApi* | [**update_service**](docs/ServicesApi.md#update_service) | **PUT** /api/v1/services/{id} | Update Service
+*SmplkitGeneratedClient::App::SubscriptionApi* | [**admin_put_account_subscription**](docs/SubscriptionApi.md#admin_put_account_subscription) | **PUT** /api/v1/accounts/{account_id}/subscription | Replace Account Subscription (admin)
+*SmplkitGeneratedClient::App::SubscriptionApi* | [**get_current_subscription**](docs/SubscriptionApi.md#get_current_subscription) | **GET** /api/v1/accounts/current/subscription | Get Current Subscription
+*SmplkitGeneratedClient::App::SubscriptionApi* | [**preview_current_subscription**](docs/SubscriptionApi.md#preview_current_subscription) | **POST** /api/v1/accounts/current/subscription/actions/preview | Preview Subscription Change
+*SmplkitGeneratedClient::App::SubscriptionApi* | [**put_current_subscription**](docs/SubscriptionApi.md#put_current_subscription) | **PUT** /api/v1/accounts/current/subscription | Replace Current Subscription
 *SmplkitGeneratedClient::App::UsersApi* | [**get_current_user**](docs/UsersApi.md#get_current_user) | **GET** /api/v1/users/current | Get Current User
 *SmplkitGeneratedClient::App::UsersApi* | [**get_user**](docs/UsersApi.md#get_user) | **GET** /api/v1/users/{id} | Get User
 *SmplkitGeneratedClient::App::UsersApi* | [**get_user_settings**](docs/UsersApi.md#get_user_settings) | **GET** /api/v1/users/current/settings | Get User Settings
@@ -175,6 +172,9 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::AddPaymentMethodAttributes](docs/AddPaymentMethodAttributes.md)
  - [SmplkitGeneratedClient::App::AddPaymentMethodBody](docs/AddPaymentMethodBody.md)
  - [SmplkitGeneratedClient::App::AddPaymentMethodData](docs/AddPaymentMethodData.md)
+ - [SmplkitGeneratedClient::App::AdminSubscriptionRequest](docs/AdminSubscriptionRequest.md)
+ - [SmplkitGeneratedClient::App::AdminSubscriptionRequestAttributes](docs/AdminSubscriptionRequestAttributes.md)
+ - [SmplkitGeneratedClient::App::AdminSubscriptionRequestResource](docs/AdminSubscriptionRequestResource.md)
  - [SmplkitGeneratedClient::App::ApiKey](docs/ApiKey.md)
  - [SmplkitGeneratedClient::App::ApiKeyListResponse](docs/ApiKeyListResponse.md)
  - [SmplkitGeneratedClient::App::ApiKeyRequest](docs/ApiKeyRequest.md)
@@ -195,9 +195,6 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::ContextTypeRequest](docs/ContextTypeRequest.md)
  - [SmplkitGeneratedClient::App::ContextTypeResource](docs/ContextTypeResource.md)
  - [SmplkitGeneratedClient::App::ContextTypeResponse](docs/ContextTypeResponse.md)
- - [SmplkitGeneratedClient::App::CreateSubscriptionAttributes](docs/CreateSubscriptionAttributes.md)
- - [SmplkitGeneratedClient::App::CreateSubscriptionBody](docs/CreateSubscriptionBody.md)
- - [SmplkitGeneratedClient::App::CreateSubscriptionData](docs/CreateSubscriptionData.md)
  - [SmplkitGeneratedClient::App::Email](docs/Email.md)
  - [SmplkitGeneratedClient::App::EmailResource](docs/EmailResource.md)
  - [SmplkitGeneratedClient::App::EmailResponse](docs/EmailResponse.md)
@@ -233,7 +230,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::MetricRollupAttributes](docs/MetricRollupAttributes.md)
  - [SmplkitGeneratedClient::App::MetricRollupListResponse](docs/MetricRollupListResponse.md)
  - [SmplkitGeneratedClient::App::MetricRollupResource](docs/MetricRollupResource.md)
- - [SmplkitGeneratedClient::App::NextTierMeta](docs/NextTierMeta.md)
+ - [SmplkitGeneratedClient::App::NextTierResponse](docs/NextTierResponse.md)
  - [SmplkitGeneratedClient::App::OidcProvider](docs/OidcProvider.md)
  - [SmplkitGeneratedClient::App::PageMeta](docs/PageMeta.md)
  - [SmplkitGeneratedClient::App::PaymentMethod](docs/PaymentMethod.md)
@@ -242,7 +239,6 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::PaymentMethodResource](docs/PaymentMethodResource.md)
  - [SmplkitGeneratedClient::App::PaymentMethodResponse](docs/PaymentMethodResponse.md)
  - [SmplkitGeneratedClient::App::Plan](docs/Plan.md)
- - [SmplkitGeneratedClient::App::PlanChangeRequest](docs/PlanChangeRequest.md)
  - [SmplkitGeneratedClient::App::PlanDefinition](docs/PlanDefinition.md)
  - [SmplkitGeneratedClient::App::PlanListResponse](docs/PlanListResponse.md)
  - [SmplkitGeneratedClient::App::PlanResource](docs/PlanResource.md)
@@ -258,11 +254,18 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::SetupIntentAttributes](docs/SetupIntentAttributes.md)
  - [SmplkitGeneratedClient::App::SetupIntentResource](docs/SetupIntentResource.md)
  - [SmplkitGeneratedClient::App::SetupIntentResponse](docs/SetupIntentResponse.md)
- - [SmplkitGeneratedClient::App::SubscriptionAttributes](docs/SubscriptionAttributes.md)
- - [SmplkitGeneratedClient::App::SubscriptionListMeta](docs/SubscriptionListMeta.md)
- - [SmplkitGeneratedClient::App::SubscriptionListResponse](docs/SubscriptionListResponse.md)
+ - [SmplkitGeneratedClient::App::SubscriptionChangeProjection](docs/SubscriptionChangeProjection.md)
+ - [SmplkitGeneratedClient::App::SubscriptionItemRequest](docs/SubscriptionItemRequest.md)
+ - [SmplkitGeneratedClient::App::SubscriptionItemResponse](docs/SubscriptionItemResponse.md)
+ - [SmplkitGeneratedClient::App::SubscriptionPreviewAttributes](docs/SubscriptionPreviewAttributes.md)
+ - [SmplkitGeneratedClient::App::SubscriptionPreviewResource](docs/SubscriptionPreviewResource.md)
+ - [SmplkitGeneratedClient::App::SubscriptionPreviewResponse](docs/SubscriptionPreviewResponse.md)
+ - [SmplkitGeneratedClient::App::SubscriptionRequest](docs/SubscriptionRequest.md)
+ - [SmplkitGeneratedClient::App::SubscriptionRequestAttributes](docs/SubscriptionRequestAttributes.md)
+ - [SmplkitGeneratedClient::App::SubscriptionRequestResource](docs/SubscriptionRequestResource.md)
  - [SmplkitGeneratedClient::App::SubscriptionResource](docs/SubscriptionResource.md)
  - [SmplkitGeneratedClient::App::SubscriptionResponse](docs/SubscriptionResponse.md)
+ - [SmplkitGeneratedClient::App::SubscriptionResponseAttributes](docs/SubscriptionResponseAttributes.md)
  - [SmplkitGeneratedClient::App::User](docs/User.md)
  - [SmplkitGeneratedClient::App::UserListMeta](docs/UserListMeta.md)
  - [SmplkitGeneratedClient::App::UserListResponse](docs/UserListResponse.md)
