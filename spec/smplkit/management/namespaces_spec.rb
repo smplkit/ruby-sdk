@@ -283,7 +283,8 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "list_flags returns runtime-cache hashes" do
-      stub_get("flags", "/api/v1/flags", { "data" => [flag_data] })
+      stub_get("flags", "/api/v1/flags",
+               { "data" => [flag_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       list = mgmt.flags.list_flags
       expect(list.first["id"]).to eq("checkout-v2")
     end
