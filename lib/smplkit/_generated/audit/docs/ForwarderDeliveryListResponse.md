@@ -5,8 +5,8 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **data** | [**Array&lt;ForwarderDeliveryResource&gt;**](ForwarderDeliveryResource.md) |  |  |
-| **meta** | [**ForwarderListMeta**](ForwarderListMeta.md) |  |  |
-| **links** | [**ForwarderListLinks**](ForwarderListLinks.md) |  | [optional] |
+| **meta** | [**ForwarderDeliveryListMeta**](ForwarderDeliveryListMeta.md) |  |  |
+| **links** | [**ForwarderDeliveryListLinks**](ForwarderDeliveryListLinks.md) |  | [optional] |
 
 ## Example
 

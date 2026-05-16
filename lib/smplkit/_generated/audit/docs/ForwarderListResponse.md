@@ -5,8 +5,7 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **data** | [**Array&lt;ForwarderResource&gt;**](ForwarderResource.md) |  |  |
-| **meta** | [**ForwarderListMeta**](ForwarderListMeta.md) |  |  |
-| **links** | [**ForwarderListLinks**](ForwarderListLinks.md) |  | [optional] |
+| **meta** | [**ListMeta**](ListMeta.md) |  |  |
 
 ## Example
 
@@ -15,8 +14,7 @@ require 'smplkit_audit_client'
 
 instance = SmplkitGeneratedClient::Audit::ForwarderListResponse.new(
   data: null,
-  meta: null,
-  links: null
+  meta: null
 )
 ```
 

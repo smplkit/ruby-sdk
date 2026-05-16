@@ -369,13 +369,14 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarders
-    # List forwarders for this account.  Default sort is `-created_at` (newest first). Pagination uses cursor tokens; keep the same `sort` value across paginated requests.
+    # List forwarders for this account.  Default sort is `-created_at` (newest first).
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_forwarder_type 
     # @option opts [Boolean] :filter_enabled 
-    # @option opts [Integer] :page_size 
-    # @option opts [String] :page_after 
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to '-created_at')
+    # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
+    # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
+    # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
     # @return [ForwarderListResponse]
     def list_forwarders(opts = {})
       data, _status_code, _headers = list_forwarders_with_http_info(opts)
@@ -383,22 +384,19 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarders
-    # List forwarders for this account.  Default sort is &#x60;-created_at&#x60; (newest first). Pagination uses cursor tokens; keep the same &#x60;sort&#x60; value across paginated requests.
+    # List forwarders for this account.  Default sort is &#x60;-created_at&#x60; (newest first).
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_forwarder_type 
     # @option opts [Boolean] :filter_enabled 
-    # @option opts [Integer] :page_size 
-    # @option opts [String] :page_after 
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to '-created_at')
+    # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
+    # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
+    # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
     # @return [Array<(ForwarderListResponse, Integer, Hash)>] ForwarderListResponse data, response status code and response headers
     def list_forwarders_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ForwardersApi.list_forwarders ...'
       end
-      if @api_client.config.client_side_validation && !opts[:'page_size'].nil? && opts[:'page_size'] < 1
-        fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling ForwardersApi.list_forwarders, must be greater than or equal to 1.'
-      end
-
       allowable_values = ["created_at", "-created_at", "updated_at", "-updated_at"]
       if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
         fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
@@ -410,9 +408,10 @@ module SmplkitGeneratedClient::Audit
       query_params = opts[:query_params] || {}
       query_params[:'filter[forwarder_type]'] = opts[:'filter_forwarder_type'] if !opts[:'filter_forwarder_type'].nil?
       query_params[:'filter[enabled]'] = opts[:'filter_enabled'] if !opts[:'filter_enabled'].nil?
-      query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
-      query_params[:'page[after]'] = opts[:'page_after'] if !opts[:'page_after'].nil?
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
+      query_params[:'page[number]'] = opts[:'page_number'] if !opts[:'page_number'].nil?
+      query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
+      query_params[:'meta[total]'] = opts[:'meta_total'] if !opts[:'meta_total'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
