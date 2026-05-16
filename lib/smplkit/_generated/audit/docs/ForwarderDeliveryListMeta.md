@@ -1,4 +1,4 @@
-# SmplkitGeneratedClient::Audit::ResourceTypeListMeta
+# SmplkitGeneratedClient::Audit::ForwarderDeliveryListMeta
 
 ## Properties
 
@@ -11,7 +11,7 @@
 ```ruby
 require 'smplkit_audit_client'
 
-instance = SmplkitGeneratedClient::Audit::ResourceTypeListMeta.new(
+instance = SmplkitGeneratedClient::Audit::ForwarderDeliveryListMeta.new(
   page_size: null
 )
 ```

@@ -19,14 +19,11 @@ module SmplkitGeneratedClient::Audit
 
     attr_accessor :meta
 
-    attr_accessor :links
-
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'data' => :'data',
-        :'meta' => :'meta',
-        :'links' => :'links'
+        :'meta' => :'meta'
       }
     end
 
@@ -44,15 +41,13 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_types
       {
         :'data' => :'Array<ResourceTypeResource>',
-        :'meta' => :'ResourceTypeListMeta',
-        :'links' => :'ResourceTypeListLinks'
+        :'meta' => :'ListMeta'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'links'
       ])
     end
 
@@ -84,10 +79,6 @@ module SmplkitGeneratedClient::Audit
         self.meta = attributes[:'meta']
       else
         self.meta = nil
-      end
-
-      if attributes.key?(:'links')
-        self.links = attributes[:'links']
       end
     end
 
@@ -142,8 +133,7 @@ module SmplkitGeneratedClient::Audit
       return true if self.equal?(o)
       self.class == o.class &&
           data == o.data &&
-          meta == o.meta &&
-          links == o.links
+          meta == o.meta
     end
 
     # @see the `==` method
@@ -155,7 +145,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [data, meta, links].hash
+      [data, meta].hash
     end
 
     # Builds the object from hash

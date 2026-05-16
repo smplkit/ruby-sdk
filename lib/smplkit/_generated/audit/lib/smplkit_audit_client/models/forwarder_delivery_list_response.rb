@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # JSON:API collection response for forwarder deliveries.
+  # JSON:API collection response for forwarder deliveries (cursor paged).
   class ForwarderDeliveryListResponse < ApiModelBase
     attr_accessor :data
 
@@ -45,8 +45,8 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_types
       {
         :'data' => :'Array<ForwarderDeliveryResource>',
-        :'meta' => :'ForwarderListMeta',
-        :'links' => :'ForwarderListLinks'
+        :'meta' => :'ForwarderDeliveryListMeta',
+        :'links' => :'ForwarderDeliveryListLinks'
       }
     end
 

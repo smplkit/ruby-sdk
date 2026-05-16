@@ -1,4 +1,4 @@
-# SmplkitGeneratedClient::Audit::ActionListLinks
+# SmplkitGeneratedClient::Audit::ForwarderDeliveryListLinks
 
 ## Properties
 
@@ -11,7 +11,7 @@
 ```ruby
 require 'smplkit_audit_client'
 
-instance = SmplkitGeneratedClient::Audit::ActionListLinks.new(
+instance = SmplkitGeneratedClient::Audit::ForwarderDeliveryListLinks.new(
   _next: null
 )
 ```

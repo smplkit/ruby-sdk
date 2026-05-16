@@ -5,6 +5,7 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **data** | [**Array&lt;UsageResource&gt;**](UsageResource.md) |  |  |
+| **meta** | [**ListMeta**](ListMeta.md) |  |  |
 
 ## Example
 
@@ -12,7 +13,8 @@
 require 'smplkit_audit_client'
 
 instance = SmplkitGeneratedClient::Audit::UsageResponse.new(
-  data: null
+  data: null,
+  meta: null
 )
 ```
 

@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # JSON:API collection response for audit events.
+  # JSON:API collection response for audit events (cursor paged).
   class EventListResponse < ApiModelBase
     attr_accessor :data
 

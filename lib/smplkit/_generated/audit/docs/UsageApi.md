@@ -9,7 +9,7 @@ All URIs are relative to *http://localhost*
 
 ## list_usage
 
-> <UsageResponse> list_usage(filter_period)
+> <UsageResponse> list_usage(filter_period, opts)
 
 List Usage
 
@@ -28,10 +28,15 @@ end
 
 api_instance = SmplkitGeneratedClient::Audit::UsageApi.new
 filter_period = 'filter_period_example' # String | Period to report. `current` is the only supported value.
+opts = {
+  page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
+  page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
+  meta_total: true # Boolean | When `true`, the response's `meta.pagination` block includes `total` (the total number of matching items across all pages) and `total_pages`. Computing these requires an extra `COUNT` query, so omit (or pass `false`) when the totals are not needed. Defaults to `false`.
+}
 
 begin
   # List Usage
-  result = api_instance.list_usage(filter_period)
+  result = api_instance.list_usage(filter_period, opts)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
   puts "Error when calling UsageApi->list_usage: #{e}"
@@ -42,12 +47,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<UsageResponse>, Integer, Hash)> list_usage_with_http_info(filter_period)
+> <Array(<UsageResponse>, Integer, Hash)> list_usage_with_http_info(filter_period, opts)
 
 ```ruby
 begin
   # List Usage
-  data, status_code, headers = api_instance.list_usage_with_http_info(filter_period)
+  data, status_code, headers = api_instance.list_usage_with_http_info(filter_period, opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <UsageResponse>
@@ -61,6 +66,9 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **filter_period** | **String** | Period to report. &#x60;current&#x60; is the only supported value. |  |
+| **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
+| **page_size** | **Integer** | Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional][default to 1000] |
+| **meta_total** | **Boolean** | When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. | [optional][default to false] |
 
 ### Return type
 

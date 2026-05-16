@@ -70,9 +70,10 @@ end
 api_instance = SmplkitGeneratedClient::Audit::ActionsApi.new
 opts = {
   filter_resource_type: 'filter_resource_type_example', # String | 
-  page_size: 56, # Integer | 
-  page_after: 'page_after_example', # String | 
-  sort: 'key' # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `key`, `-key`.
+  sort: 'key', # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `key`, `-key`.
+  page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
+  page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
+  meta_total: true # Boolean | When `true`, the response's `meta.pagination` block includes `total` (the total number of matching items across all pages) and `total_pages`. Computing these requires an extra `COUNT` query, so omit (or pass `false`) when the totals are not needed. Defaults to `false`.
 }
 
 begin
@@ -111,8 +112,6 @@ Class | Method | HTTP request | Description
 ## Documentation for Models
 
  - [SmplkitGeneratedClient::Audit::ActionAttributes](docs/ActionAttributes.md)
- - [SmplkitGeneratedClient::Audit::ActionListLinks](docs/ActionListLinks.md)
- - [SmplkitGeneratedClient::Audit::ActionListMeta](docs/ActionListMeta.md)
  - [SmplkitGeneratedClient::Audit::ActionListResponse](docs/ActionListResponse.md)
  - [SmplkitGeneratedClient::Audit::ActionResource](docs/ActionResource.md)
  - [SmplkitGeneratedClient::Audit::Event](docs/Event.md)
@@ -124,21 +123,21 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::EventResponse](docs/EventResponse.md)
  - [SmplkitGeneratedClient::Audit::Forwarder](docs/Forwarder.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDelivery](docs/ForwarderDelivery.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderDeliveryListLinks](docs/ForwarderDeliveryListLinks.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderDeliveryListMeta](docs/ForwarderDeliveryListMeta.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDeliveryListResponse](docs/ForwarderDeliveryListResponse.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDeliveryResource](docs/ForwarderDeliveryResource.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDeliveryResponse](docs/ForwarderDeliveryResponse.md)
  - [SmplkitGeneratedClient::Audit::ForwarderHttp](docs/ForwarderHttp.md)
- - [SmplkitGeneratedClient::Audit::ForwarderListLinks](docs/ForwarderListLinks.md)
- - [SmplkitGeneratedClient::Audit::ForwarderListMeta](docs/ForwarderListMeta.md)
  - [SmplkitGeneratedClient::Audit::ForwarderListResponse](docs/ForwarderListResponse.md)
  - [SmplkitGeneratedClient::Audit::ForwarderRequest](docs/ForwarderRequest.md)
  - [SmplkitGeneratedClient::Audit::ForwarderResource](docs/ForwarderResource.md)
  - [SmplkitGeneratedClient::Audit::ForwarderResponse](docs/ForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::ForwarderType](docs/ForwarderType.md)
  - [SmplkitGeneratedClient::Audit::HttpHeader](docs/HttpHeader.md)
+ - [SmplkitGeneratedClient::Audit::ListMeta](docs/ListMeta.md)
+ - [SmplkitGeneratedClient::Audit::PaginationMeta](docs/PaginationMeta.md)
  - [SmplkitGeneratedClient::Audit::ResourceTypeAttributes](docs/ResourceTypeAttributes.md)
- - [SmplkitGeneratedClient::Audit::ResourceTypeListLinks](docs/ResourceTypeListLinks.md)
- - [SmplkitGeneratedClient::Audit::ResourceTypeListMeta](docs/ResourceTypeListMeta.md)
  - [SmplkitGeneratedClient::Audit::ResourceTypeListResponse](docs/ResourceTypeListResponse.md)
  - [SmplkitGeneratedClient::Audit::ResourceTypeResource](docs/ResourceTypeResource.md)
  - [SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary](docs/RetryFailedDeliveriesSummary.md)

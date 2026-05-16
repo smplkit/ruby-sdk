@@ -27,13 +27,14 @@ RSpec.describe Smplkit::Audit::Actions do
       .to_return(
         status: 200,
         body: { data: [action_resource("account.updated"), action_resource("user.login")],
-                meta: { page_size: 50 } }.to_json,
+                meta: { pagination: { page: 1, size: 1000 } } }.to_json,
         headers: { "Content-Type" => "application/vnd.api+json" }
       )
     page = client.actions.list
     expect(page).to be_a(Smplkit::Audit::ActionListPage)
     expect(page.actions.map(&:id)).to eq(%w[account.updated user.login])
     expect(captured_uri).not_to include("filter%5Bresource_type%5D")
+    expect(page.pagination).to eq(page: 1, size: 1000)
   end
 
   it "passes filter[resource_type] through to the generated client" do
@@ -45,7 +46,7 @@ RSpec.describe Smplkit::Audit::Actions do
       end
       .to_return(
         status: 200,
-        body: { data: [action_resource("user.login")], meta: { page_size: 50 } }.to_json,
+        body: { data: [action_resource("user.login")], meta: { pagination: { page: 1, size: 1000 } } }.to_json,
         headers: { "Content-Type" => "application/vnd.api+json" }
       )
     page = client.actions.list(filter_resource_type: "user")
@@ -53,27 +54,36 @@ RSpec.describe Smplkit::Audit::Actions do
     expect(page.actions.first.id).to eq("user.login")
   end
 
-  it "extracts the cursor from links.next with trailing filter params" do
-    stub_request(:get, %r{#{base_url}/api/v1/actions\b}).to_return(
-      status: 200,
-      body: {
-        data: [action_resource("a.x")],
-        links: { next: "/api/v1/actions?page[size]=1&page[after]=tok-2&filter[resource_type]=user" },
-        meta: { page_size: 1 }
-      }.to_json,
-      headers: { "Content-Type" => "application/vnd.api+json" }
-    )
-    page = client.actions.list(page_size: 1, filter_resource_type: "user")
-    expect(page.next_cursor).to eq("tok-2")
+  it "forwards offset params and surfaces totals when meta_total is requested" do
+    captured_uri = nil
+    stub_request(:get, %r{#{base_url}/api/v1/actions\b})
+      .with do |req|
+        captured_uri = req.uri.to_s
+        true
+      end
+      .to_return(
+        status: 200,
+        body: {
+          data: [action_resource("a.x")],
+          meta: { pagination: { page: 2, size: 1, total: 3, total_pages: 3 } }
+        }.to_json,
+        headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+    page = client.actions.list(page_number: 2, page_size: 1, meta_total: true, filter_resource_type: "user")
+    expect(captured_uri).to include("page%5Bnumber%5D=2")
+    expect(captured_uri).to include("page%5Bsize%5D=1")
+    expect(captured_uri).to include("meta%5Btotal%5D=true")
+    expect(page.pagination).to eq(page: 2, size: 1, total: 3, total_pages: 3)
   end
 
-  it "returns nil next_cursor when the server omits links.next" do
+  it "handles an empty response" do
     stub_request(:get, %r{#{base_url}/api/v1/actions\b}).to_return(
-      status: 200, body: { data: [], meta: { page_size: 50 } }.to_json,
+      status: 200, body: { data: [], meta: { pagination: { page: 1, size: 1000 } } }.to_json,
       headers: { "Content-Type" => "application/vnd.api+json" }
     )
     page = client.actions.list
-    expect(page.next_cursor).to be_nil
+    expect(page.actions).to be_empty
+    expect(page.pagination).to eq(page: 1, size: 1000)
   end
 
   it "falls back to id when attributes.action is missing" do
