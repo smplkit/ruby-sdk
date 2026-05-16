@@ -142,14 +142,14 @@ module Smplkit
 
     # rubocop:disable Lint/StructNewOverride -- ``:method`` matches the
     # API attribute and shadowing Struct#method is the expected ergonomics.
-    ForwarderHttp = Struct.new(:method, :url, :headers, :body, :success_status, keyword_init: true) do
-      def initialize(method: "POST", url: "", headers: nil, body: nil, success_status: "2xx")
-        super(method: method, url: url, headers: headers || [], body: body, success_status: success_status)
+    HttpConfiguration = Struct.new(:method, :url, :headers, :success_status, keyword_init: true) do
+      def initialize(method: "POST", url: "", headers: nil, success_status: "2xx")
+        super(method: method, url: url, headers: headers || [], success_status: success_status)
       end
 
       def self.to_wire(src)
         h = src.is_a?(Hash) ? new(**src) : src
-        SmplkitGeneratedClient::Audit::ForwarderHttp.new(
+        SmplkitGeneratedClient::Audit::HttpConfiguration.new(
           method: h.method,
           url: h.url,
           headers: (h.headers || []).map do |hdr|
@@ -161,7 +161,6 @@ module Smplkit
                           end
             SmplkitGeneratedClient::Audit::HttpHeader.new(name: name, value: value)
           end,
-          body: h.body,
           success_status: h.success_status
         )
       end
@@ -173,7 +172,6 @@ module Smplkit
           method: src.method || "POST",
           url: src.url || "",
           headers: (src.headers || []).map { |h| HttpHeader.new(name: h.name, value: h.value) },
-          body: src.body,
           success_status: src.success_status || "2xx"
         )
       end
@@ -183,8 +181,8 @@ module Smplkit
     # rubocop:disable Lint/StructNewOverride -- ``:filter`` matches the
     # API attribute and shadowing Struct#filter is the expected ergonomics.
     Forwarder = Struct.new(
-      :id, :name, :slug, :forwarder_type, :enabled,
-      :filter, :transform, :http,
+      :id, :name, :description, :forwarder_type, :enabled,
+      :filter, :transform_type, :transform, :configuration,
       :created_at, :updated_at, :deleted_at, :version,
       keyword_init: true
     ) do
@@ -193,12 +191,13 @@ module Smplkit
         new(
           id: resource.id,
           name: a.name,
-          slug: a.slug,
+          description: a.description,
           forwarder_type: a.forwarder_type,
           enabled: a.enabled.nil? || a.enabled,
           filter: a.filter.nil? ? nil : Smplkit::Helpers.deep_stringify_keys(a.filter),
+          transform_type: a.transform_type,
           transform: a.transform,
-          http: ForwarderHttp.from_wire(a.http),
+          configuration: HttpConfiguration.from_wire(a.configuration),
           created_at: a.created_at,
           updated_at: a.updated_at,
           deleted_at: a.deleted_at,

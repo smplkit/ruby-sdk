@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # A single HTTP header attached to a forwarder delivery request.
+  # A single HTTP header attached to a forwarder delivery request.  Header values carrying secrets (API keys, bearer tokens, HEC tokens) are encrypted at the application layer before persistence; the wire representation here is always plaintext.
   class HttpHeader < ApiModelBase
     # Header name.
     attr_accessor :name

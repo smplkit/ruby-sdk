@@ -25,9 +25,6 @@ module SmplkitGeneratedClient::Audit
     # HTTP headers attached to the test request.
     attr_accessor :headers
 
-    # Request body. If omitted, an empty body is sent.
-    attr_accessor :body
-
     # HTTP response status that indicates success. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
     attr_accessor :success_status
 
@@ -62,7 +59,6 @@ module SmplkitGeneratedClient::Audit
         :'method' => :'method',
         :'url' => :'url',
         :'headers' => :'headers',
-        :'body' => :'body',
         :'success_status' => :'success_status',
         :'timeout_ms' => :'timeout_ms'
       }
@@ -84,7 +80,6 @@ module SmplkitGeneratedClient::Audit
         :'method' => :'String',
         :'url' => :'String',
         :'headers' => :'Array<HttpHeader>',
-        :'body' => :'String',
         :'success_status' => :'String',
         :'timeout_ms' => :'Integer'
       }
@@ -93,7 +88,6 @@ module SmplkitGeneratedClient::Audit
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'body',
         :'timeout_ms'
       ])
     end
@@ -132,10 +126,6 @@ module SmplkitGeneratedClient::Audit
         end
       end
 
-      if attributes.key?(:'body')
-        self.body = attributes[:'body']
-      end
-
       if attributes.key?(:'success_status')
         self.success_status = attributes[:'success_status']
       else
@@ -164,10 +154,6 @@ module SmplkitGeneratedClient::Audit
         invalid_properties.push('invalid value for "url", the character length must be greater than or equal to 1.')
       end
 
-      if !@body.nil? && @body.to_s.length > 65536
-        invalid_properties.push('invalid value for "body", the character length must be smaller than or equal to 65536.')
-      end
-
       if !@success_status.nil? && @success_status.to_s.length > 3
         invalid_properties.push('invalid value for "success_status", the character length must be smaller than or equal to 3.')
       end
@@ -192,7 +178,6 @@ module SmplkitGeneratedClient::Audit
       return false if @url.nil?
       return false if @url.to_s.length > 2048
       return false if @url.to_s.length < 1
-      return false if !@body.nil? && @body.to_s.length > 65536
       return false if !@success_status.nil? && @success_status.to_s.length > 3
       return false if !@timeout_ms.nil? && @timeout_ms > 30000
       return false if !@timeout_ms.nil? && @timeout_ms < 1
@@ -225,16 +210,6 @@ module SmplkitGeneratedClient::Audit
       end
 
       @url = url
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] body Value to be assigned
-    def body=(body)
-      if !body.nil? && body.to_s.length > 65536
-        fail ArgumentError, 'invalid value for "body", the character length must be smaller than or equal to 65536.'
-      end
-
-      @body = body
     end
 
     # Custom attribute writer method with validation
@@ -273,7 +248,6 @@ module SmplkitGeneratedClient::Audit
           method == o.method &&
           url == o.url &&
           headers == o.headers &&
-          body == o.body &&
           success_status == o.success_status &&
           timeout_ms == o.timeout_ms
     end
@@ -287,7 +261,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [method, url, headers, body, success_status, timeout_ms].hash
+      [method, url, headers, success_status, timeout_ms].hash
     end
 
     # Builds the object from hash

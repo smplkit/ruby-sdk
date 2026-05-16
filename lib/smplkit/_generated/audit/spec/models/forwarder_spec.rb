@@ -33,6 +33,12 @@ describe SmplkitGeneratedClient::Audit::Forwarder do
     end
   end
 
+  describe 'test attribute "description"' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   describe 'test attribute "forwarder_type"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
@@ -51,19 +57,23 @@ describe SmplkitGeneratedClient::Audit::Forwarder do
     end
   end
 
+  describe 'test attribute "transform_type"' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["JSONATA"])
+      # validator.allowable_values.each do |value|
+      #   expect { instance.transform_type = value }.not_to raise_error
+      # end
+    end
+  end
+
   describe 'test attribute "transform"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
   end
 
-  describe 'test attribute "http"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  describe 'test attribute "slug"' do
+  describe 'test attribute "configuration"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

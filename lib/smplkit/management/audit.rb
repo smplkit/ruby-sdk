@@ -26,25 +26,30 @@ module Smplkit
 
       # Create a forwarder.
       #
-      # @param name [String] Display name. The slug is derived
-      #   server-side.
+      # @param name [String] Display name.
       # @param forwarder_type [String, Smplkit::Audit::ForwarderType]
       #   One of the published {Smplkit::Audit::ForwarderType} constants
       #   (or the equivalent string).
-      # @param http [Smplkit::Audit::ForwarderHttp, Hash] Destination
-      #   configuration. Headers carry credentials and are encrypted at
-      #   rest server-side; reads return them redacted.
+      # @param configuration [Smplkit::Audit::HttpConfiguration, Hash]
+      #   Transport-specific delivery configuration. Today every
+      #   forwarder_type uses {HttpConfiguration}; the URL and header
+      #   values inside are stored encrypted server-side and round-trip
+      #   to GET in plaintext.
+      # @param description [String, nil] Optional free-text description.
       # @param enabled [Boolean] Whether the forwarder is active.
       # @param filter [Hash, nil] Optional JSON Logic filter; events
       #   that don't match are recorded as +filtered_out+ deliveries.
-      # @param transform [String, nil] Optional JSONata template
-      #   applied to the event payload before POST. Nil/empty sends the
-      #   event as-is.
-      def create(name:, forwarder_type:, http:, enabled: true,
-                 filter: nil, transform: nil)
+      # @param transform_type [String, nil] Engine that evaluates
+      #   +transform+. Set to +"JSONATA"+ whenever +transform+ is set.
+      # @param transform [String, nil] Optional template applied to the
+      #   event payload before delivery (for +JSONATA+, a JSONata
+      #   expression). Nil sends the event JSON unchanged.
+      def create(name:, forwarder_type:, configuration:, description: nil, enabled: true,
+                 filter: nil, transform_type: nil, transform: nil)
         body = build_body(nil, name: name, forwarder_type: forwarder_type,
-                               http: http, enabled: enabled,
-                               filter: filter, transform: transform)
+                               configuration: configuration, description: description,
+                               enabled: enabled, filter: filter,
+                               transform_type: transform_type, transform: transform)
         resp = Smplkit::Audit.call_api { @api.create_forwarder(body) }
         Smplkit::Audit::Forwarder.from_resource(resp.data)
       end
@@ -69,15 +74,15 @@ module Smplkit
 
       # Full-replace update. PUT semantics — every field is overwritten.
       #
-      # Header values must be re-supplied as plaintext; the GET path
-      # redacts them, so a PUT body containing +"<redacted>"+ would
-      # persist that literal. Track real header values client-side and
-      # round-trip them on update.
-      def update(forwarder_id, name:, forwarder_type:, http:, enabled: true,
-                 filter: nil, transform: nil)
+      # The URL and header values inside +configuration+ are returned in
+      # plaintext on GET, so a fetched forwarder can be round-tripped to
+      # PUT without re-entering secrets.
+      def update(forwarder_id, name:, forwarder_type:, configuration:, description: nil,
+                 enabled: true, filter: nil, transform_type: nil, transform: nil)
         body = build_body(forwarder_id, name: name, forwarder_type: forwarder_type,
-                                        http: http, enabled: enabled,
-                                        filter: filter, transform: transform)
+                                        configuration: configuration, description: description,
+                                        enabled: enabled, filter: filter,
+                                        transform_type: transform_type, transform: transform)
         resp = Smplkit::Audit.call_api { @api.update_forwarder(forwarder_id, body) }
         Smplkit::Audit::Forwarder.from_resource(resp.data)
       end
@@ -89,14 +94,17 @@ module Smplkit
 
       private
 
-      def build_body(id, name:, forwarder_type:, http:, enabled:, filter:, transform:)
+      def build_body(id, name:, forwarder_type:, configuration:, description:, enabled:,
+                     filter:, transform_type:, transform:)
         attrs = SmplkitGeneratedClient::Audit::Forwarder.new(
           name: name,
+          description: description,
           forwarder_type: Smplkit::Audit::ForwarderType.coerce(forwarder_type),
           enabled: enabled,
-          http: Smplkit::Audit::ForwarderHttp.to_wire(http),
           filter: filter,
-          transform: transform
+          transform_type: transform_type,
+          transform: transform,
+          configuration: Smplkit::Audit::HttpConfiguration.to_wire(configuration)
         )
         resource = SmplkitGeneratedClient::Audit::ForwarderResource.new(
           id: id ? id.to_s : "",
