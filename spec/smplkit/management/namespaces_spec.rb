@@ -183,7 +183,8 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "list returns Configs" do
-      stub_get("config", "/api/v1/configs", { "data" => [cfg_data] })
+      stub_get("config", "/api/v1/configs",
+               { "data" => [cfg_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       expect(mgmt.config.list.first.key).to eq("showcase")
     end
 
@@ -223,7 +224,8 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
                  "attributes" => { "name" => "Parent", "parent" => nil,
                                    "items" => { "parent.key" => { "value" => 2, "type" => "NUMBER" } },
                                    "environments" => {} } }
-      stub_get("config", "/api/v1/configs", { "data" => [child, parent] })
+      stub_get("config", "/api/v1/configs",
+               { "data" => [child, parent], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       chain = mgmt.config.fetch_chain("child-cfg")
       expect(chain.length).to eq(2)
       expect(chain.first["items"]).to have_key("child.key")
@@ -231,7 +233,8 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "fetch_chain returns [] when the target key is unknown" do
-      stub_get("config", "/api/v1/configs", { "data" => [] })
+      stub_get("config", "/api/v1/configs",
+               { "data" => [], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       expect(mgmt.config.fetch_chain("missing")).to eq([])
     end
   end
