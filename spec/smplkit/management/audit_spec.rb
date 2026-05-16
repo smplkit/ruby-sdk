@@ -15,19 +15,19 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
   let(:fwd_id) { "11111111-2222-3333-4444-555555555555" }
   let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
 
-  def forwarder_resource(name: "Datadog production", slug: "datadog_production",
+  def forwarder_resource(name: "Datadog production", description: nil,
                          enabled: true, forwarder_type: "DATADOG",
-                         filter: nil, transform: nil)
+                         filter: nil, transform_type: nil, transform: nil)
     {
       id: fwd_id,
       type: "forwarder",
       attributes: {
-        name: name, slug: slug, forwarder_type: forwarder_type, enabled: enabled,
-        filter: filter, transform: transform,
-        http: {
+        name: name, description: description, forwarder_type: forwarder_type, enabled: enabled,
+        filter: filter, transform_type: transform_type, transform: transform,
+        configuration: {
           method: "POST", url: "https://siem.example.com/in",
           headers: [{ name: "DD-API-KEY", value: "<redacted>" }],
-          body: nil, success_status: "2xx"
+          success_status: "2xx"
         },
         created_at: "2026-05-07T12:00:00Z",
         updated_at: "2026-05-07T12:00:00Z",
@@ -43,12 +43,12 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       )
       fwd = forwarders.create(
         name: "Datadog production", forwarder_type: "DATADOG",
-        http: { url: "https://siem.example.com/in",
-                headers: [{ name: "DD-API-KEY", value: "real-secret" }] },
-        filter: { "==" => [1, 1] }, transform: "$"
+        configuration: { url: "https://siem.example.com/in",
+                         headers: [{ name: "DD-API-KEY", value: "real-secret" }] },
+        filter: { "==" => [1, 1] }, transform_type: "JSONATA", transform: "$"
       )
-      expect(fwd.slug).to eq("datadog_production")
-      expect(fwd.http.headers.first.value).to eq("<redacted>")
+      expect(fwd.name).to eq("Datadog production")
+      expect(fwd.configuration.headers.first.value).to eq("<redacted>")
     end
 
     it "raises Smplkit::PaymentRequiredError on 402" do
@@ -59,7 +59,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect do
         forwarders.create(
           name: "x", forwarder_type: "HTTP",
-          http: Smplkit::Audit::ForwarderHttp.new(url: "https://x")
+          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
         )
       end.to raise_error(Smplkit::PaymentRequiredError, /Pro plan required/)
     end
@@ -69,7 +69,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect do
         forwarders.create(
           name: "x", forwarder_type: "HTTP",
-          http: Smplkit::Audit::ForwarderHttp.new(url: "https://x")
+          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
         )
       end.to raise_error(Smplkit::ConnectionError)
     end
@@ -86,7 +86,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
         .to_return(
           status: 200,
           body: {
-            data: [forwarder_resource(name: "A", slug: "a")],
+            data: [forwarder_resource(name: "A")],
             meta: { pagination: { page: 2, size: 1, total: 3, total_pages: 3 } }
           }.to_json,
           headers: json_api
@@ -157,12 +157,12 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "issues PUT on update" do
       put_stub = stub_request(:put, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
         status: 200,
-        body: { data: forwarder_resource(name: "Renamed", slug: "renamed") }.to_json,
+        body: { data: forwarder_resource(name: "Renamed") }.to_json,
         headers: json_api
       )
       fwd = forwarders.update(
         fwd_id, name: "Renamed", forwarder_type: "DATADOG",
-                http: Smplkit::Audit::ForwarderHttp.new(url: "https://x")
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       expect(put_stub).to have_been_requested
       expect(fwd.name).to eq("Renamed")
@@ -182,26 +182,26 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     end
   end
 
-  describe "ForwarderHttp helpers" do
+  describe "HttpConfiguration helpers" do
     it "round-trips via to_wire and from_wire" do
-      h = Smplkit::Audit::ForwarderHttp.new(
+      h = Smplkit::Audit::HttpConfiguration.new(
         url: "https://x", headers: [Smplkit::Audit::HttpHeader.new(name: "A", value: "1")],
-        body: '{"k":"v"}', success_status: "200"
+        success_status: "200"
       )
-      wire = Smplkit::Audit::ForwarderHttp.to_wire(h)
-      back = Smplkit::Audit::ForwarderHttp.from_wire(wire)
+      wire = Smplkit::Audit::HttpConfiguration.to_wire(h)
+      back = Smplkit::Audit::HttpConfiguration.from_wire(wire)
       expect(back.url).to eq("https://x")
       expect(back.headers.first.name).to eq("A")
     end
 
     it "from_wire with nil returns a default object" do
-      out = Smplkit::Audit::ForwarderHttp.from_wire(nil)
+      out = Smplkit::Audit::HttpConfiguration.from_wire(nil)
       expect(out.method).to eq("POST")
       expect(out.headers).to be_empty
     end
 
     it "to_wire accepts a Hash" do
-      wire = Smplkit::Audit::ForwarderHttp.to_wire(
+      wire = Smplkit::Audit::HttpConfiguration.to_wire(
         url: "https://x", headers: [{ name: "h", value: "v" }]
       )
       expect(wire.url).to eq("https://x")

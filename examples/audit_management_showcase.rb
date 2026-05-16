@@ -41,14 +41,16 @@ begin
   # create a forwarder
   forwarder = manage.audit.forwarders.create(
     name: forwarder_name,
+    description: "Smplkit Ruby SDK showcase forwarder",
     forwarder_type: Smplkit::Audit::ForwarderType::HTTP,
-    http: Smplkit::Audit::ForwarderHttp.new(
+    configuration: Smplkit::Audit::HttpConfiguration.new(
       method: "POST",
       url: "https://httpbin.org/post",
       headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")],
       success_status: "2xx"
     ),
     filter: INVOICE_FILTER,
+    transform_type: "JSONATA",
     transform: SIEM_TRANSFORM
   )
   raise "name mismatch" unless forwarder.name == forwarder_name
@@ -56,7 +58,7 @@ begin
   raise "filter round-trip mismatch" unless forwarder.filter == INVOICE_FILTER
   raise "transform round-trip mismatch" unless forwarder.transform == SIEM_TRANSFORM
 
-  puts "Created forwarder: #{forwarder.slug}"
+  puts "Created forwarder: #{forwarder.id} (#{forwarder.name})"
 
   # fetch a forwarder
   fetched = manage.audit.forwarders.get(forwarder.id)
@@ -78,8 +80,9 @@ begin
   updated = manage.audit.forwarders.update(
     forwarder.id,
     name: renamed,
+    description: forwarder.description,
     forwarder_type: forwarder.forwarder_type,
-    http: Smplkit::Audit::ForwarderHttp.new(
+    configuration: Smplkit::Audit::HttpConfiguration.new(
       method: "POST",
       url: "https://httpbin.org/post",
       headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")],
@@ -87,6 +90,7 @@ begin
     ),
     enabled: false,
     filter: INVOICE_FILTER,
+    transform_type: "JSONATA",
     transform: SIEM_TRANSFORM
   )
   raise "rename failed" unless updated.name == renamed
@@ -99,7 +103,7 @@ begin
   remaining = manage.audit.forwarders.list
   raise "delete failed — forwarder still listed" if remaining.forwarders.any? { |f| f.id == forwarder.id }
 
-  puts "Deleted forwarder: #{forwarder.slug}"
+  puts "Deleted forwarder: #{forwarder.id}"
 
   puts "Done!"
 ensure
