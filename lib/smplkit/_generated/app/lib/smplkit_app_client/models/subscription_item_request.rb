@@ -14,14 +14,19 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # Single-resource response envelope for a subscription.
-  class SubscriptionResponse < ApiModelBase
-    attr_accessor :data
+  # One product enrollment as supplied by the caller.  The caller supplies the *desired* (product, plan) pair for each product they want enrolled. Products absent from the request are interpreted as scheduled-for-drop at the end of the current billing period.
+  class SubscriptionItemRequest < ApiModelBase
+    # Product key (e.g. `audit`, `config`, `flags`, `logging`).
+    attr_accessor :product
+
+    # Target plan for this product. Must be a paid plan such as `STANDARD` or `PRO`; the free plan is implicit when a product is not listed.
+    attr_accessor :plan
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'data' => :'data'
+        :'product' => :'product',
+        :'plan' => :'plan'
       }
     end
 
@@ -38,7 +43,8 @@ module SmplkitGeneratedClient::App
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'data' => :'SubscriptionResource'
+        :'product' => :'String',
+        :'plan' => :'String'
       }
     end
 
@@ -52,22 +58,28 @@ module SmplkitGeneratedClient::App
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::SubscriptionResponse` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::SubscriptionItemRequest` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::SubscriptionResponse`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::SubscriptionItemRequest`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'data')
-        self.data = attributes[:'data']
+      if attributes.key?(:'product')
+        self.product = attributes[:'product']
       else
-        self.data = nil
+        self.product = nil
+      end
+
+      if attributes.key?(:'plan')
+        self.plan = attributes[:'plan']
+      else
+        self.plan = nil
       end
     end
 
@@ -76,8 +88,12 @@ module SmplkitGeneratedClient::App
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @data.nil?
-        invalid_properties.push('invalid value for "data", data cannot be nil.')
+      if @product.nil?
+        invalid_properties.push('invalid value for "product", product cannot be nil.')
+      end
+
+      if @plan.nil?
+        invalid_properties.push('invalid value for "plan", plan cannot be nil.')
       end
 
       invalid_properties
@@ -87,18 +103,29 @@ module SmplkitGeneratedClient::App
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @data.nil?
+      return false if @product.nil?
+      return false if @plan.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] data Value to be assigned
-    def data=(data)
-      if data.nil?
-        fail ArgumentError, 'data cannot be nil'
+    # @param [Object] product Value to be assigned
+    def product=(product)
+      if product.nil?
+        fail ArgumentError, 'product cannot be nil'
       end
 
-      @data = data
+      @product = product
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] plan Value to be assigned
+    def plan=(plan)
+      if plan.nil?
+        fail ArgumentError, 'plan cannot be nil'
+      end
+
+      @plan = plan
     end
 
     # Checks equality by comparing each attribute.
@@ -106,7 +133,8 @@ module SmplkitGeneratedClient::App
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          data == o.data
+          product == o.product &&
+          plan == o.plan
     end
 
     # @see the `==` method
@@ -118,7 +146,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [data].hash
+      [product, plan].hash
     end
 
     # Builds the object from hash

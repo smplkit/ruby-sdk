@@ -32,18 +32,6 @@ describe 'BillingApi' do
     end
   end
 
-  # unit tests for cancel_subscription
-  # Cancel Subscription
-  # Cancel a subscription at end of the current billing period.
-  # @param id 
-  # @param [Hash] opts the optional parameters
-  # @return [SubscriptionResponse]
-  describe 'cancel_subscription test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
   # unit tests for create_payment_method
   # Add Payment Method
   # Register a Stripe payment method (&#x60;pm_...&#x60;) on the account. The client first creates the Stripe payment method using a SetupIntent and Stripe Elements, then submits its identifier here to persist it.
@@ -56,18 +44,6 @@ describe 'BillingApi' do
     end
   end
 
-  # unit tests for create_subscription
-  # Create Subscription
-  # Create a new paid subscription for a product.
-  # @param create_subscription_body 
-  # @param [Hash] opts the optional parameters
-  # @return [SubscriptionResponse]
-  describe 'create_subscription test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
   # unit tests for delete_payment_method
   # Delete Payment Method
   # Delete a payment method. Returns 409 if this is the only payment method on file and the account has an active paid subscription. If the deleted payment method was the default, the oldest remaining payment method is promoted to default.
@@ -75,19 +51,6 @@ describe 'BillingApi' do
   # @param [Hash] opts the optional parameters
   # @return [nil]
   describe 'delete_payment_method test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  # unit tests for downgrade_subscription
-  # Downgrade Subscription
-  # Downgrade an existing paid subscription to a lower plan.
-  # @param id 
-  # @param plan_change_request 
-  # @param [Hash] opts the optional parameters
-  # @return [SubscriptionResponse]
-  describe 'downgrade_subscription test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -152,18 +115,6 @@ describe 'BillingApi' do
     end
   end
 
-  # unit tests for list_subscriptions
-  # List Subscriptions
-  # Return subscription rows for the authenticated account.  Default sort is &#x60;product&#x60; ascending.
-  # @param [Hash] opts the optional parameters
-  # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;product&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;plan&#x60;, &#x60;-plan&#x60;, &#x60;product&#x60;, &#x60;-product&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;.
-  # @return [SubscriptionListResponse]
-  describe 'list_subscriptions test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
   # unit tests for set_default_payment_method
   # Set Default Payment Method
   # Mark this payment method as the account&#39;s default. Idempotent: returns 200 with no changes when the payment method is already the default.
@@ -171,30 +122,6 @@ describe 'BillingApi' do
   # @param [Hash] opts the optional parameters
   # @return [PaymentMethodResponse]
   describe 'set_default_payment_method test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  # unit tests for uncancel_subscription
-  # Undo Cancellation
-  # Reverse a pending cancellation; subscription will renew as normal.
-  # @param id 
-  # @param [Hash] opts the optional parameters
-  # @return [SubscriptionResponse]
-  describe 'uncancel_subscription test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  # unit tests for undowngrade_subscription
-  # Undo Pending Downgrade
-  # Reverse a pending downgrade scheduled for end of the current billing period.
-  # @param id 
-  # @param [Hash] opts the optional parameters
-  # @return [SubscriptionResponse]
-  describe 'undowngrade_subscription test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -208,19 +135,6 @@ describe 'BillingApi' do
   # @param [Hash] opts the optional parameters
   # @return [PaymentMethodResponse]
   describe 'update_payment_method test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  # unit tests for upgrade_subscription
-  # Upgrade Subscription
-  # Upgrade an existing paid subscription to a higher plan.
-  # @param id 
-  # @param plan_change_request 
-  # @param [Hash] opts the optional parameters
-  # @return [SubscriptionResponse]
-  describe 'upgrade_subscription test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
