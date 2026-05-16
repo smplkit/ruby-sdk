@@ -63,8 +63,8 @@ module Smplkit
         @manage.loggers.get(name)
       end
 
-      def list
-        @manage.loggers.list
+      def list(page_number: nil, page_size: nil)
+        @manage.loggers.list(page_number: page_number, page_size: page_size)
       end
 
       def delete(name)

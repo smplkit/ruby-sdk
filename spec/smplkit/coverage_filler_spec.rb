@@ -46,6 +46,11 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     expect(client.delete("rails")).to be(true)
   end
 
+  it "list forwards page_number and page_size to the loggers namespace" do
+    client.list(page_number: 2, page_size: 50)
+    expect(loggers_ns).to have_received(:list).with(page_number: 2, page_size: 50)
+  end
+
   it "handle_logger_changed normalizes the incoming name and applies levels" do
     adapter = instance_double(Smplkit::Logging::Adapters::Base, apply_level: nil)
     client.instance_variable_set(:@adapters, [adapter])

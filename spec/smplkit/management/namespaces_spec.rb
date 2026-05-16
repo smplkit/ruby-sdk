@@ -31,6 +31,17 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     stub_request(:delete, "https://#{svc}.smplkit.test#{path}").to_return(status: 204)
   end
 
+  # Returns a [capture, stub] pair. The stub matches the GET URL regex; the
+  # captured URI is exposed via +capture[:uri]+ once the request fires.
+  def stub_get_capture(url_regex, response_body)
+    capture = { uri: nil }
+    stub = stub_request(:get, url_regex)
+           .with { |req| capture[:uri] = req.uri.to_s }
+           .to_return(status: 200, body: JSON.generate(response_body),
+                      headers: { "Content-Type" => "application/vnd.api+json" })
+    [capture, stub]
+  end
+
   describe "ContextsNamespace" do
     let(:ctx_data) do
       { "id" => "user:u-1", "type" => "context",
@@ -42,6 +53,16 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
                { "data" => [ctx_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       result = mgmt.contexts.list
       expect(result.first.id).to eq("user:u-1")
+    end
+
+    it "list passes through page_number and page_size to the generated client" do
+      capture, = stub_get_capture(
+        %r{https://app\.smplkit\.test/api/v1/contexts\b},
+        { "data" => [ctx_data], "meta" => { "pagination" => { "page" => 2, "size" => 5 } } }
+      )
+      mgmt.contexts.list(page_number: 2, page_size: 5)
+      expect(capture[:uri]).to include("page%5Bnumber%5D=2")
+      expect(capture[:uri]).to include("page%5Bsize%5D=5")
     end
 
     it "get fetches by composite id" do
@@ -95,6 +116,16 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       expect(list.first.key).to eq("user")
     end
 
+    it "list forwards page_number and page_size to the generated client" do
+      capture, = stub_get_capture(
+        %r{https://app\.smplkit\.test/api/v1/context_types\b},
+        { "data" => [ct_data], "meta" => { "pagination" => { "page" => 3, "size" => 2 } } }
+      )
+      mgmt.context_types.list(page_number: 3, page_size: 2)
+      expect(capture[:uri]).to include("page%5Bnumber%5D=3")
+      expect(capture[:uri]).to include("page%5Bsize%5D=2")
+    end
+
     it "get fetches a ContextType" do
       stub_get("app", "/api/v1/context_types/user", { "data" => ct_data })
       expect(mgmt.context_types.get("user").name).to eq("User")
@@ -130,6 +161,16 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       stub_get("app", "/api/v1/environments",
                { "data" => [env_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       expect(mgmt.environments.list.first.color).to be_a(Smplkit::Color)
+    end
+
+    it "list forwards page_number and page_size to the generated client" do
+      capture, = stub_get_capture(
+        %r{https://app\.smplkit\.test/api/v1/environments\b},
+        { "data" => [env_data], "meta" => { "pagination" => { "page" => 4, "size" => 10 } } }
+      )
+      mgmt.environments.list(page_number: 4, page_size: 10)
+      expect(capture[:uri]).to include("page%5Bnumber%5D=4")
+      expect(capture[:uri]).to include("page%5Bsize%5D=10")
     end
 
     it "get fetches one" do
@@ -191,6 +232,16 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       expect(mgmt.config.list.first.key).to eq("showcase")
     end
 
+    it "list forwards page_number and page_size to the generated client" do
+      capture, = stub_get_capture(
+        %r{https://config\.smplkit\.test/api/v1/configs\b},
+        { "data" => [cfg_data], "meta" => { "pagination" => { "page" => 2, "size" => 25 } } }
+      )
+      mgmt.config.list(page_number: 2, page_size: 25)
+      expect(capture[:uri]).to include("page%5Bnumber%5D=2")
+      expect(capture[:uri]).to include("page%5Bsize%5D=25")
+    end
+
     it "get fetches one Config" do
       stub_get("config", "/api/v1/configs/showcase", { "data" => cfg_data })
       expect(mgmt.config.get("showcase").items.first.value).to eq("x")
@@ -227,8 +278,11 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
                  "attributes" => { "name" => "Parent", "parent" => nil,
                                    "items" => { "parent.key" => { "value" => 2, "type" => "NUMBER" } },
                                    "environments" => {} } }
-      stub_get("config", "/api/v1/configs",
-               { "data" => [child, parent], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
+      stub_request(:get, %r{https://config\.smplkit\.test/api/v1/configs\b})
+        .to_return(status: 200,
+                   body: JSON.generate({ "data" => [child, parent],
+                                         "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }),
+                   headers: { "Content-Type" => "application/vnd.api+json" })
       chain = mgmt.config.fetch_chain("child-cfg")
       expect(chain.length).to eq(2)
       expect(chain.first["items"]).to have_key("child.key")
@@ -236,9 +290,37 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "fetch_chain returns [] when the target key is unknown" do
-      stub_get("config", "/api/v1/configs",
-               { "data" => [], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
+      stub_request(:get, %r{https://config\.smplkit\.test/api/v1/configs\b})
+        .to_return(status: 200,
+                   body: JSON.generate({ "data" => [],
+                                         "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }),
+                   headers: { "Content-Type" => "application/vnd.api+json" })
       expect(mgmt.config.fetch_chain("missing")).to eq([])
+    end
+
+    it "fetch_chain walks every page when the first page returns RUNTIME_PAGE_SIZE rows" do
+      page_size = Smplkit::ManagementClient::RUNTIME_PAGE_SIZE
+      target = { "id" => "target-cfg", "type" => "config",
+                 "attributes" => { "name" => "Target", "parent" => nil,
+                                   "items" => {}, "environments" => {} } }
+      filler = (1..page_size).map do |i|
+        { "id" => "filler-#{i}", "type" => "config",
+          "attributes" => { "name" => "Filler #{i}", "parent" => nil,
+                            "items" => {}, "environments" => {} } }
+      end
+      page1_body = JSON.generate({ "data" => filler,
+                                   "meta" => { "pagination" => { "page" => 1, "size" => page_size } } })
+      page2_body = JSON.generate({ "data" => [target],
+                                   "meta" => { "pagination" => { "page" => 2, "size" => page_size } } })
+      stub_request(:get, %r{https://config\.smplkit\.test/api/v1/configs\b.*page%5Bnumber%5D=1\b})
+        .to_return(status: 200, body: page1_body,
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+      stub_request(:get, %r{https://config\.smplkit\.test/api/v1/configs\b.*page%5Bnumber%5D=2\b})
+        .to_return(status: 200, body: page2_body,
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+      chain = mgmt.config.fetch_chain("target-cfg")
+      expect(chain.length).to eq(1)
+      expect(chain.first["id"]).to eq("target-cfg")
     end
   end
 
@@ -247,6 +329,16 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       { "id" => "checkout-v2", "type" => "flag",
         "attributes" => { "name" => "Checkout V2", "type" => "BOOLEAN", "default" => false,
                           "environments" => {} } }
+    end
+
+    it "list forwards page_number and page_size to the generated client" do
+      capture, = stub_get_capture(
+        %r{https://flags\.smplkit\.test/api/v1/flags\b},
+        { "data" => [flag_data], "meta" => { "pagination" => { "page" => 5, "size" => 50 } } }
+      )
+      mgmt.flags.list(page_number: 5, page_size: 50)
+      expect(capture[:uri]).to include("page%5Bnumber%5D=5")
+      expect(capture[:uri]).to include("page%5Bsize%5D=50")
     end
 
     it "get fetches one Flag" do
@@ -289,10 +381,36 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
 
     it "list_flags returns runtime-cache hashes" do
-      stub_get("flags", "/api/v1/flags",
-               { "data" => [flag_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
+      stub_request(:get, %r{https://flags\.smplkit\.test/api/v1/flags\b})
+        .to_return(status: 200,
+                   body: JSON.generate({ "data" => [flag_data],
+                                         "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }),
+                   headers: { "Content-Type" => "application/vnd.api+json" })
       list = mgmt.flags.list_flags
       expect(list.first["id"]).to eq("checkout-v2")
+    end
+
+    it "list_flags walks every page until a short page terminates the loop" do
+      page_size = Smplkit::ManagementClient::RUNTIME_PAGE_SIZE
+      first_page = (1..page_size).map do |i|
+        { "id" => "flag-#{i}", "type" => "flag",
+          "attributes" => { "name" => "F#{i}", "type" => "BOOLEAN", "default" => false,
+                            "environments" => {} } }
+      end
+      second_page = [flag_data]
+      stub_request(:get, %r{https://flags\.smplkit\.test/api/v1/flags\b.*page%5Bnumber%5D=1\b})
+        .to_return(status: 200,
+                   body: JSON.generate({ "data" => first_page,
+                                         "meta" => { "pagination" => { "page" => 1, "size" => page_size } } }),
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+      stub_request(:get, %r{https://flags\.smplkit\.test/api/v1/flags\b.*page%5Bnumber%5D=2\b})
+        .to_return(status: 200,
+                   body: JSON.generate({ "data" => second_page,
+                                         "meta" => { "pagination" => { "page" => 2, "size" => page_size } } }),
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+      list = mgmt.flags.list_flags
+      expect(list.length).to eq(page_size + 1)
+      expect(list.last["id"]).to eq("checkout-v2")
     end
 
     it "flag_from_resource builds typed handles for STRING flags" do
@@ -376,6 +494,16 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       expect(mgmt.loggers.list.first.name).to eq("rails")
     end
 
+    it "list forwards page_number and page_size to the generated client" do
+      capture, = stub_get_capture(
+        %r{https://logging\.smplkit\.test/api/v1/loggers\b},
+        { "data" => [logger_data], "meta" => { "pagination" => { "page" => 7, "size" => 20 } } }
+      )
+      mgmt.loggers.list(page_number: 7, page_size: 20)
+      expect(capture[:uri]).to include("page%5Bnumber%5D=7")
+      expect(capture[:uri]).to include("page%5Bsize%5D=20")
+    end
+
     it "get normalizes the input name" do
       stub_get("logging", "/api/v1/loggers/rails.middleware", { "data" => logger_data })
       mgmt.loggers.get("Rails/Middleware")
@@ -421,6 +549,16 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
                { "data" => [group_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
       list = mgmt.log_groups.list
       expect(list.first.key).to eq("app")
+    end
+
+    it "list forwards page_number and page_size to the generated client" do
+      capture, = stub_get_capture(
+        %r{https://logging\.smplkit\.test/api/v1/log_groups\b},
+        { "data" => [group_data], "meta" => { "pagination" => { "page" => 8, "size" => 15 } } }
+      )
+      mgmt.log_groups.list(page_number: 8, page_size: 15)
+      expect(capture[:uri]).to include("page%5Bnumber%5D=8")
+      expect(capture[:uri]).to include("page%5Bsize%5D=15")
     end
 
     it "get fetches one" do

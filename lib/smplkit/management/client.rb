@@ -27,6 +27,12 @@ module Smplkit
   # etc.) and converts at the boundary via the existing
   # +<resource>_from_resource+ helpers.
   class ManagementClient
+    # Default page[size] the runtime asks for when walking a list
+    # endpoint to completion. The platform caps page[size] at 1000;
+    # using the same value here makes the minimum number of round-trips
+    # per exhaustive fetch.
+    RUNTIME_PAGE_SIZE = 1000
+
     attr_reader :contexts, :context_types, :environments, :account_settings,
                 :config, :flags, :loggers, :log_groups, :audit
 
@@ -126,6 +132,33 @@ module Smplkit
       end
     end
 
+    # Walk a generated paginated list endpoint to completion.
+    #
+    # The block receives a per-page +opts+ hash with +page_number+ and
+    # +page_size+ filled in, calls the generated list method through
+    # {ErrorMapping.call}, and returns the response object. Pages stop
+    # when the server returns fewer rows than requested — the platform's
+    # standard last-page signal across every offset-paginated list
+    # endpoint. Returns the concatenated +response.data+ rows.
+    module PaginatedFetch
+      module_function
+
+      def collect(page_size: RUNTIME_PAGE_SIZE)
+        rows = []
+        page_number = 1
+        loop do
+          opts = { page_number: page_number, page_size: page_size }
+          response = ErrorMapping.call { yield(opts) }
+          page = response.data || []
+          rows.concat(page)
+          break if page.length < page_size
+
+          page_number += 1
+        end
+        rows
+      end
+    end
+
     # Deep-stringify Hash keys so resources returned by generated +to_hash+
     # (symbol-keyed) match what the wrapper helpers expect (string-keyed).
     module ResourceShim
@@ -175,8 +208,11 @@ module Smplkit
         Smplkit.debug("registration", "context flush failed: #{e.class}: #{e.message}")
       end
 
-      def list
-        response = ErrorMapping.call { @api.list_contexts }
+      def list(page_number: nil, page_size: nil)
+        opts = {}
+        opts[:page_number] = page_number unless page_number.nil?
+        opts[:page_size] = page_size unless page_size.nil?
+        response = ErrorMapping.call { @api.list_contexts(opts) }
         (response.data || []).map { |r| context_from_resource(ResourceShim.from_model(r)) }
       end
 
@@ -237,8 +273,11 @@ module Smplkit
         @api = SmplkitGeneratedClient::App::ContextTypesApi.new(api_client)
       end
 
-      def list
-        response = ErrorMapping.call { @api.list_context_types }
+      def list(page_number: nil, page_size: nil)
+        opts = {}
+        opts[:page_number] = page_number unless page_number.nil?
+        opts[:page_size] = page_size unless page_size.nil?
+        response = ErrorMapping.call { @api.list_context_types(opts) }
         (response.data || []).map { |r| from_resource(ResourceShim.from_model(r)) }
       end
 
@@ -296,8 +335,11 @@ module Smplkit
         @api = SmplkitGeneratedClient::App::EnvironmentsApi.new(api_client)
       end
 
-      def list
-        response = ErrorMapping.call { @api.list_environments }
+      def list(page_number: nil, page_size: nil)
+        opts = {}
+        opts[:page_number] = page_number unless page_number.nil?
+        opts[:page_size] = page_size unless page_size.nil?
+        response = ErrorMapping.call { @api.list_environments(opts) }
         (response.data || []).map { |r| from_resource(ResourceShim.from_model(r)) }
       end
 
@@ -413,8 +455,11 @@ module Smplkit
         @api = SmplkitGeneratedClient::Config::ConfigsApi.new(api_client)
       end
 
-      def list
-        response = ErrorMapping.call { @api.list_configs }
+      def list(page_number: nil, page_size: nil)
+        opts = {}
+        opts[:page_number] = page_number unless page_number.nil?
+        opts[:page_size] = page_size unless page_size.nil?
+        response = ErrorMapping.call { @api.list_configs(opts) }
         (response.data || []).map { |r| Smplkit::Config::Helpers.config_from_json(self, ResourceShim.from_model(r)) }
       end
 
@@ -451,8 +496,11 @@ module Smplkit
       # Build the parent-chain for a given config, walking +parent_id+
       # pointers across the full config list. Mirrors the Python SDK's
       # client-side resolution — there is no server +/chain+ endpoint.
+      #
+      # Walks every page of +list_configs+ so an account with more than
+      # +RUNTIME_PAGE_SIZE+ configs still resolves chains correctly.
       def fetch_chain(target_key)
-        all_configs = list
+        all_configs = fetch_all_configs
         by_key = all_configs.to_h { |c| [c.key, c] }
         by_id = all_configs.to_h { |c| [c.id, c] }
 
@@ -474,6 +522,11 @@ module Smplkit
       end
 
       private
+
+      def fetch_all_configs
+        rows = PaginatedFetch.collect { |opts| @api.list_configs(opts) }
+        rows.map { |r| Smplkit::Config::Helpers.config_from_json(self, ResourceShim.from_model(r)) }
+      end
 
       def config_body(config)
         SmplkitGeneratedClient::Config::ConfigResponse.new(
@@ -576,8 +629,11 @@ module Smplkit
         @buffer.pending_count
       end
 
-      def list
-        response = ErrorMapping.call { @api.list_flags }
+      def list(page_number: nil, page_size: nil)
+        opts = {}
+        opts[:page_number] = page_number unless page_number.nil?
+        opts[:page_size] = page_size unless page_size.nil?
+        response = ErrorMapping.call { @api.list_flags(opts) }
         (response.data || []).map { |r| flag_from_resource(ResourceShim.from_model(r)) }
       end
 
@@ -634,9 +690,11 @@ module Smplkit
         Smplkit::Flags::Helpers.flag_dict_from_json(ResourceShim.from_model(response.data))
       end
 
+      # Runtime entry — walks every page so an account holding more than
+      # +RUNTIME_PAGE_SIZE+ flags still gets a complete in-memory store.
       def list_flags
-        response = ErrorMapping.call { @api.list_flags }
-        (response.data || []).map { |r| Smplkit::Flags::Helpers.flag_dict_from_json(ResourceShim.from_model(r)) }
+        rows = PaginatedFetch.collect { |opts| @api.list_flags(opts) }
+        rows.map { |r| Smplkit::Flags::Helpers.flag_dict_from_json(ResourceShim.from_model(r)) }
       end
 
       private
@@ -731,8 +789,11 @@ module Smplkit
         Smplkit.debug("registration", "logger flush failed: #{e.class}: #{e.message}")
       end
 
-      def list
-        response = ErrorMapping.call { @api.list_loggers }
+      def list(page_number: nil, page_size: nil)
+        opts = {}
+        opts[:page_number] = page_number unless page_number.nil?
+        opts[:page_size] = page_size unless page_size.nil?
+        response = ErrorMapping.call { @api.list_loggers(opts) }
         (response.data || []).map do |r|
           Smplkit::Logging::Helpers.logger_resource_to_model(self, ResourceShim.from_model(r))
         end
@@ -781,8 +842,11 @@ module Smplkit
         @api = SmplkitGeneratedClient::Logging::LogGroupsApi.new(api_client)
       end
 
-      def list
-        response = ErrorMapping.call { @api.list_log_groups }
+      def list(page_number: nil, page_size: nil)
+        opts = {}
+        opts[:page_number] = page_number unless page_number.nil?
+        opts[:page_size] = page_size unless page_size.nil?
+        response = ErrorMapping.call { @api.list_log_groups(opts) }
         (response.data || []).map do |r|
           Smplkit::Logging::Helpers.log_group_resource_to_model(self, ResourceShim.from_model(r))
         end
