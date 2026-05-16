@@ -9,6 +9,7 @@ README.md
 Rakefile
 docs/Error.md
 docs/ErrorResponse.md
+docs/ListMeta.md
 docs/LogGroup.md
 docs/LogGroupListResponse.md
 docs/LogGroupRequest.md
@@ -28,6 +29,7 @@ docs/LoggerSourceListResponse.md
 docs/LoggerSourceResource.md
 docs/LoggerSourcesApi.md
 docs/LoggersApi.md
+docs/PaginationMeta.md
 docs/ServiceListResponse.md
 docs/ServiceResource.md
 docs/ServicesApi.md
@@ -48,6 +50,7 @@ lib/smplkit_logging_client/api_model_base.rb
 lib/smplkit_logging_client/configuration.rb
 lib/smplkit_logging_client/models/error.rb
 lib/smplkit_logging_client/models/error_response.rb
+lib/smplkit_logging_client/models/list_meta.rb
 lib/smplkit_logging_client/models/log_group.rb
 lib/smplkit_logging_client/models/log_group_list_response.rb
 lib/smplkit_logging_client/models/log_group_request.rb
@@ -64,6 +67,7 @@ lib/smplkit_logging_client/models/logger_response.rb
 lib/smplkit_logging_client/models/logger_source.rb
 lib/smplkit_logging_client/models/logger_source_list_response.rb
 lib/smplkit_logging_client/models/logger_source_resource.rb
+lib/smplkit_logging_client/models/pagination_meta.rb
 lib/smplkit_logging_client/models/service_list_response.rb
 lib/smplkit_logging_client/models/service_resource.rb
 lib/smplkit_logging_client/models/usage_attributes.rb
@@ -78,6 +82,7 @@ spec/api/services_api_spec.rb
 spec/api/usage_api_spec.rb
 spec/models/error_response_spec.rb
 spec/models/error_spec.rb
+spec/models/list_meta_spec.rb
 spec/models/log_group_list_response_spec.rb
 spec/models/log_group_request_spec.rb
 spec/models/log_group_resource_spec.rb
@@ -94,6 +99,7 @@ spec/models/logger_source_list_response_spec.rb
 spec/models/logger_source_resource_spec.rb
 spec/models/logger_source_spec.rb
 spec/models/logger_spec.rb
+spec/models/pagination_meta_spec.rb
 spec/models/service_list_response_spec.rb
 spec/models/service_resource_spec.rb
 spec/models/usage_attributes_spec.rb

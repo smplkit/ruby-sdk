@@ -106,6 +106,7 @@ Class | Method | HTTP request | Description
 
  - [SmplkitGeneratedClient::Logging::Error](docs/Error.md)
  - [SmplkitGeneratedClient::Logging::ErrorResponse](docs/ErrorResponse.md)
+ - [SmplkitGeneratedClient::Logging::ListMeta](docs/ListMeta.md)
  - [SmplkitGeneratedClient::Logging::LogGroup](docs/LogGroup.md)
  - [SmplkitGeneratedClient::Logging::LogGroupListResponse](docs/LogGroupListResponse.md)
  - [SmplkitGeneratedClient::Logging::LogGroupRequest](docs/LogGroupRequest.md)
@@ -122,6 +123,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Logging::LoggerSource](docs/LoggerSource.md)
  - [SmplkitGeneratedClient::Logging::LoggerSourceListResponse](docs/LoggerSourceListResponse.md)
  - [SmplkitGeneratedClient::Logging::LoggerSourceResource](docs/LoggerSourceResource.md)
+ - [SmplkitGeneratedClient::Logging::PaginationMeta](docs/PaginationMeta.md)
  - [SmplkitGeneratedClient::Logging::ServiceListResponse](docs/ServiceListResponse.md)
  - [SmplkitGeneratedClient::Logging::ServiceResource](docs/ServiceResource.md)
  - [SmplkitGeneratedClient::Logging::UsageAttributes](docs/UsageAttributes.md)

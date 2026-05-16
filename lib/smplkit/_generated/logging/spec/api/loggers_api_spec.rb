@@ -70,12 +70,15 @@ describe 'LoggersApi' do
 
   # unit tests for list_loggers
   # List Loggers
-  # List loggers for this account.  Default sort is &#x60;key&#x60; ascending. Supports &#x60;filter[managed]&#x60; to narrow to managed (or unmanaged) loggers, &#x60;filter[service]&#x60; to keep only loggers observed in a specific service, and &#x60;filter[last_seen]&#x60; (interval notation &#x60;[&lt;from&gt;,*)&#x60;) to keep only loggers with a source observation at or after the given timestamp.
+  # List loggers for this account.  Default sort is &#x60;key&#x60; ascending. Supports &#x60;filter[managed]&#x60; to narrow to managed (or unmanaged) loggers, &#x60;filter[service]&#x60; to keep only loggers observed in a specific service, and &#x60;filter[last_seen]&#x60; (interval notation &#x60;[&lt;from&gt;,*)&#x60;) to keep only loggers with a source observation at or after the given timestamp.  &#x60;&#x60;filter[service]&#x60;&#x60; and &#x60;&#x60;filter[last_seen]&#x60;&#x60; are applied via a cross-table membership check in Python after the SQL fetch, so pagination for those calls is applied in memory after the filter; the common path (no source-bound filter) paginates at the SQL level.
   # @param [Hash] opts the optional parameters
   # @option opts [Boolean] :filter_managed 
   # @option opts [String] :filter_service 
   # @option opts [String] :filter_last_seen 
   # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
+  # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error.
+  # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error.
+  # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;.
   # @return [LoggerListResponse]
   describe 'list_loggers test' do
     it 'should work' do

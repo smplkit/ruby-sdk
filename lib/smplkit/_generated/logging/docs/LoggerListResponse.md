@@ -5,6 +5,7 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **data** | [**Array&lt;LoggerResource&gt;**](LoggerResource.md) |  |  |
+| **meta** | [**ListMeta**](ListMeta.md) |  |  |
 
 ## Example
 
@@ -12,7 +13,8 @@
 require 'smplkit_logging_client'
 
 instance = SmplkitGeneratedClient::Logging::LoggerListResponse.new(
-  data: null
+  data: null,
+  meta: null
 )
 ```
 
