@@ -14,17 +14,27 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
-  # JSON:API collection response envelope for flags.
-  class FlagListResponse < ApiModelBase
-    attr_accessor :data
+  # Pagination block returned inside ``meta`` on every list response.  ``page`` and ``size`` are always present and echo the parameters that served the response (their defaults when the client omitted them). ``total`` and ``total_pages`` are present only when the request included ``meta[total]=true``.
+  class PaginationMeta < ApiModelBase
+    # 1-based page number returned.
+    attr_accessor :page
 
-    attr_accessor :meta
+    # Number of items per page.
+    attr_accessor :size
+
+    # Total number of matching items across all pages. Present only when the request included `meta[total]=true`.
+    attr_accessor :total
+
+    # Total number of pages at the requested page size. Present only when the request included `meta[total]=true`.
+    attr_accessor :total_pages
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'data' => :'data',
-        :'meta' => :'meta'
+        :'page' => :'page',
+        :'size' => :'size',
+        :'total' => :'total',
+        :'total_pages' => :'total_pages'
       }
     end
 
@@ -41,14 +51,18 @@ module SmplkitGeneratedClient::Flags
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'data' => :'Array<FlagResource>',
-        :'meta' => :'ListMeta'
+        :'page' => :'Integer',
+        :'size' => :'Integer',
+        :'total' => :'Integer',
+        :'total_pages' => :'Integer'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'total',
+        :'total_pages'
       ])
     end
 
@@ -56,30 +70,36 @@ module SmplkitGeneratedClient::Flags
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Flags::FlagListResponse` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Flags::PaginationMeta` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Flags::FlagListResponse`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Flags::PaginationMeta`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'data')
-        if (value = attributes[:'data']).is_a?(Array)
-          self.data = value
-        end
+      if attributes.key?(:'page')
+        self.page = attributes[:'page']
       else
-        self.data = nil
+        self.page = nil
       end
 
-      if attributes.key?(:'meta')
-        self.meta = attributes[:'meta']
+      if attributes.key?(:'size')
+        self.size = attributes[:'size']
       else
-        self.meta = nil
+        self.size = nil
+      end
+
+      if attributes.key?(:'total')
+        self.total = attributes[:'total']
+      end
+
+      if attributes.key?(:'total_pages')
+        self.total_pages = attributes[:'total_pages']
       end
     end
 
@@ -88,12 +108,12 @@ module SmplkitGeneratedClient::Flags
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @data.nil?
-        invalid_properties.push('invalid value for "data", data cannot be nil.')
+      if @page.nil?
+        invalid_properties.push('invalid value for "page", page cannot be nil.')
       end
 
-      if @meta.nil?
-        invalid_properties.push('invalid value for "meta", meta cannot be nil.')
+      if @size.nil?
+        invalid_properties.push('invalid value for "size", size cannot be nil.')
       end
 
       invalid_properties
@@ -103,29 +123,29 @@ module SmplkitGeneratedClient::Flags
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @data.nil?
-      return false if @meta.nil?
+      return false if @page.nil?
+      return false if @size.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] data Value to be assigned
-    def data=(data)
-      if data.nil?
-        fail ArgumentError, 'data cannot be nil'
+    # @param [Object] page Value to be assigned
+    def page=(page)
+      if page.nil?
+        fail ArgumentError, 'page cannot be nil'
       end
 
-      @data = data
+      @page = page
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] meta Value to be assigned
-    def meta=(meta)
-      if meta.nil?
-        fail ArgumentError, 'meta cannot be nil'
+    # @param [Object] size Value to be assigned
+    def size=(size)
+      if size.nil?
+        fail ArgumentError, 'size cannot be nil'
       end
 
-      @meta = meta
+      @size = size
     end
 
     # Checks equality by comparing each attribute.
@@ -133,8 +153,10 @@ module SmplkitGeneratedClient::Flags
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          data == o.data &&
-          meta == o.meta
+          page == o.page &&
+          size == o.size &&
+          total == o.total &&
+          total_pages == o.total_pages
     end
 
     # @see the `==` method
@@ -146,7 +168,7 @@ module SmplkitGeneratedClient::Flags
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [data, meta].hash
+      [page, size, total, total_pages].hash
     end
 
     # Builds the object from hash
