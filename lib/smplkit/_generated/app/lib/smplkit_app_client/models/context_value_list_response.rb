@@ -14,13 +14,17 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  class UserListMeta < ApiModelBase
-    attr_accessor :page
+  # JSON:API collection response envelope for distinct context values.
+  class ContextValueListResponse < ApiModelBase
+    attr_accessor :data
+
+    attr_accessor :meta
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'page' => :'page'
+        :'data' => :'data',
+        :'meta' => :'meta'
       }
     end
 
@@ -37,7 +41,8 @@ module SmplkitGeneratedClient::App
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'page' => :'PageMeta'
+        :'data' => :'Array<ContextValueResource>',
+        :'meta' => :'ListMeta'
       }
     end
 
@@ -51,22 +56,30 @@ module SmplkitGeneratedClient::App
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::UserListMeta` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::ContextValueListResponse` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::UserListMeta`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::ContextValueListResponse`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'page')
-        self.page = attributes[:'page']
+      if attributes.key?(:'data')
+        if (value = attributes[:'data']).is_a?(Array)
+          self.data = value
+        end
       else
-        self.page = nil
+        self.data = nil
+      end
+
+      if attributes.key?(:'meta')
+        self.meta = attributes[:'meta']
+      else
+        self.meta = nil
       end
     end
 
@@ -75,8 +88,12 @@ module SmplkitGeneratedClient::App
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @page.nil?
-        invalid_properties.push('invalid value for "page", page cannot be nil.')
+      if @data.nil?
+        invalid_properties.push('invalid value for "data", data cannot be nil.')
+      end
+
+      if @meta.nil?
+        invalid_properties.push('invalid value for "meta", meta cannot be nil.')
       end
 
       invalid_properties
@@ -86,18 +103,29 @@ module SmplkitGeneratedClient::App
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @page.nil?
+      return false if @data.nil?
+      return false if @meta.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] page Value to be assigned
-    def page=(page)
-      if page.nil?
-        fail ArgumentError, 'page cannot be nil'
+    # @param [Object] data Value to be assigned
+    def data=(data)
+      if data.nil?
+        fail ArgumentError, 'data cannot be nil'
       end
 
-      @page = page
+      @data = data
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] meta Value to be assigned
+    def meta=(meta)
+      if meta.nil?
+        fail ArgumentError, 'meta cannot be nil'
+      end
+
+      @meta = meta
     end
 
     # Checks equality by comparing each attribute.
@@ -105,7 +133,8 @@ module SmplkitGeneratedClient::App
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          page == o.page
+          data == o.data &&
+          meta == o.meta
     end
 
     # @see the `==` method
@@ -117,7 +146,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [page].hash
+      [data, meta].hash
     end
 
     # Builds the object from hash

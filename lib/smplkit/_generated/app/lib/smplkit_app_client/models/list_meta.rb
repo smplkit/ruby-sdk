@@ -14,27 +14,14 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # Pagination metadata returned with a collection response.
-  class PageMeta < ApiModelBase
-    # Page size used for this response.
-    attr_accessor :size
-
-    # 1-based page number returned.
-    attr_accessor :number
-
-    # Total number of matching items across all pages.
-    attr_accessor :total_items
-
-    # Total number of pages at the current page size.
-    attr_accessor :total_pages
+  # Top-level ``meta`` block included on every JSON:API list response.
+  class ListMeta < ApiModelBase
+    attr_accessor :pagination
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'size' => :'size',
-        :'number' => :'number',
-        :'total_items' => :'total_items',
-        :'total_pages' => :'total_pages'
+        :'pagination' => :'pagination'
       }
     end
 
@@ -51,10 +38,7 @@ module SmplkitGeneratedClient::App
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'size' => :'Integer',
-        :'number' => :'Integer',
-        :'total_items' => :'Integer',
-        :'total_pages' => :'Integer'
+        :'pagination' => :'PaginationMeta'
       }
     end
 
@@ -68,40 +52,22 @@ module SmplkitGeneratedClient::App
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::PageMeta` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::ListMeta` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::PageMeta`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::ListMeta`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'size')
-        self.size = attributes[:'size']
+      if attributes.key?(:'pagination')
+        self.pagination = attributes[:'pagination']
       else
-        self.size = nil
-      end
-
-      if attributes.key?(:'number')
-        self.number = attributes[:'number']
-      else
-        self.number = nil
-      end
-
-      if attributes.key?(:'total_items')
-        self.total_items = attributes[:'total_items']
-      else
-        self.total_items = nil
-      end
-
-      if attributes.key?(:'total_pages')
-        self.total_pages = attributes[:'total_pages']
-      else
-        self.total_pages = nil
+        self.pagination = nil
       end
     end
 
@@ -110,20 +76,8 @@ module SmplkitGeneratedClient::App
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @size.nil?
-        invalid_properties.push('invalid value for "size", size cannot be nil.')
-      end
-
-      if @number.nil?
-        invalid_properties.push('invalid value for "number", number cannot be nil.')
-      end
-
-      if @total_items.nil?
-        invalid_properties.push('invalid value for "total_items", total_items cannot be nil.')
-      end
-
-      if @total_pages.nil?
-        invalid_properties.push('invalid value for "total_pages", total_pages cannot be nil.')
+      if @pagination.nil?
+        invalid_properties.push('invalid value for "pagination", pagination cannot be nil.')
       end
 
       invalid_properties
@@ -133,51 +87,18 @@ module SmplkitGeneratedClient::App
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @size.nil?
-      return false if @number.nil?
-      return false if @total_items.nil?
-      return false if @total_pages.nil?
+      return false if @pagination.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] size Value to be assigned
-    def size=(size)
-      if size.nil?
-        fail ArgumentError, 'size cannot be nil'
+    # @param [Object] pagination Value to be assigned
+    def pagination=(pagination)
+      if pagination.nil?
+        fail ArgumentError, 'pagination cannot be nil'
       end
 
-      @size = size
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] number Value to be assigned
-    def number=(number)
-      if number.nil?
-        fail ArgumentError, 'number cannot be nil'
-      end
-
-      @number = number
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] total_items Value to be assigned
-    def total_items=(total_items)
-      if total_items.nil?
-        fail ArgumentError, 'total_items cannot be nil'
-      end
-
-      @total_items = total_items
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] total_pages Value to be assigned
-    def total_pages=(total_pages)
-      if total_pages.nil?
-        fail ArgumentError, 'total_pages cannot be nil'
-      end
-
-      @total_pages = total_pages
+      @pagination = pagination
     end
 
     # Checks equality by comparing each attribute.
@@ -185,10 +106,7 @@ module SmplkitGeneratedClient::App
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          size == o.size &&
-          number == o.number &&
-          total_items == o.total_items &&
-          total_pages == o.total_pages
+          pagination == o.pagination
     end
 
     # @see the `==` method
@@ -200,7 +118,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [size, number, total_items, total_pages].hash
+      [pagination].hash
     end
 
     # Builds the object from hash

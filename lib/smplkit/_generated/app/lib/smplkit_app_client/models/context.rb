@@ -16,6 +16,9 @@ require 'time'
 module SmplkitGeneratedClient::App
   # A specific instance of a context type — for example, a particular user, account, or device — together with the attributes observed on it.  Context instances are addressed by a composite identifier of the form `context_type:key` (e.g. `user:alice-123`).
   class Context < ApiModelBase
+    # Entity identifier within the context type (e.g. `alice-123`). Together with `context_type` it forms the composite `id` `context_type:key`. Set by the bulk-register API; not editable.
+    attr_accessor :key
+
     # Human-readable display name for the context instance.
     attr_accessor :name
 
@@ -34,6 +37,7 @@ module SmplkitGeneratedClient::App
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'key' => :'key',
         :'name' => :'name',
         :'context_type' => :'context_type',
         :'attributes' => :'attributes',
@@ -55,6 +59,7 @@ module SmplkitGeneratedClient::App
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'key' => :'String',
         :'name' => :'String',
         :'context_type' => :'String',
         :'attributes' => :'Hash<String, Object>',
@@ -88,6 +93,12 @@ module SmplkitGeneratedClient::App
         h[k.to_sym] = v
       }
 
+      if attributes.key?(:'key')
+        self.key = attributes[:'key']
+      else
+        self.key = nil
+      end
+
       if attributes.key?(:'name')
         self.name = attributes[:'name']
       end
@@ -118,6 +129,10 @@ module SmplkitGeneratedClient::App
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
+      if @key.nil?
+        invalid_properties.push('invalid value for "key", key cannot be nil.')
+      end
+
       if @context_type.nil?
         invalid_properties.push('invalid value for "context_type", context_type cannot be nil.')
       end
@@ -129,8 +144,19 @@ module SmplkitGeneratedClient::App
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      return false if @key.nil?
       return false if @context_type.nil?
       true
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] key Value to be assigned
+    def key=(key)
+      if key.nil?
+        fail ArgumentError, 'key cannot be nil'
+      end
+
+      @key = key
     end
 
     # Custom attribute writer method with validation
@@ -148,6 +174,7 @@ module SmplkitGeneratedClient::App
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          key == o.key &&
           name == o.name &&
           context_type == o.context_type &&
           attributes == o.attributes &&
@@ -164,7 +191,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, context_type, attributes, created_at, updated_at].hash
+      [key, name, context_type, attributes, created_at, updated_at].hash
     end
 
     # Builds the object from hash

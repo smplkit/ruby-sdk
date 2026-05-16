@@ -202,9 +202,10 @@ module SmplkitGeneratedClient::App
     # @option opts [String] :filter_account 
     # @option opts [String] :filter_email 
     # @option opts [String] :filter_search Case-insensitive substring match against display_name and email. If the value is a valid UUID, also matches user id exactly.
-    # @option opts [Integer] :page_number 1-based page number (default to 1)
-    # @option opts [Integer] :page_size Items per page (default to 50)
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;email&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;email&#x60;, &#x60;-email&#x60;. (default to 'email')
+    # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
+    # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
+    # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
     # @return [UserListResponse]
     def list_users(opts = {})
       data, _status_code, _headers = list_users_with_http_info(opts)
@@ -217,26 +218,15 @@ module SmplkitGeneratedClient::App
     # @option opts [String] :filter_account 
     # @option opts [String] :filter_email 
     # @option opts [String] :filter_search Case-insensitive substring match against display_name and email. If the value is a valid UUID, also matches user id exactly.
-    # @option opts [Integer] :page_number 1-based page number (default to 1)
-    # @option opts [Integer] :page_size Items per page (default to 50)
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;email&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;email&#x60;, &#x60;-email&#x60;. (default to 'email')
+    # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
+    # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
+    # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
     # @return [Array<(UserListResponse, Integer, Hash)>] UserListResponse data, response status code and response headers
     def list_users_with_http_info(opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: UsersApi.list_users ...'
       end
-      if @api_client.config.client_side_validation && !opts[:'page_number'].nil? && opts[:'page_number'] < 1
-        fail ArgumentError, 'invalid value for "opts[:"page_number"]" when calling UsersApi.list_users, must be greater than or equal to 1.'
-      end
-
-      if @api_client.config.client_side_validation && !opts[:'page_size'].nil? && opts[:'page_size'] > 200
-        fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling UsersApi.list_users, must be smaller than or equal to 200.'
-      end
-
-      if @api_client.config.client_side_validation && !opts[:'page_size'].nil? && opts[:'page_size'] < 1
-        fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling UsersApi.list_users, must be greater than or equal to 1.'
-      end
-
       allowable_values = ["created_at", "-created_at", "display_name", "-display_name", "email", "-email"]
       if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
         fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
@@ -249,9 +239,10 @@ module SmplkitGeneratedClient::App
       query_params[:'filter[account]'] = opts[:'filter_account'] if !opts[:'filter_account'].nil?
       query_params[:'filter[email]'] = opts[:'filter_email'] if !opts[:'filter_email'].nil?
       query_params[:'filter[search]'] = opts[:'filter_search'] if !opts[:'filter_search'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
       query_params[:'page[number]'] = opts[:'page_number'] if !opts[:'page_number'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
-      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
+      query_params[:'meta[total]'] = opts[:'meta_total'] if !opts[:'meta_total'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}

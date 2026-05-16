@@ -5,7 +5,7 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **data** | [**Array&lt;UserResource&gt;**](UserResource.md) |  |  |
-| **meta** | [**UserListMeta**](UserListMeta.md) |  | [optional] |
+| **meta** | [**ListMeta**](ListMeta.md) |  |  |
 
 ## Example
 
