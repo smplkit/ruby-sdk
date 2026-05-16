@@ -18,10 +18,13 @@ module SmplkitGeneratedClient::Config
   class ConfigListResponse < ApiModelBase
     attr_accessor :data
 
+    attr_accessor :meta
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'data' => :'data'
+        :'data' => :'data',
+        :'meta' => :'meta'
       }
     end
 
@@ -38,7 +41,8 @@ module SmplkitGeneratedClient::Config
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'data' => :'Array<ConfigResource>'
+        :'data' => :'Array<ConfigResource>',
+        :'meta' => :'ListMeta'
       }
     end
 
@@ -71,6 +75,12 @@ module SmplkitGeneratedClient::Config
       else
         self.data = nil
       end
+
+      if attributes.key?(:'meta')
+        self.meta = attributes[:'meta']
+      else
+        self.meta = nil
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -82,6 +92,10 @@ module SmplkitGeneratedClient::Config
         invalid_properties.push('invalid value for "data", data cannot be nil.')
       end
 
+      if @meta.nil?
+        invalid_properties.push('invalid value for "meta", meta cannot be nil.')
+      end
+
       invalid_properties
     end
 
@@ -90,6 +104,7 @@ module SmplkitGeneratedClient::Config
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @data.nil?
+      return false if @meta.nil?
       true
     end
 
@@ -103,12 +118,23 @@ module SmplkitGeneratedClient::Config
       @data = data
     end
 
+    # Custom attribute writer method with validation
+    # @param [Object] meta Value to be assigned
+    def meta=(meta)
+      if meta.nil?
+        fail ArgumentError, 'meta cannot be nil'
+      end
+
+      @meta = meta
+    end
+
     # Checks equality by comparing each attribute.
     # @param [Object] Object to be compared
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          data == o.data
+          data == o.data &&
+          meta == o.meta
     end
 
     # @see the `==` method
@@ -120,7 +146,7 @@ module SmplkitGeneratedClient::Config
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [data].hash
+      [data, meta].hash
     end
 
     # Builds the object from hash

@@ -104,6 +104,8 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Config::ConfigResource](docs/ConfigResource.md)
  - [SmplkitGeneratedClient::Config::ConfigResponse](docs/ConfigResponse.md)
  - [SmplkitGeneratedClient::Config::EnvironmentOverride](docs/EnvironmentOverride.md)
+ - [SmplkitGeneratedClient::Config::ListMeta](docs/ListMeta.md)
+ - [SmplkitGeneratedClient::Config::PaginationMeta](docs/PaginationMeta.md)
  - [SmplkitGeneratedClient::Config::UsageAttributes](docs/UsageAttributes.md)
  - [SmplkitGeneratedClient::Config::UsageListResponse](docs/UsageListResponse.md)
  - [SmplkitGeneratedClient::Config::UsageResource](docs/UsageResource.md)

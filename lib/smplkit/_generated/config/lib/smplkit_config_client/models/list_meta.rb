@@ -14,17 +14,14 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Config
-  # JSON:API collection response for usage counters.
-  class UsageListResponse < ApiModelBase
-    attr_accessor :data
-
-    attr_accessor :meta
+  # Top-level ``meta`` block included on every JSON:API list response.
+  class ListMeta < ApiModelBase
+    attr_accessor :pagination
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'data' => :'data',
-        :'meta' => :'meta'
+        :'pagination' => :'pagination'
       }
     end
 
@@ -41,8 +38,7 @@ module SmplkitGeneratedClient::Config
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'data' => :'Array<UsageResource>',
-        :'meta' => :'ListMeta'
+        :'pagination' => :'PaginationMeta'
       }
     end
 
@@ -56,30 +52,22 @@ module SmplkitGeneratedClient::Config
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Config::UsageListResponse` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Config::ListMeta` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Config::UsageListResponse`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Config::ListMeta`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'data')
-        if (value = attributes[:'data']).is_a?(Array)
-          self.data = value
-        end
+      if attributes.key?(:'pagination')
+        self.pagination = attributes[:'pagination']
       else
-        self.data = nil
-      end
-
-      if attributes.key?(:'meta')
-        self.meta = attributes[:'meta']
-      else
-        self.meta = nil
+        self.pagination = nil
       end
     end
 
@@ -88,12 +76,8 @@ module SmplkitGeneratedClient::Config
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @data.nil?
-        invalid_properties.push('invalid value for "data", data cannot be nil.')
-      end
-
-      if @meta.nil?
-        invalid_properties.push('invalid value for "meta", meta cannot be nil.')
+      if @pagination.nil?
+        invalid_properties.push('invalid value for "pagination", pagination cannot be nil.')
       end
 
       invalid_properties
@@ -103,29 +87,18 @@ module SmplkitGeneratedClient::Config
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @data.nil?
-      return false if @meta.nil?
+      return false if @pagination.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] data Value to be assigned
-    def data=(data)
-      if data.nil?
-        fail ArgumentError, 'data cannot be nil'
+    # @param [Object] pagination Value to be assigned
+    def pagination=(pagination)
+      if pagination.nil?
+        fail ArgumentError, 'pagination cannot be nil'
       end
 
-      @data = data
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] meta Value to be assigned
-    def meta=(meta)
-      if meta.nil?
-        fail ArgumentError, 'meta cannot be nil'
-      end
-
-      @meta = meta
+      @pagination = pagination
     end
 
     # Checks equality by comparing each attribute.
@@ -133,8 +106,7 @@ module SmplkitGeneratedClient::Config
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          data == o.data &&
-          meta == o.meta
+          pagination == o.pagination
     end
 
     # @see the `==` method
@@ -146,7 +118,7 @@ module SmplkitGeneratedClient::Config
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [data, meta].hash
+      [pagination].hash
     end
 
     # Builds the object from hash
