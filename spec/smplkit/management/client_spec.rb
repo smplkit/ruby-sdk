@@ -82,7 +82,8 @@ RSpec.describe Smplkit::ManagementClient do
                              "id" => "x", "type" => "flag",
                              "attributes" => { "name" => "x", "type" => "BOOLEAN",
                                                "default" => false, "environments" => {} }
-                           }])
+                           }],
+                           "meta" => { "pagination" => { "page" => 1, "size" => 1000 } })
       stub_request(:get, "https://flags.smplkit.test/api/v1/flags")
         .to_return(status: 200, body: body, headers: { "Content-Type" => "application/vnd.api+json" })
       flags = mgmt.flags.list

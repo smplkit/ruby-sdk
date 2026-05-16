@@ -71,7 +71,10 @@ api_instance = SmplkitGeneratedClient::Flags::FlagSourcesApi.new
 opts = {
   filter_environment: 'filter_environment_example', # String | 
   filter_service: 'filter_service_example', # String | 
-  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-last_seen`. Allowed values: `created_at`, `-created_at`, `environment`, `-environment`, `last_seen`, `-last_seen`, `service`, `-service`.
+  sort: 'created_at', # String | Field to sort by. Prefix with `-` for descending order. Default: `-last_seen`. Allowed values: `created_at`, `-created_at`, `environment`, `-environment`, `last_seen`, `-last_seen`, `service`, `-service`.
+  page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
+  page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
+  meta_total: true # Boolean | When `true`, the response's `meta.pagination` block includes `total` (the total number of matching items across all pages) and `total_pages`. Computing these requires an extra `COUNT` query, so omit (or pass `false`) when the totals are not needed. Defaults to `false`.
 }
 
 begin
@@ -118,7 +121,9 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Flags::FlagSourceListResponse](docs/FlagSourceListResponse.md)
  - [SmplkitGeneratedClient::Flags::FlagSourceResource](docs/FlagSourceResource.md)
  - [SmplkitGeneratedClient::Flags::FlagValue](docs/FlagValue.md)
+ - [SmplkitGeneratedClient::Flags::ListMeta](docs/ListMeta.md)
  - [SmplkitGeneratedClient::Flags::ManualReviewItem](docs/ManualReviewItem.md)
+ - [SmplkitGeneratedClient::Flags::PaginationMeta](docs/PaginationMeta.md)
  - [SmplkitGeneratedClient::Flags::RemoveReferencesAttributes](docs/RemoveReferencesAttributes.md)
  - [SmplkitGeneratedClient::Flags::RemoveReferencesRequest](docs/RemoveReferencesRequest.md)
  - [SmplkitGeneratedClient::Flags::RemoveReferencesResultEnvelope](docs/RemoveReferencesResultEnvelope.md)

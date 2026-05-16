@@ -24,7 +24,9 @@ docs/FlagSourcesApi.md
 docs/FlagValue.md
 docs/FlagsApi.md
 docs/FunctionsApi.md
+docs/ListMeta.md
 docs/ManualReviewItem.md
+docs/PaginationMeta.md
 docs/RemoveReferencesAttributes.md
 docs/RemoveReferencesRequest.md
 docs/RemoveReferencesResultEnvelope.md
@@ -57,7 +59,9 @@ lib/smplkit_flags_client/models/flag_source.rb
 lib/smplkit_flags_client/models/flag_source_list_response.rb
 lib/smplkit_flags_client/models/flag_source_resource.rb
 lib/smplkit_flags_client/models/flag_value.rb
+lib/smplkit_flags_client/models/list_meta.rb
 lib/smplkit_flags_client/models/manual_review_item.rb
+lib/smplkit_flags_client/models/pagination_meta.rb
 lib/smplkit_flags_client/models/remove_references_attributes.rb
 lib/smplkit_flags_client/models/remove_references_request.rb
 lib/smplkit_flags_client/models/remove_references_result_envelope.rb
@@ -85,7 +89,9 @@ spec/models/flag_source_resource_spec.rb
 spec/models/flag_source_spec.rb
 spec/models/flag_spec.rb
 spec/models/flag_value_spec.rb
+spec/models/list_meta_spec.rb
 spec/models/manual_review_item_spec.rb
+spec/models/pagination_meta_spec.rb
 spec/models/remove_references_attributes_spec.rb
 spec/models/remove_references_request_spec.rb
 spec/models/remove_references_result_envelope_spec.rb
