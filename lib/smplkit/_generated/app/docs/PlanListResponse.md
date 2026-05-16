@@ -5,6 +5,7 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **data** | [**Array&lt;PlanResource&gt;**](PlanResource.md) |  |  |
+| **meta** | [**ListMeta**](ListMeta.md) |  |  |
 
 ## Example
 
@@ -12,7 +13,8 @@
 require 'smplkit_app_client'
 
 instance = SmplkitGeneratedClient::App::PlanListResponse.new(
-  data: null
+  data: null,
+  meta: null
 )
 ```
 

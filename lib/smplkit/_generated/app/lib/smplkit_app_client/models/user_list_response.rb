@@ -42,7 +42,7 @@ module SmplkitGeneratedClient::App
     def self.openapi_types
       {
         :'data' => :'Array<UserResource>',
-        :'meta' => :'UserListMeta'
+        :'meta' => :'ListMeta'
       }
     end
 
@@ -78,6 +78,8 @@ module SmplkitGeneratedClient::App
 
       if attributes.key?(:'meta')
         self.meta = attributes[:'meta']
+      else
+        self.meta = nil
       end
     end
 
@@ -90,6 +92,10 @@ module SmplkitGeneratedClient::App
         invalid_properties.push('invalid value for "data", data cannot be nil.')
       end
 
+      if @meta.nil?
+        invalid_properties.push('invalid value for "meta", meta cannot be nil.')
+      end
+
       invalid_properties
     end
 
@@ -98,6 +104,7 @@ module SmplkitGeneratedClient::App
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @data.nil?
+      return false if @meta.nil?
       true
     end
 
@@ -109,6 +116,16 @@ module SmplkitGeneratedClient::App
       end
 
       @data = data
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] meta Value to be assigned
+    def meta=(meta)
+      if meta.nil?
+        fail ArgumentError, 'meta cannot be nil'
+      end
+
+      @meta = meta
     end
 
     # Checks equality by comparing each attribute.

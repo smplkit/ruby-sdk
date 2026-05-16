@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # JSON:API resource envelope for a context instance.  `id` is the composite identifier `context_type:key`. It must not be specified for create requests (the server assigns it).
+  # JSON:API resource envelope for a context instance.  `id` is the composite identifier `context_type:key` (e.g. `user:alice-123`).
   class ContextResource < ApiModelBase
     attr_accessor :id
 
