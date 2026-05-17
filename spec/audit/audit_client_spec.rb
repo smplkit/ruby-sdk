@@ -158,6 +158,38 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
 
+    it "passes customer-supplied actor fields into the request body" do
+      captured = nil
+      stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.record(
+          action: "user.created",
+          resource_type: "user",
+          resource_id: "u-1",
+          actor_type: "EXTERNAL_SERVICE",
+          actor_id: "not-a-uuid:billing-bot",
+          actor_label: "Billing Bot"
+        )
+        client.events.flush(timeout: 2.0)
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          sleep 0.02
+        end
+        attrs = captured.dig("data", "attributes")
+        expect(attrs["actor_type"]).to eq("EXTERNAL_SERVICE")
+        expect(attrs["actor_id"]).to eq("not-a-uuid:billing-bot")
+        expect(attrs["actor_label"]).to eq("Billing Bot")
+      ensure
+        client._close
+      end
+    end
+
     it "nests snapshot inside data on the request body" do
       captured = nil
       stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|

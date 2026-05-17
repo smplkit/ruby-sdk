@@ -15,11 +15,18 @@ module Smplkit
 
       # Enqueue an audit event for asynchronous delivery.
       #
+      # Actor attribution (+actor_type+, +actor_id+, +actor_label+) is
+      # customer-supplied and free-form. The audit service stores
+      # whatever the caller passed and never backfills from the request
+      # credential — supply the fields explicitly when you want the
+      # event attributed.
+      #
       # Customer attempts to record events with +resource_type+ starting
       # with +smpl.+ are rejected by the server with a 403 (the buffer
       # logs and drops permanent failures).
       def record(action:, resource_type:, resource_id:,
-                 occurred_at: nil, data: nil, idempotency_key: nil,
+                 occurred_at: nil, actor_type: nil, actor_id: nil,
+                 actor_label: nil, data: nil, idempotency_key: nil,
                  do_not_forward: false)
         raise ArgumentError, "action is required" if action.nil? || action.to_s.empty?
         raise ArgumentError, "resource_type is required" if resource_type.nil? || resource_type.to_s.empty?
@@ -45,6 +52,9 @@ module Smplkit
           resource_type: resource_type,
           resource_id: resource_id,
           occurred_at: normalized_occurred_at,
+          actor_type: actor_type,
+          actor_id: actor_id,
+          actor_label: actor_label,
           data: data || {},
           do_not_forward: do_not_forward
         )
