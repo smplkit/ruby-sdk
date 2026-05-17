@@ -48,6 +48,7 @@ begin
       headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")]
     ),
     filter: INVOICE_FILTER,
+    transform_type: Smplkit::Audit::TransformType::JSONATA,
     transform: SIEM_TRANSFORM
   )
   forwarder.save

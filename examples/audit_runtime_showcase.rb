@@ -19,12 +19,15 @@ require "smplkit"
 Smplkit::Client.open(environment: "production", service: "showcase-service") do |client|
   some_resource_id = "showcase-#{SecureRandom.hex(4)}"
 
-  # record an event
+  # record an event with full customer-supplied actor attribution
   client.audit.events.record(
     action: "invoice.created",
     resource_type: "invoice",
     resource_id: some_resource_id,
     occurred_at: Time.now.utc,
+    actor_type: "USER",
+    actor_id: "billing-bot:42",
+    actor_label: "finance@example.com",
     data: {
       "snapshot" => { "total_cents" => 4900, "currency" => "USD" },
       "request_id" => "req-abc"
@@ -45,8 +48,10 @@ Smplkit::Client.open(environment: "production", service: "showcase-service") do 
   raise "id mismatch" unless event.id == recorded_event_id
   raise "resource_id mismatch" unless event.resource_id == some_resource_id
   raise "action mismatch" unless event.action == "invoice.created"
+  raise "actor_id mismatch" unless event.actor_id == "billing-bot:42"
+  raise "actor_label mismatch" unless event.actor_label == "finance@example.com"
 
-  puts "Fetched event #{event.id}: #{event.action}"
+  puts "Fetched event #{event.id}: #{event.action} by #{event.actor_label}"
 
   # list resource types observed
   resource_types = client.audit.resource_types.list

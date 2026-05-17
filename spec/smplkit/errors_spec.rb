@@ -9,6 +9,12 @@ RSpec.describe Smplkit::Errors do
       expect { described_class.raise_for_status(204, "") }.not_to raise_error
     end
 
+    it "raises PaymentRequiredError on 402" do
+      body = JSON.generate("errors" => [{ "status" => "402", "detail" => "plan required" }])
+      expect { described_class.raise_for_status(402, body) }
+        .to raise_error(Smplkit::PaymentRequiredError, /plan required/)
+    end
+
     it "raises NotFoundError on 404" do
       body = JSON.generate("errors" => [{ "status" => "404", "detail" => "missing" }])
       expect { described_class.raise_for_status(404, body) }.to raise_error(Smplkit::NotFoundError, /missing/)

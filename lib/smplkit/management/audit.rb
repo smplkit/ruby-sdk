@@ -43,12 +43,24 @@ module Smplkit
       # @param description [String, nil] Optional free-text description.
       # @param filter [Hash, nil] Optional JSON Logic filter; events that don't
       #   match are recorded as +filtered_out+ deliveries.
-      # @param transform [String, nil] Optional JSONata template applied to the
-      #   event payload before delivery. Nil sends the event JSON unchanged.
+      # @param transform [Object, nil] Optional template applied to each event
+      #   before delivery. Free-form — the audit service passes the value
+      #   verbatim to the engine named by +transform_type+. Must be paired with
+      #   a non-nil +transform_type+.
+      # @param transform_type [String, nil] Engine that evaluates +transform+ —
+      #   one of {Smplkit::Audit::TransformType::VALUES}. Required when
+      #   +transform+ is provided.
+      # @raise [ArgumentError] when +transform+ is set but +transform_type+ is nil.
       # @return [Smplkit::Audit::Forwarder]
       def new_forwarder(name:, forwarder_type:, configuration:,
                         enabled: true, description: nil,
-                        filter: nil, transform: nil)
+                        filter: nil, transform: nil, transform_type: nil)
+        if !transform.nil? && transform_type.nil?
+          raise ArgumentError,
+                "transform_type is required when transform is provided " \
+                "(one of #{Smplkit::Audit::TransformType::VALUES.inspect})"
+        end
+
         Smplkit::Audit::Forwarder.new(
           self,
           name: name,
@@ -58,7 +70,7 @@ module Smplkit
           description: description,
           filter: filter,
           transform: transform,
-          transform_type: transform.nil? ? nil : "JSONATA"
+          transform_type: transform_type
         )
       end
 
@@ -134,7 +146,7 @@ module Smplkit
           forwarder_type: Smplkit::Audit::ForwarderType.coerce(forwarder.forwarder_type),
           enabled: forwarder.enabled,
           filter: forwarder.filter,
-          transform_type: forwarder.transform_type,
+          transform_type: Smplkit::Audit::TransformType.coerce(forwarder.transform_type),
           transform: forwarder.transform,
           configuration: Smplkit::Audit::HttpConfiguration.to_wire(forwarder.configuration)
         )

@@ -5,10 +5,10 @@ module Smplkit
   #
   # Acts as a string-valued enum: each constant equals its name when used in
   # string contexts, and supports comparison via the +ordinal+. Members are
-  # declared in alphabetical order; severity is encoded in {#ordinal}, not
-  # in declaration order.
+  # declared in increasing severity order — matching the Ruby stdlib
+  # +Logger+ convention (TRACE = least severe, SILENT = most severe).
   class LogLevel
-    NAMES = %w[DEBUG ERROR FATAL INFO SILENT TRACE WARN].freeze
+    NAMES = %w[TRACE DEBUG INFO WARN ERROR FATAL SILENT].freeze
 
     # @return [String] Canonical level name (e.g. +"INFO"+).
     attr_reader :name
@@ -32,15 +32,15 @@ module Smplkit
 
     include Comparable
 
+    TRACE  = new("TRACE", 0)
     DEBUG  = new("DEBUG", 1)
+    INFO   = new("INFO", 2)
+    WARN   = new("WARN", 3)
     ERROR  = new("ERROR", 4)
     FATAL  = new("FATAL", 5)
-    INFO   = new("INFO", 2)
     SILENT = new("SILENT", 6)
-    TRACE  = new("TRACE", 0)
-    WARN   = new("WARN", 3)
 
-    ALL = [DEBUG, ERROR, FATAL, INFO, SILENT, TRACE, WARN].freeze
+    ALL = [TRACE, DEBUG, INFO, WARN, ERROR, FATAL, SILENT].freeze
 
     BY_NAME = ALL.to_h { |lvl| [lvl.name, lvl] }.freeze
 

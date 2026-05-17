@@ -113,6 +113,32 @@ module Smplkit
       end
     end
 
+    # Engine that evaluates a forwarder's +transform+ template
+    # (ADR-047 §2.12). Only +JSONATA+ is supported today; the enum
+    # exists so the field is typed instead of accepting any string,
+    # and so additional engines can be added without breaking the
+    # public surface.
+    module TransformType
+      JSONATA = "JSONATA"
+
+      VALUES = [JSONATA].freeze
+
+      # Validate and normalize an input to a wire-format string.
+      #
+      # @param value [String, nil] a published constant or its literal string.
+      # @return [String, nil] the canonical wire value (or +nil+ when input is +nil+).
+      # @raise [ArgumentError] when +value+ is not a member of {VALUES}.
+      def self.coerce(value)
+        return nil if value.nil?
+
+        s = value.to_s
+        return s if VALUES.include?(s)
+
+        raise ArgumentError,
+              "Unknown TransformType #{value.inspect}; expected one of #{VALUES.inspect}"
+      end
+    end
+
     # A single audit event as returned by the audit service (ADR-047 §2.3.1).
     #
     # @!attribute [rw] id
@@ -128,12 +154,11 @@ module Smplkit
     # @!attribute [rw] created_at
     #   @return [String] ISO-8601 timestamp of when the audit service first ingested this event.
     # @!attribute [rw] actor_type
-    #   @return [String, nil] Type of actor (+"user"+, +"api_key"+, +"system"+, …) — +nil+ when unknown.
+    #   @return [String, nil] Customer-supplied free-form actor type string — +nil+ when not provided.
     # @!attribute [rw] actor_id
-    #   @return [String, nil] UUID of the actor when the actor is a tracked entity (user, api_key);
-    #     +nil+ for system or anonymous events.
+    #   @return [String, nil] Customer-supplied free-form actor identifier — +nil+ when not provided.
     # @!attribute [rw] actor_label
-    #   @return [String, nil] Display label for the actor — typically a name or email.
+    #   @return [String, nil] Customer-supplied display label for the actor — typically a name or email.
     # @!attribute [rw] data
     #   @return [Hash{String => Object}] Free-form per-event payload defined by the customer.
     # @!attribute [rw] idempotency_key
@@ -310,13 +335,15 @@ module Smplkit
       #   deliveries instead of being delivered to the destination.
       attr_accessor :filter
 
-      # @return [String, nil] Optional template applied to each event before
-      #   delivery. Shape depends on {#transform_type}; for +"JSONATA"+, a
-      #   JSONata expression. +nil+ delivers the event JSON as-is.
+      # @return [Object, nil] Optional template applied to each event before
+      #   delivery. Free-form — the audit service passes the value verbatim to
+      #   the engine named by {#transform_type}. For +TransformType::JSONATA+ a
+      #   JSONata expression string; +nil+ delivers the event JSON as-is. Must
+      #   be paired with a non-nil {#transform_type}.
       attr_accessor :transform
 
-      # @return [String, nil] Engine that evaluates {#transform}. Currently
-      #   only +"JSONATA"+ is supported.
+      # @return [String, nil] Engine that evaluates {#transform} — one of
+      #   {TransformType::VALUES}. Required whenever {#transform} is set.
       attr_accessor :transform_type
 
       # @return [String, nil] ISO-8601 timestamp of first persist. +nil+ for an unsaved instance.
@@ -344,7 +371,7 @@ module Smplkit
         @description = description
         @filter = filter
         @transform = transform
-        @transform_type = transform_type
+        @transform_type = TransformType.coerce(transform_type)
         @created_at = created_at
         @updated_at = updated_at
         @deleted_at = deleted_at

@@ -47,7 +47,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
           method: "POST", url: "https://siem.example.com/in",
           headers: [Smplkit::Audit::HttpHeader.new(name: "DD-API-KEY", value: "real-secret")]
         ),
-        filter: { "==" => [1, 1] }, transform: "$"
+        filter: { "==" => [1, 1] }, transform_type: "JSONATA", transform: "$"
       )
       fwd.save
       expect(fwd.id).to eq(fwd_id)
@@ -55,34 +55,44 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect(fwd.configuration.headers.first.value).to eq("<redacted>")
     end
 
-    it "transform: argument auto-fills transform_type=JSONATA" do
+    it "passes transform_type and transform through verbatim" do
       fwd = forwarders.new_forwarder(
         name: "x", forwarder_type: "HTTP",
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
-        transform: "$"
+        transform_type: Smplkit::Audit::TransformType::JSONATA,
+        transform: { "event" => "$.action" }
       )
       expect(fwd.transform_type).to eq("JSONATA")
+      expect(fwd.transform).to eq("event" => "$.action")
     end
 
-    it "leaves transform_type=nil when transform is omitted" do
+    it "leaves transform and transform_type nil when neither is provided" do
       fwd = forwarders.new_forwarder(
         name: "x", forwarder_type: "HTTP",
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
+      expect(fwd.transform).to be_nil
       expect(fwd.transform_type).to be_nil
     end
 
-    it "raises Smplkit::PaymentRequiredError on 402" do
-      stub_request(:post, "#{base_url}/api/v1/forwarders").to_return(
-        status: 402, body: { errors: [{ status: "402", detail: "Pro plan required" }] }.to_json,
-        headers: json_api
-      )
+    it "raises when transform is provided without transform_type" do
       expect do
         forwarders.new_forwarder(
           name: "x", forwarder_type: "HTTP",
-          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
-        ).save
-      end.to raise_error(Smplkit::PaymentRequiredError, /Pro plan required/)
+          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
+          transform: "$"
+        )
+      end.to raise_error(ArgumentError, /transform_type is required/)
+    end
+
+    it "raises when transform_type is not a known enum value" do
+      expect do
+        forwarders.new_forwarder(
+          name: "x", forwarder_type: "HTTP",
+          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
+          transform: "$", transform_type: "JQ"
+        )
+      end.to raise_error(ArgumentError, /Unknown TransformType/)
     end
 
     it "raises Smplkit::ConnectionError when the generated layer reports no status code" do
@@ -337,6 +347,27 @@ RSpec.describe Smplkit::Audit::HttpConfiguration do
 
   it "defaults method to POST when omitted" do
     expect(described_class.new(url: "https://x").method).to eq("POST")
+  end
+end
+
+RSpec.describe Smplkit::Audit::TransformType do
+  it "lists every transform engine in VALUES" do
+    expect(described_class::VALUES).to eq(%w[JSONATA])
+  end
+
+  describe ".coerce" do
+    it "passes through known values" do
+      expect(described_class.coerce("JSONATA")).to eq("JSONATA")
+      expect(described_class.coerce(described_class::JSONATA)).to eq("JSONATA")
+    end
+
+    it "preserves nil so optional params stay optional" do
+      expect(described_class.coerce(nil)).to be_nil
+    end
+
+    it "raises on an unknown engine" do
+      expect { described_class.coerce("JQ") }.to raise_error(ArgumentError, /Unknown TransformType/)
+    end
   end
 end
 
