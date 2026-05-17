@@ -3,8 +3,8 @@
 require "spec_helper"
 
 RSpec.describe Smplkit::LogLevel do
-  it "exposes all canonical levels" do
-    expect(described_class::ALL.map(&:name)).to eq(%w[TRACE DEBUG INFO WARN ERROR FATAL SILENT])
+  it "exposes all canonical levels in alphabetical order" do
+    expect(described_class::ALL.map(&:name)).to eq(%w[DEBUG ERROR FATAL INFO SILENT TRACE WARN])
   end
 
   it "compares by ordinal" do

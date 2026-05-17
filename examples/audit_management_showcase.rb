@@ -38,36 +38,20 @@ manage = Smplkit::ManagementClient.new
 begin
   forwarder_name = "showcase-#{SecureRandom.hex(3)}"
 
-  # create a forwarder
-  forwarder = manage.audit.forwarders.create(
+  # create a new forwarder
+  forwarder = manage.audit.forwarders.new_forwarder(
     name: forwarder_name,
-    description: "Smplkit Ruby SDK showcase forwarder",
     forwarder_type: Smplkit::Audit::ForwarderType::HTTP,
     configuration: Smplkit::Audit::HttpConfiguration.new(
-      method: "POST",
+      method: Smplkit::Audit::HttpMethod::POST,
       url: "https://httpbin.org/post",
-      headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")],
-      success_status: "2xx"
+      headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")]
     ),
     filter: INVOICE_FILTER,
-    transform_type: "JSONATA",
     transform: SIEM_TRANSFORM
   )
-  raise "name mismatch" unless forwarder.name == forwarder_name
-  raise "expected enabled=true" unless forwarder.enabled == true
-  raise "filter round-trip mismatch" unless forwarder.filter == INVOICE_FILTER
-  raise "transform round-trip mismatch" unless forwarder.transform == SIEM_TRANSFORM
-
-  puts "Created forwarder: #{forwarder.id} (#{forwarder.name})"
-
-  # fetch a forwarder
-  fetched = manage.audit.forwarders.get(forwarder.id)
-  raise "id mismatch" unless fetched.id == forwarder.id
-  raise "name mismatch on get" unless fetched.name == forwarder_name
-  raise "filter mismatch on get" unless fetched.filter == INVOICE_FILTER
-  raise "transform mismatch on get" unless fetched.transform == SIEM_TRANSFORM
-
-  puts "Fetched forwarder: #{fetched.name}"
+  forwarder.save
+  puts "Created forwarder: #{forwarder.name} (id=#{forwarder.id})"
 
   # list forwarders
   listed = manage.audit.forwarders.list
@@ -75,35 +59,26 @@ begin
 
   puts "Account has #{listed.forwarders.length} forwarder(s)"
 
-  # update a forwarder
-  renamed = "#{forwarder.name}-renamed"
-  updated = manage.audit.forwarders.update(
-    forwarder.id,
-    name: renamed,
-    description: forwarder.description,
-    forwarder_type: forwarder.forwarder_type,
-    configuration: Smplkit::Audit::HttpConfiguration.new(
-      method: "POST",
-      url: "https://httpbin.org/post",
-      headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")],
-      success_status: "2xx"
-    ),
-    enabled: false,
-    filter: INVOICE_FILTER,
-    transform_type: "JSONATA",
-    transform: SIEM_TRANSFORM
-  )
-  raise "rename failed" unless updated.name == renamed
-  raise "expected enabled=false" unless updated.enabled == false
+  # get a forwarder
+  fetched = manage.audit.forwarders.get(forwarder.id)
+  raise "id mismatch" unless fetched.id == forwarder.id
+  raise "expected enabled=true" unless fetched.enabled == true
 
-  puts "Updated forwarder: #{updated.name} (enabled=#{updated.enabled})"
+  puts "Fetched forwarder: #{fetched.name}"
+
+  # update a forwarder
+  fetched.enabled = false
+  fetched.save
+  raise "expected enabled=false" unless fetched.enabled == false
+
+  puts "Disabled forwarder: #{fetched.name} (enabled=#{fetched.enabled})"
 
   # delete a forwarder
-  manage.audit.forwarders.delete(forwarder.id)
+  fetched.delete
   remaining = manage.audit.forwarders.list
-  raise "delete failed — forwarder still listed" if remaining.forwarders.any? { |f| f.id == forwarder.id }
+  raise "delete failed — forwarder still listed" if remaining.forwarders.any? { |f| f.id == fetched.id }
 
-  puts "Deleted forwarder: #{forwarder.id}"
+  puts "Deleted forwarder: #{fetched.name}"
 
   puts "Done!"
 ensure

@@ -7,16 +7,16 @@ module Smplkit
   # can validate calls. Raw strings are still accepted for backward
   # compatibility.
   module Op
+    CONTAINS = "contains"
     EQ = "=="
-    NEQ = "!="
-    LT = "<"
-    LTE = "<="
     GT = ">"
     GTE = ">="
     IN = "in"
-    CONTAINS = "contains"
+    LT = "<"
+    LTE = "<="
+    NEQ = "!="
 
-    ALL = [EQ, NEQ, LT, LTE, GT, GTE, IN, CONTAINS].freeze
+    ALL = [CONTAINS, EQ, GT, GTE, IN, LT, LTE, NEQ].freeze
   end
 
   # A typed entity referenced by targeting rules and registered with smplkit.

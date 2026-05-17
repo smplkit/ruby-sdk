@@ -9,10 +9,10 @@ module Smplkit
     # +AD_HOC+ environments are transient targets (preview branches, individual
     # developer sandboxes) that should not appear in the standard ordering.
     module EnvironmentClassification
-      STANDARD = "STANDARD"
       AD_HOC = "AD_HOC"
+      STANDARD = "STANDARD"
 
-      ALL = [STANDARD, AD_HOC].freeze
+      ALL = [AD_HOC, STANDARD].freeze
     end
 
     HEX_RE = /\A#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\z/

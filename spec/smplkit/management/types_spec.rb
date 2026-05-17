@@ -40,7 +40,7 @@ RSpec.describe Smplkit::Color do
 end
 
 RSpec.describe Smplkit::EnvironmentClassification do
-  it "exposes STANDARD and AD_HOC" do
-    expect(described_class::ALL).to eq([described_class::STANDARD, described_class::AD_HOC])
+  it "exposes AD_HOC and STANDARD in alphabetical order" do
+    expect(described_class::ALL).to eq([described_class::AD_HOC, described_class::STANDARD])
   end
 end

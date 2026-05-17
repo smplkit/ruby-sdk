@@ -36,19 +36,40 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     }
   end
 
-  describe "#create" do
-    it "wraps the input in a JSON:API resource and returns a Forwarder" do
+  describe "#new_forwarder + Forwarder#save" do
+    it "POSTs and refreshes the local instance with the server response" do
       stub_request(:post, "#{base_url}/api/v1/forwarders").to_return(
         status: 201, body: { data: forwarder_resource }.to_json, headers: json_api
       )
-      fwd = forwarders.create(
+      fwd = forwarders.new_forwarder(
         name: "Datadog production", forwarder_type: "DATADOG",
-        configuration: { url: "https://siem.example.com/in",
-                         headers: [{ name: "DD-API-KEY", value: "real-secret" }] },
-        filter: { "==" => [1, 1] }, transform_type: "JSONATA", transform: "$"
+        configuration: Smplkit::Audit::HttpConfiguration.new(
+          method: "POST", url: "https://siem.example.com/in",
+          headers: [Smplkit::Audit::HttpHeader.new(name: "DD-API-KEY", value: "real-secret")]
+        ),
+        filter: { "==" => [1, 1] }, transform: "$"
       )
+      fwd.save
+      expect(fwd.id).to eq(fwd_id)
       expect(fwd.name).to eq("Datadog production")
       expect(fwd.configuration.headers.first.value).to eq("<redacted>")
+    end
+
+    it "transform: argument auto-fills transform_type=JSONATA" do
+      fwd = forwarders.new_forwarder(
+        name: "x", forwarder_type: "HTTP",
+        configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
+        transform: "$"
+      )
+      expect(fwd.transform_type).to eq("JSONATA")
+    end
+
+    it "leaves transform_type=nil when transform is omitted" do
+      fwd = forwarders.new_forwarder(
+        name: "x", forwarder_type: "HTTP",
+        configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+      )
+      expect(fwd.transform_type).to be_nil
     end
 
     it "raises Smplkit::PaymentRequiredError on 402" do
@@ -57,21 +78,29 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
         headers: json_api
       )
       expect do
-        forwarders.create(
+        forwarders.new_forwarder(
           name: "x", forwarder_type: "HTTP",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
-        )
+        ).save
       end.to raise_error(Smplkit::PaymentRequiredError, /Pro plan required/)
     end
 
     it "raises Smplkit::ConnectionError when the generated layer reports no status code" do
       stub_request(:post, "#{base_url}/api/v1/forwarders").to_raise(Errno::ECONNREFUSED)
       expect do
-        forwarders.create(
+        forwarders.new_forwarder(
           name: "x", forwarder_type: "HTTP",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
-        )
+        ).save
       end.to raise_error(Smplkit::ConnectionError)
+    end
+
+    it "raises when the Forwarder has no client" do
+      detached = Smplkit::Audit::Forwarder.new(
+        name: "x", forwarder_type: "HTTP",
+        configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+      )
+      expect { detached.save }.to raise_error(/cannot save/)
     end
   end
 
@@ -132,13 +161,14 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     end
   end
 
-  describe "#get / #update / #delete" do
-    it "returns a Forwarder on get" do
+  describe "#get / save (update) / delete" do
+    it "returns a Forwarder on get bound to the namespace" do
       stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
         status: 200, body: { data: forwarder_resource }.to_json, headers: json_api
       )
       fwd = forwarders.get(fwd_id)
       expect(fwd.name).to eq("Datadog production")
+      expect(fwd.instance_variable_get(:@client)).to be(forwarders)
     end
 
     it "returns forwarder filter with string keys at every depth" do
@@ -154,21 +184,49 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect(fwd.filter["=="].first["var"]).to eq("resource_type")
     end
 
-    it "issues PUT on update" do
+    it "Forwarder#save issues PUT once created_at is present" do
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200, body: { data: forwarder_resource }.to_json, headers: json_api
+      )
       put_stub = stub_request(:put, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
         status: 200,
         body: { data: forwarder_resource(name: "Renamed") }.to_json,
         headers: json_api
       )
-      fwd = forwarders.update(
-        fwd_id, name: "Renamed", forwarder_type: "DATADOG",
-                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
-      )
+      fetched = forwarders.get(fwd_id)
+      fetched.name = "Renamed"
+      fetched.save
       expect(put_stub).to have_been_requested
-      expect(fwd.name).to eq("Renamed")
+      expect(fetched.name).to eq("Renamed")
     end
 
-    it "issues DELETE on delete and returns nil" do
+    it "_update_forwarder rejects a Forwarder with no id" do
+      detached = Smplkit::Audit::Forwarder.new(
+        forwarders, name: "x", forwarder_type: "HTTP",
+                    configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+      )
+      expect { forwarders._update_forwarder(detached) }.to raise_error(ArgumentError, /no id/)
+    end
+
+    it "Forwarder#delete issues DELETE" do
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200, body: { data: forwarder_resource }.to_json, headers: json_api
+      )
+      del_stub = stub_request(:delete, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(status: 204)
+      fetched = forwarders.get(fwd_id)
+      fetched.delete
+      expect(del_stub).to have_been_requested
+    end
+
+    it "Forwarder#delete raises when constructed without a client" do
+      detached = Smplkit::Audit::Forwarder.new(
+        name: "x", forwarder_type: "HTTP", id: fwd_id,
+        configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+      )
+      expect { detached.delete }.to raise_error(/cannot delete/)
+    end
+
+    it "namespace #delete still works by id" do
       del_stub = stub_request(:delete, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(status: 204)
       expect(forwarders.delete(fwd_id)).to be_nil
       expect(del_stub).to have_been_requested
@@ -210,10 +268,8 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
 end
 
 RSpec.describe Smplkit::Audit::ForwarderType do
-  it "lists every spec value in VALUES" do
-    expect(described_class::VALUES).to eq(%w[
-                                            HTTP DATADOG SPLUNK_HEC SUMO_LOGIC NEW_RELIC HONEYCOMB ELASTIC
-                                          ])
+  it "lists every spec value in VALUES in alphabetical order" do
+    expect(described_class::VALUES).to eq(%w[DATADOG ELASTIC HONEYCOMB HTTP NEW_RELIC SPLUNK_HEC SUMO_LOGIC])
   end
 
   it "exposes each value as a SCREAMING_SNAKE_CASE constant" do
@@ -249,6 +305,38 @@ RSpec.describe Smplkit::Audit::ForwarderType do
       expect { described_class.coerce("http") }
         .to raise_error(ArgumentError, /Unknown ForwarderType/)
     end
+  end
+end
+
+RSpec.describe Smplkit::Audit::HttpMethod do
+  it "lists every verb in VALUES in alphabetical order" do
+    expect(described_class::VALUES).to eq(%w[DELETE GET PATCH POST PUT])
+  end
+
+  describe ".coerce" do
+    it "passes through valid verb strings" do
+      expect(described_class.coerce("POST")).to eq("POST")
+      expect(described_class.coerce(described_class::PUT)).to eq("PUT")
+    end
+
+    it "preserves nil" do
+      expect(described_class.coerce(nil)).to be_nil
+    end
+
+    it "raises on an unknown verb" do
+      expect { described_class.coerce("HEAD") }.to raise_error(ArgumentError, /Unknown HttpMethod/)
+    end
+  end
+end
+
+RSpec.describe Smplkit::Audit::HttpConfiguration do
+  it "rejects an invalid method at construction" do
+    expect { described_class.new(method: "HEAD", url: "https://x") }
+      .to raise_error(ArgumentError, /Unknown HttpMethod/)
+  end
+
+  it "defaults method to POST when omitted" do
+    expect(described_class.new(url: "https://x").method).to eq("POST")
   end
 end
 

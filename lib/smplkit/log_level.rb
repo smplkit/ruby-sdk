@@ -4,11 +4,17 @@ module Smplkit
   # Log severity levels used by the Smpl Logging service.
   #
   # Acts as a string-valued enum: each constant equals its name when used in
-  # string contexts, and supports comparison via the +ordinal+.
+  # string contexts, and supports comparison via the +ordinal+. Members are
+  # declared in alphabetical order; severity is encoded in {#ordinal}, not
+  # in declaration order.
   class LogLevel
-    NAMES = %w[TRACE DEBUG INFO WARN ERROR FATAL SILENT].freeze
+    NAMES = %w[DEBUG ERROR FATAL INFO SILENT TRACE WARN].freeze
 
-    attr_reader :name, :ordinal
+    # @return [String] Canonical level name (e.g. +"INFO"+).
+    attr_reader :name
+
+    # @return [Integer] Severity ordinal — TRACE=0 (lowest) through SILENT=6 (highest).
+    attr_reader :ordinal
 
     def initialize(name, ordinal)
       @name = name.freeze
@@ -26,15 +32,15 @@ module Smplkit
 
     include Comparable
 
-    TRACE  = new("TRACE", 0)
     DEBUG  = new("DEBUG", 1)
-    INFO   = new("INFO", 2)
-    WARN   = new("WARN", 3)
     ERROR  = new("ERROR", 4)
     FATAL  = new("FATAL", 5)
+    INFO   = new("INFO", 2)
     SILENT = new("SILENT", 6)
+    TRACE  = new("TRACE", 0)
+    WARN   = new("WARN", 3)
 
-    ALL = [TRACE, DEBUG, INFO, WARN, ERROR, FATAL, SILENT].freeze
+    ALL = [DEBUG, ERROR, FATAL, INFO, SILENT, TRACE, WARN].freeze
 
     BY_NAME = ALL.to_h { |lvl| [lvl.name, lvl] }.freeze
 

@@ -2,10 +2,6 @@
 
 module Smplkit
   module Audit
-    # Parse the +page[after]+ cursor out of a JSON:API +links.next+
-    # URL. Returns nil for non-string input or when the link carries
-    # no cursor parameter; trims trailing query params at the next
-    # ampersand so they don't leak into the token.
     # Wrap a generated-audit-API call and translate +ApiError+ into the
     # +Smplkit::Error+ hierarchy. Connection-level failures (no
     # response code) become {Smplkit::ConnectionError}; status-coded
@@ -24,6 +20,10 @@ module Smplkit
       raise
     end
 
+    # Parse the +page[after]+ cursor out of a JSON:API +links.next+
+    # URL. Returns nil for non-string input or when the link carries
+    # no cursor parameter; trims trailing query params at the next
+    # ampersand so they don't leak into the token.
     def self.next_cursor(link)
       return nil unless link.is_a?(String)
 
@@ -49,23 +49,28 @@ module Smplkit
       out
     end
 
-    # Public-facing enum for SIEM streaming destination types.
+    # Supported SIEM forwarder destination types (ADR-047 §2.12).
     #
-    # Mirrors the +ForwarderType+ enum the audit OpenAPI spec emits
-    # (ADR-047 §2.12). Customers pass these constants — or any string
-    # in {VALUES} — to the management +forwarders+ surface. The wrapper
-    # validates membership before round-tripping to the wire.
+    # Members are declared in alphabetical order. Customers pass these
+    # constants — or the equivalent string — to the management
+    # +forwarders+ surface; the wrapper validates membership via {coerce}
+    # before round-tripping to the wire.
     module ForwarderType
-      HTTP = "HTTP"
       DATADOG = "DATADOG"
+      ELASTIC = "ELASTIC"
+      HONEYCOMB = "HONEYCOMB"
+      HTTP = "HTTP"
+      NEW_RELIC = "NEW_RELIC"
       SPLUNK_HEC = "SPLUNK_HEC"
       SUMO_LOGIC = "SUMO_LOGIC"
-      NEW_RELIC = "NEW_RELIC"
-      HONEYCOMB = "HONEYCOMB"
-      ELASTIC = "ELASTIC"
 
-      VALUES = [HTTP, DATADOG, SPLUNK_HEC, SUMO_LOGIC, NEW_RELIC, HONEYCOMB, ELASTIC].freeze
+      VALUES = [DATADOG, ELASTIC, HONEYCOMB, HTTP, NEW_RELIC, SPLUNK_HEC, SUMO_LOGIC].freeze
 
+      # Validate and normalize an input to a wire-format string.
+      #
+      # @param value [String, nil] a published constant or its literal string.
+      # @return [String, nil] the canonical wire value (or +nil+ when input is +nil+).
+      # @raise [ArgumentError] when +value+ is not a member of {VALUES}.
       def self.coerce(value)
         return nil if value.nil?
 
@@ -77,7 +82,64 @@ module Smplkit
       end
     end
 
-    # Public-facing audit event resource. ADR-047 §2.3.1.
+    # HTTP verb used by a forwarder's outbound delivery (ADR-047 §2.12).
+    #
+    # Mirrors the audit spec's +HttpConfigurationMethod+ enum so the
+    # +HttpConfiguration#method+ field is constrained to a known value
+    # instead of accepting any string. Members are declared in
+    # alphabetical order.
+    module HttpMethod
+      DELETE = "DELETE"
+      GET = "GET"
+      PATCH = "PATCH"
+      POST = "POST"
+      PUT = "PUT"
+
+      VALUES = [DELETE, GET, PATCH, POST, PUT].freeze
+
+      # Validate and normalize an input to a wire-format string.
+      #
+      # @param value [String, nil] a published constant or its literal string.
+      # @return [String, nil] the canonical wire value (or +nil+ when input is +nil+).
+      # @raise [ArgumentError] when +value+ is not a member of {VALUES}.
+      def self.coerce(value)
+        return nil if value.nil?
+
+        s = value.to_s
+        return s if VALUES.include?(s)
+
+        raise ArgumentError,
+              "Unknown HttpMethod #{value.inspect}; expected one of #{VALUES.inspect}"
+      end
+    end
+
+    # A single audit event as returned by the audit service (ADR-047 §2.3.1).
+    #
+    # @!attribute [rw] id
+    #   @return [String] Server-assigned UUID for this event.
+    # @!attribute [rw] action
+    #   @return [String] Action slug — e.g. +"user.created"+, +"invoice.paid"+.
+    # @!attribute [rw] resource_type
+    #   @return [String] Type of resource the action operated on — e.g. +"invoice"+.
+    # @!attribute [rw] resource_id
+    #   @return [String] Customer-facing id of the resource the action operated on.
+    # @!attribute [rw] occurred_at
+    #   @return [String] ISO-8601 timestamp of when the action happened, as reported by the source.
+    # @!attribute [rw] created_at
+    #   @return [String] ISO-8601 timestamp of when the audit service first ingested this event.
+    # @!attribute [rw] actor_type
+    #   @return [String, nil] Type of actor (+"user"+, +"api_key"+, +"system"+, …) — +nil+ when unknown.
+    # @!attribute [rw] actor_id
+    #   @return [String, nil] UUID of the actor when the actor is a tracked entity (user, api_key);
+    #     +nil+ for system or anonymous events.
+    # @!attribute [rw] actor_label
+    #   @return [String, nil] Display label for the actor — typically a name or email.
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}] Free-form per-event payload defined by the customer.
+    # @!attribute [rw] idempotency_key
+    #   @return [String, nil] Customer-supplied dedupe key, +nil+ if not provided.
+    # @!attribute [rw] do_not_forward
+    #   @return [Boolean] When +true+, skip SIEM forwarder delivery regardless of any matching filter.
     AuditEvent = Struct.new(
       :id, :action, :resource_type, :resource_id,
       :occurred_at, :created_at,
@@ -110,6 +172,13 @@ module Smplkit
     # the customer-facing key as the resource id (ADR-014). The duplication
     # keeps SDK consumers from having to dig into the id field when
     # filtering UI controls; pick whichever name reads better in context.
+    #
+    # @!attribute [rw] id
+    #   @return [String] JSON:API resource id (same as +resource_type+).
+    # @!attribute [rw] resource_type
+    #   @return [String] The distinct resource_type slug.
+    # @!attribute [rw] created_at
+    #   @return [String] ISO-8601 timestamp of the earliest sighting for this slug.
     ResourceType = Struct.new(:id, :resource_type, :created_at, keyword_init: true) do
       def self.from_resource(resource)
         attrs = resource.attributes
@@ -127,6 +196,13 @@ module Smplkit
     # +created_at+ is the earliest sighting; when the parent list call
     # filtered by +resource_type+, this is the first sighting of that
     # specific (action, resource_type) triple, not the action overall.
+    #
+    # @!attribute [rw] id
+    #   @return [String] JSON:API resource id (same as +action+).
+    # @!attribute [rw] action
+    #   @return [String] The distinct action slug.
+    # @!attribute [rw] created_at
+    #   @return [String] ISO-8601 timestamp of the earliest sighting for this slug.
     Action = Struct.new(:id, :action, :created_at, keyword_init: true) do
       def self.from_resource(resource)
         attrs = resource.attributes
@@ -138,19 +214,41 @@ module Smplkit
       end
     end
 
+    # A single name/value HTTP header on a forwarder destination.
+    #
+    # @!attribute [rw] name
+    #   @return [String] Header name (e.g. +"Authorization"+, +"DD-API-KEY"+).
+    # @!attribute [rw] value
+    #   @return [String] Header value, plaintext on writes. The audit service
+    #     encrypts values at rest; reads return them as +"<redacted>"+.
     HttpHeader = Struct.new(:name, :value, keyword_init: true)
 
+    # Forwarder destination HTTP request shape.
+    #
+    # @!attribute [rw] method
+    #   @return [String] HTTP verb used for delivery. Defaults to {HttpMethod::POST}.
+    # @!attribute [rw] url
+    #   @return [String] Destination URL the audit service sends each event to.
+    # @!attribute [rw] headers
+    #   @return [Array<HttpHeader>] Headers attached to every outbound request.
+    #     Values carry credentials and are encrypted at rest server-side; reads
+    #     return them redacted.
+    # @!attribute [rw] success_status
+    #   @return [String] Status the destination must return for delivery to count
+    #     as success — an exact code (+"200"+, +"204"+) or a class (+"2xx"+, +"4xx"+).
+    #     Defaults to +"2xx"+.
+    #
     # rubocop:disable Lint/StructNewOverride -- ``:method`` matches the
     # API attribute and shadowing Struct#method is the expected ergonomics.
     HttpConfiguration = Struct.new(:method, :url, :headers, :success_status, keyword_init: true) do
-      def initialize(method: "POST", url: "", headers: nil, success_status: "2xx")
-        super(method: method, url: url, headers: headers || [], success_status: success_status)
+      def initialize(method: HttpMethod::POST, url: "", headers: nil, success_status: "2xx")
+        super(method: HttpMethod.coerce(method), url: url, headers: headers || [], success_status: success_status)
       end
 
       def self.to_wire(src)
         h = src.is_a?(Hash) ? new(**src) : src
         SmplkitGeneratedClient::Audit::HttpConfiguration.new(
-          method: h.method,
+          method: HttpMethod.coerce(h.method),
           url: h.url,
           headers: (h.headers || []).map do |hdr|
             name, value = if hdr.is_a?(Hash)
@@ -169,7 +267,7 @@ module Smplkit
         return new if src.nil?
 
         new(
-          method: src.method || "POST",
+          method: src.method || HttpMethod::POST,
           url: src.url || "",
           headers: (src.headers || []).map { |h| HttpHeader.new(name: h.name, value: h.value) },
           success_status: src.success_status || "2xx"
@@ -178,17 +276,130 @@ module Smplkit
     end
     # rubocop:enable Lint/StructNewOverride
 
-    # rubocop:disable Lint/StructNewOverride -- ``:filter`` matches the
-    # API attribute and shadowing Struct#filter is the expected ergonomics.
-    Forwarder = Struct.new(
-      :id, :name, :description, :forwarder_type, :enabled,
-      :filter, :transform_type, :transform, :configuration,
-      :created_at, :updated_at, :deleted_at, :version,
-      keyword_init: true
-    ) do
-      def self.from_resource(resource)
+    # A SIEM streaming forwarder configured on the customer's account.
+    #
+    # Active-record style: instantiate via
+    # +mgmt.audit.forwarders.new_forwarder(...)+, mutate fields directly,
+    # and call {#save} to persist or {#delete} to remove. Header values in
+    # +configuration.headers+ are returned redacted on reads — the GET path
+    # on the audit API replaces every header value with +"<redacted>"+.
+    # Re-supply real values before calling {#save}; the SDK does not cache
+    # them client-side.
+    class Forwarder
+      # @return [String, nil] Server-assigned UUID, +nil+ until {#save} has run.
+      attr_accessor :id
+
+      # @return [String] Display name. Free-form.
+      attr_accessor :name
+
+      # @return [String] One of {ForwarderType::VALUES}.
+      attr_accessor :forwarder_type
+
+      # @return [Boolean] When +false+, the audit service skips delivery for
+      #   this forwarder but still records +filtered_out+ deliveries.
+      attr_accessor :enabled
+
+      # @return [HttpConfiguration] Destination request configuration.
+      attr_accessor :configuration
+
+      # @return [String, nil] Optional free-text description.
+      attr_accessor :description
+
+      # @return [Hash, nil] Optional JSON Logic expression evaluated per event.
+      #   When set, events that don't match are recorded as +filtered_out+
+      #   deliveries instead of being delivered to the destination.
+      attr_accessor :filter
+
+      # @return [String, nil] Optional template applied to each event before
+      #   delivery. Shape depends on {#transform_type}; for +"JSONATA"+, a
+      #   JSONata expression. +nil+ delivers the event JSON as-is.
+      attr_accessor :transform
+
+      # @return [String, nil] Engine that evaluates {#transform}. Currently
+      #   only +"JSONATA"+ is supported.
+      attr_accessor :transform_type
+
+      # @return [String, nil] ISO-8601 timestamp of first persist. +nil+ for an unsaved instance.
+      attr_accessor :created_at
+
+      # @return [String, nil] ISO-8601 timestamp of the most recent mutation.
+      attr_accessor :updated_at
+
+      # @return [String, nil] Soft-delete timestamp. +nil+ for live forwarders.
+      attr_accessor :deleted_at
+
+      # @return [Integer, nil] Monotonic version counter, bumped on every server-side write.
+      attr_accessor :version
+
+      def initialize(client = nil, name:, forwarder_type:, configuration:,
+                     id: nil, enabled: true, description: nil,
+                     filter: nil, transform: nil, transform_type: nil,
+                     created_at: nil, updated_at: nil, deleted_at: nil, version: nil)
+        @client = client
+        @id = id
+        @name = name
+        @forwarder_type = ForwarderType.coerce(forwarder_type)
+        @configuration = configuration
+        @enabled = enabled
+        @description = description
+        @filter = filter
+        @transform = transform
+        @transform_type = transform_type
+        @created_at = created_at
+        @updated_at = updated_at
+        @deleted_at = deleted_at
+        @version = version
+      end
+
+      # Create or update this forwarder on the server.
+      #
+      # Upsert behavior is driven by {#created_at}: a forwarder with no
+      # +created_at+ is created (POST); otherwise it's full-replace updated
+      # (PUT). After the call, every field is refreshed from the server
+      # response (including newly-assigned +id+, +created_at+, +updated_at+,
+      # +version+).
+      #
+      # @return [self]
+      def save
+        raise "Forwarder was constructed without a client; cannot save" if @client.nil?
+
+        updated = @created_at.nil? ? @client._create_forwarder(self) : @client._update_forwarder(self)
+        _apply(updated)
+        self
+      end
+      alias save! save
+
+      # Soft-delete this forwarder on the server.
+      #
+      # @return [nil]
+      def delete
+        raise "Forwarder was constructed without a client or id; cannot delete" if @client.nil? || @id.nil?
+
+        @client.delete(@id)
+      end
+      alias delete! delete
+
+      # @api private
+      def _apply(other)
+        @id = other.id
+        @name = other.name
+        @forwarder_type = other.forwarder_type
+        @configuration = other.configuration
+        @enabled = other.enabled
+        @description = other.description
+        @filter = other.filter
+        @transform = other.transform
+        @transform_type = other.transform_type
+        @created_at = other.created_at
+        @updated_at = other.updated_at
+        @deleted_at = other.deleted_at
+        @version = other.version
+      end
+
+      def self.from_resource(resource, client: nil)
         a = resource.attributes
         new(
+          client,
           id: resource.id,
           name: a.name,
           description: a.description,
@@ -205,6 +416,5 @@ module Smplkit
         )
       end
     end
-    # rubocop:enable Lint/StructNewOverride
   end
 end

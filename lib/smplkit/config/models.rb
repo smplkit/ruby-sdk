@@ -4,12 +4,12 @@ module Smplkit
   module Config
     # Type of a +ConfigItem+ value.
     module ItemType
-      STRING = "STRING"
-      NUMBER = "NUMBER"
       BOOLEAN = "BOOLEAN"
       JSON = "JSON"
+      NUMBER = "NUMBER"
+      STRING = "STRING"
 
-      ALL = [STRING, NUMBER, BOOLEAN, JSON].freeze
+      ALL = [BOOLEAN, JSON, NUMBER, STRING].freeze
     end
 
     # A single typed item in a +Config+.
