@@ -106,6 +106,7 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**retry_forwarder_delivery**](docs/ForwardersApi.md#retry_forwarder_delivery) | **POST** /api/v1/forwarders/{forwarder_id}/deliveries/{delivery_id}/actions/retry | Retry Forwarder Delivery
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**update_forwarder**](docs/ForwardersApi.md#update_forwarder) | **PUT** /api/v1/forwarders/{forwarder_id} | Update Forwarder
 *SmplkitGeneratedClient::Audit::ResourceTypesApi* | [**list_resource_types**](docs/ResourceTypesApi.md#list_resource_types) | **GET** /api/v1/resource_types | List Resource Types
+*SmplkitGeneratedClient::Audit::SearchApi* | [**search_events**](docs/SearchApi.md#search_events) | **POST** /api/v1/search/events | Search Events
 *SmplkitGeneratedClient::Audit::UsageApi* | [**list_usage**](docs/UsageApi.md#list_usage) | **GET** /api/v1/usage | List Usage
 
 
@@ -141,6 +142,11 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::ResourceTypeListResponse](docs/ResourceTypeListResponse.md)
  - [SmplkitGeneratedClient::Audit::ResourceTypeResource](docs/ResourceTypeResource.md)
  - [SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary](docs/RetryFailedDeliveriesSummary.md)
+ - [SmplkitGeneratedClient::Audit::SearchEventsListLinks](docs/SearchEventsListLinks.md)
+ - [SmplkitGeneratedClient::Audit::SearchEventsListMeta](docs/SearchEventsListMeta.md)
+ - [SmplkitGeneratedClient::Audit::SearchEventsRequest](docs/SearchEventsRequest.md)
+ - [SmplkitGeneratedClient::Audit::SearchEventsResponse](docs/SearchEventsResponse.md)
+ - [SmplkitGeneratedClient::Audit::SearchScanMeta](docs/SearchScanMeta.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderRequest](docs/TestForwarderRequest.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderResponse](docs/TestForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::UsageAttributes](docs/UsageAttributes.md)
