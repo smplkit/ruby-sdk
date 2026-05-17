@@ -71,10 +71,9 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       expect(a).not_to eq(c)
     end
 
-    it "distinguishes deletion events by the deleted flag" do
-      live = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: nil, source: "ws")
-      dead = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: nil, source: "ws", deleted: true)
-      expect(live).not_to eq(dead)
+    it "is not equal to non-event values" do
+      a = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: nil, source: "ws")
+      expect(a).not_to eq("LoggerChangeEvent")
     end
   end
 end

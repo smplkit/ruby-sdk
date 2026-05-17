@@ -185,13 +185,13 @@ RSpec.describe Smplkit::Logging::LoggingClient do
   end
 
   describe "#handle_group_deleted" do
-    it "drops the group and re-resolves dependents" do
+    it "drops the group, re-applies dependents, fires no event for the deleted key" do
       inherit_logger = { "level" => nil, "group" => "g1", "managed" => true, "environments" => {} }
       allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => inherit_logger)
       allow(groups_ns).to receive(:list_group_entries).and_return("g1" => group_entry)
 
       events = []
-      client.on_change { |e| events << [e.name, e.level&.name, e.deleted] }
+      client.on_change { |e| events << [e.name, e.level&.name] }
       client.install
       events.clear
 
@@ -199,8 +199,8 @@ RSpec.describe Smplkit::Logging::LoggingClient do
 
       # rails: previously resolved to DEBUG via g1, now falls back to INFO
       expect(adapter).to have_received(:apply_level).with("rails", Smplkit::LogLevel::INFO)
-      expect(events).to include(["rails", "INFO", false])
-      expect(events).to include(["g1", nil, true])
+      expect(events).to eq([%w[rails INFO]])
+      expect(events.map(&:first)).not_to include("g1")
     end
 
     it "no-ops on an unknown group id" do
@@ -214,14 +214,6 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     it "ignores an empty id" do
       client.install
       expect { client.send(:handle_group_deleted, {}) }.not_to raise_error
-    end
-
-    it "swallows a listener exception fired by the deletion event" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return({})
-      allow(groups_ns).to receive(:list_group_entries).and_return("g1" => group_entry)
-      client.install
-      client.on_change("g1") { raise "boom" }
-      expect { client.send(:handle_group_deleted, "id" => "g1") }.not_to raise_error
     end
   end
 
@@ -256,15 +248,38 @@ RSpec.describe Smplkit::Logging::LoggingClient do
   end
 
   describe "#handle_logger_deleted" do
-    it "fires a deletion event and re-applies to any remaining state" do
+    it "fires no event for the deleted logger itself" do
       allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
       client.install
 
       events = []
-      client.on_change { |e| events << [e.name, e.deleted] }
+      client.on_change { |e| events << e.name }
       client.send(:handle_logger_deleted, "id" => "rails")
+      expect(events).to be_empty
+    end
 
-      expect(events).to eq([["rails", true]])
+    it "fires for dot-descendants whose effective level moves" do
+      ancestor_entry = { "level" => "WARN", "group" => nil, "managed" => true, "environments" => {} }
+      descendant_entry = { "level" => nil, "group" => nil, "managed" => true, "environments" => {} }
+      cascade_adapter = instance_double(
+        Smplkit::Logging::Adapters::Base, name: "fake",
+                                          discover: [["com.acme", nil, Smplkit::LogLevel::INFO],
+                                                     ["com.acme.x", nil, Smplkit::LogLevel::INFO]],
+                                          install_hook: nil, apply_level: nil, uninstall_hook: nil
+      )
+      client.instance_variable_set(:@adapters, [cascade_adapter])
+      allow(loggers_ns).to receive(:list_logger_entries)
+        .and_return("com.acme" => ancestor_entry, "com.acme.x" => descendant_entry)
+      allow(groups_ns).to receive(:list_group_entries).and_return({})
+
+      client.install
+      events = []
+      client.on_change { |e| events << [e.name, e.level&.name] }
+
+      client.send(:handle_logger_deleted, "id" => "com.acme")
+      # com.acme.x was resolving via dot-ancestry to com.acme (WARN); after
+      # deletion it falls back to INFO and must fire.
+      expect(events).to eq([["com.acme.x", "INFO"]])
     end
 
     it "no-ops on an unknown logger id" do
@@ -278,6 +293,140 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     it "ignores an empty id" do
       client.install
       expect { client.send(:handle_logger_deleted, {}) }.not_to raise_error
+    end
+  end
+
+  describe "change-listener fanout (diagnostics)" do
+    # Helper — builds a mock adapter that "discovers" the given normalized
+    # names so they end up in @name_map after install.
+    def adapter_for(ids)
+      instance_double(
+        Smplkit::Logging::Adapters::Base,
+        name: "fake",
+        discover: ids.map { |id| [id, nil, Smplkit::LogLevel::INFO] },
+        install_hook: nil, apply_level: nil, uninstall_hook: nil
+      )
+    end
+
+    # Diagnostic 1: dot-ancestor cascade via logger_changed.
+    it "fires per-logger when logger_changed cascades through dot-ancestors" do
+      ids = %w[com.acme com.acme.payments com.acme.api com.acme.db com.acme.queue com.acme.auth]
+      ancestor = { "level" => "WARN", "group" => nil, "managed" => true, "environments" => {} }
+      descendant = { "level" => nil, "group" => nil, "managed" => true, "environments" => {} }
+      cascade_adapter = adapter_for(ids)
+      client.instance_variable_set(:@adapters, [cascade_adapter])
+      initial_cache = ids.to_h { |id| [id, id == "com.acme" ? ancestor : descendant] }
+      allow(loggers_ns).to receive(:list_logger_entries).and_return(initial_cache)
+      allow(groups_ns).to receive(:list_group_entries).and_return({})
+
+      client.install
+      events = []
+      client.on_change { |e| events << [e.name, e.level&.name] }
+
+      new_ancestor = { "level" => "ERROR", "group" => nil, "managed" => true, "environments" => {} }
+      allow(loggers_ns).to receive(:get_logger_entry).with("com.acme")
+                                                     .and_return(["com.acme", new_ancestor])
+      client.send(:handle_logger_changed, "id" => "com.acme")
+
+      expect(events.length).to eq(6)
+      expect(events.map(&:first)).to match_array(ids)
+      events.each { |(_, lvl)| expect(lvl).to eq("ERROR") }
+    end
+
+    # Diagnostic 2: group cascade via group_changed.
+    it "fires per-logger when group_changed cascades to dependent loggers" do
+      ids = %w[app.db app.queue app.api]
+      logger_via_group = { "level" => nil, "group" => "app", "managed" => true, "environments" => {} }
+      group_warn = { "level" => "WARN", "group" => nil, "environments" => {} }
+      group_error = { "level" => "ERROR", "group" => nil, "environments" => {} }
+      cascade_adapter = adapter_for(ids)
+      client.instance_variable_set(:@adapters, [cascade_adapter])
+      allow(loggers_ns).to receive(:list_logger_entries)
+        .and_return(ids.to_h { |id| [id, logger_via_group] })
+      allow(groups_ns).to receive(:list_group_entries).and_return("app" => group_warn)
+
+      client.install
+      events = []
+      client.on_change { |e| events << [e.name, e.level&.name] }
+
+      allow(groups_ns).to receive(:get_group_entry).with("app").and_return(["app", group_error])
+      client.send(:handle_group_changed, "id" => "app")
+
+      expect(events.length).to eq(3)
+      expect(events.map(&:first)).to match_array(ids)
+      events.each { |(_, lvl)| expect(lvl).to eq("ERROR") }
+    end
+
+    # Diagnostic 3: group_deleted cascades; deleted key itself fires nothing.
+    it "fires per-dependent on group_deleted; deleted key emits no event" do
+      ids = %w[app.db app.queue app.api]
+      logger_via_group = { "level" => nil, "group" => "app", "managed" => true, "environments" => {} }
+      group_warn = { "level" => "WARN", "group" => nil, "environments" => {} }
+      cascade_adapter = adapter_for(ids)
+      client.instance_variable_set(:@adapters, [cascade_adapter])
+      allow(loggers_ns).to receive(:list_logger_entries)
+        .and_return(ids.to_h { |id| [id, logger_via_group] })
+      allow(groups_ns).to receive(:list_group_entries).and_return("app" => group_warn)
+
+      client.install
+      events = []
+      client.on_change { |e| events << [e.name, e.level&.name] }
+
+      client.send(:handle_group_deleted, "id" => "app")
+
+      expect(events.length).to eq(3)
+      expect(events.map(&:first)).to match_array(ids)
+      events.each { |(_, lvl)| expect(lvl).to eq("INFO") }
+      expect(events.map(&:first)).not_to include("app")
+    end
+
+    # Diagnostic 4: no-op edit (no effective-level change) → no fire.
+    it "fires nothing for a logger_changed whose effective level is unchanged" do
+      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
+      allow(groups_ns).to receive(:list_group_entries).and_return({})
+
+      client.install
+      events = []
+      client.on_change { |e| events << e.name }
+
+      # Same entry on re-fetch — only a name / description-style edit, no
+      # effective-level change.
+      allow(loggers_ns).to receive(:get_logger_entry).with("rails")
+                                                     .and_return(["rails", logger_entry])
+      client.send(:handle_logger_changed, "id" => "rails")
+
+      expect(events).to be_empty
+    end
+
+    it "per-logger fanout: each delta fires every global listener exactly once" do
+      ids = %w[app.db app.queue]
+      logger_via_group = { "level" => nil, "group" => "app", "managed" => true, "environments" => {} }
+      cascade_adapter = adapter_for(ids)
+      client.instance_variable_set(:@adapters, [cascade_adapter])
+      allow(loggers_ns).to receive(:list_logger_entries)
+        .and_return(ids.to_h { |id| [id, logger_via_group] })
+      allow(groups_ns).to receive(:list_group_entries)
+        .and_return("app" => { "level" => "WARN", "group" => nil, "environments" => {} })
+
+      client.install
+      global_a = []
+      global_b = []
+      key_db = []
+      client.on_change { |e| global_a << e.name }
+      client.on_change { |e| global_b << e.name }
+      client.on_change("app.db") { |e| key_db << e.name }
+
+      allow(groups_ns).to receive(:get_group_entry).with("app")
+                                                   .and_return(["app",
+                                                                { "level" => "ERROR", "group" => nil,
+                                                                  "environments" => {} }])
+      client.send(:handle_group_changed, "id" => "app")
+
+      # Two loggers moved → each global listener fires twice.
+      expect(global_a.length).to eq(2)
+      expect(global_b.length).to eq(2)
+      # Key-scoped listener for app.db fires once (only its own delta).
+      expect(key_db).to eq(["app.db"])
     end
   end
 

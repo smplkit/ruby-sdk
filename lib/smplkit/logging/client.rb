@@ -14,6 +14,17 @@ module Smplkit
     # and the SDK walks the chain (env override → base → group chain →
     # dot-notation ancestry) to compute each managed logger's effective
     # level. See {Smplkit::Logging::Resolution}.
+    #
+    # Change-listener contract — every call the SDK makes to
+    # +adapter.apply_level(logger_id, new_level)+ is paired with exactly one
+    # listener notification for that logger, and every notification
+    # corresponds to exactly one adapter apply. A trigger that moves N
+    # loggers' effective levels invokes the global listener N times (once
+    # per logger), each invocation also fires every matching key-scoped
+    # listener for that id. There are no batch / summary events and no
+    # deletion-flavored events — logger / group deletions only emit
+    # listener invocations for *dependents* whose computed effective level
+    # actually moved; the deleted key itself emits nothing.
     class LoggingClient
       def initialize(parent, manage:, metrics:, logging_base_url:, app_base_url:)
         @parent = parent
@@ -30,18 +41,16 @@ module Smplkit
         # We keep originals so adapter.apply_level receives whatever the
         # framework's registry indexes by.
         @name_map = {}
-        # normalized_id → resolution-cache entry. Populated by
-        # +_fetch_and_apply+ and mutated by the +logger_changed+ /
-        # +logger_deleted+ WS handlers.
+        # normalized_id → resolution-cache entry.
         @loggers_cache = {}
         # group id → resolution-cache entry. Without this, any managed
         # logger with +level=null+ that inherits from a group silently
         # keeps whatever level its adapter had at startup.
         @groups_cache = {}
-        # normalized_id → resolved level (string). Used to decide whether
-        # to fire change listeners on a re-resolution — a group-driven
-        # change isn't visible in the raw +loggers_cache+ but moves the
-        # resolved value.
+        # normalized_id → last-applied resolved level (string). Drives the
+        # lockstep between adapter.apply_level and listener notifications:
+        # we only push (and fire) when the freshly-resolved level differs
+        # from what's recorded here.
         @resolved_levels = {}
       end
 
@@ -62,7 +71,7 @@ module Smplkit
         end
 
         flush_initial_registration
-        fetch_and_apply(trigger: "install")
+        fetch_and_apply(trigger: "install", source: "manual")
 
         @ws_manager = @parent._ensure_ws
         @ws_manager.on("logger_changed") { |data| handle_logger_changed(data) }
@@ -101,9 +110,9 @@ module Smplkit
       end
 
       # Re-fetch all loggers and groups and re-apply resolved levels. Fires
-      # change listeners for any logger whose resolved level moved.
+      # listeners only for loggers whose effective level moved.
       def refresh
-        fetch_and_apply(trigger: "refresh")
+        fetch_and_apply(trigger: "refresh", source: "manual")
       end
 
       def on_change(name = nil, &block)
@@ -164,27 +173,25 @@ module Smplkit
       end
 
       # Full re-fetch of loggers + groups, then apply resolved levels.
-      # Fires change listeners for any logger whose resolved level moved.
-      def fetch_and_apply(trigger:)
+      def fetch_and_apply(trigger:, source: "websocket")
         Smplkit.debug("resolution", "full resolution pass starting (trigger: #{trigger})")
         loggers = @manage.loggers.list_logger_entries
         groups = @manage.log_groups.list_group_entries
         @loggers_cache = loggers
         @groups_cache = groups
-        apply_levels(source: "websocket")
+        apply_levels(source: source)
       rescue StandardError => e
         Smplkit.debug("resolution", "fetch_and_apply failed (trigger: #{trigger}): #{e.class}: #{e.message}")
       end
 
-      # Resolve the effective level for every locally-known managed logger
-      # and push it to every adapter. Returns the list of normalized ids
-      # whose resolved level changed.
-      #
-      # +source+ is the +LoggerChangeEvent#source+ for any change-listener
-      # event we fire. The default reflects callers that arrived through a
-      # server event (WebSocket).
+      # Apply newly-resolved levels in lockstep with listener
+      # notifications. For every locally-tracked managed logger whose
+      # freshly-computed effective level differs from the last applied
+      # value: push to adapters, then fire each global + matching
+      # key-scoped listener. No adapter push happens without a paired
+      # listener notification, and no notification fires without a
+      # paired adapter push.
       def apply_levels(source: "websocket")
-        changed = []
         @name_map.each do |raw_name, normalized_id|
           entry = @loggers_cache[normalized_id]
           next if entry.nil?
@@ -193,16 +200,14 @@ module Smplkit
           resolved_string = Resolution.resolve_level(
             normalized_id, @parent._environment, @loggers_cache, @groups_cache
           )
-          coerced = LogLevel.coerce(resolved_string)
-          push_to_adapters(raw_name, coerced)
           previous = @resolved_levels[normalized_id]
-          if previous != resolved_string
-            @resolved_levels[normalized_id] = resolved_string
-            changed << [normalized_id, coerced]
-          end
+          next if previous == resolved_string
+
+          coerced = LogLevel.coerce(resolved_string)
+          @resolved_levels[normalized_id] = resolved_string
+          push_to_adapters(raw_name, coerced)
+          fire_change_event(normalized_id, coerced, source: source)
         end
-        fire_resolved_change_events(changed, source: source)
-        changed
       end
 
       def push_to_adapters(raw_name, coerced_level)
@@ -213,14 +218,12 @@ module Smplkit
         end
       end
 
-      def fire_resolved_change_events(changed, source:)
-        changed.each do |(normalized_id, coerced_level)|
-          event = LoggerChangeEvent.new(name: normalized_id, level: coerced_level, source: source)
-          (@global_listeners + @key_listeners[normalized_id]).each do |cb|
-            cb.call(event)
-          rescue StandardError => e
-            Smplkit.debug("logging", "listener raised: #{e.class}: #{e.message}")
-          end
+      def fire_change_event(normalized_id, level, source:)
+        event = LoggerChangeEvent.new(name: normalized_id, level: level, source: source)
+        (@global_listeners + @key_listeners[normalized_id]).each do |cb|
+          cb.call(event)
+        rescue StandardError => e
+          Smplkit.debug("logging", "listener raised: #{e.class}: #{e.message}")
         end
       end
 
@@ -240,17 +243,16 @@ module Smplkit
         apply_levels(source: "websocket")
       end
 
+      # Deletion is a pure cache eviction. The deleted key itself fires
+      # nothing; dependents whose effective level moves fire through the
+      # normal apply path.
       def handle_logger_deleted(data)
         key = data["id"] || data["name"] || ""
         normalized = Normalize.normalize_logger_name(key)
         return if normalized.empty?
 
-        existed = @loggers_cache.delete(normalized)
-        @resolved_levels.delete(normalized)
-        return unless existed
-
+        @loggers_cache.delete(normalized)
         apply_levels(source: "websocket")
-        fire_deletion_event(normalized)
       end
 
       def handle_group_changed(data)
@@ -272,36 +274,19 @@ module Smplkit
         key = data["id"] || data["key"] || ""
         return if key.to_s.empty?
 
-        existed = @groups_cache.delete(key)
-        return unless existed
-
+        @groups_cache.delete(key)
         apply_levels(source: "websocket")
-        fire_deletion_event(key)
       end
 
       def handle_loggers_changed(_data)
         fetch_and_apply(trigger: "loggers_changed WS event")
       end
-
-      def fire_deletion_event(key)
-        event = LoggerChangeEvent.new(name: key, level: nil, source: "websocket", deleted: true)
-        (@global_listeners + @key_listeners[key]).each do |cb|
-          cb.call(event)
-        rescue StandardError => e
-          Smplkit.debug("logging", "listener raised: #{e.class}: #{e.message}")
-        end
-      end
     end
 
-    LoggerChangeEvent = Struct.new(:name, :level, :source, :deleted, keyword_init: true) do
-      def initialize(name:, level:, source:, deleted: false)
-        super
-      end
-
+    LoggerChangeEvent = Struct.new(:name, :level, :source, keyword_init: true) do
       def ==(other)
         other.is_a?(LoggerChangeEvent) &&
-          name == other.name && level == other.level &&
-          source == other.source && deleted == other.deleted
+          name == other.name && level == other.level && source == other.source
       end
     end
   end
