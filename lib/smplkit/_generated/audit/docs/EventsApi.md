@@ -101,7 +101,7 @@ api_instance = SmplkitGeneratedClient::Audit::EventsApi.new
 opts = {
   filter_occurred_at: 'filter_occurred_at_example', # String | 
   filter_actor_type: 'filter_actor_type_example', # String | 
-  filter_actor_id: '38400000-8cf0-11bd-b23e-10b96e4ef00d', # String | 
+  filter_actor_id: 'filter_actor_id_example', # String | 
   filter_action: 'filter_action_example', # String | 
   filter_resource_type: 'filter_resource_type_example', # String | 
   filter_resource_id: 'filter_resource_id_example', # String | 
