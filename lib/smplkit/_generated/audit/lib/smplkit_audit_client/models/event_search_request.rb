@@ -15,8 +15,8 @@ require 'time'
 
 module SmplkitGeneratedClient::Audit
   # Request body for ``POST /api/v1/search/events``.  Mirrors every column filter accepted by ``GET /api/v1/events`` with identical semantics, and adds a top-level ``filter`` field carrying a JSON Logic expression. When ``filter`` is present the search is silently capped to the last 30 days by ``occurred_at``; the expression is then evaluated in memory against each row that passes the column filters using the same ``json-logic-qubit`` evaluator that runs in the forwarder pipeline (so search results match what would be forwarded).  Filter-combination rules match ``GET /api/v1/events`` exactly:  - ``filter[resource_id]`` must be accompanied by   ``filter[resource_type]`` — the index is keyed on the pair. - ``filter[search]`` must be accompanied by either   ``filter[occurred_at]`` or ``filter[resource_type]`` +   ``filter[resource_id]`` — substring matching has no index, so an   unbounded substring scan is rejected.
-  class SearchEventsRequest < ApiModelBase
-    # The HTTP request as it was sent to the destination. Header values are redacted.
+  class EventSearchRequest < ApiModelBase
+    # Optional JSON Logic expression evaluated against each row after column filters narrow the candidate set. Null, absent, or an empty object disables JSON Logic filtering. When present, the search is silently capped to the last 30 days by `occurred_at` (intersected with any explicit `filter[occurred_at]` the caller supplied).
     attr_accessor :filter
 
     # Exact match on the event's `action` field.
@@ -112,14 +112,14 @@ module SmplkitGeneratedClient::Audit
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::SearchEventsRequest` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::EventSearchRequest` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::SearchEventsRequest`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::EventSearchRequest`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }

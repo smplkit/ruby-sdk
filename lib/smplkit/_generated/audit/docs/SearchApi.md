@@ -9,7 +9,7 @@ All URIs are relative to *http://localhost*
 
 ## search_events
 
-> <SearchEventsResponse> search_events(search_events_request)
+> <EventSearchResponse> search_events(event_search_request)
 
 Search Events
 
@@ -27,11 +27,11 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::SearchApi.new
-search_events_request = SmplkitGeneratedClient::Audit::SearchEventsRequest.new # SearchEventsRequest | 
+event_search_request = SmplkitGeneratedClient::Audit::EventSearchRequest.new # EventSearchRequest | 
 
 begin
   # Search Events
-  result = api_instance.search_events(search_events_request)
+  result = api_instance.search_events(event_search_request)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
   puts "Error when calling SearchApi->search_events: #{e}"
@@ -42,15 +42,15 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<SearchEventsResponse>, Integer, Hash)> search_events_with_http_info(search_events_request)
+> <Array(<EventSearchResponse>, Integer, Hash)> search_events_with_http_info(event_search_request)
 
 ```ruby
 begin
   # Search Events
-  data, status_code, headers = api_instance.search_events_with_http_info(search_events_request)
+  data, status_code, headers = api_instance.search_events_with_http_info(event_search_request)
   p status_code # => 2xx
   p headers # => { ... }
-  p data # => <SearchEventsResponse>
+  p data # => <EventSearchResponse>
 rescue SmplkitGeneratedClient::Audit::ApiError => e
   puts "Error when calling SearchApi->search_events_with_http_info: #{e}"
 end
@@ -60,11 +60,11 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **search_events_request** | [**SearchEventsRequest**](SearchEventsRequest.md) |  |  |
+| **event_search_request** | [**EventSearchRequest**](EventSearchRequest.md) |  |  |
 
 ### Return type
 
-[**SearchEventsResponse**](SearchEventsResponse.md)
+[**EventSearchResponse**](EventSearchResponse.md)
 
 ### Authorization
 

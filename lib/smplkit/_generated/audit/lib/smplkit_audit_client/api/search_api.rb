@@ -21,26 +21,26 @@ module SmplkitGeneratedClient::Audit
     end
     # Search Events
     # Search audit events with column filters and an optional JSON Logic expression.  Without a JSON Logic `filter`: behaves like `GET /api/v1/events` with the same column filters.  With a JSON Logic `filter`: the search is silently capped to the last 30 days by `occurred_at` (intersected with any explicit `filter[occurred_at]` the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same `json-logic-qubit` evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response's `meta.scan` block reports the scan stats so a selective filter doesn't look like \"0 matches\" when the truth is \"ceiling reached.\"
-    # @param search_events_request [SearchEventsRequest] 
+    # @param event_search_request [EventSearchRequest] 
     # @param [Hash] opts the optional parameters
-    # @return [SearchEventsResponse]
-    def search_events(search_events_request, opts = {})
-      data, _status_code, _headers = search_events_with_http_info(search_events_request, opts)
+    # @return [EventSearchResponse]
+    def search_events(event_search_request, opts = {})
+      data, _status_code, _headers = search_events_with_http_info(event_search_request, opts)
       data
     end
 
     # Search Events
     # Search audit events with column filters and an optional JSON Logic expression.  Without a JSON Logic &#x60;filter&#x60;: behaves like &#x60;GET /api/v1/events&#x60; with the same column filters.  With a JSON Logic &#x60;filter&#x60;: the search is silently capped to the last 30 days by &#x60;occurred_at&#x60; (intersected with any explicit &#x60;filter[occurred_at]&#x60; the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same &#x60;json-logic-qubit&#x60; evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response&#39;s &#x60;meta.scan&#x60; block reports the scan stats so a selective filter doesn&#39;t look like \&quot;0 matches\&quot; when the truth is \&quot;ceiling reached.\&quot;
-    # @param search_events_request [SearchEventsRequest] 
+    # @param event_search_request [EventSearchRequest] 
     # @param [Hash] opts the optional parameters
-    # @return [Array<(SearchEventsResponse, Integer, Hash)>] SearchEventsResponse data, response status code and response headers
-    def search_events_with_http_info(search_events_request, opts = {})
+    # @return [Array<(EventSearchResponse, Integer, Hash)>] EventSearchResponse data, response status code and response headers
+    def search_events_with_http_info(event_search_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: SearchApi.search_events ...'
       end
-      # verify the required parameter 'search_events_request' is set
-      if @api_client.config.client_side_validation && search_events_request.nil?
-        fail ArgumentError, "Missing the required parameter 'search_events_request' when calling SearchApi.search_events"
+      # verify the required parameter 'event_search_request' is set
+      if @api_client.config.client_side_validation && event_search_request.nil?
+        fail ArgumentError, "Missing the required parameter 'event_search_request' when calling SearchApi.search_events"
       end
       # resource path
       local_var_path = '/api/v1/search/events'
@@ -62,10 +62,10 @@ module SmplkitGeneratedClient::Audit
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(search_events_request)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(event_search_request)
 
       # return_type
-      return_type = opts[:debug_return_type] || 'SearchEventsResponse'
+      return_type = opts[:debug_return_type] || 'EventSearchResponse'
 
       # auth_names
       auth_names = opts[:debug_auth_names] || ['HTTPBearer']

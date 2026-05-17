@@ -14,17 +14,23 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # Cursor-pagination + scan meta for the search response.  Mirrors `EventListMeta` (cursor pagination — `page_size` is the only pagination field) and adds the `scan` block above.
-  class SearchEventsListMeta < ApiModelBase
-    attr_accessor :page_size
+  # Scan statistics for a search response.  Exposed so a selective JSON Logic filter doesn't silently look like \"0 matches\" when the truth is \"the scan ceiling was reached before the filter had a chance to find page[size] matches.\"
+  class EventSearchScanMeta < ApiModelBase
+    # Rows scanned after column filters narrowed the candidate set, before the JSON Logic expression was applied.
+    attr_accessor :scanned
 
-    attr_accessor :scan
+    # Rows the JSON Logic expression matched. Equal to `len(data)` for the page being returned plus any matches found beyond the page size.
+    attr_accessor :matched
+
+    # `true` if the server hit the per-request scan ceiling before finding `page[size]` matches. When true, paginate again with the returned `links.next` cursor to continue scanning past the ceiling.
+    attr_accessor :exhausted
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'page_size' => :'page_size',
-        :'scan' => :'scan'
+        :'scanned' => :'scanned',
+        :'matched' => :'matched',
+        :'exhausted' => :'exhausted'
       }
     end
 
@@ -41,8 +47,9 @@ module SmplkitGeneratedClient::Audit
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'page_size' => :'Integer',
-        :'scan' => :'SearchScanMeta'
+        :'scanned' => :'Integer',
+        :'matched' => :'Integer',
+        :'exhausted' => :'Boolean'
       }
     end
 
@@ -56,28 +63,34 @@ module SmplkitGeneratedClient::Audit
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::SearchEventsListMeta` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::EventSearchScanMeta` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::SearchEventsListMeta`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::EventSearchScanMeta`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'page_size')
-        self.page_size = attributes[:'page_size']
+      if attributes.key?(:'scanned')
+        self.scanned = attributes[:'scanned']
       else
-        self.page_size = nil
+        self.scanned = nil
       end
 
-      if attributes.key?(:'scan')
-        self.scan = attributes[:'scan']
+      if attributes.key?(:'matched')
+        self.matched = attributes[:'matched']
       else
-        self.scan = nil
+        self.matched = nil
+      end
+
+      if attributes.key?(:'exhausted')
+        self.exhausted = attributes[:'exhausted']
+      else
+        self.exhausted = nil
       end
     end
 
@@ -86,12 +99,16 @@ module SmplkitGeneratedClient::Audit
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @page_size.nil?
-        invalid_properties.push('invalid value for "page_size", page_size cannot be nil.')
+      if @scanned.nil?
+        invalid_properties.push('invalid value for "scanned", scanned cannot be nil.')
       end
 
-      if @scan.nil?
-        invalid_properties.push('invalid value for "scan", scan cannot be nil.')
+      if @matched.nil?
+        invalid_properties.push('invalid value for "matched", matched cannot be nil.')
+      end
+
+      if @exhausted.nil?
+        invalid_properties.push('invalid value for "exhausted", exhausted cannot be nil.')
       end
 
       invalid_properties
@@ -101,29 +118,40 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @page_size.nil?
-      return false if @scan.nil?
+      return false if @scanned.nil?
+      return false if @matched.nil?
+      return false if @exhausted.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] page_size Value to be assigned
-    def page_size=(page_size)
-      if page_size.nil?
-        fail ArgumentError, 'page_size cannot be nil'
+    # @param [Object] scanned Value to be assigned
+    def scanned=(scanned)
+      if scanned.nil?
+        fail ArgumentError, 'scanned cannot be nil'
       end
 
-      @page_size = page_size
+      @scanned = scanned
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] scan Value to be assigned
-    def scan=(scan)
-      if scan.nil?
-        fail ArgumentError, 'scan cannot be nil'
+    # @param [Object] matched Value to be assigned
+    def matched=(matched)
+      if matched.nil?
+        fail ArgumentError, 'matched cannot be nil'
       end
 
-      @scan = scan
+      @matched = matched
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] exhausted Value to be assigned
+    def exhausted=(exhausted)
+      if exhausted.nil?
+        fail ArgumentError, 'exhausted cannot be nil'
+      end
+
+      @exhausted = exhausted
     end
 
     # Checks equality by comparing each attribute.
@@ -131,8 +159,9 @@ module SmplkitGeneratedClient::Audit
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          page_size == o.page_size &&
-          scan == o.scan
+          scanned == o.scanned &&
+          matched == o.matched &&
+          exhausted == o.exhausted
     end
 
     # @see the `==` method
@@ -144,7 +173,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [page_size, scan].hash
+      [scanned, matched, exhausted].hash
     end
 
     # Builds the object from hash

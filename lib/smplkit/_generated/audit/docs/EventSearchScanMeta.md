@@ -1,4 +1,4 @@
-# SmplkitGeneratedClient::Audit::SearchScanMeta
+# SmplkitGeneratedClient::Audit::EventSearchScanMeta
 
 ## Properties
 
@@ -13,7 +13,7 @@
 ```ruby
 require 'smplkit_audit_client'
 
-instance = SmplkitGeneratedClient::Audit::SearchScanMeta.new(
+instance = SmplkitGeneratedClient::Audit::EventSearchScanMeta.new(
   scanned: null,
   matched: null,
   exhausted: null

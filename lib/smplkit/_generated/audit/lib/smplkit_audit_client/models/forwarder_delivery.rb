@@ -28,7 +28,7 @@ module SmplkitGeneratedClient::Audit
     # Delivery outcome. `SUCCEEDED` and `FAILED` are the live-delivery outcomes; `FILTERED_OUT` is recorded when the forwarder's filter rejected the event; `SKIPPED_DO_NOT_FORWARD` is recorded when the event was emitted with `do_not_forward=true`.
     attr_accessor :status
 
-    # The HTTP request as it was sent to the destination. Header values are redacted.
+    # JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event.
     attr_accessor :request
 
     # HTTP status code returned by the destination.

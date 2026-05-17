@@ -8,7 +8,7 @@
 | **event_id** | **String** | Event that was being delivered. |  |
 | **attempt_number** | **Integer** | 1 for the initial delivery, incremented for each retry. |  |
 | **status** | **String** | Delivery outcome. &#x60;SUCCEEDED&#x60; and &#x60;FAILED&#x60; are the live-delivery outcomes; &#x60;FILTERED_OUT&#x60; is recorded when the forwarder&#39;s filter rejected the event; &#x60;SKIPPED_DO_NOT_FORWARD&#x60; is recorded when the event was emitted with &#x60;do_not_forward&#x3D;true&#x60;. |  |
-| **request** | **Hash&lt;String, Object&gt;** | The HTTP request as it was sent to the destination. Header values are redacted. | [optional] |
+| **request** | **Hash&lt;String, Object&gt;** | JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event. | [optional] |
 | **response_status** | **Integer** | HTTP status code returned by the destination. | [optional] |
 | **response_body** | **String** | Response body returned by the destination. | [optional] |
 | **latency_ms** | **Integer** | Elapsed time of the delivery attempt in milliseconds. | [optional] |
