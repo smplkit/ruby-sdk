@@ -35,9 +35,9 @@ describe 'SearchApi' do
   # unit tests for search_events
   # Search Events
   # Search audit events with column filters and an optional JSON Logic expression.  Without a JSON Logic &#x60;filter&#x60;: behaves like &#x60;GET /api/v1/events&#x60; with the same column filters.  With a JSON Logic &#x60;filter&#x60;: the search is silently capped to the last 30 days by &#x60;occurred_at&#x60; (intersected with any explicit &#x60;filter[occurred_at]&#x60; the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same &#x60;json-logic-qubit&#x60; evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response&#39;s &#x60;meta.scan&#x60; block reports the scan stats so a selective filter doesn&#39;t look like \&quot;0 matches\&quot; when the truth is \&quot;ceiling reached.\&quot;
-  # @param search_events_request 
+  # @param event_search_request 
   # @param [Hash] opts the optional parameters
-  # @return [SearchEventsResponse]
+  # @return [EventSearchResponse]
   describe 'search_events test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/

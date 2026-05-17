@@ -1,4 +1,4 @@
-# SmplkitGeneratedClient::Audit::SearchEventsListLinks
+# SmplkitGeneratedClient::Audit::EventSearchListLinks
 
 ## Properties
 
@@ -11,7 +11,7 @@
 ```ruby
 require 'smplkit_audit_client'
 
-instance = SmplkitGeneratedClient::Audit::SearchEventsListLinks.new(
+instance = SmplkitGeneratedClient::Audit::EventSearchListLinks.new(
   _next: null
 )
 ```

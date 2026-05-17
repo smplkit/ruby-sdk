@@ -1,10 +1,10 @@
-# SmplkitGeneratedClient::Audit::SearchEventsRequest
+# SmplkitGeneratedClient::Audit::EventSearchRequest
 
 ## Properties
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **filter** | **Hash&lt;String, Object&gt;** | The HTTP request as it was sent to the destination. Header values are redacted. | [optional] |
+| **filter** | **Hash&lt;String, Object&gt;** | Optional JSON Logic expression evaluated against each row after column filters narrow the candidate set. Null, absent, or an empty object disables JSON Logic filtering. When present, the search is silently capped to the last 30 days by &#x60;occurred_at&#x60; (intersected with any explicit &#x60;filter[occurred_at]&#x60; the caller supplied). | [optional] |
 | **filter_action** | **String** | Exact match on the event&#39;s &#x60;action&#x60; field. | [optional] |
 | **filter_resource_type** | **String** | Exact match on the event&#39;s &#x60;resource_type&#x60; field. | [optional] |
 | **filter_resource_id** | **String** | Exact match on the event&#39;s &#x60;resource_id&#x60; field. Must be accompanied by &#x60;filter[resource_type]&#x60;. | [optional] |
@@ -21,7 +21,7 @@
 ```ruby
 require 'smplkit_audit_client'
 
-instance = SmplkitGeneratedClient::Audit::SearchEventsRequest.new(
+instance = SmplkitGeneratedClient::Audit::EventSearchRequest.new(
   filter: null,
   filter_action: null,
   filter_resource_type: null,

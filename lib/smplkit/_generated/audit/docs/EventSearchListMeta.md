@@ -1,18 +1,18 @@
-# SmplkitGeneratedClient::Audit::SearchEventsListMeta
+# SmplkitGeneratedClient::Audit::EventSearchListMeta
 
 ## Properties
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **page_size** | **Integer** |  |  |
-| **scan** | [**SearchScanMeta**](SearchScanMeta.md) |  |  |
+| **scan** | [**EventSearchScanMeta**](EventSearchScanMeta.md) |  |  |
 
 ## Example
 
 ```ruby
 require 'smplkit_audit_client'
 
-instance = SmplkitGeneratedClient::Audit::SearchEventsListMeta.new(
+instance = SmplkitGeneratedClient::Audit::EventSearchListMeta.new(
   page_size: null,
   scan: null
 )
