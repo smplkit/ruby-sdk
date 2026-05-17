@@ -16,10 +16,10 @@ require 'time'
 module SmplkitGeneratedClient::Audit
   # An audit event — a record that something happened, attributed to an actor and a resource.  When recording a snapshot of the resource at the time of the event, place it inside `data`. smplkit's own integrations nest it under `data.snapshot`, but the slot is yours to use however you like.
   class Event < ApiModelBase
-    # Slug for what happened, e.g. `user.created`. Lowercase, dot-separated.
+    # What happened, e.g. `user.created`. Any non-empty string.
     attr_accessor :action
 
-    # Slug for the kind of resource the event is about, e.g. `user`. Lowercase, dot-separated.
+    # Kind of resource the event is about, e.g. `user`. Any non-empty string.
     attr_accessor :resource_type
 
     # Identifier of the specific resource the event is about.
@@ -31,6 +31,15 @@ module SmplkitGeneratedClient::Audit
     # When the event actually happened. Defaults to the server receipt time (`created_at`).
     attr_accessor :occurred_at
 
+    # Kind of actor that caused the event, e.g. `USER`, `API_KEY`, `SYSTEM`, or any other label you choose. Free-form string; the API does not constrain or interpret it.
+    attr_accessor :actor_type
+
+    # Identifier of the actor that caused the event. Free-form string — any identifier scheme is accepted.
+    attr_accessor :actor_id
+
+    # Human-readable label for the actor (e.g. an email address or API key name) at the time the event was recorded.
+    attr_accessor :actor_label
+
     # Free-form payload attached to the event. Use it for resource snapshots (by convention under `data.snapshot`), request identifiers, or any other context the event needs to carry.
     attr_accessor :data
 
@@ -39,15 +48,6 @@ module SmplkitGeneratedClient::Audit
 
     # When the event was received and recorded.
     attr_accessor :created_at
-
-    # Kind of credential that emitted the event, e.g. `USER` or `API_KEY`. Resolved server-side from the request credential.
-    attr_accessor :actor_type
-
-    # Identifier of the actor that emitted the event.
-    attr_accessor :actor_id
-
-    # Human-readable label for the actor (e.g. the user's email address or the API key name) at the time the event was recorded.
-    attr_accessor :actor_label
 
     # The idempotency key used to deduplicate the record. Echoes the `Idempotency-Key` header if one was supplied, otherwise a key derived from the event's content.
     attr_accessor :idempotency_key
@@ -60,12 +60,12 @@ module SmplkitGeneratedClient::Audit
         :'resource_id' => :'resource_id',
         :'description' => :'description',
         :'occurred_at' => :'occurred_at',
-        :'data' => :'data',
-        :'do_not_forward' => :'do_not_forward',
-        :'created_at' => :'created_at',
         :'actor_type' => :'actor_type',
         :'actor_id' => :'actor_id',
         :'actor_label' => :'actor_label',
+        :'data' => :'data',
+        :'do_not_forward' => :'do_not_forward',
+        :'created_at' => :'created_at',
         :'idempotency_key' => :'idempotency_key'
       }
     end
@@ -88,12 +88,12 @@ module SmplkitGeneratedClient::Audit
         :'resource_id' => :'String',
         :'description' => :'String',
         :'occurred_at' => :'Time',
-        :'data' => :'Hash<String, Object>',
-        :'do_not_forward' => :'Boolean',
-        :'created_at' => :'Time',
         :'actor_type' => :'String',
         :'actor_id' => :'String',
         :'actor_label' => :'String',
+        :'data' => :'Hash<String, Object>',
+        :'do_not_forward' => :'Boolean',
+        :'created_at' => :'Time',
         :'idempotency_key' => :'String'
       }
     end
@@ -103,10 +103,10 @@ module SmplkitGeneratedClient::Audit
       Set.new([
         :'description',
         :'occurred_at',
-        :'created_at',
         :'actor_type',
         :'actor_id',
         :'actor_label',
+        :'created_at',
         :'idempotency_key'
       ])
     end
@@ -153,6 +153,18 @@ module SmplkitGeneratedClient::Audit
         self.occurred_at = attributes[:'occurred_at']
       end
 
+      if attributes.key?(:'actor_type')
+        self.actor_type = attributes[:'actor_type']
+      end
+
+      if attributes.key?(:'actor_id')
+        self.actor_id = attributes[:'actor_id']
+      end
+
+      if attributes.key?(:'actor_label')
+        self.actor_label = attributes[:'actor_label']
+      end
+
       if attributes.key?(:'data')
         if (value = attributes[:'data']).is_a?(Hash)
           self.data = value
@@ -167,18 +179,6 @@ module SmplkitGeneratedClient::Audit
 
       if attributes.key?(:'created_at')
         self.created_at = attributes[:'created_at']
-      end
-
-      if attributes.key?(:'actor_type')
-        self.actor_type = attributes[:'actor_type']
-      end
-
-      if attributes.key?(:'actor_id')
-        self.actor_id = attributes[:'actor_id']
-      end
-
-      if attributes.key?(:'actor_label')
-        self.actor_label = attributes[:'actor_label']
       end
 
       if attributes.key?(:'idempotency_key')
@@ -283,12 +283,12 @@ module SmplkitGeneratedClient::Audit
           resource_id == o.resource_id &&
           description == o.description &&
           occurred_at == o.occurred_at &&
-          data == o.data &&
-          do_not_forward == o.do_not_forward &&
-          created_at == o.created_at &&
           actor_type == o.actor_type &&
           actor_id == o.actor_id &&
           actor_label == o.actor_label &&
+          data == o.data &&
+          do_not_forward == o.do_not_forward &&
+          created_at == o.created_at &&
           idempotency_key == o.idempotency_key
     end
 
@@ -301,7 +301,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [action, resource_type, resource_id, description, occurred_at, data, do_not_forward, created_at, actor_type, actor_id, actor_label, idempotency_key].hash
+      [action, resource_type, resource_id, description, occurred_at, actor_type, actor_id, actor_label, data, do_not_forward, created_at, idempotency_key].hash
     end
 
     # Builds the object from hash
