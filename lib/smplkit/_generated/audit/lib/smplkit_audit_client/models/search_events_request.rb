@@ -40,7 +40,7 @@ module SmplkitGeneratedClient::Audit
     # Case-insensitive substring match on `resource_id` or `description`. Must be accompanied by either `filter[occurred_at]` or `filter[resource_type]` + `filter[resource_id]`.
     attr_accessor :filter_search
 
-    # Maximum events to return. Range 1..1000, default 10. The default is intentionally smaller than the list endpoint's default of 1000 because the search UI typically renders results one card at a time.
+    # Maximum events to return. Range 1..1000, default 1000 — matches every other list / search endpoint on the platform. Set explicitly to a smaller value when the consumer is rendering results card-by-card.
     attr_accessor :page_size
 
     # Opaque cursor — pass the previous response's `links.next` cursor verbatim to fetch the next page. Keep the same `sort` value across paginated requests.
@@ -161,7 +161,7 @@ module SmplkitGeneratedClient::Audit
       if attributes.key?(:'page_size')
         self.page_size = attributes[:'page_size']
       else
-        self.page_size = 10
+        self.page_size = 1000
       end
 
       if attributes.key?(:'page_after')
