@@ -19,7 +19,7 @@ module SmplkitGeneratedClient::Audit
     # HTTP method used for the test request.
     attr_accessor :method
 
-    # Destination URL.
+    # Destination URL. Must be an absolute `http://` or `https://` URL with a hostname (e.g. `https://siem.example.com/in`).
     attr_accessor :url
 
     # HTTP headers attached to the test request.
