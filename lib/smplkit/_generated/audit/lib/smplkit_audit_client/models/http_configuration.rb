@@ -19,7 +19,7 @@ module SmplkitGeneratedClient::Audit
     # HTTP method used when delivering an event.
     attr_accessor :method
 
-    # Destination URL.
+    # Destination URL. Must be an absolute `http://` or `https://` URL with a hostname (e.g. `https://siem.example.com/in`).
     attr_accessor :url
 
     # HTTP headers attached to each delivery request.
