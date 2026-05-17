@@ -386,10 +386,14 @@ module Smplkit
       # response (including newly-assigned +id+, +created_at+, +updated_at+,
       # +version+).
       #
+      # @raise [ArgumentError] when {#transform} and {#transform_type} are not
+      #   both nil or both set, or when {#transform_type} is +JSONATA+ and
+      #   {#transform} is not a +String+.
       # @return [self]
       def save
         raise "Forwarder was constructed without a client; cannot save" if @client.nil?
 
+        self.class.send(:validate_transform_pair!, @transform, @transform_type)
         updated = @created_at.nil? ? @client._create_forwarder(self) : @client._update_forwarder(self)
         _apply(updated)
         self
@@ -421,6 +425,26 @@ module Smplkit
         @updated_at = other.updated_at
         @deleted_at = other.deleted_at
         @version = other.version
+      end
+
+      # Validate the +(transform, transform_type)+ pair.
+      #
+      # Both must be nil or both must be set. When +transform_type+ is
+      # +TransformType::JSONATA+, +transform+ must be a +String+ (the
+      # JSONata expression). Other engines accept any value.
+      #
+      # @api private
+      def self.validate_transform_pair!(transform, transform_type)
+        if transform.nil? != transform_type.nil?
+          raise ArgumentError,
+                "transform and transform_type must be specified together (both nil or both set)"
+        end
+        return if transform.nil?
+        return unless transform_type == TransformType::JSONATA && !transform.is_a?(String)
+
+        raise ArgumentError,
+              "transform must be a String when transform_type is JSONATA " \
+              "(got #{transform.class})"
       end
 
       def self.from_resource(resource, client: nil)

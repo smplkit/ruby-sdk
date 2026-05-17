@@ -44,23 +44,22 @@ module Smplkit
       # @param filter [Hash, nil] Optional JSON Logic filter; events that don't
       #   match are recorded as +filtered_out+ deliveries.
       # @param transform [Object, nil] Optional template applied to each event
-      #   before delivery. Free-form — the audit service passes the value
-      #   verbatim to the engine named by +transform_type+. Must be paired with
-      #   a non-nil +transform_type+.
+      #   before delivery. Free-form by default — the audit service passes the
+      #   value verbatim to the engine named by +transform_type+. Must be paired
+      #   with a non-nil +transform_type+; when +transform_type+ is
+      #   +TransformType::JSONATA+, +transform+ must be a +String+ (the JSONata
+      #   expression).
       # @param transform_type [String, nil] Engine that evaluates +transform+ —
-      #   one of {Smplkit::Audit::TransformType::VALUES}. Required when
-      #   +transform+ is provided.
-      # @raise [ArgumentError] when +transform+ is set but +transform_type+ is nil.
+      #   one of {Smplkit::Audit::TransformType::VALUES}. Must be paired with a
+      #   non-nil +transform+.
+      # @raise [ArgumentError] when +transform+ and +transform_type+ are not both
+      #   nil or both set, or when +transform_type+ is +JSONATA+ and +transform+
+      #   is not a +String+.
       # @return [Smplkit::Audit::Forwarder]
       def new_forwarder(name:, forwarder_type:, configuration:,
                         enabled: true, description: nil,
                         filter: nil, transform: nil, transform_type: nil)
-        if !transform.nil? && transform_type.nil?
-          raise ArgumentError,
-                "transform_type is required when transform is provided " \
-                "(one of #{Smplkit::Audit::TransformType::VALUES.inspect})"
-        end
-
+        Smplkit::Audit::Forwarder.send(:validate_transform_pair!, transform, transform_type)
         Smplkit::Audit::Forwarder.new(
           self,
           name: name,
