@@ -14,12 +14,12 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # A single HTTP header attached to a forwarder delivery request.  Header values carrying secrets (API keys, bearer tokens, HEC tokens) are encrypted at the application layer before persistence; the wire representation here is always plaintext.
+  # A single HTTP header attached to a forwarder delivery request.  Header values are encrypted at the application layer before persistence regardless of header name; the wire representation here is always plaintext on both the request and the response, so a `GET → mutate → PUT` round-trip preserves header values without requiring the customer to re-enter secrets.
   class HttpHeader < ApiModelBase
     # Header name.
     attr_accessor :name
 
-    # Header value.
+    # Header value. Stored encrypted at rest; returned as plaintext on `GET`.
     attr_accessor :value
 
     # Attribute mapping from ruby-style variable name to JSON key.
