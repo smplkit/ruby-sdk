@@ -16,7 +16,7 @@ require 'time'
 module SmplkitGeneratedClient::Audit
   # A destination that receives audit events recorded for the account.  Each event recorded for the account is evaluated against every enabled forwarder. If the filter expression evaluates truthy — or is absent — the event is shaped by the configured transform and delivered to the destination defined by ``configuration``.
   class Forwarder < ApiModelBase
-    # Human-readable name for the forwarder.
+    # Human-readable name for the forwarder. Must contain at least one non-whitespace character.
     attr_accessor :name
 
     # Free-text description for the forwarder.
