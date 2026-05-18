@@ -16,7 +16,7 @@ require 'time'
 module SmplkitGeneratedClient::Flags
   # A feature flag whose value is resolved at runtime from environment rules and a default.  A flag has a value type (`BOOLEAN`, `STRING`, `NUMERIC`, or `JSON`) and either a fixed set of allowed values (constrained) or accepts any value matching the type (unconstrained). Each environment can enable or disable the flag, set its own default, and define targeting rules that override the default for specific evaluation contexts.
   class Flag < ApiModelBase
-    # Human-readable display name for the flag.
+    # Human-readable display name for the flag. Cannot be empty or whitespace-only.
     attr_accessor :name
 
     # Human-readable description of the flag's purpose.
@@ -200,6 +200,10 @@ module SmplkitGeneratedClient::Flags
         invalid_properties.push('invalid value for "name", name cannot be nil.')
       end
 
+      if @name.to_s.length < 1
+        invalid_properties.push('invalid value for "name", the character length must be greater than or equal to 1.')
+      end
+
       if @type.nil?
         invalid_properties.push('invalid value for "type", type cannot be nil.')
       end
@@ -212,6 +216,7 @@ module SmplkitGeneratedClient::Flags
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @name.nil?
+      return false if @name.to_s.length < 1
       return false if @type.nil?
       type_validator = EnumAttributeValidator.new('String', ["BOOLEAN", "STRING", "NUMERIC", "JSON"])
       return false unless type_validator.valid?(@type)
@@ -223,6 +228,10 @@ module SmplkitGeneratedClient::Flags
     def name=(name)
       if name.nil?
         fail ArgumentError, 'name cannot be nil'
+      end
+
+      if name.to_s.length < 1
+        fail ArgumentError, 'invalid value for "name", the character length must be greater than or equal to 1.'
       end
 
       @name = name
