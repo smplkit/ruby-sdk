@@ -87,6 +87,7 @@ describe 'UsersApi' do
   # unit tests for put_user_settings
   # Update User Settings
   # Replace the current user&#39;s settings with the provided JSON object.
+  # @param request_body 
   # @param [Hash] opts the optional parameters
   # @return [Hash<String, Object>]
   describe 'put_user_settings test' do
@@ -99,6 +100,7 @@ describe 'UsersApi' do
   # Update User Setting by Key
   # Set a single key in the current user&#39;s settings. The key is stored as a flat literal key (dot-notation is NOT expanded to nested paths). Returns the full updated settings object.
   # @param key 
+  # @param request_body 
   # @param [Hash] opts the optional parameters
   # @return [Hash<String, Object>]
   describe 'put_user_settings_key test' do

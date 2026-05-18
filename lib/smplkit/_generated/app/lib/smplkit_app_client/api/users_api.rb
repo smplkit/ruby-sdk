@@ -280,20 +280,26 @@ module SmplkitGeneratedClient::App
 
     # Update User Settings
     # Replace the current user's settings with the provided JSON object.
+    # @param request_body [Hash<String, Object>] 
     # @param [Hash] opts the optional parameters
     # @return [Hash<String, Object>]
-    def put_user_settings(opts = {})
-      data, _status_code, _headers = put_user_settings_with_http_info(opts)
+    def put_user_settings(request_body, opts = {})
+      data, _status_code, _headers = put_user_settings_with_http_info(request_body, opts)
       data
     end
 
     # Update User Settings
     # Replace the current user&#39;s settings with the provided JSON object.
+    # @param request_body [Hash<String, Object>] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(Hash<String, Object>, Integer, Hash)>] Hash<String, Object> data, response status code and response headers
-    def put_user_settings_with_http_info(opts = {})
+    def put_user_settings_with_http_info(request_body, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: UsersApi.put_user_settings ...'
+      end
+      # verify the required parameter 'request_body' is set
+      if @api_client.config.client_side_validation && request_body.nil?
+        fail ArgumentError, "Missing the required parameter 'request_body' when calling UsersApi.put_user_settings"
       end
       # resource path
       local_var_path = '/api/v1/users/current/settings'
@@ -305,12 +311,17 @@ module SmplkitGeneratedClient::App
       header_params = opts[:header_params] || {}
       # HTTP header 'Accept' (if needed)
       header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/vnd.api+json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
 
       # form parameters
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body]
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(request_body)
 
       # return_type
       return_type = opts[:debug_return_type] || 'Hash<String, Object>'
@@ -338,25 +349,31 @@ module SmplkitGeneratedClient::App
     # Update User Setting by Key
     # Set a single key in the current user's settings. The key is stored as a flat literal key (dot-notation is NOT expanded to nested paths). Returns the full updated settings object.
     # @param key [String] 
+    # @param request_body [Hash<String, Object>] 
     # @param [Hash] opts the optional parameters
     # @return [Hash<String, Object>]
-    def put_user_settings_key(key, opts = {})
-      data, _status_code, _headers = put_user_settings_key_with_http_info(key, opts)
+    def put_user_settings_key(key, request_body, opts = {})
+      data, _status_code, _headers = put_user_settings_key_with_http_info(key, request_body, opts)
       data
     end
 
     # Update User Setting by Key
     # Set a single key in the current user&#39;s settings. The key is stored as a flat literal key (dot-notation is NOT expanded to nested paths). Returns the full updated settings object.
     # @param key [String] 
+    # @param request_body [Hash<String, Object>] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(Hash<String, Object>, Integer, Hash)>] Hash<String, Object> data, response status code and response headers
-    def put_user_settings_key_with_http_info(key, opts = {})
+    def put_user_settings_key_with_http_info(key, request_body, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: UsersApi.put_user_settings_key ...'
       end
       # verify the required parameter 'key' is set
       if @api_client.config.client_side_validation && key.nil?
         fail ArgumentError, "Missing the required parameter 'key' when calling UsersApi.put_user_settings_key"
+      end
+      # verify the required parameter 'request_body' is set
+      if @api_client.config.client_side_validation && request_body.nil?
+        fail ArgumentError, "Missing the required parameter 'request_body' when calling UsersApi.put_user_settings_key"
       end
       # resource path
       local_var_path = '/api/v1/users/current/settings/{key}'.sub('{key}', CGI.escape(key.to_s))
@@ -368,12 +385,17 @@ module SmplkitGeneratedClient::App
       header_params = opts[:header_params] || {}
       # HTTP header 'Accept' (if needed)
       header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/vnd.api+json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
 
       # form parameters
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body]
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(request_body)
 
       # return_type
       return_type = opts[:debug_return_type] || 'Hash<String, Object>'

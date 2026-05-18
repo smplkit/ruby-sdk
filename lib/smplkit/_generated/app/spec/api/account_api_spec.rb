@@ -68,6 +68,7 @@ describe 'AccountApi' do
   # unit tests for put_account_settings
   # Update Account Settings
   # Replace the current account&#39;s settings with the provided JSON object. Requires admin role.
+  # @param request_body 
   # @param [Hash] opts the optional parameters
   # @return [Hash<String, Object>]
   describe 'put_account_settings test' do
