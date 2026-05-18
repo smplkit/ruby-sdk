@@ -301,7 +301,7 @@ end
 
 ## put_user_settings
 
-> Hash&lt;String, Object&gt; put_user_settings
+> Hash&lt;String, Object&gt; put_user_settings(request_body)
 
 Update User Settings
 
@@ -319,10 +319,11 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::UsersApi.new
+request_body = { key: 3.56} # Hash<String, Object> | 
 
 begin
   # Update User Settings
-  result = api_instance.put_user_settings
+  result = api_instance.put_user_settings(request_body)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling UsersApi->put_user_settings: #{e}"
@@ -333,12 +334,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> put_user_settings_with_http_info
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> put_user_settings_with_http_info(request_body)
 
 ```ruby
 begin
   # Update User Settings
-  data, status_code, headers = api_instance.put_user_settings_with_http_info
+  data, status_code, headers = api_instance.put_user_settings_with_http_info(request_body)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => Hash&lt;String, Object&gt;
@@ -349,7 +350,9 @@ end
 
 ### Parameters
 
-This endpoint does not need any parameter.
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **request_body** | [**Hash&lt;String, Object&gt;**](Object.md) |  |  |
 
 ### Return type
 
@@ -361,13 +364,13 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/vnd.api+json
 - **Accept**: application/vnd.api+json
 
 
 ## put_user_settings_key
 
-> Hash&lt;String, Object&gt; put_user_settings_key(key)
+> Hash&lt;String, Object&gt; put_user_settings_key(key, request_body)
 
 Update User Setting by Key
 
@@ -386,10 +389,11 @@ end
 
 api_instance = SmplkitGeneratedClient::App::UsersApi.new
 key = 'key_example' # String | 
+request_body = { key: 3.56} # Hash<String, Object> | 
 
 begin
   # Update User Setting by Key
-  result = api_instance.put_user_settings_key(key)
+  result = api_instance.put_user_settings_key(key, request_body)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling UsersApi->put_user_settings_key: #{e}"
@@ -400,12 +404,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> put_user_settings_key_with_http_info(key)
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> put_user_settings_key_with_http_info(key, request_body)
 
 ```ruby
 begin
   # Update User Setting by Key
-  data, status_code, headers = api_instance.put_user_settings_key_with_http_info(key)
+  data, status_code, headers = api_instance.put_user_settings_key_with_http_info(key, request_body)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => Hash&lt;String, Object&gt;
@@ -419,6 +423,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **key** | **String** |  |  |
+| **request_body** | [**Hash&lt;String, Object&gt;**](Object.md) |  |  |
 
 ### Return type
 
@@ -430,7 +435,7 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/vnd.api+json
 - **Accept**: application/vnd.api+json
 
 
