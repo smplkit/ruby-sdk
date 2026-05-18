@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **name** | **String** | Human-readable name for the forwarder. |  |
+| **name** | **String** | Human-readable name for the forwarder. Must contain at least one non-whitespace character. |  |
 | **description** | **String** | Free-text description for the forwarder. | [optional] |
 | **forwarder_type** | [**ForwarderType**](ForwarderType.md) | Destination type. |  |
 | **enabled** | **Boolean** | Whether the forwarder is currently delivering events. Set to &#x60;false&#x60; to pause deliveries without deleting the forwarder. | [optional][default to true] |
