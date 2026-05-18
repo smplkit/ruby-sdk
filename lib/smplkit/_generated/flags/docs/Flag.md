@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **name** | **String** | Human-readable display name for the flag. |  |
+| **name** | **String** | Human-readable display name for the flag. Cannot be empty or whitespace-only. |  |
 | **description** | **String** | Human-readable description of the flag&#39;s purpose. | [optional] |
 | **type** | **String** | Value type of the flag. Accepted case-insensitively. Changing the type cascades to &#x60;values&#x60;, &#x60;default&#x60;, and every environment&#39;s rules and default. |  |
 | **default** | **Object** |  |  |
