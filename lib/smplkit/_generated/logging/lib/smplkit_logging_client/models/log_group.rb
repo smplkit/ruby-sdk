@@ -82,7 +82,7 @@ module SmplkitGeneratedClient::Logging
     def self.openapi_types
       {
         :'name' => :'String',
-        :'level' => :'String',
+        :'level' => :'LogLevel',
         :'parent_id' => :'String',
         :'environments' => :'Hash<String, Object>',
         :'created_at' => :'Time',
@@ -168,8 +168,6 @@ module SmplkitGeneratedClient::Logging
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @name.nil?
       return false if @name.to_s.length > 255
-      level_validator = EnumAttributeValidator.new('String', ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "SILENT"])
-      return false unless level_validator.valid?(@level)
       true
     end
 
@@ -185,16 +183,6 @@ module SmplkitGeneratedClient::Logging
       end
 
       @name = name
-    end
-
-    # Custom attribute writer method checking allowed values (enum).
-    # @param [Object] level Object to be assigned
-    def level=(level)
-      validator = EnumAttributeValidator.new('String', ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "SILENT"])
-      unless validator.valid?(level)
-        fail ArgumentError, "invalid value for \"level\", must be one of #{validator.allowable_values}."
-      end
-      @level = level
     end
 
     # Checks equality by comparing each attribute.
