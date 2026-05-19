@@ -70,6 +70,10 @@ describe SmplkitGeneratedClient::Logging::Logger do
   describe 'test attribute "effective_levels"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('Hash<String, Array<String>>', ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "SILENT"])
+      # validator.allowable_values.each do |value|
+      #   expect { instance.effective_levels = value }.not_to raise_error
+      # end
     end
   end
 

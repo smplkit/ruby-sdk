@@ -34,7 +34,7 @@ module SmplkitGeneratedClient::Logging
     # Per-environment level overrides keyed by environment name. Each value is an object with an optional `level` field, e.g. `{\"production\": {\"level\": \"WARN\"}}`. An environment may be present with no `level` to record that the logger applies there without changing the resolved level.
     attr_accessor :environments
 
-    # Per-environment summary of what runtimes are reporting for this logger. Keyed by environment name; each entry is one of `{\"status\": \"none\"}`, `{\"status\": \"agrees\", \"level\": \"<LEVEL>\"}`, or `{\"status\": \"varies\"}`. `agrees` means every observed source in that environment reports the same resolved level; `varies` means at least two sources disagree.
+    # Per-environment summary of what runtimes are reporting for this logger. Keyed by environment name; each value is the list of distinct resolved levels observed across all source rows in that environment, ordered from most-verbose (`TRACE`) to least-verbose (`SILENT`). A single-element list means every source agrees; a multi-element list means sources disagree. Environments with no observed sources are omitted — cross-reference `environments` to find environments that are configured but have not yet been reported in.
     attr_accessor :effective_levels
 
     # When the logger was first created or discovered.
@@ -99,7 +99,7 @@ module SmplkitGeneratedClient::Logging
         :'managed' => :'Boolean',
         :'sources' => :'Array<Hash<String, Object>>',
         :'environments' => :'Hash<String, Object>',
-        :'effective_levels' => :'Hash<String, Object>',
+        :'effective_levels' => :'Hash<String, Array<String>>',
         :'created_at' => :'Time',
         :'updated_at' => :'Time'
       }
