@@ -15,16 +15,16 @@ require 'time'
 
 module SmplkitGeneratedClient::Audit
   class ForwarderType
-    HTTP = "HTTP".freeze
-    DATADOG = "DATADOG".freeze
-    SPLUNK_HEC = "SPLUNK_HEC".freeze
-    SUMO_LOGIC = "SUMO_LOGIC".freeze
-    NEW_RELIC = "NEW_RELIC".freeze
-    HONEYCOMB = "HONEYCOMB".freeze
-    ELASTIC = "ELASTIC".freeze
+    DATADOG = "datadog".freeze
+    ELASTIC = "elastic".freeze
+    HONEYCOMB = "honeycomb".freeze
+    HTTP = "http".freeze
+    NEW_RELIC = "new_relic".freeze
+    SPLUNK_HEC = "splunk_hec".freeze
+    SUMO_LOGIC = "sumo_logic".freeze
 
     def self.all_vars
-      @all_vars ||= [HTTP, DATADOG, SPLUNK_HEC, SUMO_LOGIC, NEW_RELIC, HONEYCOMB, ELASTIC].freeze
+      @all_vars ||= [DATADOG, ELASTIC, HONEYCOMB, HTTP, NEW_RELIC, SPLUNK_HEC, SUMO_LOGIC].freeze
     end
 
     # Builds the enum from string
