@@ -56,13 +56,13 @@ module Smplkit
     # +forwarders+ surface; the wrapper validates membership via {coerce}
     # before round-tripping to the wire.
     module ForwarderType
-      DATADOG = "DATADOG"
-      ELASTIC = "ELASTIC"
-      HONEYCOMB = "HONEYCOMB"
-      HTTP = "HTTP"
-      NEW_RELIC = "NEW_RELIC"
-      SPLUNK_HEC = "SPLUNK_HEC"
-      SUMO_LOGIC = "SUMO_LOGIC"
+      DATADOG = "datadog"
+      ELASTIC = "elastic"
+      HONEYCOMB = "honeycomb"
+      HTTP = "http"
+      NEW_RELIC = "new_relic"
+      SPLUNK_HEC = "splunk_hec"
+      SUMO_LOGIC = "sumo_logic"
 
       VALUES = [DATADOG, ELASTIC, HONEYCOMB, HTTP, NEW_RELIC, SPLUNK_HEC, SUMO_LOGIC].freeze
 

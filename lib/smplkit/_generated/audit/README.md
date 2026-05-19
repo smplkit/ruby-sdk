@@ -96,6 +96,8 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Audit::EventsApi* | [**get_event**](docs/EventsApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event
 *SmplkitGeneratedClient::Audit::EventsApi* | [**list_events**](docs/EventsApi.md#list_events) | **GET** /api/v1/events | List Events
 *SmplkitGeneratedClient::Audit::EventsApi* | [**record_event**](docs/EventsApi.md#record_event) | **POST** /api/v1/events | Record Event
+*SmplkitGeneratedClient::Audit::ForwarderTypesApi* | [**get_forwarder_type_api_v1_forwarder_types_id_get**](docs/ForwarderTypesApi.md#get_forwarder_type_api_v1_forwarder_types_id_get) | **GET** /api/v1/forwarder_types/{id} | Get Forwarder Type
+*SmplkitGeneratedClient::Audit::ForwarderTypesApi* | [**list_forwarder_types_api_v1_forwarder_types_get**](docs/ForwarderTypesApi.md#list_forwarder_types_api_v1_forwarder_types_get) | **GET** /api/v1/forwarder_types | List Forwarder Types
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**create_forwarder**](docs/ForwardersApi.md#create_forwarder) | **POST** /api/v1/forwarders | Create Forwarder
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**delete_forwarder**](docs/ForwardersApi.md#delete_forwarder) | **DELETE** /api/v1/forwarders/{forwarder_id} | Delete Forwarder
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**execute_test_forwarder**](docs/ForwardersApi.md#execute_test_forwarder) | **POST** /api/v1/functions/test_forwarder/actions/execute | Execute Test Forwarder
@@ -139,6 +141,14 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::ForwarderResource](docs/ForwarderResource.md)
  - [SmplkitGeneratedClient::Audit::ForwarderResponse](docs/ForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::ForwarderType](docs/ForwarderType.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderTypeAttributes](docs/ForwarderTypeAttributes.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderTypeHeader](docs/ForwarderTypeHeader.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderTypeHttpConfiguration](docs/ForwarderTypeHttpConfiguration.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderTypeListResponse](docs/ForwarderTypeListResponse.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderTypePlaceholder](docs/ForwarderTypePlaceholder.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderTypeResource](docs/ForwarderTypeResource.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderTypeResponse](docs/ForwarderTypeResponse.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderTypeTransform](docs/ForwarderTypeTransform.md)
  - [SmplkitGeneratedClient::Audit::HttpConfiguration](docs/HttpConfiguration.md)
  - [SmplkitGeneratedClient::Audit::HttpHeader](docs/HttpHeader.md)
  - [SmplkitGeneratedClient::Audit::ListMeta](docs/ListMeta.md)
