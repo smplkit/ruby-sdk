@@ -16,7 +16,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
   let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
 
   def forwarder_resource(name: "Datadog production", description: nil,
-                         enabled: true, forwarder_type: "DATADOG",
+                         enabled: true, forwarder_type: "datadog",
                          filter: nil, transform_type: nil, transform: nil)
     {
       id: fwd_id,
@@ -42,7 +42,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
         status: 201, body: { data: forwarder_resource }.to_json, headers: json_api
       )
       fwd = forwarders.new_forwarder(
-        name: "Datadog production", forwarder_type: "DATADOG",
+        name: "Datadog production", forwarder_type: "datadog",
         configuration: Smplkit::Audit::HttpConfiguration.new(
           method: "POST", url: "https://siem.example.com/in",
           headers: [Smplkit::Audit::HttpHeader.new(name: "DD-API-KEY", value: "real-secret")]
@@ -57,7 +57,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
 
     it "passes transform_type and transform through verbatim" do
       fwd = forwarders.new_forwarder(
-        name: "x", forwarder_type: "HTTP",
+        name: "x", forwarder_type: "http",
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
         transform_type: Smplkit::Audit::TransformType::JSONATA,
         transform: "{ \"event\": $.action }"
@@ -68,7 +68,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
 
     it "leaves transform and transform_type nil when neither is provided" do
       fwd = forwarders.new_forwarder(
-        name: "x", forwarder_type: "HTTP",
+        name: "x", forwarder_type: "http",
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       expect(fwd.transform).to be_nil
@@ -78,7 +78,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "raises when transform is provided without transform_type" do
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "HTTP",
+          name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
           transform: "$"
         )
@@ -88,7 +88,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "raises when transform_type is provided without transform" do
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "HTTP",
+          name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
           transform_type: Smplkit::Audit::TransformType::JSONATA
         )
@@ -98,7 +98,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "raises when transform_type is JSONATA and transform is not a String" do
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "HTTP",
+          name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
           transform_type: Smplkit::Audit::TransformType::JSONATA,
           transform: { "event" => "$.action" }
@@ -111,7 +111,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
         status: 201, body: { data: forwarder_resource }.to_json, headers: json_api
       )
       fwd = forwarders.new_forwarder(
-        name: "x", forwarder_type: "HTTP",
+        name: "x", forwarder_type: "http",
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       fwd.transform_type = Smplkit::Audit::TransformType::JSONATA
@@ -121,7 +121,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "raises when transform_type is not a known enum value" do
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "HTTP",
+          name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
           transform: "$", transform_type: "JQ"
         )
@@ -132,7 +132,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       stub_request(:post, "#{base_url}/api/v1/forwarders").to_raise(Errno::ECONNREFUSED)
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "HTTP",
+          name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
         ).save
       end.to raise_error(Smplkit::ConnectionError)
@@ -140,7 +140,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
 
     it "raises when the Forwarder has no client" do
       detached = Smplkit::Audit::Forwarder.new(
-        name: "x", forwarder_type: "HTTP",
+        name: "x", forwarder_type: "http",
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       expect { detached.save }.to raise_error(/cannot save/)
@@ -163,7 +163,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
           }.to_json,
           headers: json_api
         )
-      page = forwarders.list(forwarder_type: "DATADOG", enabled: true,
+      page = forwarders.list(forwarder_type: "datadog", enabled: true,
                              page_number: 2, page_size: 1, meta_total: true)
       expect(captured_uri).to include("page%5Bnumber%5D=2")
       expect(captured_uri).to include("page%5Bsize%5D=1")
@@ -181,8 +181,8 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
         .to_return(status: 200,
                    body: { data: [], meta: { pagination: { page: 1, size: 1000 } } }.to_json,
                    headers: json_api)
-      forwarders.list(forwarder_type: "DATADOG", enabled: false)
-      expect(captured_uri).to include("filter%5Bforwarder_type%5D=DATADOG")
+      forwarders.list(forwarder_type: "datadog", enabled: false)
+      expect(captured_uri).to include("filter%5Bforwarder_type%5D=datadog")
       expect(captured_uri).to include("filter%5Benabled%5D=false")
     end
 
@@ -245,7 +245,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
 
     it "_update_forwarder rejects a Forwarder with no id" do
       detached = Smplkit::Audit::Forwarder.new(
-        forwarders, name: "x", forwarder_type: "HTTP",
+        forwarders, name: "x", forwarder_type: "http",
                     configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       expect { forwarders._update_forwarder(detached) }.to raise_error(ArgumentError, /no id/)
@@ -263,7 +263,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
 
     it "Forwarder#delete raises when constructed without a client" do
       detached = Smplkit::Audit::Forwarder.new(
-        name: "x", forwarder_type: "HTTP", id: fwd_id,
+        name: "x", forwarder_type: "http", id: fwd_id,
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       expect { detached.delete }.to raise_error(/cannot delete/)
@@ -312,27 +312,27 @@ end
 
 RSpec.describe Smplkit::Audit::ForwarderType do
   it "lists every spec value in VALUES in alphabetical order" do
-    expect(described_class::VALUES).to eq(%w[DATADOG ELASTIC HONEYCOMB HTTP NEW_RELIC SPLUNK_HEC SUMO_LOGIC])
+    expect(described_class::VALUES).to eq(%w[datadog elastic honeycomb http new_relic splunk_hec sumo_logic])
   end
 
   it "exposes each value as a SCREAMING_SNAKE_CASE constant" do
-    expect(described_class::HTTP).to eq("HTTP")
-    expect(described_class::DATADOG).to eq("DATADOG")
-    expect(described_class::SPLUNK_HEC).to eq("SPLUNK_HEC")
-    expect(described_class::SUMO_LOGIC).to eq("SUMO_LOGIC")
-    expect(described_class::NEW_RELIC).to eq("NEW_RELIC")
-    expect(described_class::HONEYCOMB).to eq("HONEYCOMB")
-    expect(described_class::ELASTIC).to eq("ELASTIC")
+    expect(described_class::HTTP).to eq("http")
+    expect(described_class::DATADOG).to eq("datadog")
+    expect(described_class::SPLUNK_HEC).to eq("splunk_hec")
+    expect(described_class::SUMO_LOGIC).to eq("sumo_logic")
+    expect(described_class::NEW_RELIC).to eq("new_relic")
+    expect(described_class::HONEYCOMB).to eq("honeycomb")
+    expect(described_class::ELASTIC).to eq("elastic")
   end
 
   describe ".coerce" do
     it "passes through valid wire-format strings" do
-      expect(described_class.coerce("HTTP")).to eq("HTTP")
-      expect(described_class.coerce("DATADOG")).to eq("DATADOG")
+      expect(described_class.coerce("http")).to eq("http")
+      expect(described_class.coerce("datadog")).to eq("datadog")
     end
 
     it "passes through the published constants (which are strings)" do
-      expect(described_class.coerce(described_class::SPLUNK_HEC)).to eq("SPLUNK_HEC")
+      expect(described_class.coerce(described_class::SPLUNK_HEC)).to eq("splunk_hec")
     end
 
     it "preserves nil so optional params remain optional" do
@@ -344,8 +344,10 @@ RSpec.describe Smplkit::Audit::ForwarderType do
         .to raise_error(ArgumentError, /Unknown ForwarderType/)
     end
 
-    it "raises ArgumentError on a lowercase value" do
-      expect { described_class.coerce("http") }
+    it "raises ArgumentError on an uppercase value" do
+      # ADR-050 lowercased the wire format; the old uppercase values are
+      # no longer valid.
+      expect { described_class.coerce("HTTP") }
         .to raise_error(ArgumentError, /Unknown ForwarderType/)
     end
   end
