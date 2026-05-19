@@ -48,6 +48,10 @@ docs/ContextValueListResponse.md
 docs/ContextValueResource.md
 docs/ContextValuesApi.md
 docs/ContextsApi.md
+docs/DiscountTier.md
+docs/DiscountTierListResponse.md
+docs/DiscountTierResource.md
+docs/DiscountTiersApi.md
 docs/Email.md
 docs/EmailRegistrationsApi.md
 docs/EmailResource.md
@@ -146,6 +150,7 @@ lib/smplkit_app_client/api/billing_api.rb
 lib/smplkit_app_client/api/context_types_api.rb
 lib/smplkit_app_client/api/context_values_api.rb
 lib/smplkit_app_client/api/contexts_api.rb
+lib/smplkit_app_client/api/discount_tiers_api.rb
 lib/smplkit_app_client/api/email_registrations_api.rb
 lib/smplkit_app_client/api/emails_api.rb
 lib/smplkit_app_client/api/environments_api.rb
@@ -194,6 +199,9 @@ lib/smplkit_app_client/models/context_type_response.rb
 lib/smplkit_app_client/models/context_value.rb
 lib/smplkit_app_client/models/context_value_list_response.rb
 lib/smplkit_app_client/models/context_value_resource.rb
+lib/smplkit_app_client/models/discount_tier.rb
+lib/smplkit_app_client/models/discount_tier_list_response.rb
+lib/smplkit_app_client/models/discount_tier_resource.rb
 lib/smplkit_app_client/models/email.rb
 lib/smplkit_app_client/models/email_resource.rb
 lib/smplkit_app_client/models/email_response.rb
@@ -282,6 +290,7 @@ spec/api/billing_api_spec.rb
 spec/api/context_types_api_spec.rb
 spec/api/context_values_api_spec.rb
 spec/api/contexts_api_spec.rb
+spec/api/discount_tiers_api_spec.rb
 spec/api/email_registrations_api_spec.rb
 spec/api/emails_api_spec.rb
 spec/api/environments_api_spec.rb
@@ -326,6 +335,9 @@ spec/models/context_type_spec.rb
 spec/models/context_value_list_response_spec.rb
 spec/models/context_value_resource_spec.rb
 spec/models/context_value_spec.rb
+spec/models/discount_tier_list_response_spec.rb
+spec/models/discount_tier_resource_spec.rb
+spec/models/discount_tier_spec.rb
 spec/models/email_resource_spec.rb
 spec/models/email_response_spec.rb
 spec/models/email_spec.rb

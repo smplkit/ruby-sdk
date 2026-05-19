@@ -124,6 +124,7 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::ContextsApi* | [**get_context**](docs/ContextsApi.md#get_context) | **GET** /api/v1/contexts/{id} | Get Context
 *SmplkitGeneratedClient::App::ContextsApi* | [**list_contexts**](docs/ContextsApi.md#list_contexts) | **GET** /api/v1/contexts | List Contexts
 *SmplkitGeneratedClient::App::ContextsApi* | [**update_context**](docs/ContextsApi.md#update_context) | **PUT** /api/v1/contexts/{id} | Update Context
+*SmplkitGeneratedClient::App::DiscountTiersApi* | [**list_discount_tiers**](docs/DiscountTiersApi.md#list_discount_tiers) | **GET** /api/v1/discount_tiers | List Discount Tiers
 *SmplkitGeneratedClient::App::EmailRegistrationsApi* | [**create_email_registration**](docs/EmailRegistrationsApi.md#create_email_registration) | **POST** /api/v1/email-registrations | Register for Launch List
 *SmplkitGeneratedClient::App::EmailsApi* | [**send_contact_email**](docs/EmailsApi.md#send_contact_email) | **POST** /api/v1/emails | Send Contact Us Email
 *SmplkitGeneratedClient::App::EnvironmentsApi* | [**create_environment**](docs/EnvironmentsApi.md#create_environment) | **POST** /api/v1/environments | Create Environment
@@ -199,6 +200,9 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::ContextValue](docs/ContextValue.md)
  - [SmplkitGeneratedClient::App::ContextValueListResponse](docs/ContextValueListResponse.md)
  - [SmplkitGeneratedClient::App::ContextValueResource](docs/ContextValueResource.md)
+ - [SmplkitGeneratedClient::App::DiscountTier](docs/DiscountTier.md)
+ - [SmplkitGeneratedClient::App::DiscountTierListResponse](docs/DiscountTierListResponse.md)
+ - [SmplkitGeneratedClient::App::DiscountTierResource](docs/DiscountTierResource.md)
  - [SmplkitGeneratedClient::App::Email](docs/Email.md)
  - [SmplkitGeneratedClient::App::EmailResource](docs/EmailResource.md)
  - [SmplkitGeneratedClient::App::EmailResponse](docs/EmailResponse.md)
