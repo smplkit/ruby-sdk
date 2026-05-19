@@ -31,6 +31,9 @@ module SmplkitGeneratedClient::Audit
     # Per-request timeout in milliseconds. Capped at 30 seconds.
     attr_accessor :timeout_ms
 
+    # Request body sent to the destination. When omitted, an empty body is sent (suitable for connectivity probes). When set, the body is sent verbatim — pair with an appropriate `Content-Type` entry in `headers` so the destination interprets it correctly. Limit 1 MiB.
+    attr_accessor :body
+
     class EnumAttributeValidator
       attr_reader :datatype
       attr_reader :allowable_values
@@ -60,7 +63,8 @@ module SmplkitGeneratedClient::Audit
         :'url' => :'url',
         :'headers' => :'headers',
         :'success_status' => :'success_status',
-        :'timeout_ms' => :'timeout_ms'
+        :'timeout_ms' => :'timeout_ms',
+        :'body' => :'body'
       }
     end
 
@@ -81,14 +85,16 @@ module SmplkitGeneratedClient::Audit
         :'url' => :'String',
         :'headers' => :'Array<HttpHeader>',
         :'success_status' => :'String',
-        :'timeout_ms' => :'Integer'
+        :'timeout_ms' => :'Integer',
+        :'body' => :'String'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'timeout_ms'
+        :'timeout_ms',
+        :'body'
       ])
     end
 
@@ -135,6 +141,10 @@ module SmplkitGeneratedClient::Audit
       if attributes.key?(:'timeout_ms')
         self.timeout_ms = attributes[:'timeout_ms']
       end
+
+      if attributes.key?(:'body')
+        self.body = attributes[:'body']
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -166,6 +176,10 @@ module SmplkitGeneratedClient::Audit
         invalid_properties.push('invalid value for "timeout_ms", must be greater than or equal to 1.')
       end
 
+      if !@body.nil? && @body.to_s.length > 1048576
+        invalid_properties.push('invalid value for "body", the character length must be smaller than or equal to 1048576.')
+      end
+
       invalid_properties
     end
 
@@ -181,6 +195,7 @@ module SmplkitGeneratedClient::Audit
       return false if !@success_status.nil? && @success_status.to_s.length > 3
       return false if !@timeout_ms.nil? && @timeout_ms > 30000
       return false if !@timeout_ms.nil? && @timeout_ms < 1
+      return false if !@body.nil? && @body.to_s.length > 1048576
       true
     end
 
@@ -240,6 +255,16 @@ module SmplkitGeneratedClient::Audit
       @timeout_ms = timeout_ms
     end
 
+    # Custom attribute writer method with validation
+    # @param [Object] body Value to be assigned
+    def body=(body)
+      if !body.nil? && body.to_s.length > 1048576
+        fail ArgumentError, 'invalid value for "body", the character length must be smaller than or equal to 1048576.'
+      end
+
+      @body = body
+    end
+
     # Checks equality by comparing each attribute.
     # @param [Object] Object to be compared
     def ==(o)
@@ -249,7 +274,8 @@ module SmplkitGeneratedClient::Audit
           url == o.url &&
           headers == o.headers &&
           success_status == o.success_status &&
-          timeout_ms == o.timeout_ms
+          timeout_ms == o.timeout_ms &&
+          body == o.body
     end
 
     # @see the `==` method
@@ -261,7 +287,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [method, url, headers, success_status, timeout_ms].hash
+      [method, url, headers, success_status, timeout_ms, body].hash
     end
 
     # Builds the object from hash

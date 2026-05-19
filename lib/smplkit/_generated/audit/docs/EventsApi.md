@@ -106,6 +106,7 @@ opts = {
   filter_resource_type: 'filter_resource_type_example', # String | 
   filter_resource_id: 'filter_resource_id_example', # String | 
   filter_search: 'filter_search_example', # String | Case-insensitive substring match against `resource_id` or `description`. Use `filter[resource_id]` for an exact match on `resource_id`.
+  filter_do_not_forward: true, # Boolean | When set, restrict to events whose `do_not_forward` flag matches the given boolean. Forwarder previews typically pass `false` to match live-pipeline semantics (events flagged `do_not_forward=true` are skipped by the forwarder pipeline).
   page_size: 56, # Integer | 
   page_after: 'page_after_example', # String | 
   sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-occurred_at`. Allowed values: `created_at`, `-created_at`, `occurred_at`, `-occurred_at`.
@@ -149,6 +150,7 @@ end
 | **filter_resource_type** | **String** |  | [optional] |
 | **filter_resource_id** | **String** |  | [optional] |
 | **filter_search** | **String** | Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;. | [optional] |
+| **filter_do_not_forward** | **Boolean** | When set, restrict to events whose &#x60;do_not_forward&#x60; flag matches the given boolean. Forwarder previews typically pass &#x60;false&#x60; to match live-pipeline semantics (events flagged &#x60;do_not_forward&#x3D;true&#x60; are skipped by the forwarder pipeline). | [optional] |
 | **page_size** | **Integer** |  | [optional] |
 | **page_after** | **String** |  | [optional] |
 | **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-occurred_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;occurred_at&#x60;, &#x60;-occurred_at&#x60;. | [optional][default to &#39;-occurred_at&#39;] |
