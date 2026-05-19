@@ -92,6 +92,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
     # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
+    # @option opts [Boolean] :filter_do_not_forward When set, restrict to events whose &#x60;do_not_forward&#x60; flag matches the given boolean. Forwarder previews typically pass &#x60;false&#x60; to match live-pipeline semantics (events flagged &#x60;do_not_forward&#x3D;true&#x60; are skipped by the forwarder pipeline).
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-occurred_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;occurred_at&#x60;, &#x60;-occurred_at&#x60;. (default to '-occurred_at')
@@ -111,6 +112,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
     # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
+    # @option opts [Boolean] :filter_do_not_forward When set, restrict to events whose &#x60;do_not_forward&#x60; flag matches the given boolean. Forwarder previews typically pass &#x60;false&#x60; to match live-pipeline semantics (events flagged &#x60;do_not_forward&#x3D;true&#x60; are skipped by the forwarder pipeline).
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-occurred_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;occurred_at&#x60;, &#x60;-occurred_at&#x60;. (default to '-occurred_at')
@@ -139,6 +141,7 @@ module SmplkitGeneratedClient::Audit
       query_params[:'filter[resource_type]'] = opts[:'filter_resource_type'] if !opts[:'filter_resource_type'].nil?
       query_params[:'filter[resource_id]'] = opts[:'filter_resource_id'] if !opts[:'filter_resource_id'].nil?
       query_params[:'filter[search]'] = opts[:'filter_search'] if !opts[:'filter_search'].nil?
+      query_params[:'filter[do_not_forward]'] = opts[:'filter_do_not_forward'] if !opts[:'filter_do_not_forward'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
       query_params[:'page[after]'] = opts[:'page_after'] if !opts[:'page_after'].nil?
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?

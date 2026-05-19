@@ -40,6 +40,9 @@ module SmplkitGeneratedClient::Audit
     # Case-insensitive substring match on `resource_id` or `description`. Must be accompanied by either `filter[occurred_at]` or `filter[resource_type]` + `filter[resource_id]`.
     attr_accessor :filter_search
 
+    # When set, restrict to events whose `do_not_forward` flag matches the given boolean. Forwarder previews typically pass `false` to match live-pipeline semantics (events flagged `do_not_forward=true` are skipped by the forwarder pipeline).
+    attr_accessor :filter_do_not_forward
+
     # Maximum events to return. Range 1..1000, default 1000 — matches every other list / search endpoint on the platform. Set explicitly to a smaller value when the consumer is rendering results card-by-card.
     attr_accessor :page_size
 
@@ -60,6 +63,7 @@ module SmplkitGeneratedClient::Audit
         :'filter_actor_id' => :'filter[actor_id]',
         :'filter_occurred_at' => :'filter[occurred_at]',
         :'filter_search' => :'filter[search]',
+        :'filter_do_not_forward' => :'filter[do_not_forward]',
         :'page_size' => :'page[size]',
         :'page_after' => :'page[after]',
         :'sort' => :'sort'
@@ -87,6 +91,7 @@ module SmplkitGeneratedClient::Audit
         :'filter_actor_id' => :'String',
         :'filter_occurred_at' => :'String',
         :'filter_search' => :'String',
+        :'filter_do_not_forward' => :'Boolean',
         :'page_size' => :'Integer',
         :'page_after' => :'String',
         :'sort' => :'String'
@@ -104,6 +109,7 @@ module SmplkitGeneratedClient::Audit
         :'filter_actor_id',
         :'filter_occurred_at',
         :'filter_search',
+        :'filter_do_not_forward',
         :'page_after',
       ])
     end
@@ -156,6 +162,10 @@ module SmplkitGeneratedClient::Audit
 
       if attributes.key?(:'filter_search')
         self.filter_search = attributes[:'filter_search']
+      end
+
+      if attributes.key?(:'filter_do_not_forward')
+        self.filter_do_not_forward = attributes[:'filter_do_not_forward']
       end
 
       if attributes.key?(:'page_size')
@@ -231,6 +241,7 @@ module SmplkitGeneratedClient::Audit
           filter_actor_id == o.filter_actor_id &&
           filter_occurred_at == o.filter_occurred_at &&
           filter_search == o.filter_search &&
+          filter_do_not_forward == o.filter_do_not_forward &&
           page_size == o.page_size &&
           page_after == o.page_after &&
           sort == o.sort
@@ -245,7 +256,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [filter, filter_action, filter_resource_type, filter_resource_id, filter_actor_type, filter_actor_id, filter_occurred_at, filter_search, page_size, page_after, sort].hash
+      [filter, filter_action, filter_resource_type, filter_resource_id, filter_actor_type, filter_actor_id, filter_occurred_at, filter_search, filter_do_not_forward, page_size, page_after, sort].hash
     end
 
     # Builds the object from hash
