@@ -112,6 +112,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Logging::LogGroupRequest](docs/LogGroupRequest.md)
  - [SmplkitGeneratedClient::Logging::LogGroupResource](docs/LogGroupResource.md)
  - [SmplkitGeneratedClient::Logging::LogGroupResponse](docs/LogGroupResponse.md)
+ - [SmplkitGeneratedClient::Logging::LogLevel](docs/LogLevel.md)
  - [SmplkitGeneratedClient::Logging::Logger](docs/Logger.md)
  - [SmplkitGeneratedClient::Logging::LoggerBulkItem](docs/LoggerBulkItem.md)
  - [SmplkitGeneratedClient::Logging::LoggerBulkRequest](docs/LoggerBulkRequest.md)

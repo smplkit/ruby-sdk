@@ -16,6 +16,7 @@ docs/LogGroupRequest.md
 docs/LogGroupResource.md
 docs/LogGroupResponse.md
 docs/LogGroupsApi.md
+docs/LogLevel.md
 docs/Logger.md
 docs/LoggerBulkItem.md
 docs/LoggerBulkRequest.md
@@ -56,6 +57,7 @@ lib/smplkit_logging_client/models/log_group_list_response.rb
 lib/smplkit_logging_client/models/log_group_request.rb
 lib/smplkit_logging_client/models/log_group_resource.rb
 lib/smplkit_logging_client/models/log_group_response.rb
+lib/smplkit_logging_client/models/log_level.rb
 lib/smplkit_logging_client/models/logger.rb
 lib/smplkit_logging_client/models/logger_bulk_item.rb
 lib/smplkit_logging_client/models/logger_bulk_request.rb
@@ -88,6 +90,7 @@ spec/models/log_group_request_spec.rb
 spec/models/log_group_resource_spec.rb
 spec/models/log_group_response_spec.rb
 spec/models/log_group_spec.rb
+spec/models/log_level_spec.rb
 spec/models/logger_bulk_item_spec.rb
 spec/models/logger_bulk_request_spec.rb
 spec/models/logger_bulk_response_spec.rb
