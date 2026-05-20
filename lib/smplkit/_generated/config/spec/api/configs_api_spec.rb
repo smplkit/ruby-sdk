@@ -70,9 +70,10 @@ describe 'ConfigsApi' do
 
   # unit tests for list_configs
   # List Configs
-  # List configs for this account.  Default sort is &#x60;key&#x60; ascending. Pass &#x60;filter[parent]&#x3D;&lt;parent_key&gt;&#x60; to return only the direct children of a specific config.
+  # List configs for this account.  Default sort is &#x60;key&#x60; ascending. Pass &#x60;filter[parent]&#x3D;&lt;parent_key&gt;&#x60; to return only the direct children of a specific config, or &#x60;filter[search]&#x3D;&lt;term&gt;&#x60; to filter by a case-insensitive substring against &#x60;key&#x60; or &#x60;name&#x60;.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_parent 
+  # @option opts [String] :filter_search Case-insensitive substring match against the config &#x60;key&#x60; and &#x60;name&#x60;. A config is returned if either field contains the search term.
   # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
   # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error.
   # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error.
