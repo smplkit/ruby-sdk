@@ -15,17 +15,17 @@
 require "securerandom"
 require "smplkit"
 
-# JSON Logic filter — only forward +invoice.*+ actions.
+# JSON Logic filter — only forward +invoice.*+ event types.
 # Events that don't match are recorded as +filtered_out+ deliveries.
 # See https://jsonlogic.com for the full operator reference.
-INVOICE_FILTER = { "in" => ["invoice.", { "var" => "action" }] }.freeze
+INVOICE_FILTER = { "in" => ["invoice.", { "var" => "event_type" }] }.freeze
 
 # JSONata template — reshape the event payload before POSTing to the
 # destination. This example flattens the event into a compact SIEM-style
 # record. See https://jsonata.org for the full language reference.
 SIEM_TRANSFORM = <<~JSONATA
   {
-      "event": action,
+      "event": event_type,
       "subject": resource_type & ":" & resource_id,
       "ts": occurred_at,
       "actor": actor_label

@@ -1,19 +1,19 @@
-# SmplkitGeneratedClient::Audit::ActionsApi
+# SmplkitGeneratedClient::Audit::EventTypesApi
 
 All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 | ------ | ------------ | ----------- |
-| [**list_actions**](ActionsApi.md#list_actions) | **GET** /api/v1/actions | List Actions |
+| [**list_event_types**](EventTypesApi.md#list_event_types) | **GET** /api/v1/event_types | List Event Types |
 
 
-## list_actions
+## list_event_types
 
-> <ActionListResponse> list_actions(opts)
+> <EventTypeListResponse> list_event_types(opts)
 
-List Actions
+List Event Types
 
-List the distinct `action` slugs recorded for this account.  Default sort is `key` ascending; pass `sort=-key` for descending. Without `filter[resource_type]`, returns one row per distinct action. With `filter[resource_type]`, returns the actions recorded for that specific resource type.
+List the distinct `event_type` slugs recorded for this account.  Default sort is `key` ascending; pass `sort=-key` for descending. Without `filter[resource_type]`, returns one row per distinct event_type. With `filter[resource_type]`, returns the event_types recorded for that specific resource type.
 
 ### Examples
 
@@ -26,7 +26,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
   config.access_token = 'YOUR_BEARER_TOKEN'
 end
 
-api_instance = SmplkitGeneratedClient::Audit::ActionsApi.new
+api_instance = SmplkitGeneratedClient::Audit::EventTypesApi.new
 opts = {
   filter_resource_type: 'filter_resource_type_example', # String | 
   sort: 'key', # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `key`, `-key`.
@@ -36,29 +36,29 @@ opts = {
 }
 
 begin
-  # List Actions
-  result = api_instance.list_actions(opts)
+  # List Event Types
+  result = api_instance.list_event_types(opts)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling ActionsApi->list_actions: #{e}"
+  puts "Error when calling EventTypesApi->list_event_types: #{e}"
 end
 ```
 
-#### Using the list_actions_with_http_info variant
+#### Using the list_event_types_with_http_info variant
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ActionListResponse>, Integer, Hash)> list_actions_with_http_info(opts)
+> <Array(<EventTypeListResponse>, Integer, Hash)> list_event_types_with_http_info(opts)
 
 ```ruby
 begin
-  # List Actions
-  data, status_code, headers = api_instance.list_actions_with_http_info(opts)
+  # List Event Types
+  data, status_code, headers = api_instance.list_event_types_with_http_info(opts)
   p status_code # => 2xx
   p headers # => { ... }
-  p data # => <ActionListResponse>
+  p data # => <EventTypeListResponse>
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Error when calling ActionsApi->list_actions_with_http_info: #{e}"
+  puts "Error when calling EventTypesApi->list_event_types_with_http_info: #{e}"
 end
 ```
 
@@ -74,7 +74,7 @@ end
 
 ### Return type
 
-[**ActionListResponse**](ActionListResponse.md)
+[**EventTypeListResponse**](EventTypeListResponse.md)
 
 ### Authorization
 

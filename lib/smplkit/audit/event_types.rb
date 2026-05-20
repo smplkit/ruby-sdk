@@ -2,18 +2,18 @@
 
 module Smplkit
   module Audit
-    # +client.audit.actions.list+ — distinct +action+ slugs seen for
+    # +client.audit.event_types.list+ — distinct +event_type+ slugs seen for
     # the account.
     #
     # Without +filter_resource_type+, returns one row per distinct
-    # action — an action recorded with multiple resource_types appears
-    # once. With the filter, returns the actions seen with that
+    # event type — an event type recorded with multiple resource_types appears
+    # once. With the filter, returns the event types seen with that
     # specific resource_type, powering the cascading-filter behavior
     # on the Activity tab.
     #
     # ADR-047 §2.5. Sorted alphabetically; offset pagination
     # (+page_number+ / +page_size+) per ADR-014.
-    class Actions
+    class EventTypes
       def initialize(api)
         @api = api
       end
@@ -25,12 +25,12 @@ module Smplkit
         opts[:page_size] = page_size if page_size
         opts[:meta_total] = meta_total unless meta_total.nil?
 
-        resp = Smplkit::Audit.call_api { @api.list_actions(opts) }
-        rows = (resp.data || []).map { |r| Action.from_resource(r) }
-        ActionListPage.new(rows, Smplkit::Audit.extract_pagination(resp.meta))
+        resp = Smplkit::Audit.call_api { @api.list_event_types(opts) }
+        rows = (resp.data || []).map { |r| EventType.from_resource(r) }
+        EventTypeListPage.new(rows, Smplkit::Audit.extract_pagination(resp.meta))
       end
     end
 
-    ActionListPage = Struct.new(:actions, :pagination)
+    EventTypeListPage = Struct.new(:event_types, :pagination)
   end
 end

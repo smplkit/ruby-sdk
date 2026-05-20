@@ -143,14 +143,14 @@ module Smplkit
     #
     # @!attribute [rw] id
     #   @return [String] Server-assigned UUID for this event.
-    # @!attribute [rw] action
-    #   @return [String] Action slug — e.g. +"user.created"+, +"invoice.paid"+.
+    # @!attribute [rw] event_type
+    #   @return [String] Event type slug — e.g. +"user.created"+, +"invoice.paid"+.
     # @!attribute [rw] resource_type
-    #   @return [String] Type of resource the action operated on — e.g. +"invoice"+.
+    #   @return [String] Type of resource the event operated on — e.g. +"invoice"+.
     # @!attribute [rw] resource_id
-    #   @return [String] Customer-facing id of the resource the action operated on.
+    #   @return [String] Customer-facing id of the resource the event operated on.
     # @!attribute [rw] occurred_at
-    #   @return [String] ISO-8601 timestamp of when the action happened, as reported by the source.
+    #   @return [String] ISO-8601 timestamp of when the event happened, as reported by the source.
     # @!attribute [rw] created_at
     #   @return [String] ISO-8601 timestamp of when the audit service first ingested this event.
     # @!attribute [rw] actor_type
@@ -166,7 +166,7 @@ module Smplkit
     # @!attribute [rw] do_not_forward
     #   @return [Boolean] When +true+, skip SIEM forwarder delivery regardless of any matching filter.
     AuditEvent = Struct.new(
-      :id, :action, :resource_type, :resource_id,
+      :id, :event_type, :resource_type, :resource_id,
       :occurred_at, :created_at,
       :actor_type, :actor_id, :actor_label,
       :data, :idempotency_key, :do_not_forward,
@@ -176,7 +176,7 @@ module Smplkit
         attrs = resource.attributes
         new(
           id: resource.id,
-          action: attrs.action,
+          event_type: attrs.event_type,
           resource_type: attrs.resource_type,
           resource_id: attrs.resource_id,
           occurred_at: attrs.occurred_at,
@@ -215,25 +215,25 @@ module Smplkit
       end
     end
 
-    # A distinct +action+ slug seen for the account.
+    # A distinct +event_type+ slug seen for the account.
     #
-    # Same shape as {ResourceType} — +id+ and +action+ are the same value.
+    # Same shape as {ResourceType} — +id+ and +event_type+ are the same value.
     # +created_at+ is the earliest sighting; when the parent list call
     # filtered by +resource_type+, this is the first sighting of that
-    # specific (action, resource_type) triple, not the action overall.
+    # specific (event_type, resource_type) triple, not the event type overall.
     #
     # @!attribute [rw] id
-    #   @return [String] JSON:API resource id (same as +action+).
-    # @!attribute [rw] action
-    #   @return [String] The distinct action slug.
+    #   @return [String] JSON:API resource id (same as +event_type+).
+    # @!attribute [rw] event_type
+    #   @return [String] The distinct event type slug.
     # @!attribute [rw] created_at
     #   @return [String] ISO-8601 timestamp of the earliest sighting for this slug.
-    Action = Struct.new(:id, :action, :created_at, keyword_init: true) do
+    EventType = Struct.new(:id, :event_type, :created_at, keyword_init: true) do
       def self.from_resource(resource)
         attrs = resource.attributes
         new(
           id: resource.id,
-          action: attrs.action || resource.id,
+          event_type: attrs.event_type || resource.id,
           created_at: attrs.created_at
         )
       end

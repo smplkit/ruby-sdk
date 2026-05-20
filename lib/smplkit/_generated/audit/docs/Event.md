@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **action** | **String** | What happened, e.g. &#x60;user.created&#x60;. Any non-empty string. |  |
+| **event_type** | **String** | What happened, e.g. &#x60;user.created&#x60;. Any non-empty string. |  |
 | **resource_type** | **String** | Kind of resource the event is about, e.g. &#x60;user&#x60;. Any non-empty string. |  |
 | **resource_id** | **String** | Identifier of the specific resource the event is about. |  |
 | **description** | **String** | Free-text description of the event. Included alongside &#x60;resource_id&#x60; in the &#x60;filter[search]&#x60; substring target. | [optional] |
@@ -23,7 +23,7 @@
 require 'smplkit_audit_client'
 
 instance = SmplkitGeneratedClient::Audit::Event.new(
-  action: null,
+  event_type: null,
   resource_type: null,
   resource_id: null,
   description: null,

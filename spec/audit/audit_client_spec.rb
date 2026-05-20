@@ -14,7 +14,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
         id: "11111111-2222-3333-4444-555555555555",
         type: "event",
         attributes: {
-          action: "user.created",
+          event_type: "user.created",
           resource_type: "user",
           resource_id: "u-1",
           occurred_at: "2026-05-06T12:00:00Z",
@@ -39,7 +39,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       begin
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         20.times do |i|
-          client.events.record(action: "user.created", resource_type: "user", resource_id: "u-#{i}")
+          client.events.record(event_type: "user.created", resource_type: "user", resource_id: "u-#{i}")
         end
         elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
         expect(elapsed).to be < 0.2
@@ -56,18 +56,18 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
 
-    it "raises ArgumentError when action is missing" do
+    it "raises ArgumentError when event_type is missing" do
       client = described_class.new(api_key: api_key, base_url: base_url)
       expect do
-        client.events.record(action: "", resource_type: "user", resource_id: "u-1")
-      end.to raise_error(ArgumentError, /action/)
+        client.events.record(event_type: "", resource_type: "user", resource_id: "u-1")
+      end.to raise_error(ArgumentError, /event_type/)
       client._close
     end
 
     it "raises ArgumentError when resource_type is missing" do
       client = described_class.new(api_key: api_key, base_url: base_url)
       expect do
-        client.events.record(action: "x", resource_type: nil, resource_id: "u-1")
+        client.events.record(event_type: "x", resource_type: nil, resource_id: "u-1")
       end.to raise_error(ArgumentError, /resource_type/)
       client._close
     end
@@ -75,7 +75,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
     it "raises ArgumentError when resource_id is missing" do
       client = described_class.new(api_key: api_key, base_url: base_url)
       expect do
-        client.events.record(action: "x", resource_type: "user", resource_id: "")
+        client.events.record(event_type: "x", resource_type: "user", resource_id: "")
       end.to raise_error(ArgumentError, /resource_id/)
       client._close
     end
@@ -87,7 +87,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
         client.events.record(
-          action: "user.created", resource_type: "user", resource_id: "u-1",
+          event_type: "user.created", resource_type: "user", resource_id: "u-1",
           idempotency_key: "key-abc"
         )
         client.events.flush(timeout: 2.0)
@@ -114,7 +114,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
 
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
-        client.events.record(action: "invoice.updated", resource_type: "invoice", resource_id: "inv-1")
+        client.events.record(event_type: "invoice.updated", resource_type: "invoice", resource_id: "inv-1")
         client.events.flush(timeout: 2.0)
         deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
         until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
@@ -141,7 +141,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
         client.events.record(
-          action: "invoice.created",
+          event_type: "invoice.created",
           resource_type: "invoice",
           resource_id: "inv-1",
           occurred_at: Time.utc(2026, 5, 6, 12, 0, 0)
@@ -168,7 +168,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
         client.events.record(
-          action: "user.created",
+          event_type: "user.created",
           resource_type: "user",
           resource_id: "u-1",
           actor_type: "EXTERNAL_SERVICE",
@@ -200,7 +200,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
         client.events.record(
-          action: "invoice.created",
+          event_type: "invoice.created",
           resource_type: "invoice",
           resource_id: "inv-1",
           occurred_at: Time.utc(2026, 5, 6, 12, 0, 0),
@@ -237,7 +237,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       begin
         ev = client.events.get(event_id)
         expect(ev.id).to eq(event_id)
-        expect(ev.action).to eq("user.created")
+        expect(ev.event_type).to eq("user.created")
         expect(ev.actor_type).to eq("API_KEY")
         expect(ev.actor_id).to be_nil
       ensure
@@ -255,7 +255,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
         data: {
           id: event_id, type: "event",
           attributes: {
-            action: "invoice.created", resource_type: "invoice", resource_id: "inv-1",
+            event_type: "invoice.created", resource_type: "invoice", resource_id: "inv-1",
             occurred_at: "2026-05-06T12:00:00Z", created_at: "2026-05-06T12:00:01Z",
             actor_type: "API_KEY", actor_id: nil, actor_label: "",
             data: { "snapshot" => { "currency" => "USD", "total_cents" => 4900 },
@@ -303,7 +303,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
           id: "11111111-2222-3333-4444-555555555555",
           type: "event",
           attributes: {
-            action: "user.created",
+            event_type: "user.created",
             resource_type: "user",
             resource_id: "u-1",
             occurred_at: "2026-05-06T12:00:00Z",
@@ -324,7 +324,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
 
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
-        page = client.events.list(action: "user.created", page_size: 1)
+        page = client.events.list(event_type: "user.created", page_size: 1)
         expect(page.events.size).to eq(1)
         expect(page.next_cursor).to eq("tok-xyz")
       ensure
@@ -333,9 +333,9 @@ RSpec.describe Smplkit::Audit::AuditClient do
     end
 
     it "translates wrapper kwargs to the generated client's snake_case opts" do
-      # Regression: the wrapper used to pass :filteraction / :filterresource_id
+      # Regression: the wrapper used to pass :filterevent_type / :filterresource_id
       # / :pagesize etc. (no underscore) — the generated client only honors
-      # :filter_action / :filter_resource_id / :page_size, so the filters
+      # :filter_event_type / :filter_resource_id / :page_size, so the filters
       # silently fell through and the server returned every event in the
       # account.
       captured_uri = nil
@@ -350,7 +350,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
       client = described_class.new(api_key: api_key, base_url: base_url)
       begin
         client.events.list(
-          action: "user.created",
+          event_type: "user.created",
           resource_type: "user",
           resource_id: "u-1",
           actor_type: "USER",
@@ -358,7 +358,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
           page_after: "cursor-abc"
         )
         # Faraday percent-encodes the brackets; assert against the encoded form.
-        expect(captured_uri).to include("filter%5Baction%5D=user.created")
+        expect(captured_uri).to include("filter%5Bevent_type%5D=user.created")
         expect(captured_uri).to include("filter%5Bresource_type%5D=user")
         expect(captured_uri).to include("filter%5Bresource_id%5D=u-1")
         expect(captured_uri).to include("filter%5Bactor_type%5D=USER")
@@ -436,7 +436,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
         $stderr = StringIO.new
         # Burst more than capacity before the worker can drain.
         5.times do |i|
-          client.events.record(action: "x.created", resource_type: "x", resource_id: i.to_s)
+          client.events.record(event_type: "x.created", resource_type: "x", resource_id: i.to_s)
         end
         $stderr = original_stderr
         client.events.flush(timeout: 2.0)

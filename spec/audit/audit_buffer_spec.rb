@@ -33,7 +33,7 @@ RSpec.describe Smplkit::Audit::EventBuffer do
         id: "",
         type: "event",
         attributes: SmplkitGeneratedClient::Audit::Event.new(
-          action: "x.created", resource_type: "x", resource_id: "1"
+          event_type: "x.created", resource_type: "x", resource_id: "1"
         )
       )
     )
