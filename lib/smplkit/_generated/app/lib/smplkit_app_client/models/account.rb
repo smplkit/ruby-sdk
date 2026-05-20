@@ -43,17 +43,8 @@ module SmplkitGeneratedClient::App
     # Whether the account is currently configured to display the sample dataset alongside the customer's own resources.
     attr_accessor :show_sample_data
 
-    # Custom discount percentage applied to the account in place of the volume-based discount schedule. `null` means the volume schedule applies.
+    # Custom discount percentage applied to the account in place of the volume-based discount schedule. `null` means the volume schedule applies. Who set it, when, and why are captured in the audit-event stream rather than on the subscription row.
     attr_accessor :discount_override_pct
-
-    # Free-form note explaining why the override was set.
-    attr_accessor :discount_override_reason
-
-    # UUID of the user who set the override.
-    attr_accessor :discount_override_set_by_user_id
-
-    # When the override was last changed.
-    attr_accessor :discount_override_set_at
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -67,10 +58,7 @@ module SmplkitGeneratedClient::App
         :'product_subscriptions' => :'product_subscriptions',
         :'entry_point' => :'entry_point',
         :'show_sample_data' => :'show_sample_data',
-        :'discount_override_pct' => :'discount_override_pct',
-        :'discount_override_reason' => :'discount_override_reason',
-        :'discount_override_set_by_user_id' => :'discount_override_set_by_user_id',
-        :'discount_override_set_at' => :'discount_override_set_at'
+        :'discount_override_pct' => :'discount_override_pct'
       }
     end
 
@@ -96,10 +84,7 @@ module SmplkitGeneratedClient::App
         :'product_subscriptions' => :'Hash<String, Object>',
         :'entry_point' => :'String',
         :'show_sample_data' => :'Boolean',
-        :'discount_override_pct' => :'Integer',
-        :'discount_override_reason' => :'String',
-        :'discount_override_set_by_user_id' => :'String',
-        :'discount_override_set_at' => :'Time'
+        :'discount_override_pct' => :'Integer'
       }
     end
 
@@ -113,10 +98,7 @@ module SmplkitGeneratedClient::App
         :'product_subscriptions',
         :'entry_point',
         :'show_sample_data',
-        :'discount_override_pct',
-        :'discount_override_reason',
-        :'discount_override_set_by_user_id',
-        :'discount_override_set_at'
+        :'discount_override_pct'
       ])
     end
 
@@ -181,18 +163,6 @@ module SmplkitGeneratedClient::App
       if attributes.key?(:'discount_override_pct')
         self.discount_override_pct = attributes[:'discount_override_pct']
       end
-
-      if attributes.key?(:'discount_override_reason')
-        self.discount_override_reason = attributes[:'discount_override_reason']
-      end
-
-      if attributes.key?(:'discount_override_set_by_user_id')
-        self.discount_override_set_by_user_id = attributes[:'discount_override_set_by_user_id']
-      end
-
-      if attributes.key?(:'discount_override_set_at')
-        self.discount_override_set_at = attributes[:'discount_override_set_at']
-      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -248,10 +218,7 @@ module SmplkitGeneratedClient::App
           product_subscriptions == o.product_subscriptions &&
           entry_point == o.entry_point &&
           show_sample_data == o.show_sample_data &&
-          discount_override_pct == o.discount_override_pct &&
-          discount_override_reason == o.discount_override_reason &&
-          discount_override_set_by_user_id == o.discount_override_set_by_user_id &&
-          discount_override_set_at == o.discount_override_set_at
+          discount_override_pct == o.discount_override_pct
     end
 
     # @see the `==` method
@@ -263,7 +230,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, key, has_stripe_customer, expires_at, created_at, deleted_at, product_subscriptions, entry_point, show_sample_data, discount_override_pct, discount_override_reason, discount_override_set_by_user_id, discount_override_set_at].hash
+      [name, key, has_stripe_customer, expires_at, created_at, deleted_at, product_subscriptions, entry_point, show_sample_data, discount_override_pct].hash
     end
 
     # Builds the object from hash
