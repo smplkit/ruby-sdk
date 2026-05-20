@@ -21,7 +21,7 @@ Smplkit::Client.open(environment: "production", service: "showcase-service") do 
 
   # record an event with full customer-supplied actor attribution
   client.audit.events.record(
-    action: "invoice.created",
+    event_type: "invoice.created",
     resource_type: "invoice",
     resource_id: some_resource_id,
     occurred_at: Time.now.utc,
@@ -47,11 +47,11 @@ Smplkit::Client.open(environment: "production", service: "showcase-service") do 
   event = client.audit.events.get(recorded_event_id)
   raise "id mismatch" unless event.id == recorded_event_id
   raise "resource_id mismatch" unless event.resource_id == some_resource_id
-  raise "action mismatch" unless event.action == "invoice.created"
+  raise "event_type mismatch" unless event.event_type == "invoice.created"
   raise "actor_id mismatch" unless event.actor_id == "billing-bot:42"
   raise "actor_label mismatch" unless event.actor_label == "finance@example.com"
 
-  puts "Fetched event #{event.id}: #{event.action} by #{event.actor_label}"
+  puts "Fetched event #{event.id}: #{event.event_type} by #{event.actor_label}"
 
   # list resource types observed
   resource_types = client.audit.resource_types.list
@@ -59,11 +59,13 @@ Smplkit::Client.open(environment: "production", service: "showcase-service") do 
 
   puts "Observed resource types: #{resource_types.resource_types.map(&:id)}"
 
-  # list actions observed
-  actions = client.audit.actions.list
-  raise "expected 'invoice.created' in actions" unless actions.actions.any? { |a| a.id == "invoice.created" }
+  # list event types observed
+  event_types = client.audit.event_types.list
+  unless event_types.event_types.any? { |a| a.id == "invoice.created" }
+    raise "expected 'invoice.created' in event types"
+  end
 
-  puts "Observed actions: #{actions.actions.map(&:id)}"
+  puts "Observed event types: #{event_types.event_types.map(&:id)}"
 
   puts "Done!"
 end

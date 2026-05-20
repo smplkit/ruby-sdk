@@ -24,11 +24,11 @@ module Smplkit
       # Customer attempts to record events with +resource_type+ starting
       # with +smpl.+ are rejected by the server with a 403 (the buffer
       # logs and drops permanent failures).
-      def record(action:, resource_type:, resource_id:,
+      def record(event_type:, resource_type:, resource_id:,
                  occurred_at: nil, actor_type: nil, actor_id: nil,
                  actor_label: nil, data: nil, idempotency_key: nil,
                  do_not_forward: false)
-        raise ArgumentError, "action is required" if action.nil? || action.to_s.empty?
+        raise ArgumentError, "event_type is required" if event_type.nil? || event_type.to_s.empty?
         raise ArgumentError, "resource_type is required" if resource_type.nil? || resource_type.to_s.empty?
         raise ArgumentError, "resource_id is required" if resource_id.nil? || resource_id.to_s.empty?
 
@@ -48,7 +48,7 @@ module Smplkit
         # is required-non-null in the OpenAPI schema). Always default to
         # an empty hash so users who omit ``data:`` don't trip the gate.
         attrs = SmplkitGeneratedClient::Audit::Event.new(
-          action: action,
+          event_type: event_type,
           resource_type: resource_type,
           resource_id: resource_id,
           occurred_at: normalized_occurred_at,
@@ -79,7 +79,7 @@ module Smplkit
       # List events with filters and cursor pagination. Returns a
       # +Smplkit::Audit::ListEventsPage+ whose +#events+ is the page and
       # +#next_cursor+ is the opaque token for the next page (or nil).
-      def list(action: nil, resource_type: nil, resource_id: nil,
+      def list(event_type: nil, resource_type: nil, resource_id: nil,
                actor_type: nil, actor_id: nil, occurred_at_range: nil,
                search: nil, page_size: nil, page_after: nil)
         # Generated client opts use snake_case keys that internally map
@@ -88,7 +88,7 @@ module Smplkit
         # underscores these silently fall through and the filters never
         # reach the server.
         opts = {}
-        opts[:filter_action] = action if action
+        opts[:filter_event_type] = event_type if event_type
         opts[:filter_resource_type] = resource_type if resource_type
         opts[:filter_resource_id] = resource_id if resource_id
         opts[:filter_actor_type] = actor_type if actor_type

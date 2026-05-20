@@ -12,7 +12,7 @@ module Smplkit
     # SIEM forwarder CRUD lives on {Smplkit::ManagementClient} under
     # +mgmt.audit.forwarders.*+.
     class AuditClient
-      attr_reader :events, :resource_types, :actions
+      attr_reader :events, :resource_types, :event_types
 
       SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
 
@@ -29,7 +29,7 @@ module Smplkit
         end
         @events = Events.new(SmplkitGeneratedClient::Audit::EventsApi.new(api_client))
         @resource_types = ResourceTypes.new(SmplkitGeneratedClient::Audit::ResourceTypesApi.new(api_client))
-        @actions = Actions.new(SmplkitGeneratedClient::Audit::ActionsApi.new(api_client))
+        @event_types = EventTypes.new(SmplkitGeneratedClient::Audit::EventTypesApi.new(api_client))
       end
 
       def _close
