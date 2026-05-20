@@ -286,6 +286,7 @@ module SmplkitGeneratedClient::Flags
     # @option opts [Boolean] :filter_managed 
     # @option opts [String] :filter_references_context Return flags whose rules reference this context instance. Format: {type}:{key}
     # @option opts [String] :filter_references_context_type Return flags whose rules reference any attribute of the given context type.
+    # @option opts [String] :filter_search Case-insensitive substring match against the flag &#x60;key&#x60; and &#x60;name&#x60;. A flag is returned if either field contains the search term.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;type&#x60;, &#x60;-type&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'key')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -303,6 +304,7 @@ module SmplkitGeneratedClient::Flags
     # @option opts [Boolean] :filter_managed 
     # @option opts [String] :filter_references_context Return flags whose rules reference this context instance. Format: {type}:{key}
     # @option opts [String] :filter_references_context_type Return flags whose rules reference any attribute of the given context type.
+    # @option opts [String] :filter_search Case-insensitive substring match against the flag &#x60;key&#x60; and &#x60;name&#x60;. A flag is returned if either field contains the search term.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;type&#x60;, &#x60;-type&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'key')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -325,6 +327,7 @@ module SmplkitGeneratedClient::Flags
       query_params[:'filter[managed]'] = opts[:'filter_managed'] if !opts[:'filter_managed'].nil?
       query_params[:'filter[references_context]'] = opts[:'filter_references_context'] if !opts[:'filter_references_context'].nil?
       query_params[:'filter[references_context_type]'] = opts[:'filter_references_context_type'] if !opts[:'filter_references_context_type'].nil?
+      query_params[:'filter[search]'] = opts[:'filter_search'] if !opts[:'filter_search'].nil?
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
       query_params[:'page[number]'] = opts[:'page_number'] if !opts[:'page_number'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
