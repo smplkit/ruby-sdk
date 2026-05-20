@@ -13,10 +13,7 @@
 | **product_subscriptions** | **Hash&lt;String, Object&gt;** | Map of product key to the account&#39;s subscription summary for that product, including plan, status, and entitlement limits. | [optional][readonly] |
 | **entry_point** | **String** | How the account first reached smplkit (e.g. &#x60;LOGIN&#x60;, &#x60;GET_STARTED&#x60;, &#x60;LIVE_DEMO&#x60;). | [optional][readonly] |
 | **show_sample_data** | **Boolean** | Whether the account is currently configured to display the sample dataset alongside the customer&#39;s own resources. | [optional][readonly] |
-| **discount_override_pct** | **Integer** | Custom discount percentage applied to the account in place of the volume-based discount schedule. &#x60;null&#x60; means the volume schedule applies. | [optional][readonly] |
-| **discount_override_reason** | **String** | Free-form note explaining why the override was set. | [optional][readonly] |
-| **discount_override_set_by_user_id** | **String** | UUID of the user who set the override. | [optional][readonly] |
-| **discount_override_set_at** | **Time** | When the override was last changed. | [optional][readonly] |
+| **discount_override_pct** | **Integer** | Custom discount percentage applied to the account in place of the volume-based discount schedule. &#x60;null&#x60; means the volume schedule applies. Who set it, when, and why are captured in the audit-event stream rather than on the subscription row. | [optional][readonly] |
 
 ## Example
 
@@ -33,10 +30,7 @@ instance = SmplkitGeneratedClient::App::Account.new(
   product_subscriptions: null,
   entry_point: null,
   show_sample_data: null,
-  discount_override_pct: null,
-  discount_override_reason: null,
-  discount_override_set_by_user_id: null,
-  discount_override_set_at: null
+  discount_override_pct: null
 )
 ```
 
