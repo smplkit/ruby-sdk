@@ -214,9 +214,10 @@ module SmplkitGeneratedClient::App
     end
 
     # List API Keys
-    # List all API keys for the authenticated account.
+    # List all API keys for the authenticated account. `filter[search]` does a case-insensitive substring match against the API key `name`.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_status 
+    # @option opts [String] :filter_search Case-insensitive substring match against the API key &#x60;name&#x60;.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;expires_at&#x60;, &#x60;-expires_at&#x60;, &#x60;last_used_at&#x60;, &#x60;-last_used_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. (default to 'name')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -228,9 +229,10 @@ module SmplkitGeneratedClient::App
     end
 
     # List API Keys
-    # List all API keys for the authenticated account.
+    # List all API keys for the authenticated account. &#x60;filter[search]&#x60; does a case-insensitive substring match against the API key &#x60;name&#x60;.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_status 
+    # @option opts [String] :filter_search Case-insensitive substring match against the API key &#x60;name&#x60;.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;expires_at&#x60;, &#x60;-expires_at&#x60;, &#x60;last_used_at&#x60;, &#x60;-last_used_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. (default to 'name')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -250,6 +252,7 @@ module SmplkitGeneratedClient::App
       # query parameters
       query_params = opts[:query_params] || {}
       query_params[:'filter[status]'] = opts[:'filter_status'] if !opts[:'filter_status'].nil?
+      query_params[:'filter[search]'] = opts[:'filter_search'] if !opts[:'filter_search'].nil?
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
       query_params[:'page[number]'] = opts[:'page_number'] if !opts[:'page_number'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
