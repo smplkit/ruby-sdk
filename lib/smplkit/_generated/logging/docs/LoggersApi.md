@@ -223,7 +223,7 @@ end
 
 List Loggers
 
-List loggers for this account.  Default sort is `key` ascending. Supports `filter[managed]` to narrow to managed (or unmanaged) loggers, `filter[service]` to keep only loggers observed in a specific service, and `filter[last_seen]` (interval notation `[<from>,*)`) to keep only loggers with a source observation at or after the given timestamp.  ``filter[service]`` and ``filter[last_seen]`` are applied via a cross-table membership check in Python after the SQL fetch, so pagination for those calls is applied in memory after the filter; the common path (no source-bound filter) paginates at the SQL level.
+List loggers for this account.  Default sort is `key` ascending. Supports `filter[managed]` to narrow to managed (or unmanaged) loggers, `filter[service]` to keep only loggers observed in a specific service, `filter[last_seen]` (interval notation `[<from>,*)`) to keep only loggers with a source observation at or after the given timestamp, and `filter[search]` for a case-insensitive substring match against `key` or `name`.  ``filter[service]`` and ``filter[last_seen]`` are applied via a cross-table membership check in Python after the SQL fetch, so pagination for those calls is applied in memory after the filter; the common path (no source-bound filter) paginates at the SQL level.
 
 ### Examples
 
@@ -241,6 +241,7 @@ opts = {
   filter_managed: true, # Boolean | 
   filter_service: 'filter_service_example', # String | 
   filter_last_seen: 'filter_last_seen_example', # String | 
+  filter_search: 'filter_search_example', # String | Case-insensitive substring match against the logger `key` and `name`. A logger is returned if either field contains the search term.
   sort: 'created_at', # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `created_at`, `-created_at`, `key`, `-key`, `name`, `-name`, `updated_at`, `-updated_at`.
   page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
   page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
@@ -281,6 +282,7 @@ end
 | **filter_managed** | **Boolean** |  | [optional] |
 | **filter_service** | **String** |  | [optional] |
 | **filter_last_seen** | **String** |  | [optional] |
+| **filter_search** | **String** | Case-insensitive substring match against the logger &#x60;key&#x60; and &#x60;name&#x60;. A logger is returned if either field contains the search term. | [optional] |
 | **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;key&#39;] |
 | **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
 | **page_size** | **Integer** | Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional][default to 1000] |
