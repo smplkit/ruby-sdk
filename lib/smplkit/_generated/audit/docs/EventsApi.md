@@ -102,7 +102,7 @@ opts = {
   filter_occurred_at: 'filter_occurred_at_example', # String | 
   filter_actor_type: 'filter_actor_type_example', # String | 
   filter_actor_id: 'filter_actor_id_example', # String | 
-  filter_action: 'filter_action_example', # String | 
+  filter_event_type: 'filter_event_type_example', # String | 
   filter_resource_type: 'filter_resource_type_example', # String | 
   filter_resource_id: 'filter_resource_id_example', # String | 
   filter_search: 'filter_search_example', # String | Case-insensitive substring match against `resource_id` or `description`. Use `filter[resource_id]` for an exact match on `resource_id`.
@@ -146,7 +146,7 @@ end
 | **filter_occurred_at** | **String** |  | [optional] |
 | **filter_actor_type** | **String** |  | [optional] |
 | **filter_actor_id** | **String** |  | [optional] |
-| **filter_action** | **String** |  | [optional] |
+| **filter_event_type** | **String** |  | [optional] |
 | **filter_resource_type** | **String** |  | [optional] |
 | **filter_resource_id** | **String** |  | [optional] |
 | **filter_search** | **String** | Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;. | [optional] |
@@ -189,7 +189,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::EventsApi.new
-event_request = SmplkitGeneratedClient::Audit::EventRequest.new({data: SmplkitGeneratedClient::Audit::EventResource.new({attributes: SmplkitGeneratedClient::Audit::Event.new({action: 'action_example', resource_type: 'resource_type_example', resource_id: 'resource_id_example'})})}) # EventRequest | 
+event_request = SmplkitGeneratedClient::Audit::EventRequest.new({data: SmplkitGeneratedClient::Audit::EventResource.new({attributes: SmplkitGeneratedClient::Audit::Event.new({event_type: 'event_type_example', resource_type: 'resource_type_example', resource_id: 'resource_id_example'})})}) # EventRequest | 
 opts = {
   idempotency_key: 'idempotency_key_example' # String | 
 }

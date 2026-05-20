@@ -88,7 +88,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
     # @option opts [String] :filter_actor_id 
-    # @option opts [String] :filter_action 
+    # @option opts [String] :filter_event_type 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
     # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
@@ -108,7 +108,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
     # @option opts [String] :filter_actor_id 
-    # @option opts [String] :filter_action 
+    # @option opts [String] :filter_event_type 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
     # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
@@ -137,7 +137,7 @@ module SmplkitGeneratedClient::Audit
       query_params[:'filter[occurred_at]'] = opts[:'filter_occurred_at'] if !opts[:'filter_occurred_at'].nil?
       query_params[:'filter[actor_type]'] = opts[:'filter_actor_type'] if !opts[:'filter_actor_type'].nil?
       query_params[:'filter[actor_id]'] = opts[:'filter_actor_id'] if !opts[:'filter_actor_id'].nil?
-      query_params[:'filter[action]'] = opts[:'filter_action'] if !opts[:'filter_action'].nil?
+      query_params[:'filter[event_type]'] = opts[:'filter_event_type'] if !opts[:'filter_event_type'].nil?
       query_params[:'filter[resource_type]'] = opts[:'filter_resource_type'] if !opts[:'filter_resource_type'].nil?
       query_params[:'filter[resource_id]'] = opts[:'filter_resource_id'] if !opts[:'filter_resource_id'].nil?
       query_params[:'filter[search]'] = opts[:'filter_search'] if !opts[:'filter_search'].nil?

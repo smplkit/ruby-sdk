@@ -14,18 +14,20 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  class ActionAttributes < ApiModelBase
-    # The action slug. Same as the JSON:API ``id``.
-    attr_accessor :action
+  class EventTypeResource < ApiModelBase
+    # The event_type slug.
+    attr_accessor :id
 
-    # First sighting of this action for the account. When the request includes ``filter[resource_type]``, this is the first sighting of the (action, resource_type) triple rather than the action overall.
-    attr_accessor :created_at
+    attr_accessor :type
+
+    attr_accessor :attributes
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'action' => :'action',
-        :'created_at' => :'created_at'
+        :'id' => :'id',
+        :'type' => :'type',
+        :'attributes' => :'attributes'
       }
     end
 
@@ -42,8 +44,9 @@ module SmplkitGeneratedClient::Audit
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'action' => :'String',
-        :'created_at' => :'Time'
+        :'id' => :'String',
+        :'type' => :'String',
+        :'attributes' => :'EventTypeAttributes'
       }
     end
 
@@ -57,28 +60,34 @@ module SmplkitGeneratedClient::Audit
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::ActionAttributes` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::EventTypeResource` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::ActionAttributes`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::EventTypeResource`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'action')
-        self.action = attributes[:'action']
+      if attributes.key?(:'id')
+        self.id = attributes[:'id']
       else
-        self.action = nil
+        self.id = nil
       end
 
-      if attributes.key?(:'created_at')
-        self.created_at = attributes[:'created_at']
+      if attributes.key?(:'type')
+        self.type = attributes[:'type']
       else
-        self.created_at = nil
+        self.type = 'event_type'
+      end
+
+      if attributes.key?(:'attributes')
+        self.attributes = attributes[:'attributes']
+      else
+        self.attributes = nil
       end
     end
 
@@ -87,12 +96,12 @@ module SmplkitGeneratedClient::Audit
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @action.nil?
-        invalid_properties.push('invalid value for "action", action cannot be nil.')
+      if @id.nil?
+        invalid_properties.push('invalid value for "id", id cannot be nil.')
       end
 
-      if @created_at.nil?
-        invalid_properties.push('invalid value for "created_at", created_at cannot be nil.')
+      if @attributes.nil?
+        invalid_properties.push('invalid value for "attributes", attributes cannot be nil.')
       end
 
       invalid_properties
@@ -102,29 +111,29 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @action.nil?
-      return false if @created_at.nil?
+      return false if @id.nil?
+      return false if @attributes.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] action Value to be assigned
-    def action=(action)
-      if action.nil?
-        fail ArgumentError, 'action cannot be nil'
+    # @param [Object] id Value to be assigned
+    def id=(id)
+      if id.nil?
+        fail ArgumentError, 'id cannot be nil'
       end
 
-      @action = action
+      @id = id
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] created_at Value to be assigned
-    def created_at=(created_at)
-      if created_at.nil?
-        fail ArgumentError, 'created_at cannot be nil'
+    # @param [Object] attributes Value to be assigned
+    def attributes=(attributes)
+      if attributes.nil?
+        fail ArgumentError, 'attributes cannot be nil'
       end
 
-      @created_at = created_at
+      @attributes = attributes
     end
 
     # Checks equality by comparing each attribute.
@@ -132,8 +141,9 @@ module SmplkitGeneratedClient::Audit
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          action == o.action &&
-          created_at == o.created_at
+          id == o.id &&
+          type == o.type &&
+          attributes == o.attributes
     end
 
     # @see the `==` method
@@ -145,7 +155,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [action, created_at].hash
+      [id, type, attributes].hash
     end
 
     # Builds the object from hash

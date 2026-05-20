@@ -67,7 +67,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
   config.configure_faraday_connection { |connection| 'YOUR CONNECTION CONFIG PROC' }
 end
 
-api_instance = SmplkitGeneratedClient::Audit::ActionsApi.new
+api_instance = SmplkitGeneratedClient::Audit::EventTypesApi.new
 opts = {
   filter_resource_type: 'filter_resource_type_example', # String | 
   sort: 'key', # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `key`, `-key`.
@@ -77,11 +77,11 @@ opts = {
 }
 
 begin
-  #List Actions
-  result = api_instance.list_actions(opts)
+  #List Event Types
+  result = api_instance.list_event_types(opts)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Exception when calling ActionsApi->list_actions: #{e}"
+  puts "Exception when calling EventTypesApi->list_event_types: #{e}"
 end
 
 ```
@@ -92,7 +92,7 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*SmplkitGeneratedClient::Audit::ActionsApi* | [**list_actions**](docs/ActionsApi.md#list_actions) | **GET** /api/v1/actions | List Actions
+*SmplkitGeneratedClient::Audit::EventTypesApi* | [**list_event_types**](docs/EventTypesApi.md#list_event_types) | **GET** /api/v1/event_types | List Event Types
 *SmplkitGeneratedClient::Audit::EventsApi* | [**get_event**](docs/EventsApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event
 *SmplkitGeneratedClient::Audit::EventsApi* | [**list_events**](docs/EventsApi.md#list_events) | **GET** /api/v1/events | List Events
 *SmplkitGeneratedClient::Audit::EventsApi* | [**record_event**](docs/EventsApi.md#record_event) | **POST** /api/v1/events | Record Event
@@ -114,9 +114,6 @@ Class | Method | HTTP request | Description
 
 ## Documentation for Models
 
- - [SmplkitGeneratedClient::Audit::ActionAttributes](docs/ActionAttributes.md)
- - [SmplkitGeneratedClient::Audit::ActionListResponse](docs/ActionListResponse.md)
- - [SmplkitGeneratedClient::Audit::ActionResource](docs/ActionResource.md)
  - [SmplkitGeneratedClient::Audit::Event](docs/Event.md)
  - [SmplkitGeneratedClient::Audit::EventListLinks](docs/EventListLinks.md)
  - [SmplkitGeneratedClient::Audit::EventListMeta](docs/EventListMeta.md)
@@ -129,6 +126,9 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::EventSearchRequest](docs/EventSearchRequest.md)
  - [SmplkitGeneratedClient::Audit::EventSearchResponse](docs/EventSearchResponse.md)
  - [SmplkitGeneratedClient::Audit::EventSearchScanMeta](docs/EventSearchScanMeta.md)
+ - [SmplkitGeneratedClient::Audit::EventTypeAttributes](docs/EventTypeAttributes.md)
+ - [SmplkitGeneratedClient::Audit::EventTypeListResponse](docs/EventTypeListResponse.md)
+ - [SmplkitGeneratedClient::Audit::EventTypeResource](docs/EventTypeResource.md)
  - [SmplkitGeneratedClient::Audit::Forwarder](docs/Forwarder.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDelivery](docs/ForwarderDelivery.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDeliveryListLinks](docs/ForwarderDeliveryListLinks.md)

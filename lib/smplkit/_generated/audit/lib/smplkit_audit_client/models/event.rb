@@ -17,7 +17,7 @@ module SmplkitGeneratedClient::Audit
   # An audit event — a record that something happened, attributed to an actor and a resource.  When recording a snapshot of the resource at the time of the event, place it inside `data`. smplkit's own integrations nest it under `data.snapshot`, but the slot is yours to use however you like.
   class Event < ApiModelBase
     # What happened, e.g. `user.created`. Any non-empty string.
-    attr_accessor :action
+    attr_accessor :event_type
 
     # Kind of resource the event is about, e.g. `user`. Any non-empty string.
     attr_accessor :resource_type
@@ -55,7 +55,7 @@ module SmplkitGeneratedClient::Audit
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'action' => :'action',
+        :'event_type' => :'event_type',
         :'resource_type' => :'resource_type',
         :'resource_id' => :'resource_id',
         :'description' => :'description',
@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::Audit
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'action' => :'String',
+        :'event_type' => :'String',
         :'resource_type' => :'String',
         :'resource_id' => :'String',
         :'description' => :'String',
@@ -127,10 +127,10 @@ module SmplkitGeneratedClient::Audit
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'action')
-        self.action = attributes[:'action']
+      if attributes.key?(:'event_type')
+        self.event_type = attributes[:'event_type']
       else
-        self.action = nil
+        self.event_type = nil
       end
 
       if attributes.key?(:'resource_type')
@@ -191,12 +191,12 @@ module SmplkitGeneratedClient::Audit
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @action.nil?
-        invalid_properties.push('invalid value for "action", action cannot be nil.')
+      if @event_type.nil?
+        invalid_properties.push('invalid value for "event_type", event_type cannot be nil.')
       end
 
-      if @action.to_s.length < 1
-        invalid_properties.push('invalid value for "action", the character length must be greater than or equal to 1.')
+      if @event_type.to_s.length < 1
+        invalid_properties.push('invalid value for "event_type", the character length must be greater than or equal to 1.')
       end
 
       if @resource_type.nil?
@@ -222,8 +222,8 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @action.nil?
-      return false if @action.to_s.length < 1
+      return false if @event_type.nil?
+      return false if @event_type.to_s.length < 1
       return false if @resource_type.nil?
       return false if @resource_type.to_s.length < 1
       return false if @resource_id.nil?
@@ -232,17 +232,17 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] action Value to be assigned
-    def action=(action)
-      if action.nil?
-        fail ArgumentError, 'action cannot be nil'
+    # @param [Object] event_type Value to be assigned
+    def event_type=(event_type)
+      if event_type.nil?
+        fail ArgumentError, 'event_type cannot be nil'
       end
 
-      if action.to_s.length < 1
-        fail ArgumentError, 'invalid value for "action", the character length must be greater than or equal to 1.'
+      if event_type.to_s.length < 1
+        fail ArgumentError, 'invalid value for "event_type", the character length must be greater than or equal to 1.'
       end
 
-      @action = action
+      @event_type = event_type
     end
 
     # Custom attribute writer method with validation
@@ -278,7 +278,7 @@ module SmplkitGeneratedClient::Audit
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          action == o.action &&
+          event_type == o.event_type &&
           resource_type == o.resource_type &&
           resource_id == o.resource_id &&
           description == o.description &&
@@ -301,7 +301,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [action, resource_type, resource_id, description, occurred_at, actor_type, actor_id, actor_label, data, do_not_forward, created_at, idempotency_key].hash
+      [event_type, resource_type, resource_id, description, occurred_at, actor_type, actor_id, actor_label, data, do_not_forward, created_at, idempotency_key].hash
     end
 
     # Builds the object from hash

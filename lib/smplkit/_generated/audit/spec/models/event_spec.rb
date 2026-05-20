@@ -27,7 +27,7 @@ describe SmplkitGeneratedClient::Audit::Event do
     end
   end
 
-  describe 'test attribute "action"' do
+  describe 'test attribute "event_type"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

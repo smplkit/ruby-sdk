@@ -51,7 +51,7 @@ describe 'EventsApi' do
   # @option opts [String] :filter_occurred_at 
   # @option opts [String] :filter_actor_type 
   # @option opts [String] :filter_actor_id 
-  # @option opts [String] :filter_action 
+  # @option opts [String] :filter_event_type 
   # @option opts [String] :filter_resource_type 
   # @option opts [String] :filter_resource_id 
   # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
