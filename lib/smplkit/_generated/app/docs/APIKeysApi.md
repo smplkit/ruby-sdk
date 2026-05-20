@@ -224,7 +224,7 @@ end
 
 List API Keys
 
-List all API keys for the authenticated account.
+List all API keys for the authenticated account. `filter[search]` does a case-insensitive substring match against the API key `name`.
 
 ### Examples
 
@@ -240,6 +240,7 @@ end
 api_instance = SmplkitGeneratedClient::App::APIKeysApi.new
 opts = {
   filter_status: 'filter_status_example', # String | 
+  filter_search: 'filter_search_example', # String | Case-insensitive substring match against the API key `name`.
   sort: 'created_at', # String | Field to sort by. Prefix with `-` for descending order. Default: `name`. Allowed values: `created_at`, `-created_at`, `expires_at`, `-expires_at`, `last_used_at`, `-last_used_at`, `name`, `-name`, `status`, `-status`.
   page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
   page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
@@ -278,6 +279,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **filter_status** | **String** |  | [optional] |
+| **filter_search** | **String** | Case-insensitive substring match against the API key &#x60;name&#x60;. | [optional] |
 | **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;expires_at&#x60;, &#x60;-expires_at&#x60;, &#x60;last_used_at&#x60;, &#x60;-last_used_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;. | [optional][default to &#39;name&#39;] |
 | **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
 | **page_size** | **Integer** | Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional][default to 1000] |

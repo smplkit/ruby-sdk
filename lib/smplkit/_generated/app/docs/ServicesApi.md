@@ -223,7 +223,7 @@ end
 
 List Services
 
-List all services for the authenticated account.
+List all services for the authenticated account. `filter[search]` does a case-insensitive substring match against the service `key` and `name`.
 
 ### Examples
 
@@ -238,6 +238,7 @@ end
 
 api_instance = SmplkitGeneratedClient::App::ServicesApi.new
 opts = {
+  filter_search: 'filter_search_example', # String | Case-insensitive substring match against the service `key` and `name`. A service is returned if either field contains the search term.
   sort: 'created_at', # String | Field to sort by. Prefix with `-` for descending order. Default: `name`. Allowed values: `created_at`, `-created_at`, `key`, `-key`, `name`, `-name`, `updated_at`, `-updated_at`.
   page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
   page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
@@ -275,6 +276,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
+| **filter_search** | **String** | Case-insensitive substring match against the service &#x60;key&#x60; and &#x60;name&#x60;. A service is returned if either field contains the search term. | [optional] |
 | **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;name&#39;] |
 | **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
 | **page_size** | **Integer** | Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional][default to 1000] |
