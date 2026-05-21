@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **limit_key** | **String** | Identifier of the metered limit, e.g. &#x60;config.items&#x60; or &#x60;config.inheritance_depth&#x60;. |  |
+| **limit_key** | **String** | Identifier of the metered limit, e.g. &#x60;config.managed_configurations&#x60; or &#x60;config.inheritance_depth&#x60;. |  |
 | **period** | **String** | Period the counter covers. &#x60;current&#x60; is the only supported value. |  |
 | **value** | **Integer** | Count for the period. |  |
 
