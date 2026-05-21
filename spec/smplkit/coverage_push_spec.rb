@@ -472,7 +472,10 @@ RSpec.describe Smplkit::Config::LiveConfigProxy do
 
   let(:resolver) { double("ConfigClient") }
 
-  before { allow(resolver).to receive(:_resolve_now).and_return("api" => { "host" => "x.example.com" }) }
+  before do
+    allow(resolver).to receive(:_resolve_now).and_return("api" => { "host" => "x.example.com" })
+    allow(resolver).to receive(:_invalidate)
+  end
 
   it "[] reads values via the snapshot" do
     expect(proxy["api.host"]).to eq("x.example.com")

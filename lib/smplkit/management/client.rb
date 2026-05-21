@@ -453,6 +453,59 @@ module Smplkit
     class ConfigNamespace
       def initialize(api_client)
         @api = SmplkitGeneratedClient::Config::ConfigsApi.new(api_client)
+        @buffer = Management::ConfigRegistrationBuffer.new
+      end
+
+      # ---------------------------------------------------------------
+      # Discovery API (ADR-037 §2.13/§2.14)
+      # ---------------------------------------------------------------
+
+      # Queue a configuration declaration for bulk-discovery upload.
+      # Called by +ConfigClient#get_or_create+. Threshold-flushes on a
+      # background thread once the pending buffer reaches the flush size.
+      def register_config(config_id, service:, environment:, parent: nil,
+                          name: nil, description: nil)
+        @buffer.declare(config_id, service: service, environment: environment,
+                                   parent: parent, name: name, description: description)
+        trigger_background_flush_if_needed
+      end
+
+      # Queue a config item declaration. +register_config+ must have run
+      # first; items added without a prior declaration are dropped.
+      def register_config_item(config_id, item_key, item_type, default, description = nil)
+        @buffer.add_item(config_id, item_key, item_type, default, description)
+        trigger_background_flush_if_needed
+      end
+
+      def pending_count
+        @buffer.pending_count
+      end
+
+      # Send any pending config declarations to
+      # +POST /api/v1/configs/bulk+. Per ADR-024 §2.9 the bulk endpoint is
+      # plan-limit-exempt; failures here never propagate to customer code.
+      def flush
+        batch = @buffer.drain
+        return if batch.empty?
+
+        items = batch.map do |entry|
+          SmplkitGeneratedClient::Config::ConfigBulkItem.new(
+            id: entry["id"],
+            service: entry["service"],
+            environment: entry["environment"],
+            parent: entry["parent"],
+            name: entry["name"],
+            description: entry["description"],
+            items: bulk_items_to_wire(entry["items"])
+          )
+        end
+        body = SmplkitGeneratedClient::Config::ConfigBulkRequest.new(configs: items)
+        begin
+          ErrorMapping.call { @api.bulk_register_configs(body) }
+        rescue StandardError => e
+          # Fire-and-forget per ADR-024 §2.9.
+          Smplkit.debug("registration", "config bulk register failed: #{e.class}: #{e.message}")
+        end
       end
 
       def list(page_number: nil, page_size: nil)
@@ -583,6 +636,28 @@ module Smplkit
         end
 
         { "id" => config.id, "items" => items_hash, "environments" => environments }
+      end
+
+      def bulk_items_to_wire(items_hash)
+        return nil if items_hash.nil? || items_hash.empty?
+
+        items_hash.transform_values do |def_hash|
+          SmplkitGeneratedClient::Config::ConfigItemDefinition.new(
+            value: def_hash["value"],
+            type: def_hash["type"],
+            description: def_hash["description"]
+          )
+        end
+      end
+
+      def trigger_background_flush_if_needed
+        return unless @buffer.pending_count >= Management::CONFIG_BATCH_FLUSH_SIZE
+
+        Thread.new do
+          flush
+        rescue StandardError => e
+          Smplkit.debug("registration", "threshold config flush failed: #{e.class}: #{e.message}")
+        end
       end
     end
 
