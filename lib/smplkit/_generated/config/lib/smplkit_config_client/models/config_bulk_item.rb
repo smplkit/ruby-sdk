@@ -14,43 +14,39 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Config
-  # A named bag of configuration items, optionally inheriting from another config.  Items are typed key/value pairs (`STRING`, `NUMBER`, `BOOLEAN`, `JSON`). Configs may declare per-environment overrides for any item declared on the config itself or anywhere in its inheritance chain; resolving a config against an environment merges the chain top-down and then applies the matching overrides.
-  class Config < ApiModelBase
-    # Human-readable name for the config.
+  # One config declaration reported by an SDK during bulk registration.  Each item declares an entire config from code — the config's key, optional parent reference, and the items the calling code uses with their declared types, default values, and descriptions.
+  class ConfigBulkItem < ApiModelBase
+    # Config key as declared in code. URL-safe and stable for the lifetime of the config.
+    attr_accessor :id
+
+    # Display name. Defaults to a humanized version of the `id` when omitted.
     attr_accessor :name
 
-    # Optional human-readable description of what this config holds.
+    # Optional human-readable description of the config.
     attr_accessor :description
 
-    # Key of another config to inherit items from. Inherited items appear as if declared on this config; locally declared items with the same key shadow them. Omit or set to `null` for a standalone config with no parent.
+    # Parent config key. Used only when creating a new (discovered) config. Ignored on subsequent observations of an existing config — discovery never modifies parent on a config that already exists.
     attr_accessor :parent
 
-    # Map of item keys to item definitions declared on this config. Keys must be unique within the config; declared types are immutable once set and must match any type declared for the same key on an ancestor.
+    # Items declared by the SDK with their types, defaults, and descriptions. Used to populate items on a newly-discovered config; ignored on subsequent observations of an existing config.
     attr_accessor :items
 
-    # Map of environment keys to per-environment override sets. An environment override applies when this config is resolved against that environment.
-    attr_accessor :environments
+    # Service reporting the declaration. Defaults to `unknown`.
+    attr_accessor :service
 
-    # Whether this config is admin-managed (`true`) or auto-discovered by an SDK and not yet claimed (`false`). Configs created through the console or `POST /api/v1/configs` are always managed. Configs registered via `POST /api/v1/configs/bulk` land unmanaged. Setting this field to `true` on a PUT promotes a discovered config to managed, which consumes a slot of the `config.managed_configurations` entitlement.
-    attr_accessor :managed
-
-    # When the config was created.
-    attr_accessor :created_at
-
-    # When the config was last modified.
-    attr_accessor :updated_at
+    # Environment reporting the declaration. Defaults to `unknown`.
+    attr_accessor :environment
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'id' => :'id',
         :'name' => :'name',
         :'description' => :'description',
         :'parent' => :'parent',
         :'items' => :'items',
-        :'environments' => :'environments',
-        :'managed' => :'managed',
-        :'created_at' => :'created_at',
-        :'updated_at' => :'updated_at'
+        :'service' => :'service',
+        :'environment' => :'environment'
       }
     end
 
@@ -67,27 +63,25 @@ module SmplkitGeneratedClient::Config
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'id' => :'String',
         :'name' => :'String',
         :'description' => :'String',
         :'parent' => :'String',
         :'items' => :'Hash<String, ConfigItemDefinition>',
-        :'environments' => :'Hash<String, EnvironmentOverride>',
-        :'managed' => :'Boolean',
-        :'created_at' => :'Time',
-        :'updated_at' => :'Time'
+        :'service' => :'String',
+        :'environment' => :'String'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'name',
         :'description',
         :'parent',
         :'items',
-        :'environments',
-        :'managed',
-        :'created_at',
-        :'updated_at'
+        :'service',
+        :'environment'
       ])
     end
 
@@ -95,22 +89,26 @@ module SmplkitGeneratedClient::Config
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Config::Config` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Config::ConfigBulkItem` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Config::Config`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Config::ConfigBulkItem`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
+      if attributes.key?(:'id')
+        self.id = attributes[:'id']
+      else
+        self.id = nil
+      end
+
       if attributes.key?(:'name')
         self.name = attributes[:'name']
-      else
-        self.name = nil
       end
 
       if attributes.key?(:'description')
@@ -127,22 +125,12 @@ module SmplkitGeneratedClient::Config
         end
       end
 
-      if attributes.key?(:'environments')
-        if (value = attributes[:'environments']).is_a?(Hash)
-          self.environments = value
-        end
+      if attributes.key?(:'service')
+        self.service = attributes[:'service']
       end
 
-      if attributes.key?(:'managed')
-        self.managed = attributes[:'managed']
-      end
-
-      if attributes.key?(:'created_at')
-        self.created_at = attributes[:'created_at']
-      end
-
-      if attributes.key?(:'updated_at')
-        self.updated_at = attributes[:'updated_at']
+      if attributes.key?(:'environment')
+        self.environment = attributes[:'environment']
       end
     end
 
@@ -151,12 +139,8 @@ module SmplkitGeneratedClient::Config
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @name.nil?
-        invalid_properties.push('invalid value for "name", name cannot be nil.')
-      end
-
-      if @name.to_s.length > 255
-        invalid_properties.push('invalid value for "name", the character length must be smaller than or equal to 255.')
+      if @id.nil?
+        invalid_properties.push('invalid value for "id", id cannot be nil.')
       end
 
       if !@description.nil? && @description.to_s.length > 1000
@@ -170,24 +154,19 @@ module SmplkitGeneratedClient::Config
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @name.nil?
-      return false if @name.to_s.length > 255
+      return false if @id.nil?
       return false if !@description.nil? && @description.to_s.length > 1000
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] name Value to be assigned
-    def name=(name)
-      if name.nil?
-        fail ArgumentError, 'name cannot be nil'
+    # @param [Object] id Value to be assigned
+    def id=(id)
+      if id.nil?
+        fail ArgumentError, 'id cannot be nil'
       end
 
-      if name.to_s.length > 255
-        fail ArgumentError, 'invalid value for "name", the character length must be smaller than or equal to 255.'
-      end
-
-      @name = name
+      @id = id
     end
 
     # Custom attribute writer method with validation
@@ -205,14 +184,13 @@ module SmplkitGeneratedClient::Config
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          id == o.id &&
           name == o.name &&
           description == o.description &&
           parent == o.parent &&
           items == o.items &&
-          environments == o.environments &&
-          managed == o.managed &&
-          created_at == o.created_at &&
-          updated_at == o.updated_at
+          service == o.service &&
+          environment == o.environment
     end
 
     # @see the `==` method
@@ -224,7 +202,7 @@ module SmplkitGeneratedClient::Config
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, description, parent, items, environments, managed, created_at, updated_at].hash
+      [id, name, description, parent, items, service, environment].hash
     end
 
     # Builds the object from hash

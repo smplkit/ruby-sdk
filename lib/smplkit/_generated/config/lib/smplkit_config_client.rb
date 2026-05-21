@@ -19,6 +19,9 @@ require 'smplkit_config_client/configuration'
 
 # Models
 require 'smplkit_config_client/models/config'
+require 'smplkit_config_client/models/config_bulk_item'
+require 'smplkit_config_client/models/config_bulk_request'
+require 'smplkit_config_client/models/config_bulk_response'
 require 'smplkit_config_client/models/config_item_definition'
 require 'smplkit_config_client/models/config_item_override'
 require 'smplkit_config_client/models/config_list_response'
