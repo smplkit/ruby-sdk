@@ -19,6 +19,74 @@ module SmplkitGeneratedClient::Config
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
+    # Bulk Register Configs
+    # Register configs declared by an SDK.  For each item in the batch: - If no config with that key exists, create one with ``managed=false``   (auto-discovered) using the declared items, parent, name, and   description. - If a config with that key already exists, leave the config row   untouched (per ADR-024 §2.9). - Either way, upsert a ``config_source`` row for ``(config, service,   environment)`` and refresh its ``last_seen`` timestamp.  Per ADR-022 §2.11 rule 2 this endpoint never enforces ``config.managed_configurations`` — discovered configs do not consume a managed slot.
+    # @param config_bulk_request [ConfigBulkRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [ConfigBulkResponse]
+    def bulk_register_configs(config_bulk_request, opts = {})
+      data, _status_code, _headers = bulk_register_configs_with_http_info(config_bulk_request, opts)
+      data
+    end
+
+    # Bulk Register Configs
+    # Register configs declared by an SDK.  For each item in the batch: - If no config with that key exists, create one with &#x60;&#x60;managed&#x3D;false&#x60;&#x60;   (auto-discovered) using the declared items, parent, name, and   description. - If a config with that key already exists, leave the config row   untouched (per ADR-024 §2.9). - Either way, upsert a &#x60;&#x60;config_source&#x60;&#x60; row for &#x60;&#x60;(config, service,   environment)&#x60;&#x60; and refresh its &#x60;&#x60;last_seen&#x60;&#x60; timestamp.  Per ADR-022 §2.11 rule 2 this endpoint never enforces &#x60;&#x60;config.managed_configurations&#x60;&#x60; — discovered configs do not consume a managed slot.
+    # @param config_bulk_request [ConfigBulkRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ConfigBulkResponse, Integer, Hash)>] ConfigBulkResponse data, response status code and response headers
+    def bulk_register_configs_with_http_info(config_bulk_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: ConfigsApi.bulk_register_configs ...'
+      end
+      # verify the required parameter 'config_bulk_request' is set
+      if @api_client.config.client_side_validation && config_bulk_request.nil?
+        fail ArgumentError, "Missing the required parameter 'config_bulk_request' when calling ConfigsApi.bulk_register_configs"
+      end
+      # resource path
+      local_var_path = '/api/v1/configs/bulk'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/vnd.api+json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(config_bulk_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ConfigBulkResponse'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['HTTPBearer']
+
+      new_options = opts.merge(
+        :operation => :"ConfigsApi.bulk_register_configs",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: ConfigsApi#bulk_register_configs\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # Create Config
     # Create a config for this account.  The caller supplies the config's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the config.
     # @param config_request [ConfigRequest] 

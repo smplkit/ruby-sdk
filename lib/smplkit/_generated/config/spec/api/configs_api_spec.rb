@@ -32,6 +32,18 @@ describe 'ConfigsApi' do
     end
   end
 
+  # unit tests for bulk_register_configs
+  # Bulk Register Configs
+  # Register configs declared by an SDK.  For each item in the batch: - If no config with that key exists, create one with &#x60;&#x60;managed&#x3D;false&#x60;&#x60;   (auto-discovered) using the declared items, parent, name, and   description. - If a config with that key already exists, leave the config row   untouched (per ADR-024 §2.9). - Either way, upsert a &#x60;&#x60;config_source&#x60;&#x60; row for &#x60;&#x60;(config, service,   environment)&#x60;&#x60; and refresh its &#x60;&#x60;last_seen&#x60;&#x60; timestamp.  Per ADR-022 §2.11 rule 2 this endpoint never enforces &#x60;&#x60;config.managed_configurations&#x60;&#x60; — discovered configs do not consume a managed slot.
+  # @param config_bulk_request 
+  # @param [Hash] opts the optional parameters
+  # @return [ConfigBulkResponse]
+  describe 'bulk_register_configs test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for create_config
   # Create Config
   # Create a config for this account.  The caller supplies the config&#39;s key as &#x60;data.id&#x60;. Keys are unique within an account and immutable for the lifetime of the config.

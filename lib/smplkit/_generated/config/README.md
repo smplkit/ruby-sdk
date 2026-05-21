@@ -68,14 +68,14 @@ SmplkitGeneratedClient::Config.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Config::ConfigsApi.new
-config_request = SmplkitGeneratedClient::Config::ConfigRequest.new({data: SmplkitGeneratedClient::Config::ConfigResource.new({type: 'config', attributes: SmplkitGeneratedClient::Config::Config.new({name: 'name_example'})})}) # ConfigRequest | 
+config_bulk_request = SmplkitGeneratedClient::Config::ConfigBulkRequest.new({configs: [SmplkitGeneratedClient::Config::ConfigBulkItem.new({id: 'id_example'})]}) # ConfigBulkRequest | 
 
 begin
-  #Create Config
-  result = api_instance.create_config(config_request)
+  #Bulk Register Configs
+  result = api_instance.bulk_register_configs(config_bulk_request)
   p result
 rescue SmplkitGeneratedClient::Config::ApiError => e
-  puts "Exception when calling ConfigsApi->create_config: #{e}"
+  puts "Exception when calling ConfigsApi->bulk_register_configs: #{e}"
 end
 
 ```
@@ -86,6 +86,7 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*SmplkitGeneratedClient::Config::ConfigsApi* | [**bulk_register_configs**](docs/ConfigsApi.md#bulk_register_configs) | **POST** /api/v1/configs/bulk | Bulk Register Configs
 *SmplkitGeneratedClient::Config::ConfigsApi* | [**create_config**](docs/ConfigsApi.md#create_config) | **POST** /api/v1/configs | Create Config
 *SmplkitGeneratedClient::Config::ConfigsApi* | [**delete_config**](docs/ConfigsApi.md#delete_config) | **DELETE** /api/v1/configs/{id} | Delete Config
 *SmplkitGeneratedClient::Config::ConfigsApi* | [**get_config**](docs/ConfigsApi.md#get_config) | **GET** /api/v1/configs/{id} | Get Config
@@ -97,6 +98,9 @@ Class | Method | HTTP request | Description
 ## Documentation for Models
 
  - [SmplkitGeneratedClient::Config::Config](docs/Config.md)
+ - [SmplkitGeneratedClient::Config::ConfigBulkItem](docs/ConfigBulkItem.md)
+ - [SmplkitGeneratedClient::Config::ConfigBulkRequest](docs/ConfigBulkRequest.md)
+ - [SmplkitGeneratedClient::Config::ConfigBulkResponse](docs/ConfigBulkResponse.md)
  - [SmplkitGeneratedClient::Config::ConfigItemDefinition](docs/ConfigItemDefinition.md)
  - [SmplkitGeneratedClient::Config::ConfigItemOverride](docs/ConfigItemOverride.md)
  - [SmplkitGeneratedClient::Config::ConfigListResponse](docs/ConfigListResponse.md)

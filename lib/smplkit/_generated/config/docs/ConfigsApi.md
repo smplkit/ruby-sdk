@@ -4,11 +4,81 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 | ------ | ------------ | ----------- |
+| [**bulk_register_configs**](ConfigsApi.md#bulk_register_configs) | **POST** /api/v1/configs/bulk | Bulk Register Configs |
 | [**create_config**](ConfigsApi.md#create_config) | **POST** /api/v1/configs | Create Config |
 | [**delete_config**](ConfigsApi.md#delete_config) | **DELETE** /api/v1/configs/{id} | Delete Config |
 | [**get_config**](ConfigsApi.md#get_config) | **GET** /api/v1/configs/{id} | Get Config |
 | [**list_configs**](ConfigsApi.md#list_configs) | **GET** /api/v1/configs | List Configs |
 | [**update_config**](ConfigsApi.md#update_config) | **PUT** /api/v1/configs/{id} | Update Config |
+
+
+## bulk_register_configs
+
+> <ConfigBulkResponse> bulk_register_configs(config_bulk_request)
+
+Bulk Register Configs
+
+Register configs declared by an SDK.  For each item in the batch: - If no config with that key exists, create one with ``managed=false``   (auto-discovered) using the declared items, parent, name, and   description. - If a config with that key already exists, leave the config row   untouched (per ADR-024 §2.9). - Either way, upsert a ``config_source`` row for ``(config, service,   environment)`` and refresh its ``last_seen`` timestamp.  Per ADR-022 §2.11 rule 2 this endpoint never enforces ``config.managed_configurations`` — discovered configs do not consume a managed slot.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_config_client'
+# setup authorization
+SmplkitGeneratedClient::Config.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Config::ConfigsApi.new
+config_bulk_request = SmplkitGeneratedClient::Config::ConfigBulkRequest.new({configs: [SmplkitGeneratedClient::Config::ConfigBulkItem.new({id: 'id_example'})]}) # ConfigBulkRequest | 
+
+begin
+  # Bulk Register Configs
+  result = api_instance.bulk_register_configs(config_bulk_request)
+  p result
+rescue SmplkitGeneratedClient::Config::ApiError => e
+  puts "Error when calling ConfigsApi->bulk_register_configs: #{e}"
+end
+```
+
+#### Using the bulk_register_configs_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<ConfigBulkResponse>, Integer, Hash)> bulk_register_configs_with_http_info(config_bulk_request)
+
+```ruby
+begin
+  # Bulk Register Configs
+  data, status_code, headers = api_instance.bulk_register_configs_with_http_info(config_bulk_request)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <ConfigBulkResponse>
+rescue SmplkitGeneratedClient::Config::ApiError => e
+  puts "Error when calling ConfigsApi->bulk_register_configs_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **config_bulk_request** | [**ConfigBulkRequest**](ConfigBulkRequest.md) |  |  |
+
+### Return type
+
+[**ConfigBulkResponse**](ConfigBulkResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: application/vnd.api+json
+- **Accept**: application/vnd.api+json
 
 
 ## create_config
