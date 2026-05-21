@@ -16,7 +16,7 @@ require 'time'
 module SmplkitGeneratedClient::Audit
   # Usage counter for a single metered limit.
   class UsageAttributes < ApiModelBase
-    # Identifier of the metered limit, e.g. `audit.customer_events_per_month`.
+    # Identifier of the metered limit, e.g. `audit.events_per_month`.
     attr_accessor :limit_key
 
     # Period the counter covers. `current` is the only supported value.
