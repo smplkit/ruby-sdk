@@ -16,7 +16,7 @@ require 'time'
 module SmplkitGeneratedClient::Flags
   # Usage counter for a single metered limit.
   class UsageAttributes < ApiModelBase
-    # Identifier of the metered limit, e.g. `flags.items`.
+    # Identifier of the metered limit, e.g. `flags.managed_flags`.
     attr_accessor :limit_key
 
     # Period the counter covers. `current` is the only supported value.
