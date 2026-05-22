@@ -4,22 +4,32 @@ require "json"
 
 module Smplkit
   # A single error object from the server's JSON:API +errors+ array.
+  #
+  # +code+ is the application-specific machine-readable error code (e.g.
+  # +environment_unmanaged+); per JSON:API §7 and ADR-014, smplkit sets
+  # this on every error so callers can branch without string-matching
+  # the human +detail+. +meta+ carries additional structured context
+  # (e.g. <tt>{"environment" => "staging"}</tt>).
   class ApiErrorDetail
-    attr_reader :status, :title, :detail, :source
+    attr_reader :status, :code, :title, :detail, :source, :meta
 
-    def initialize(status: nil, title: nil, detail: nil, source: nil)
+    def initialize(status: nil, code: nil, title: nil, detail: nil, source: nil, meta: nil)
       @status = status
+      @code = code
       @title = title
       @detail = detail
       @source = source || {}
+      @meta = meta || {}
     end
 
     def to_h
       h = {}
       h["status"] = @status unless @status.nil?
+      h["code"] = @code unless @code.nil?
       h["title"] = @title unless @title.nil?
       h["detail"] = @detail unless @detail.nil?
       h["source"] = @source unless @source.empty?
+      h["meta"] = @meta unless @meta.empty?
       h
     end
 
@@ -85,11 +95,15 @@ module Smplkit
       raw_errors.filter_map do |item|
         next unless item.is_a?(Hash)
 
+        source = item["source"]
+        meta = item["meta"]
         ApiErrorDetail.new(
           status: item["status"],
+          code: item["code"],
           title: item["title"],
           detail: item["detail"],
-          source: item["source"] || {}
+          source: source.is_a?(Hash) ? source : {},
+          meta: meta.is_a?(Hash) ? meta : {}
         )
       end
     rescue JSON::ParserError, EncodingError

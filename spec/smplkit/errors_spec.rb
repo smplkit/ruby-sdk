@@ -89,5 +89,53 @@ RSpec.describe Smplkit::Errors do
       expect(detail.to_h).to eq("status" => "400")
       expect(JSON.parse(detail.to_json)).to eq("status" => "400")
     end
+
+    it "round-trips code and meta" do
+      # Regression: code + meta were dropped by the parser/model so
+      # callers couldn't branch on machine-readable codes like
+      # environment_unmanaged without string-matching detail.
+      detail = described_class.new(
+        status: "400",
+        code: "environment_unmanaged",
+        title: "Environment is unmanaged",
+        meta: { "environment" => "staging" }
+      )
+      expect(detail.code).to eq("environment_unmanaged")
+      expect(detail.meta).to eq("environment" => "staging")
+      expect(JSON.parse(detail.to_json)).to include(
+        "code" => "environment_unmanaged",
+        "meta" => { "environment" => "staging" }
+      )
+    end
+  end
+
+  describe ".parse_error_body" do
+    it "extracts code and meta from the JSON:API errors array" do
+      body = JSON.generate(
+        "errors" => [
+          {
+            "status" => "400",
+            "code" => "environment_unmanaged",
+            "detail" => "Promote it first.",
+            "meta" => { "environment" => "staging", "count" => 2 }
+          }
+        ]
+      )
+      details = Smplkit::Errors.parse_error_body(body)
+      expect(details.length).to eq(1)
+      expect(details[0].code).to eq("environment_unmanaged")
+      expect(details[0].meta).to eq("environment" => "staging", "count" => 2)
+    end
+
+    it "defensively coerces non-hash source/meta to empty hashes" do
+      body = JSON.generate(
+        "errors" => [
+          { "status" => "400", "title" => "Bad", "source" => "x", "meta" => "y" }
+        ]
+      )
+      details = Smplkit::Errors.parse_error_body(body)
+      expect(details[0].source).to eq({})
+      expect(details[0].meta).to eq({})
+    end
   end
 end
