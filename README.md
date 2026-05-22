@@ -50,7 +50,7 @@ flag = manage.flags.new_boolean_flag(
   "checkout-v2", default: false, description: "Controls rollout"
 )
 flag.add_rule(
-  Smplkit::Rule.new("Enable for enterprise users", environment: "staging")
+  Smplkit::Rule.new("Enable for enterprise users", environment: "production")
                .when("user.plan", Smplkit::Op::EQ, "enterprise")
                .serve(true)
 )
