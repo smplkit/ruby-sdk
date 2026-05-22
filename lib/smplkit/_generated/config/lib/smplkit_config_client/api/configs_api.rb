@@ -280,10 +280,11 @@ module SmplkitGeneratedClient::Config
     end
 
     # List Configs
-    # List configs for this account.  Default sort is `key` ascending. Pass `filter[parent]=<parent_key>` to return only the direct children of a specific config, or `filter[search]=<term>` to filter by a case-insensitive substring against `key` or `name`.
+    # List configs for this account.  Default sort is `key` ascending. Pass `filter[parent]=<parent_key>` to return only the direct children of a specific config, `filter[search]=<term>` to filter by a case-insensitive substring against `key` or `name`, or `filter[managed]=true|false` to restrict to managed or discovered configs respectively.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_parent 
     # @option opts [String] :filter_search Case-insensitive substring match against the config &#x60;key&#x60; and &#x60;name&#x60;. A config is returned if either field contains the search term.
+    # @option opts [Boolean] :filter_managed Restrict the result to managed (&#x60;true&#x60;) or discovered (&#x60;false&#x60;) configs. Omit to return both. Configs created via the console or &#x60;POST /api/v1/configs&#x60; are managed; configs registered via &#x60;POST /api/v1/configs/bulk&#x60; start out discovered.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'key')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -295,10 +296,11 @@ module SmplkitGeneratedClient::Config
     end
 
     # List Configs
-    # List configs for this account.  Default sort is &#x60;key&#x60; ascending. Pass &#x60;filter[parent]&#x3D;&lt;parent_key&gt;&#x60; to return only the direct children of a specific config, or &#x60;filter[search]&#x3D;&lt;term&gt;&#x60; to filter by a case-insensitive substring against &#x60;key&#x60; or &#x60;name&#x60;.
+    # List configs for this account.  Default sort is &#x60;key&#x60; ascending. Pass &#x60;filter[parent]&#x3D;&lt;parent_key&gt;&#x60; to return only the direct children of a specific config, &#x60;filter[search]&#x3D;&lt;term&gt;&#x60; to filter by a case-insensitive substring against &#x60;key&#x60; or &#x60;name&#x60;, or &#x60;filter[managed]&#x3D;true|false&#x60; to restrict to managed or discovered configs respectively.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_parent 
     # @option opts [String] :filter_search Case-insensitive substring match against the config &#x60;key&#x60; and &#x60;name&#x60;. A config is returned if either field contains the search term.
+    # @option opts [Boolean] :filter_managed Restrict the result to managed (&#x60;true&#x60;) or discovered (&#x60;false&#x60;) configs. Omit to return both. Configs created via the console or &#x60;POST /api/v1/configs&#x60; are managed; configs registered via &#x60;POST /api/v1/configs/bulk&#x60; start out discovered.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'key')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -319,6 +321,7 @@ module SmplkitGeneratedClient::Config
       query_params = opts[:query_params] || {}
       query_params[:'filter[parent]'] = opts[:'filter_parent'] if !opts[:'filter_parent'].nil?
       query_params[:'filter[search]'] = opts[:'filter_search'] if !opts[:'filter_search'].nil?
+      query_params[:'filter[managed]'] = opts[:'filter_managed'] if !opts[:'filter_managed'].nil?
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
       query_params[:'page[number]'] = opts[:'page_number'] if !opts[:'page_number'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
