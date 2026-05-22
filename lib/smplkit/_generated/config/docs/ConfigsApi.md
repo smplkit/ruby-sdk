@@ -293,7 +293,7 @@ end
 
 List Configs
 
-List configs for this account.  Default sort is `key` ascending. Pass `filter[parent]=<parent_key>` to return only the direct children of a specific config, or `filter[search]=<term>` to filter by a case-insensitive substring against `key` or `name`.
+List configs for this account.  Default sort is `key` ascending. Pass `filter[parent]=<parent_key>` to return only the direct children of a specific config, `filter[search]=<term>` to filter by a case-insensitive substring against `key` or `name`, or `filter[managed]=true|false` to restrict to managed or discovered configs respectively.
 
 ### Examples
 
@@ -310,6 +310,7 @@ api_instance = SmplkitGeneratedClient::Config::ConfigsApi.new
 opts = {
   filter_parent: 'filter_parent_example', # String | 
   filter_search: 'filter_search_example', # String | Case-insensitive substring match against the config `key` and `name`. A config is returned if either field contains the search term.
+  filter_managed: true, # Boolean | Restrict the result to managed (`true`) or discovered (`false`) configs. Omit to return both. Configs created via the console or `POST /api/v1/configs` are managed; configs registered via `POST /api/v1/configs/bulk` start out discovered.
   sort: 'created_at', # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `created_at`, `-created_at`, `key`, `-key`, `name`, `-name`, `updated_at`, `-updated_at`.
   page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
   page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
@@ -349,6 +350,7 @@ end
 | ---- | ---- | ----------- | ----- |
 | **filter_parent** | **String** |  | [optional] |
 | **filter_search** | **String** | Case-insensitive substring match against the config &#x60;key&#x60; and &#x60;name&#x60;. A config is returned if either field contains the search term. | [optional] |
+| **filter_managed** | **Boolean** | Restrict the result to managed (&#x60;true&#x60;) or discovered (&#x60;false&#x60;) configs. Omit to return both. Configs created via the console or &#x60;POST /api/v1/configs&#x60; are managed; configs registered via &#x60;POST /api/v1/configs/bulk&#x60; start out discovered. | [optional] |
 | **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;key&#39;] |
 | **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
 | **page_size** | **Integer** | Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional][default to 1000] |
