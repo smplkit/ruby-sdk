@@ -49,9 +49,9 @@ begin
   puts "Created flag: #{retry_flag.id}"
 
   fetched = manage.flags.get("checkout-v2")
-  fetched.enable_rules(environment: "staging")
+  fetched.enable_rules(environment: "production")
   fetched.add_rule(
-    Smplkit::Rule.new("Enable for enterprise users", environment: "staging")
+    Smplkit::Rule.new("Enable for enterprise users", environment: "production")
                  .when("user.plan", Smplkit::Op::EQ, "enterprise")
                  .serve(true)
   )

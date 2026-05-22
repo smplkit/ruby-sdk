@@ -16,7 +16,7 @@ require "smplkit"
 app_logger = Logger.new($stdout)
 app_logger.level = Logger::INFO
 
-Smplkit::Client.open(environment: "staging", service: "showcase-service") do |client|
+Smplkit::Client.open(environment: "production", service: "showcase-service") do |client|
   client.logging.install
   client.wait_until_ready
 

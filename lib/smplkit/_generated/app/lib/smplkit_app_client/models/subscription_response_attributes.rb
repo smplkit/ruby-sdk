@@ -16,7 +16,7 @@ require 'time'
 module SmplkitGeneratedClient::App
   # Customer's subscription as returned by the API.
   class SubscriptionResponseAttributes < ApiModelBase
-    # Lifecycle state of the subscription. `ACTIVE` while billing is current; `PAST_DUE` after a failed charge; `CANCELED` once the subscription has ended; `null` when the subscription has no billing object (fully comped at 100% discount).
+    # Lifecycle state of the subscription. `ACTIVE` while billing is current; `PAST_DUE` after a failed charge; `CANCELED` once the subscription has ended; `null` when the subscription is fully discounted (`discount_override_pct` of 100) and has no billing-provider object.
     attr_accessor :status
 
     # ISO-8601 timestamp of the current billing period's start.
@@ -42,7 +42,7 @@ module SmplkitGeneratedClient::App
 
     attr_accessor :next_tier
 
-    # Identifier of the default payment method used to bill this subscription. `null` when the subscription has no associated payment method (e.g. fully comped).
+    # Identifier of the default payment method used to bill this subscription. `null` when the subscription has no associated payment method (e.g. fully discounted via `discount_override_pct` of 100).
     attr_accessor :payment_method
 
     # One entry per product currently enrolled on the subscription.

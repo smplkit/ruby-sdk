@@ -22,7 +22,7 @@ begin
 
   service_cfg = manage.config.new_config("showcase-service-config", parent: defaults,
                                                                     description: "Showcase service overrides")
-  service_cfg.set_string("api.host", "staging.example.com", environment: "staging")
+  service_cfg.set_string("api.host", "prod.example.com", environment: "production")
   service_cfg.set_boolean("feature.beta", false)
   service_cfg.save
   puts "Created config: #{service_cfg.key}"

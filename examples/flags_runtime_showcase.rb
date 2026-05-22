@@ -70,7 +70,7 @@ def make_context(user, account)
   ]
 end
 
-Smplkit::Client.open(environment: "staging", service: "showcase-service") do |client|
+Smplkit::Client.open(environment: "production", service: "showcase-service") do |client|
   setup_runtime_showcase(client.manage)
   client.wait_until_ready
 
@@ -144,7 +144,7 @@ Smplkit::Client.open(environment: "staging", service: "showcase-service") do |cl
   # simulate someone making changes to a flag to trigger listeners
   current_banner = client.manage.flags.get("banner-color")
   current_banner.add_rule(
-    Smplkit::Rule.new("Red for small companies", environment: "staging")
+    Smplkit::Rule.new("Red for small companies", environment: "production")
                  .when("account.employee_count", Smplkit::Op::LT, 50)
                  .serve("red")
   )
