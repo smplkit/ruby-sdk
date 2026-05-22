@@ -83,10 +83,11 @@ describe 'EnvironmentsApi' do
 
   # unit tests for list_environments
   # List Environments
-  # List all environments for the authenticated account. &#x60;filter[search]&#x60; does a case-insensitive substring match against the environment &#x60;key&#x60; and &#x60;name&#x60;. &#x60;filter[classification]&#x60; narrows the result to one classification (&#x60;STANDARD&#x60; or &#x60;AD_HOC&#x60;).
+  # List all environments for the authenticated account. &#x60;filter[search]&#x60; does a case-insensitive substring match against the environment &#x60;key&#x60; and &#x60;name&#x60;. &#x60;filter[classification]&#x60; narrows the result to one classification (&#x60;STANDARD&#x60; or &#x60;AD_HOC&#x60;). &#x60;filter[managed]&#x60; narrows by managed state (&#x60;true&#x60; or &#x60;false&#x60;).
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_search Case-insensitive substring match against the environment &#x60;key&#x60; and &#x60;name&#x60;. An environment is returned if either field contains the search term.
   # @option opts [String] :filter_classification Narrow the result to environments with the given classification. One of &#x60;STANDARD&#x60; or &#x60;AD_HOC&#x60;.
+  # @option opts [Boolean] :filter_managed Narrow the result to managed (&#x60;true&#x60;) or unmanaged (&#x60;false&#x60;) environments. Omit to return both.
   # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;key&#x60;, &#x60;-key&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
   # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error.
   # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error.
