@@ -22,8 +22,11 @@ module SmplkitGeneratedClient::App
     # Display color used by the console to badge the environment. Accepts any CSS color string.
     attr_accessor :color
 
-    # `STANDARD` for environments the customer explicitly manages; `AD_HOC` for environments auto-created from SDK traffic. Case-insensitive on input.
+    # `STANDARD` for environments deliberately created (and shown by default in the environment grid); `AD_HOC` for auto-discovered environments seen in SDK traffic (hidden from the default view). Case-insensitive on input. Independent of the `managed` flag.
     attr_accessor :classification
+
+    # When `true`, per-environment resource values can be set against this environment and it counts toward the account's managed-environments quota. When `false`, the environment is view-only: existing values are displayed for comparison but no new values can be written. Promotion and demotion flip this boolean via `PUT /api/v1/environments/{id}`; promotion is subject to the quota.
+    attr_accessor :managed
 
     # When the environment was created.
     attr_accessor :created_at
@@ -59,6 +62,7 @@ module SmplkitGeneratedClient::App
         :'name' => :'name',
         :'color' => :'color',
         :'classification' => :'classification',
+        :'managed' => :'managed',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at'
       }
@@ -80,6 +84,7 @@ module SmplkitGeneratedClient::App
         :'name' => :'String',
         :'color' => :'String',
         :'classification' => :'String',
+        :'managed' => :'Boolean',
         :'created_at' => :'Time',
         :'updated_at' => :'Time'
       }
@@ -123,7 +128,13 @@ module SmplkitGeneratedClient::App
       if attributes.key?(:'classification')
         self.classification = attributes[:'classification']
       else
-        self.classification = 'AD_HOC'
+        self.classification = 'STANDARD'
+      end
+
+      if attributes.key?(:'managed')
+        self.managed = attributes[:'managed']
+      else
+        self.managed = false
       end
 
       if attributes.key?(:'created_at')
@@ -209,6 +220,7 @@ module SmplkitGeneratedClient::App
           name == o.name &&
           color == o.color &&
           classification == o.classification &&
+          managed == o.managed &&
           created_at == o.created_at &&
           updated_at == o.updated_at
     end
@@ -222,7 +234,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, color, classification, created_at, updated_at].hash
+      [name, color, classification, managed, created_at, updated_at].hash
     end
 
     # Builds the object from hash
