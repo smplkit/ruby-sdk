@@ -34,8 +34,8 @@ describe 'ForwardersApi' do
 
   # unit tests for create_forwarder
   # Create Forwarder
-  # Create a forwarder for this account.
-  # @param forwarder_request 
+  # Create a forwarder for this account.  The caller supplies the forwarder&#39;s key as &#x60;data.id&#x60;. Keys are unique within an account and immutable for the lifetime of the forwarder.
+  # @param forwarder_create_request 
   # @param [Hash] opts the optional parameters
   # @return [ForwarderResponse]
   describe 'create_forwarder test' do
@@ -46,7 +46,7 @@ describe 'ForwardersApi' do
 
   # unit tests for delete_forwarder
   # Delete Forwarder
-  # Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same name.
+  # Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same id.
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
   # @return [nil]

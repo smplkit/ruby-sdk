@@ -20,27 +20,27 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # Create Forwarder
-    # Create a forwarder for this account.
-    # @param forwarder_request [ForwarderRequest] 
+    # Create a forwarder for this account.  The caller supplies the forwarder's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the forwarder.
+    # @param forwarder_create_request [ForwarderCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ForwarderResponse]
-    def create_forwarder(forwarder_request, opts = {})
-      data, _status_code, _headers = create_forwarder_with_http_info(forwarder_request, opts)
+    def create_forwarder(forwarder_create_request, opts = {})
+      data, _status_code, _headers = create_forwarder_with_http_info(forwarder_create_request, opts)
       data
     end
 
     # Create Forwarder
-    # Create a forwarder for this account.
-    # @param forwarder_request [ForwarderRequest] 
+    # Create a forwarder for this account.  The caller supplies the forwarder&#39;s key as &#x60;data.id&#x60;. Keys are unique within an account and immutable for the lifetime of the forwarder.
+    # @param forwarder_create_request [ForwarderCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ForwarderResponse, Integer, Hash)>] ForwarderResponse data, response status code and response headers
-    def create_forwarder_with_http_info(forwarder_request, opts = {})
+    def create_forwarder_with_http_info(forwarder_create_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ForwardersApi.create_forwarder ...'
       end
-      # verify the required parameter 'forwarder_request' is set
-      if @api_client.config.client_side_validation && forwarder_request.nil?
-        fail ArgumentError, "Missing the required parameter 'forwarder_request' when calling ForwardersApi.create_forwarder"
+      # verify the required parameter 'forwarder_create_request' is set
+      if @api_client.config.client_side_validation && forwarder_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'forwarder_create_request' when calling ForwardersApi.create_forwarder"
       end
       # resource path
       local_var_path = '/api/v1/forwarders'
@@ -62,7 +62,7 @@ module SmplkitGeneratedClient::Audit
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(forwarder_request)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(forwarder_create_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ForwarderResponse'
@@ -88,7 +88,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Delete Forwarder
-    # Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same name.
+    # Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same id.
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [nil]
@@ -98,7 +98,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Delete Forwarder
-    # Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same name.
+    # Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same id.
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers

@@ -130,6 +130,8 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::EventTypeListResponse](docs/EventTypeListResponse.md)
  - [SmplkitGeneratedClient::Audit::EventTypeResource](docs/EventTypeResource.md)
  - [SmplkitGeneratedClient::Audit::Forwarder](docs/Forwarder.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderCreateRequest](docs/ForwarderCreateRequest.md)
+ - [SmplkitGeneratedClient::Audit::ForwarderCreateResource](docs/ForwarderCreateResource.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDelivery](docs/ForwarderDelivery.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDeliveryListLinks](docs/ForwarderDeliveryListLinks.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDeliveryListMeta](docs/ForwarderDeliveryListMeta.md)
