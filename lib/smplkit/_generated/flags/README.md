@@ -111,6 +111,8 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Flags::FlagBulkItem](docs/FlagBulkItem.md)
  - [SmplkitGeneratedClient::Flags::FlagBulkRequest](docs/FlagBulkRequest.md)
  - [SmplkitGeneratedClient::Flags::FlagBulkResponse](docs/FlagBulkResponse.md)
+ - [SmplkitGeneratedClient::Flags::FlagCreateRequest](docs/FlagCreateRequest.md)
+ - [SmplkitGeneratedClient::Flags::FlagCreateResource](docs/FlagCreateResource.md)
  - [SmplkitGeneratedClient::Flags::FlagEnvironment](docs/FlagEnvironment.md)
  - [SmplkitGeneratedClient::Flags::FlagListResponse](docs/FlagListResponse.md)
  - [SmplkitGeneratedClient::Flags::FlagRequest](docs/FlagRequest.md)
