@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # JSON:API request envelope for creating or updating a service.
+  # JSON:API request envelope for updating a service.
   class ServiceRequest < ApiModelBase
     attr_accessor :data
 

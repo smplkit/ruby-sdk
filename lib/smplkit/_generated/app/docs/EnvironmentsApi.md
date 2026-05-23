@@ -14,7 +14,7 @@ All URIs are relative to *http://localhost*
 
 ## create_environment
 
-> <EnvironmentResponse> create_environment(environment_request)
+> <EnvironmentResponse> create_environment(environment_create_request)
 
 Create Environment
 
@@ -32,11 +32,11 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::EnvironmentsApi.new
-environment_request = SmplkitGeneratedClient::App::EnvironmentRequest.new({data: SmplkitGeneratedClient::App::EnvironmentResource.new({type: 'environment', attributes: SmplkitGeneratedClient::App::Environment.new({name: 'name_example'})})}) # EnvironmentRequest | 
+environment_create_request = SmplkitGeneratedClient::App::EnvironmentCreateRequest.new({data: SmplkitGeneratedClient::App::EnvironmentCreateResource.new({id: 'id_example', type: 'environment', attributes: SmplkitGeneratedClient::App::Environment.new({name: 'name_example'})})}) # EnvironmentCreateRequest | 
 
 begin
   # Create Environment
-  result = api_instance.create_environment(environment_request)
+  result = api_instance.create_environment(environment_create_request)
   p result
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling EnvironmentsApi->create_environment: #{e}"
@@ -47,12 +47,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<EnvironmentResponse>, Integer, Hash)> create_environment_with_http_info(environment_request)
+> <Array(<EnvironmentResponse>, Integer, Hash)> create_environment_with_http_info(environment_create_request)
 
 ```ruby
 begin
   # Create Environment
-  data, status_code, headers = api_instance.create_environment_with_http_info(environment_request)
+  data, status_code, headers = api_instance.create_environment_with_http_info(environment_create_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <EnvironmentResponse>
@@ -65,7 +65,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **environment_request** | [**EnvironmentRequest**](EnvironmentRequest.md) |  |  |
+| **environment_create_request** | [**EnvironmentCreateRequest**](EnvironmentCreateRequest.md) |  |  |
 
 ### Return type
 

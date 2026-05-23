@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # JSON:API request envelope for creating or updating an environment.
+  # JSON:API request envelope for updating an environment.
   class EnvironmentRequest < ApiModelBase
     attr_accessor :data
 
