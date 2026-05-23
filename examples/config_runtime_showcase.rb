@@ -2,15 +2,11 @@
 
 # Demonstrates the smplkit runtime SDK for Smpl Config.
 #
-# Headline pattern: declare configurations as Ruby Structs, +bind+ them to
-# a config id, then use the returned objects directly — attribute access
-# stays in sync with the server via the SDK's in-memory cache and
-# WebSocket push.
-#
-# Also demonstrates three lower-friction patterns:
-#   - +bind+ with a plain Hash
-#   - +client.config.get(id)+ for dict-like lookup of an entire config
-#   - +client.config.get(id, key, default)+ for one-shot value reads with fallback
+# Prerequisites:
+#   - +gem install smplkit+
+#   - A valid smplkit API key, provided via one of:
+#       - +SMPLKIT_API_KEY+ environment variable
+#       - +~/.smplkit+ configuration file (see SDK docs)
 #
 # Usage:
 #
@@ -19,8 +15,8 @@
 require "smplkit"
 require_relative "setup/config_runtime_setup"
 
-# Example Struct schemas for the typed declarative path. Class names appear
-# in the smplkit console as the config display name.
+# Example Struct configuration classes to showcase how "code-first"
+# configuration management works
 App = Struct.new(:name, keyword_init: true)
 Support = Struct.new(:email, keyword_init: true)
 Plan = Struct.new(:max_seats, :trial_days, :tier, keyword_init: true)
@@ -59,10 +55,8 @@ Smplkit::Client.open(environment: "production", service: "showcase-billing") do 
          "#{event.old_value.inspect} -> #{event.new_value.inspect}"
   end
 
-  # simulate someone making a change in the smplkit console
+  # simulate someone making a change in smplkit console
   simulate_admin_override(client.manage)
-
-  # wait for the WebSocket push to deliver the change
   deadline = Time.now + 10
   sleep(0.1) while Time.now < deadline && billing.plan.max_seats != 25
 
@@ -85,13 +79,14 @@ Smplkit::Client.open(environment: "production", service: "showcase-billing") do 
   raise "Expected db.acme.example" unless db["primary"]["host"] == "db.acme.example"
   raise "Expected 10" unless db["pool_size"] == 10
 
-  # or get a config by ID (raises NotFoundError if not found)
+  # or get a config by ID (raises NotFoundError if not found; pass a
+  # default if you want a fallback)
   common_view = client.config.get("showcase-common")
   puts "showcase-common (via get):"
   common_view.each_pair { |k, v| puts "    #{k} = #{v}" }
   raise "Expected 'Acme SaaS'" unless common_view["app.name"] == "Acme SaaS"
 
-  # or skip the schema and fetch a specific key directly with a default
+  # or skip the schema/Hash and just fetch specific keys directly
   slow_query_ms = client.config.get("showcase-database", "slow_query_threshold_ms", 500)
   puts "showcase-database.slow_query_threshold_ms = #{slow_query_ms}  " \
        "# default used; now registered for visibility"

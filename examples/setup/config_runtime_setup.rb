@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
 # Setup and simulation helpers for config_runtime_showcase.rb.
-#
-# The runtime showcase declares its own configs via +client.config.bind+,
-# so this helper only handles cleanup and the live admin-override
-# simulation that stands in for an operator editing values in the smplkit
-# console.
 
 DEMO_CONFIG_KEYS = %w[
   showcase-billing
