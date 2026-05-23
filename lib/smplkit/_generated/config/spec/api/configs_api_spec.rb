@@ -47,7 +47,7 @@ describe 'ConfigsApi' do
   # unit tests for create_config
   # Create Config
   # Create a config for this account.  The caller supplies the config&#39;s key as &#x60;data.id&#x60;. Keys are unique within an account and immutable for the lifetime of the config.
-  # @param config_request 
+  # @param config_create_request 
   # @param [Hash] opts the optional parameters
   # @return [ConfigResponse]
   describe 'create_config test' do

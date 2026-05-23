@@ -101,6 +101,8 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Config::ConfigBulkItem](docs/ConfigBulkItem.md)
  - [SmplkitGeneratedClient::Config::ConfigBulkRequest](docs/ConfigBulkRequest.md)
  - [SmplkitGeneratedClient::Config::ConfigBulkResponse](docs/ConfigBulkResponse.md)
+ - [SmplkitGeneratedClient::Config::ConfigCreateRequest](docs/ConfigCreateRequest.md)
+ - [SmplkitGeneratedClient::Config::ConfigCreateResource](docs/ConfigCreateResource.md)
  - [SmplkitGeneratedClient::Config::ConfigItemDefinition](docs/ConfigItemDefinition.md)
  - [SmplkitGeneratedClient::Config::ConfigItemOverride](docs/ConfigItemOverride.md)
  - [SmplkitGeneratedClient::Config::ConfigListResponse](docs/ConfigListResponse.md)
