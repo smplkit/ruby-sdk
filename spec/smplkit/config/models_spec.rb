@@ -65,4 +65,42 @@ RSpec.describe Smplkit::Config::Helpers do
       expect(described_class.resolve_chain(chain, "staging")).to eq("api.host" => "default", "feature.beta" => true)
     end
   end
+
+  describe ".build_chain" do
+    let(:parent_cfg) do
+      Smplkit::Config::Config.new(nil, id: "parent-id", key: "parent", parent_id: nil,
+                                       items: [Smplkit::Config::ConfigItem.new(name: "k", value: 1, type: "NUMBER")])
+    end
+    let(:child_cfg) do
+      Smplkit::Config::Config.new(nil, id: "child-id", key: "child", parent_id: "parent-id",
+                                       items: [Smplkit::Config::ConfigItem.new(name: "k", value: 2, type: "NUMBER")])
+    end
+
+    it "walks parent_id pointers across the by_id map" do
+      by_id = { "parent-id" => parent_cfg, "child-id" => child_cfg }
+      chain = described_class.build_chain(child_cfg, by_id)
+      expect(chain.map { |entry| entry["id"] }).to eq(%w[child-id parent-id])
+    end
+
+    it "terminates when the parent is not present in the by_id map" do
+      by_id = { "child-id" => child_cfg } # parent-id intentionally absent
+      chain = described_class.build_chain(child_cfg, by_id)
+      expect(chain.map { |entry| entry["id"] }).to eq(["child-id"])
+    end
+
+    it "treats an empty-string parent_id as no parent" do
+      root = Smplkit::Config::Config.new(nil, id: "x", key: "x", parent_id: "")
+      chain = described_class.build_chain(root, {})
+      expect(chain.map { |entry| entry["id"] }).to eq(["x"])
+    end
+  end
+
+  describe ".config_to_chain_entry" do
+    it "compacts nil item attributes (description, type)" do
+      item = Smplkit::Config::ConfigItem.new(name: "k", value: 1, type: "NUMBER", description: "doc")
+      cfg = Smplkit::Config::Config.new(nil, id: "x", key: "x", items: [item])
+      entry = described_class.config_to_chain_entry(cfg)
+      expect(entry["items"]["k"]).to eq("value" => 1, "type" => "NUMBER", "description" => "doc")
+    end
+  end
 end

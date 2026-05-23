@@ -243,38 +243,7 @@ RSpec.describe Smplkit::Flags::JsonLogicEvaluator do
   end
 end
 
-RSpec.describe Smplkit::Config::ConfigClient do
-  subject(:client) { described_class.new(parent, manage: nil, metrics: nil) }
-
-  let(:transport) { double("ConfigTransport") }
-  let(:ws) do
-    Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k")
-  end
-  let(:parent) do
-    double(_environment: "staging", _service: "svc", _ensure_ws: ws,
-           _config_transport: transport)
-  end
-
-  it "typed_get returns the default when a path step lands on a non-Hash" do
-    allow(transport).to receive(:fetch_chain).and_return([
-                                                           { "id" => "svc",
-                                                             "items" => { "api" => { "value" => "string-not-hash",
-                                                                                     "type" => "STRING" } },
-                                                             "environments" => {} }
-                                                         ])
-    expect(client.get_string("api.host", default: "fallback", config: "svc")).to eq("fallback")
-  end
-
-  it "get_number returns the default when the stored value can't be coerced to Float" do
-    allow(transport).to receive(:fetch_chain).and_return([
-                                                           { "id" => "svc",
-                                                             "items" => { "retries" => { "value" => "abc",
-                                                                                         "type" => "STRING" } },
-                                                             "environments" => {} }
-                                                         ])
-    expect(client.get_number("retries", default: 99, config: "svc")).to eq(99)
-  end
-end
+# ConfigClient coverage lives in spec/smplkit/config/client_spec.rb.
 
 RSpec.describe Smplkit::Logging::LoggingClient do
   subject(:client) do
@@ -320,10 +289,10 @@ RSpec.describe Smplkit::ManagementClient::ConfigNamespace do
   end
   let(:mgmt) { Smplkit::ManagementClient.from_resolved(resolved) }
 
-  it "config_to_chain_entry serializes per-environment overrides" do
+  it "config_to_chain_entry (in Helpers) serializes per-environment overrides" do
     cfg = mgmt.config.new_config("showcase")
     cfg.set_string("api.host", "stg.example.com", environment: "staging")
-    chain_entry = mgmt.config.send(:config_to_chain_entry, cfg)
+    chain_entry = Smplkit::Config::Helpers.config_to_chain_entry(cfg)
     expect(chain_entry["environments"]["staging"]["values"])
       .to eq("api.host" => { "value" => "stg.example.com", "type" => "STRING" })
   end

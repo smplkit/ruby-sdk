@@ -2,142 +2,225 @@
 
 module Smplkit
   module Config
-    # Describes a config change event delivered to +on_change+ listeners.
-    class ConfigChangeEvent
-      attr_reader :key, :source, :deleted
+    # Module-level helpers for the runtime config client. Extracted so they
+    # can be unit-tested without spinning up the full client.
+    module Discovery
+      module_function
 
-      def initialize(key:, source:, deleted: false)
-        @key = key
+      # Map a runtime value to a Config item type. Used both when binding a
+      # Hash/Struct target and when supplying a default to +get(id, key,
+      # default)+. +true+/+false+ are checked first because Ruby's
+      # +Numeric+/+Integer+ tests would not accidentally claim them.
+      def value_to_item_type(value)
+        case value
+        when true, false then "BOOLEAN"
+        when Numeric then "NUMBER"
+        else "STRING"
+        end
+      end
+
+      # Walk a bound target, returning +[key, type, value, description]+
+      # tuples flattened to dot-notation. Nested Hashes / Structs are
+      # descended into; everything else is treated as an opaque leaf.
+      def iter_items(target, prefix: "")
+        if target.is_a?(Hash)
+          iter_hash_items(target, prefix: prefix)
+        elsif target.is_a?(Struct)
+          iter_struct_items(target, prefix: prefix)
+        else
+          []
+        end
+      end
+
+      def iter_hash_items(hash, prefix: "")
+        out = []
+        hash.each do |raw_key, value|
+          flat_key = "#{prefix}#{raw_key}"
+          if value.is_a?(Hash) || value.is_a?(Struct)
+            out.concat(iter_items(value, prefix: "#{flat_key}."))
+          else
+            out << [flat_key, value_to_item_type(value), value, nil]
+          end
+        end
+        out
+      end
+
+      def iter_struct_items(struct, prefix: "")
+        out = []
+        struct.members.each do |member|
+          value = struct[member]
+          flat_key = "#{prefix}#{member}"
+          if value.is_a?(Hash) || value.is_a?(Struct)
+            out.concat(iter_items(value, prefix: "#{flat_key}."))
+          else
+            out << [flat_key, value_to_item_type(value), value, nil]
+          end
+        end
+        out
+      end
+
+      # Apply a server-pushed value to a bound target in place. Walks the
+      # dotted key path to the leaf's parent and assigns the value via
+      # +Hash#[]=+ or +Struct#[]=+. Bails silently if any intermediate is
+      # missing or not a supported container — the server may have items
+      # that don't line up with what the bound target declared.
+      def apply_change_to_target(target, dotted_key, value)
+        parts = dotted_key.split(".")
+        current = walk_to_leaf_parent(target, parts[0..-2])
+        return if current.nil?
+
+        last = parts.last
+        if current.is_a?(Struct)
+          assign_struct_member(current, last, value)
+        elsif current.is_a?(Hash)
+          current[last] = value
+        end
+      end
+
+      def walk_to_leaf_parent(target, parts)
+        current = target
+        parts.each do |part|
+          case current
+          when Struct
+            sym = part.to_sym
+            return nil unless current.members.include?(sym)
+
+            current = current[sym]
+          when Hash
+            return nil unless current.key?(part)
+
+            current = current[part]
+          else
+            return nil
+          end
+        end
+        current
+      end
+
+      def assign_struct_member(struct, name, value)
+        sym = name.to_sym
+        return unless struct.members.include?(sym)
+
+        struct[sym] = value
+      end
+    end
+
+    # Describes a single config value change. Frozen — fields are set at
+    # construction and cannot be mutated afterward.
+    class ConfigChangeEvent
+      attr_reader :config_id, :item_key, :old_value, :new_value, :source
+
+      def initialize(config_id:, item_key:, old_value:, new_value:, source:)
+        @config_id = config_id
+        @item_key = item_key
+        @old_value = old_value
+        @new_value = new_value
         @source = source
-        @deleted = deleted
         freeze
       end
 
-      def deleted? = @deleted
-
       def ==(other)
-        other.is_a?(ConfigChangeEvent) && key == other.key && source == other.source && deleted == other.deleted
+        other.is_a?(ConfigChangeEvent) &&
+          config_id == other.config_id && item_key == other.item_key &&
+          old_value == other.old_value && new_value == other.new_value &&
+          source == other.source
       end
       alias eql? ==
 
-      def hash = [key, source, deleted].hash
+      def hash = [config_id, item_key, old_value, new_value, source].hash
     end
 
-    # A live, dot-accessible view over a resolved configuration.
+    # A live, read-only, dict-like view of a config's resolved values.
     #
-    # Identity-stable per config key (the same instance is returned by
-    # repeat +client.config.get+ / +get_or_create+ calls). Every read goes
-    # through the underlying client's resolved-config cache, so WebSocket
-    # updates are picked up automatically — there is no +subscribe+ step.
+    # Returned by +ConfigClient#get(id)+ (single-arg form). Always reflects
+    # the latest server-pushed state — every read sees current values.
+    #
+    # Supports +[]+, +key?+, +keys+, +values+, +each_pair+, +to_h+, +size+,
+    # and method-style attribute access for keys that don't collide with
+    # built-in method names. Use subscript (+proxy["values"]+) for keys
+    # that do collide.
+    #
+    # For typed access via a Struct schema, use +ConfigClient#bind+ —
+    # bound objects stay live on the same cache, with no proxy indirection.
     class LiveConfigProxy
-      def initialize(client, key)
+      # Methods that live on the proxy itself; never resolved against the
+      # cached values dictionary.
+      OWN_METHODS = %i[config_id keys values each_pair each items to_h size length
+                       key? include? has_key? on_change get].freeze
+
+      def initialize(client, config_id)
         @client = client
-        @key = key
+        @config_id = config_id
       end
 
-      def config_id = @key
+      attr_reader :config_id
 
-      def get(item_key, default = nil)
-        snapshot = current_values
-        return snapshot if item_key.nil?
+      def keys = current_values.keys
+      def values = current_values.values
+      def each_pair(&) = current_values.each_pair(&)
+      alias each each_pair
+      def items = current_values.to_a
+      def to_h = current_values.dup
+      def size = current_values.size
+      alias length size
+      def key?(key) = current_values.key?(key.to_s)
+      alias include? key?
+      alias has_key? key?
 
-        keys = item_key.to_s.split(".")
-        keys.reduce(snapshot) do |scope, k|
-          break default if scope.nil?
-
-          scope.is_a?(Hash) ? scope[k] : default
-        end || default
+      def [](key)
+        current_values[key.to_s]
       end
 
-      def [](item_key)
-        get(item_key)
-      end
-
-      def to_h
-        current_values.dup
-      end
-
-      def refresh
-        # The cache is fully invalidated for this key — the next read
-        # re-resolves from the parent client.
-        @client._invalidate(@key)
-        self
-      end
-
-      # ------------------------------------------------------------------
-      # Typed getters (ADR-037 §2.13)
-      #
-      # Each registers the item (key, type, default, description) on first
-      # call within the process, then returns the resolved value. When the
-      # resolved value can't be coerced to the getter's type — including
-      # the "not yet set on the server" case — the in-code default is
-      # returned and a debug message is logged.
-      # ------------------------------------------------------------------
-
-      def get_bool(item_key, default, description: nil)
-        register_item(item_key, "BOOLEAN", default, description)
-        value = current_values[item_key.to_s]
-        return default unless value.is_a?(TrueClass) || value.is_a?(FalseClass)
-
-        value
-      end
-
-      def get_int(item_key, default, description: nil)
-        register_item(item_key, "NUMBER", default, description)
-        value = current_values[item_key.to_s]
-        return default if value.is_a?(TrueClass) || value.is_a?(FalseClass)
-        return value if value.is_a?(Integer)
-        return value.to_i if value.is_a?(Float) && value == value.floor
-
-        default
-      end
-
-      def get_float(item_key, default, description: nil)
-        register_item(item_key, "NUMBER", default, description)
-        value = current_values[item_key.to_s]
-        return default if value.is_a?(TrueClass) || value.is_a?(FalseClass)
-        return value.to_f if value.is_a?(Numeric)
-
-        default
-      end
-
-      def get_string(item_key, default, description: nil)
-        register_item(item_key, "STRING", default, description)
-        value = current_values[item_key.to_s]
-        value.is_a?(String) ? value : default
-      end
-
-      def get_json(item_key, default, description: nil)
-        register_item(item_key, "JSON", default, description)
-        snap = current_values
-        snap.key?(item_key.to_s) ? snap[item_key.to_s] : default
+      def get(key, default = nil)
+        values = current_values
+        values.key?(key.to_s) ? values[key.to_s] : default
       end
 
       def on_change(item_key = nil, &)
         if item_key.nil?
-          @client.on_change(@key, &)
+          @client.on_change(@config_id, &)
         else
-          @client.on_change_item(@key, item_key.to_s, &)
+          @client.on_change(@config_id, item_key: item_key.to_s, &)
         end
       end
+
+      def respond_to_missing?(name, include_private = false)
+        return true if OWN_METHODS.include?(name)
+
+        current_values.key?(name.to_s) || super
+      end
+
+      def method_missing(name, *args)
+        snapshot = current_values
+        key = name.to_s
+        return snapshot[key] if snapshot.key?(key) && args.empty?
+
+        super
+      end
+
+      def to_s = "#<Smplkit::Config::LiveConfigProxy config_id=#{@config_id.inspect}>"
+      alias inspect to_s
 
       private
 
       def current_values
-        @client._resolve_now(@key)
-      end
-
-      def register_item(item_key, item_type, default, description)
-        @client._observe_item_declaration(@key, item_key.to_s, item_type, default, description)
+        @client._cached_values(@config_id)
       end
     end
 
-    # Synchronous config runtime namespace.
+    # Synchronous runtime client for Smpl Config.
     #
-    # Obtained via +Smplkit::Client#config+. Exposes typed accessors
-    # (+get_string+, +get_number+, +get_boolean+, +get_json+) and runtime
-    # control (+refresh+, +on_change+).
+    # Obtained via +Smplkit::Client#config+. Exposes +#bind+ (the
+    # recommended declarative API), +#get+ (lookup-only escape hatch),
+    # +#refresh+, and +#on_change+. Management/CRUD lives on
+    # +Smplkit::Client#manage.config+.
     class ConfigClient
+      # Sentinel used to distinguish "argument not supplied" from "argument
+      # supplied as nil" on +#get+. A frozen +Object+ is sufficient — we
+      # only ever identity-compare with +equal?+.
+      MISSING = Object.new.freeze
+      private_constant :MISSING
+
       def initialize(parent, manage:, metrics:)
         @parent = parent
         @manage = manage
@@ -145,137 +228,149 @@ module Smplkit
         @environment = parent._environment
         @service = parent._service
 
-        @snapshots = {}
-        @raw_chains = {}
-        @proxies = {}
-        @global_listeners = []
-        @key_listeners = Hash.new { |h, k| h[k] = [] }
-        @item_listeners = Hash.new { |h, k| h[k] = Hash.new { |hh, kk| hh[kk] = [] } }
+        @config_cache = {}        # config_key -> { item_key => resolved_value }
+        @raw_config_store = {}    # config_key -> Smplkit::Config::Config
+        @proxies = {}             # config_key -> LiveConfigProxy
+        @bindings = {}            # config_key -> Hash | Struct (bound target)
+        @listeners = []           # [callback, config_id_or_nil, item_key_or_nil]
         @connected = false
         @lock = Mutex.new
+        @ws_manager = nil
       end
 
+      # Eagerly initialize the runtime. Flushes any buffered discovery
+      # declarations, fetches the full config list, resolves values for the
+      # SDK's current environment into the local cache, and subscribes to
+      # +config_changed+ / +config_deleted+ / +configs_changed+ events on
+      # the shared WebSocket.
+      #
+      # Idempotent — safe to call multiple times. Invoked automatically on
+      # the first +#get+ or +#bind+ call.
       def start
         return if @connected
 
         @environment = @parent._environment
 
-        # Per ADR-037 §2.14: flush any buffered discovery declarations
-        # BEFORE the lazy init touches the runtime so newly-declared
-        # configs are visible to the very first +get+. The flush itself
-        # swallows server/network failures.
-        @manage&.config&.flush
+        # Per ADR-037 §2.14: flush pending discovery declarations BEFORE
+        # the initial fetch so newly-declared configs show up in the cache.
+        begin
+          @manage&.config&.flush
+        rescue StandardError => e
+          Smplkit.debug("config", "pre-start discovery flush failed: #{e.class}: #{e.message}")
+        end
+
+        do_refresh("initial")
+        @connected = true
 
         @ws_manager = @parent._ensure_ws
         @ws_manager.on("config_changed") { |data| handle_config_changed(data) }
         @ws_manager.on("config_deleted") { |data| handle_config_deleted(data) }
-        @connected = true
+        @ws_manager.on("configs_changed") { |data| handle_configs_changed(data) }
       end
 
-      def get(config_key, model_class = nil)
-        start unless @connected
-
-        snapshot = resolve(config_key)
-        raise Smplkit::NotFoundError, "Config #{config_key.inspect} not found" if snapshot.nil?
-        return snapshot if model_class.nil?
-
-        model_class.new(snapshot)
-      end
-
-      # Declare a configuration from code; return a live, dict-like view.
+      # Bind a Hash or Struct to a config id; return the same object back, live.
       #
-      # Idempotent — repeat calls with the same +id+ return the same
-      # +LiveConfigProxy+ instance. The first call queues a discovery
-      # payload (the config and any items declared via typed getters on
-      # the returned handle) for upload to +POST /api/v1/configs/bulk+ on
-      # next flush. Unlike +#get+, this method does not raise +NotFoundError+
-      # when the id is absent — discovery handles that case.
-      def get_or_create(config_id, parent: nil, name: nil, description: nil)
-        parent_id =
-          case parent
-          when nil then nil
-          when String then parent
-          when LiveConfigProxy then parent.config_id
-          else
-            raise ArgumentError,
-                  "parent must be a String id or LiveConfigProxy; got #{parent.class.name}"
-          end
-        _observe_config_declaration(config_id, parent: parent_id, name: name, description: description)
-        start unless @connected
-        cached_proxy(config_id)
-      end
-
-      def get_string(item_key, default: nil, config: nil)
-        typed_get(item_key, default, config) { |v| v.is_a?(String) ? v : v.to_s }
-      end
-
-      def get_number(item_key, default: nil, config: nil)
-        typed_get(item_key, default, config) do |v|
-          v.is_a?(Numeric) ? v : Float(v)
-        rescue StandardError
-          default
+      # Declarative, code-first API. Two flavors:
+      #
+      # * +Hash+: keys present are leaves to register, with their values as
+      #   the in-code defaults. Nested Hashes flatten to dot-notation. Keys
+      #   the caller wants to inherit from +parent:+ are simply omitted.
+      # * +Struct+: every member is registered as an explicit override.
+      #   Ruby Structs do not track which members were "explicitly set" vs
+      #   defaulted, so there is no Hash-style omit-to-inherit. For
+      #   omit-to-inherit, use a Hash target.
+      #
+      # On first call the schema and values are registered with the server.
+      # After the local cache is populated, any server-side overrides for
+      # this config are applied to the bound object in place. WebSocket
+      # events thereafter mutate the bound object in place — readers always
+      # see the current resolved value with no indirection.
+      #
+      # Idempotent. Repeat calls with the same +id+ return the
+      # originally-bound object; the new +config+ argument is ignored.
+      def bind(id, target, parent: nil)
+        unless target.is_a?(Hash) || target.is_a?(Struct)
+          raise TypeError, "bind() requires a Hash or Struct; got #{target.class.name}"
         end
+
+        return @bindings[id] if @bindings.key?(id)
+
+        parent_id = resolve_parent_id(parent)
+
+        if target.is_a?(Struct)
+          class_name = target.class.name
+          config_name = class_name&.split("::")&.last
+        else
+          config_name = nil
+        end
+
+        _observe_config_declaration(id, parent: parent_id, name: config_name, description: nil)
+
+        Discovery.iter_items(target).each do |item_key, item_type, value, description|
+          _observe_item_declaration(id, item_key, item_type, value, description)
+        end
+
+        # Register the binding BEFORE start() so any WS dispatch that fires
+        # during the initial fetch finds it.
+        @bindings[id] = target
+
+        start unless @connected
+        sync_target_from_cache(target, id)
+        target
       end
 
-      def get_boolean(item_key, default: nil, config: nil)
-        typed_get(item_key, default, config) { |v| !!v }
-      end
-
-      def get_json(item_key, default: nil, config: nil)
-        typed_get(item_key, default, config) { |v| v }
-      end
-
-      def live(config_key)
+      # Read a config (full) or a single value within a config.
+      #
+      # Three forms dispatched by argument count:
+      #
+      #   get("id")                    # LiveConfigProxy (raises NotFoundError)
+      #   get("id", "key")             # value (raises NotFoundError / KeyError)
+      #   get("id", "key", default)    # value or default; auto-registers (never raises)
+      def get(id, key = MISSING, default = MISSING)
         start unless @connected
 
-        cached_proxy(config_key)
+        return get_full_config(id) if key.equal?(MISSING)
+
+        get_single_value(id, key.to_s, default)
       end
 
-      def on_change(config_key = nil, &block)
+      # Register a change listener.
+      #
+      # Three forms:
+      #
+      #   client.config.on_change { |event| ... }                          # global
+      #   client.config.on_change("id") { |event| ... }                    # config-scoped
+      #   client.config.on_change("id", item_key: "key") { |event| ... }   # item-scoped
+      def on_change(config_id = nil, item_key: nil, &block)
         raise ArgumentError, "on_change requires a block" unless block
 
-        if config_key.nil?
-          @global_listeners << block
-        else
-          @key_listeners[config_key] << block
-        end
+        @listeners << [block, config_id, item_key&.to_s]
         block
       end
 
-      def on_change_item(config_key, item_key, &block)
-        raise ArgumentError, "on_change_item requires a block" unless block
-
-        @item_listeners[config_key][item_key.to_s] << block
-        block
-      end
-
+      # Re-fetch all configs and update resolved values, firing change
+      # listeners for anything that differs from the previous state.
       def refresh
-        @lock.synchronize do
-          @snapshots.clear
-          @raw_chains.clear
-        end
-        fire_change_listeners_all("manual")
-      end
-
-      def _resolve_now(config_key)
-        resolve(config_key) || {}
+        start unless @connected
+        do_refresh("manual")
       end
 
       def _close
-        # No durable resources; symmetry stub.
+        # No durable resources owned by this sub-client; the parent client
+        # tears down the WebSocket and management transports.
       end
 
-      # Discard cached state for +config_key+; the next resolve will refetch.
-      def _invalidate(config_key)
+      # Internal: return (a copy of) the resolved values for a config id.
+      # Used by +LiveConfigProxy+.
+      def _cached_values(config_id)
         @lock.synchronize do
-          @snapshots.delete(config_key)
-          @raw_chains.delete(config_key)
+          (@config_cache[config_id] || {}).dup
         end
       end
 
       # Internal: queue a config declaration with the management buffer.
       def _observe_config_declaration(config_id, parent:, name:, description:)
-        @manage.config.register_config(
+        @manage&.config&.register_config(
           config_id,
           service: @service,
           environment: @environment,
@@ -287,123 +382,177 @@ module Smplkit
 
       # Internal: queue a config item declaration with the management buffer.
       def _observe_item_declaration(config_id, item_key, item_type, default, description)
-        @manage.config.register_config_item(config_id, item_key, item_type, default, description)
+        @manage&.config&.register_config_item(config_id, item_key, item_type, default, description)
       end
 
       private
 
-      def cached_proxy(config_key)
+      def resolve_parent_id(parent)
+        return nil if parent.nil?
+
+        @bindings.each { |cid, bound| return cid if bound.equal?(parent) }
+        raise ArgumentError,
+              "bind(): parent must be an object previously returned from client.config.bind(). " \
+              "Bind the parent first."
+      end
+
+      def get_full_config(id)
         @lock.synchronize do
-          @proxies[config_key] ||= LiveConfigProxy.new(self, config_key)
+          raise Smplkit::NotFoundError, "Config with id '#{id}' not found" unless @config_cache.key?(id)
+        end
+        @metrics&.record("config.resolutions", unit: "resolutions", dimensions: { "config" => id })
+        cached_proxy(id)
+      end
+
+      def get_single_value(id, key, default)
+        has_default = !default.equal?(MISSING)
+        if has_default
+          _observe_config_declaration(id, parent: nil, name: nil, description: nil)
+          _observe_item_declaration(id, key, Discovery.value_to_item_type(default), default, nil)
+        end
+
+        values = @lock.synchronize { @config_cache[id]&.dup }
+        if values.nil?
+          return default if has_default
+
+          raise Smplkit::NotFoundError, "Config with id '#{id}' not found"
+        end
+        unless values.key?(key)
+          return default if has_default
+
+          raise KeyError, "Config item '#{key}' not found in config '#{id}'"
+        end
+        values[key]
+      end
+
+      def cached_proxy(config_id)
+        @lock.synchronize do
+          @proxies[config_id] ||= LiveConfigProxy.new(self, config_id)
         end
       end
 
-      def typed_get(item_key, default, config_key)
-        snapshot = config_key ? resolve(config_key) : merged_snapshot
-        key = item_key.to_s
-        # Items live under flat dotted keys (e.g. +"api.host"+ — not nested
-        # +api → host+). Match Python's +current_values.get(key)+ behavior.
-        value = snapshot[key]
-        if value.nil? && snapshot.is_a?(Hash)
-          # Fallback: support callers that constructed an explicitly-nested
-          # snapshot (rare — typed model bindings only).
-          parts = key.split(".")
-          if parts.length > 1
-            value = parts.reduce(snapshot) do |scope, k|
-              break nil unless scope.is_a?(Hash)
+      def sync_target_from_cache(target, config_id)
+        cache = @lock.synchronize { (@config_cache[config_id] || {}).dup }
+        cache.each do |dotted_key, value|
+          Discovery.apply_change_to_target(target, dotted_key, value)
+        end
+      end
 
-              scope[k]
-            end
+      def do_refresh(source)
+        configs = @manage.config.list
+        new_cache, new_store = resolve_all(configs)
+        old_cache = nil
+        @lock.synchronize do
+          old_cache = @config_cache
+          @config_cache = new_cache
+          @raw_config_store = new_store
+        end
+        fire_change_listeners(old_cache, new_cache, source: source)
+      end
+
+      def resolve_all(configs)
+        by_id = configs.to_h { |c| [c.id, c] }
+        new_cache = {}
+        new_store = {}
+        configs.each do |cfg|
+          chain = Helpers.build_chain(cfg, by_id)
+          new_cache[cfg.key] = Helpers.resolve_chain(chain, @environment)
+          new_store[cfg.key] = cfg
+        end
+        [new_cache, new_store]
+      end
+
+      def fire_change_listeners(old_cache, new_cache, source:)
+        all_config_ids = old_cache.keys | new_cache.keys
+        all_config_ids.each do |cfg_id|
+          old_items = old_cache[cfg_id] || {}
+          new_items = new_cache[cfg_id] || {}
+          target = @bindings[cfg_id]
+          fire_config_changes(cfg_id, old_items, new_items, target, source)
+        end
+      end
+
+      def fire_config_changes(cfg_id, old_items, new_items, target, source)
+        all_keys = old_items.keys | new_items.keys
+        all_keys.each do |i_key|
+          old_val = old_items[i_key]
+          new_val = new_items[i_key]
+          next if old_val == new_val
+
+          Discovery.apply_change_to_target(target, i_key, new_val) unless target.nil?
+          @metrics&.record("config.changes", unit: "changes", dimensions: { "config" => cfg_id })
+          event = ConfigChangeEvent.new(
+            config_id: cfg_id, item_key: i_key,
+            old_value: old_val, new_value: new_val, source: source
+          )
+          dispatch_event(event, cfg_id, i_key)
+        end
+      end
+
+      def dispatch_event(event, cfg_id, i_key)
+        @listeners.each do |callback, ck_filter, ik_filter|
+          next if !ck_filter.nil? && ck_filter != cfg_id
+          next if !ik_filter.nil? && ik_filter != i_key
+
+          begin
+            callback.call(event)
+          rescue StandardError => e
+            Smplkit.debug("config", "on_change listener raised: #{e.class}: #{e.message}")
           end
         end
-        return default if value.nil?
-
-        block_given? ? yield(value) : value
-      end
-
-      def merged_snapshot
-        @lock.synchronize do
-          @snapshots.values.reduce({}) { |acc, snap| Helpers.deep_merge(acc, snap) }
-        end
-      end
-
-      def resolve(config_key)
-        @lock.synchronize do
-          return @snapshots[config_key].dup if @snapshots.key?(config_key)
-        end
-
-        chain = fetch_chain(config_key)
-        # An empty chain means the config does not exist on the server.
-        # Callers that hit +get(key)+ must raise +NotFoundError+; callers
-        # that hold a +LiveConfigProxy+ get an empty Hash from
-        # +_resolve_now+ so typed getters fall back to defaults.
-        return nil if chain.nil? || chain.empty?
-
-        snapshot = Helpers.resolve_chain(chain, @environment)
-        @lock.synchronize do
-          @raw_chains[config_key] = chain
-          @snapshots[config_key] = snapshot
-        end
-        snapshot.dup
-      end
-
-      def fetch_chain(config_key)
-        # Stub: in the absence of a generated client, the runtime returns an
-        # empty chain. ManagementClient wires this up properly once the
-        # generated layer is committed.
-        @parent._config_transport.fetch_chain(config_key)
-      rescue Smplkit::Error
-        raise
-      rescue StandardError => e
-        raise Smplkit::ConnectionError, "Failed to fetch config #{config_key.inspect}: #{e.message}"
       end
 
       def handle_config_changed(data)
         key = data["key"] || data["id"]
         return unless key
 
-        @lock.synchronize do
-          @snapshots.delete(key)
-          @raw_chains.delete(key)
+        begin
+          cfg = @manage.config.get(key)
+        rescue Smplkit::NotFoundError
+          # Treat as a deletion — the resource is gone.
+          handle_config_deleted(data)
+          return
+        rescue StandardError => e
+          Smplkit.debug("config", "failed to fetch config #{key.inspect}: #{e.class}: #{e.message}")
+          return
         end
-        fire_change_listeners(key, "websocket")
+
+        new_store = nil
+        @lock.synchronize do
+          new_store = @raw_config_store.dup
+          new_store[key] = cfg
+        end
+        rebuild_from_store(new_store, source: "websocket")
       end
 
       def handle_config_deleted(data)
         key = data["key"] || data["id"]
         return unless key
 
+        new_store = nil
         @lock.synchronize do
-          @snapshots.delete(key)
-          @raw_chains.delete(key)
+          new_store = @raw_config_store.dup
+          return unless new_store.delete(key)
         end
-        fire_change_listeners(key, "websocket", deleted: true)
+        rebuild_from_store(new_store, source: "websocket")
       end
 
-      def fire_change_listeners(config_key, source, deleted: false)
-        event = ConfigChangeEvent.new(key: config_key, source: source, deleted: deleted)
-        (@global_listeners + @key_listeners[config_key]).each do |cb|
-          cb.call(event)
-        rescue StandardError => e
-          Smplkit.debug("config", "listener raised: #{e.class}: #{e.message}")
-        end
-        # Item-scoped listeners — fire for every registered item on the
-        # changed config. We don't diff old vs new values here because
-        # the Ruby cache is invalidated wholesale per config; item-scoped
-        # listeners on this SDK fire on the "any change to this config"
-        # signal, mirroring the +LiveConfigProxy.on_change(item_key)+
-        # contract.
-        @item_listeners[config_key].each_value do |listeners|
-          listeners.each do |cb|
-            cb.call(event)
-          rescue StandardError => e
-            Smplkit.debug("config", "item listener raised: #{e.class}: #{e.message}")
-          end
-        end
+      def handle_configs_changed(_data)
+        do_refresh("websocket")
+      rescue StandardError => e
+        Smplkit.debug("config", "configs_changed refresh failed: #{e.class}: #{e.message}")
       end
 
-      def fire_change_listeners_all(source)
-        (@snapshots.keys | @key_listeners.keys).each { |key| fire_change_listeners(key, source) }
+      def rebuild_from_store(store, source:)
+        configs = store.values
+        new_cache, new_store = resolve_all(configs)
+        old_cache = nil
+        @lock.synchronize do
+          old_cache = @config_cache
+          @config_cache = new_cache
+          @raw_config_store = new_store
+        end
+        fire_change_listeners(old_cache, new_cache, source: source)
       end
     end
   end

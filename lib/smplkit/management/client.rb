@@ -461,8 +461,9 @@ module Smplkit
       # ---------------------------------------------------------------
 
       # Queue a configuration declaration for bulk-discovery upload.
-      # Called by +ConfigClient#get_or_create+. Threshold-flushes on a
-      # background thread once the pending buffer reaches the flush size.
+      # Called from +ConfigClient#bind+ and +ConfigClient#get(id, key,
+      # default)+. Threshold-flushes on a background thread once the
+      # pending buffer reaches the flush size.
       def register_config(config_id, service:, environment:, parent: nil,
                           name: nil, description: nil)
         @buffer.declare(config_id, service: service, environment: environment,
@@ -546,40 +547,15 @@ module Smplkit
         Smplkit::Config::Helpers.config_from_json(self, ResourceShim.from_model(response.data))
       end
 
-      # Build the parent-chain for a given config, walking +parent_id+
-      # pointers across the full config list. Mirrors the Python SDK's
-      # client-side resolution — there is no server +/chain+ endpoint.
-      #
-      # Walks every page of +list_configs+ so an account with more than
-      # +RUNTIME_PAGE_SIZE+ configs still resolves chains correctly.
-      def fetch_chain(target_key)
-        all_configs = fetch_all_configs
-        by_key = all_configs.to_h { |c| [c.key, c] }
-        by_id = all_configs.to_h { |c| [c.id, c] }
-
-        current = by_key[target_key]
-        return [] unless current
-
-        chain = []
-        loop do
-          chain << config_to_chain_entry(current)
-          parent_id = current.parent_id
-          break if parent_id.nil? || parent_id == ""
-
-          parent = by_id[parent_id]
-          break unless parent
-
-          current = parent
-        end
-        chain
-      end
-
-      private
-
-      def fetch_all_configs
+      # Walk every page of +list_configs+ so an account with more than
+      # +RUNTIME_PAGE_SIZE+ configs still resolves to the complete set. Used
+      # by the runtime client to refresh the resolved cache.
+      def list_all
         rows = PaginatedFetch.collect { |opts| @api.list_configs(opts) }
         rows.map { |r| Smplkit::Config::Helpers.config_from_json(self, ResourceShim.from_model(r)) }
       end
+
+      private
 
       def config_body(config)
         SmplkitGeneratedClient::Config::ConfigResponse.new(
@@ -619,23 +595,6 @@ module Smplkit
           end
           out[env_key] = SmplkitGeneratedClient::Config::EnvironmentOverride.new(values: values)
         end
-      end
-
-      def config_to_chain_entry(config)
-        items_hash = {}
-        config.items.each do |item|
-          items_hash[item.name] = {
-            "value" => item.value,
-            "type" => item.type,
-            "description" => item.description
-          }.compact
-        end
-
-        environments = config.environments.each_with_object({}) do |(env_key, env_obj), out|
-          out[env_key] = { "values" => env_obj.values_raw }
-        end
-
-        { "id" => config.id, "items" => items_hash, "environments" => environments }
       end
 
       def bulk_items_to_wire(items_hash)

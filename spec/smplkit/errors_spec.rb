@@ -121,7 +121,7 @@ RSpec.describe Smplkit::Errors do
           }
         ]
       )
-      details = Smplkit::Errors.parse_error_body(body)
+      details = described_class.parse_error_body(body)
       expect(details.length).to eq(1)
       expect(details[0].code).to eq("environment_unmanaged")
       expect(details[0].meta).to eq("environment" => "staging", "count" => 2)
@@ -133,7 +133,7 @@ RSpec.describe Smplkit::Errors do
           { "status" => "400", "title" => "Bad", "source" => "x", "meta" => "y" }
         ]
       )
-      details = Smplkit::Errors.parse_error_body(body)
+      details = described_class.parse_error_body(body)
       expect(details[0].source).to eq({})
       expect(details[0].meta).to eq({})
     end

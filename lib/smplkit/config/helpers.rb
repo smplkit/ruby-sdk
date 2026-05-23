@@ -61,6 +61,38 @@ module Smplkit
         end
       end
 
+      # Build the parent chain (child-first, root-last) for a +Config+,
+      # walking +parent_id+ pointers across the +by_id+ map. Mirrors the
+      # Python SDK's client-side chain construction.
+      def build_chain(target, by_id)
+        chain = []
+        current = target
+        loop do
+          chain << config_to_chain_entry(current)
+          parent_id = current.parent_id
+          break if parent_id.nil? || parent_id == ""
+
+          parent = by_id[parent_id]
+          break unless parent
+
+          current = parent
+        end
+        chain
+      end
+
+      # Build a single chain entry (the +id+/+items+/+environments+ Hash
+      # shape used by +resolve_chain+) from a +Config+ domain model.
+      def config_to_chain_entry(config)
+        items_hash = config.items.to_h do |item|
+          [item.name,
+           { "value" => item.value, "type" => item.type, "description" => item.description }.compact]
+        end
+        environments = config.environments.each_with_object({}) do |(env_key, env_obj), out|
+          out[env_key] = { "values" => env_obj.values_raw }
+        end
+        { "id" => config.id, "items" => items_hash, "environments" => environments }
+      end
+
       # Resolve the full configuration for an environment given a config chain.
       #
       # Walks from root (last element) to child (first element), accumulating

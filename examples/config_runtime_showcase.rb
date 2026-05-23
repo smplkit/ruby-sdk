@@ -2,6 +2,16 @@
 
 # Demonstrates the smplkit runtime SDK for Smpl Config.
 #
+# Headline pattern: declare configurations as Ruby Structs, +bind+ them to
+# a config id, then use the returned objects directly — attribute access
+# stays in sync with the server via the SDK's in-memory cache and
+# WebSocket push.
+#
+# Also demonstrates three lower-friction patterns:
+#   - +bind+ with a plain Hash
+#   - +client.config.get(id)+ for dict-like lookup of an entire config
+#   - +client.config.get(id, key, default)+ for one-shot value reads with fallback
+#
 # Usage:
 #
 #   bundle exec ruby examples/config_runtime_showcase.rb
@@ -9,55 +19,84 @@
 require "smplkit"
 require_relative "setup/config_runtime_setup"
 
+# Example Struct schemas for the typed declarative path. Class names appear
+# in the smplkit console as the config display name.
+App = Struct.new(:name, keyword_init: true)
+Support = Struct.new(:email, keyword_init: true)
+Plan = Struct.new(:max_seats, :trial_days, :tier, keyword_init: true)
+Common = Struct.new(:app, :support, keyword_init: true)
+Billing = Struct.new(:app, :support, :plan, keyword_init: true)
+
 Smplkit::Client.open(environment: "production", service: "showcase-billing") do |client|
-  setup_config_runtime_showcase(client.manage)
+  cleanup_runtime_showcase(client.manage)
 
-  # declare a common/shared configuration
-  common = client.config.get_or_create(
-    "showcase-common",
-    description: "Shared defaults for showcase services."
-  )
-
-  # declare a configuration that inherits from some parent
-  billing = client.config.get_or_create(
+  # bind Struct schemas
+  common = client.config.bind("showcase-common", Common.new(
+                                                   app: App.new(name: "Acme SaaS"),
+                                                   support: Support.new(email: "support@acme.dev")
+                                                 ))
+  billing = client.config.bind(
     "showcase-billing",
-    parent: common,
-    description: "Plan-limit configuration discovered from code."
+    Billing.new(
+      app: App.new(name: "Acme SaaS"),
+      support: Support.new(email: "support@acme.dev"),
+      plan: Plan.new(max_seats: 5, trial_days: 14, tier: "free")
+    ),
+    parent: common
   )
 
-  # get a configured value
-  app_name = common.get_string("app.name", "Acme SaaS")
-  support_email = common.get_string("support.email", "support@acme.dev")
-  max_seats = billing.get_int("plan.max_seats", 5, description: "Maximum seats per organization.")
-  trial_days = billing.get_int("plan.trial_days", 14)
-  tier = billing.get_string("plan.tier", "free")
+  puts "common.app.name = #{common.app.name}"
+  puts "billing.app.name = #{billing.app.name}  # inherited from common"
+  puts "billing.plan.max_seats = #{billing.plan.max_seats}"
+  raise "Expected 'Acme SaaS', got #{common.app.name.inspect}" unless common.app.name == "Acme SaaS"
+  raise "Expected 5, got #{billing.plan.max_seats}" unless billing.plan.max_seats == 5
 
-  puts "app.name = #{app_name}"
-  puts "support.email = #{support_email}"
-  puts "plan.max_seats = #{max_seats}"
-  puts "plan.trial_days = #{trial_days}"
-  puts "plan.tier = #{tier}"
-
-  # listen for changes
+  # add listeners if desired
   changes = []
-  billing.on_change("plan.max_seats") do |event|
+  client.config.on_change("showcase-billing", item_key: "plan.max_seats") do |event|
     changes << event
-    puts "    [CHANGE] #{event.key} updated via #{event.source}"
+    puts "    [CHANGE] #{event.config_id}.#{event.item_key}: " \
+         "#{event.old_value.inspect} -> #{event.new_value.inspect}"
   end
 
-  # simulate someone overriding a value in the console
+  # simulate someone making a change in the smplkit console
   simulate_admin_override(client.manage)
 
-  # wait for the WebSocket push to deliver the change, then refetch
+  # wait for the WebSocket push to deliver the change
   deadline = Time.now + 10
-  sleep(0.1) while Time.now < deadline && billing.get_int("plan.max_seats", 5) != 25
+  sleep(0.1) while Time.now < deadline && billing.plan.max_seats != 25
 
-  # get the latest value
-  updated_seats = billing.get_int("plan.max_seats", 5)
-  puts "plan.max_seats after override = #{updated_seats}"
-  raise "Expected 25, got #{updated_seats}" unless updated_seats == 25
+  # observe changes are automatically reflected in bound objects
+  puts "billing.plan.max_seats after override = #{billing.plan.max_seats}"
+  raise "Expected 25, got #{billing.plan.max_seats}" unless billing.plan.max_seats == 25
   raise "Expected at least one change event" if changes.empty?
 
-  cleanup_config_runtime_showcase(client.manage)
+  # you can also bind plain-old Hashes
+  db = client.config.bind(
+    "showcase-database",
+    {
+      "primary" => { "host" => "db.acme.example", "port" => 5432 },
+      "pool_size" => 10,
+      "statement_timeout_ms" => 30_000
+    }
+  )
+  puts "db['primary']['host'] = #{db["primary"]["host"]}"
+  puts "db['pool_size'] = #{db["pool_size"]}"
+  raise "Expected db.acme.example" unless db["primary"]["host"] == "db.acme.example"
+  raise "Expected 10" unless db["pool_size"] == 10
+
+  # or get a config by ID (raises NotFoundError if not found)
+  common_view = client.config.get("showcase-common")
+  puts "showcase-common (via get):"
+  common_view.each_pair { |k, v| puts "    #{k} = #{v}" }
+  raise "Expected 'Acme SaaS'" unless common_view["app.name"] == "Acme SaaS"
+
+  # or skip the schema and fetch a specific key directly with a default
+  slow_query_ms = client.config.get("showcase-database", "slow_query_threshold_ms", 500)
+  puts "showcase-database.slow_query_threshold_ms = #{slow_query_ms}  " \
+       "# default used; now registered for visibility"
+  raise "Expected 500, got #{slow_query_ms}" unless slow_query_ms == 500
+
+  cleanup_runtime_showcase(client.manage)
   puts "Done!"
 end

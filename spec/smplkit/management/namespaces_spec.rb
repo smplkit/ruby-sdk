@@ -269,7 +269,7 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       expect(WebMock).to have_requested(:put, "https://config.smplkit.test/api/v1/configs/showcase")
     end
 
-    it "fetch_chain walks parent_id pointers across the full list" do
+    it "list_all returns every config across all pages" do
       child = { "id" => "child-cfg", "type" => "config",
                 "attributes" => { "name" => "Child", "parent" => "parent-cfg",
                                   "items" => { "child.key" => { "value" => 1, "type" => "NUMBER" } },
@@ -283,22 +283,86 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
                    body: JSON.generate({ "data" => [child, parent],
                                          "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }),
                    headers: { "Content-Type" => "application/vnd.api+json" })
-      chain = mgmt.config.fetch_chain("child-cfg")
-      expect(chain.length).to eq(2)
-      expect(chain.first["items"]).to have_key("child.key")
-      expect(chain.last["items"]).to have_key("parent.key")
+      configs = mgmt.config.list_all
+      expect(configs.map(&:key)).to contain_exactly("child-cfg", "parent-cfg")
     end
 
-    it "fetch_chain returns [] when the target key is unknown" do
+    it "list_all returns [] when the API has no configs" do
       stub_request(:get, %r{https://config\.smplkit\.test/api/v1/configs\b})
         .to_return(status: 200,
                    body: JSON.generate({ "data" => [],
                                          "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }),
                    headers: { "Content-Type" => "application/vnd.api+json" })
-      expect(mgmt.config.fetch_chain("missing")).to eq([])
+      expect(mgmt.config.list_all).to eq([])
     end
 
-    it "fetch_chain walks every page when the first page returns RUNTIME_PAGE_SIZE rows" do
+    describe "discovery (register_config / register_config_item / flush)" do
+      it "register_config queues a declaration on the buffer" do
+        mgmt.config.register_config("billing", service: "svc", environment: "prod",
+                                               parent: "common", name: "Billing", description: "Plan limits")
+        expect(mgmt.config.pending_count).to eq(1)
+      end
+
+      it "register_config_item queues item declarations after a declare" do
+        mgmt.config.register_config("billing", service: "svc", environment: "prod")
+        mgmt.config.register_config_item("billing", "max_seats", "NUMBER", 5, "seats")
+        mgmt.config.register_config_item("billing", "tier", "STRING", "free")
+        mgmt.config.register_config_item("billing", "enabled", "BOOLEAN", false)
+        mgmt.config.register_config_item("billing", "payload", "JSON", { "k" => "v" })
+        expect(mgmt.config.pending_count).to eq(1)
+      end
+
+      it "flush is a no-op when nothing is pending" do
+        api = mgmt.config.instance_variable_get(:@api)
+        expect(api).not_to receive(:bulk_register_configs)
+        mgmt.config.flush
+      end
+
+      it "flush POSTs declarations to the bulk endpoint" do
+        api = mgmt.config.instance_variable_get(:@api)
+        mgmt.config.register_config("billing", service: "svc", environment: "prod",
+                                               name: "Billing", description: "Plan limits")
+        mgmt.config.register_config_item("billing", "max_seats", "NUMBER", 5, "seats")
+        received_body = nil
+        allow(api).to receive(:bulk_register_configs) { |body| received_body = body }
+        mgmt.config.flush
+        expect(received_body).not_to be_nil
+        expect(received_body.configs.first.id).to eq("billing")
+        expect(received_body.configs.first.items["max_seats"].value).to eq(5)
+        expect(mgmt.config.pending_count).to eq(0)
+      end
+
+      it "flush swallows server errors per ADR-024 §2.9" do
+        api = mgmt.config.instance_variable_get(:@api)
+        mgmt.config.register_config("billing", service: "svc", environment: "prod")
+        allow(api).to receive(:bulk_register_configs).and_raise(StandardError, "boom")
+        expect { mgmt.config.flush }.not_to raise_error
+        expect(mgmt.config.pending_count).to eq(0)
+      end
+
+      it "threshold-triggers a background flush at the configured size" do
+        api = mgmt.config.instance_variable_get(:@api)
+        allow(api).to receive(:bulk_register_configs)
+        (Smplkit::Management::CONFIG_BATCH_FLUSH_SIZE + 1).times do |i|
+          mgmt.config.register_config("cfg-#{i}", service: "svc", environment: "prod")
+        end
+        deadline = Time.now + 5
+        sleep(0.05) while mgmt.config.pending_count.positive? && Time.now < deadline
+        expect(mgmt.config.pending_count).to eq(0)
+      end
+
+      it "background-thread errors are caught and logged" do
+        allow(mgmt.config).to receive(:flush).and_raise(StandardError, "boom in flush")
+        threads_before = Thread.list.size
+        (Smplkit::Management::CONFIG_BATCH_FLUSH_SIZE + 1).times do |i|
+          mgmt.config.register_config("err-#{i}", service: "svc", environment: "prod")
+        end
+        sleep(0.2)
+        expect(Thread.list.size).to be <= threads_before + 1
+      end
+    end
+
+    it "list_all walks every page when the first page returns RUNTIME_PAGE_SIZE rows" do
       page_size = Smplkit::ManagementClient::RUNTIME_PAGE_SIZE
       target = { "id" => "target-cfg", "type" => "config",
                  "attributes" => { "name" => "Target", "parent" => nil,
@@ -318,9 +382,9 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       stub_request(:get, %r{https://config\.smplkit\.test/api/v1/configs\b.*page%5Bnumber%5D=2\b})
         .to_return(status: 200, body: page2_body,
                    headers: { "Content-Type" => "application/vnd.api+json" })
-      chain = mgmt.config.fetch_chain("target-cfg")
-      expect(chain.length).to eq(1)
-      expect(chain.first["id"]).to eq("target-cfg")
+      configs = mgmt.config.list_all
+      expect(configs.map(&:key)).to include("target-cfg", "filler-1")
+      expect(configs.length).to eq(page_size + 1)
     end
   end
 

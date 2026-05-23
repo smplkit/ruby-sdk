@@ -184,7 +184,6 @@ module Smplkit
     end
 
     def _flags_transport = @manage.flags
-    def _config_transport = @manage.config
 
     private
 
