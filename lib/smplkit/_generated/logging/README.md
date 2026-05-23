@@ -68,11 +68,11 @@ SmplkitGeneratedClient::Logging.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Logging::LogGroupsApi.new
-log_group_request = SmplkitGeneratedClient::Logging::LogGroupRequest.new({data: SmplkitGeneratedClient::Logging::LogGroupResource.new({type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupRequest | 
+log_group_create_request = SmplkitGeneratedClient::Logging::LogGroupCreateRequest.new({data: SmplkitGeneratedClient::Logging::LogGroupCreateResource.new({id: 'id_example', type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupCreateRequest | 
 
 begin
   #Create Log Group
-  result = api_instance.create_log_group(log_group_request)
+  result = api_instance.create_log_group(log_group_create_request)
   p result
 rescue SmplkitGeneratedClient::Logging::ApiError => e
   puts "Exception when calling LogGroupsApi->create_log_group: #{e}"
@@ -108,6 +108,8 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Logging::ErrorResponse](docs/ErrorResponse.md)
  - [SmplkitGeneratedClient::Logging::ListMeta](docs/ListMeta.md)
  - [SmplkitGeneratedClient::Logging::LogGroup](docs/LogGroup.md)
+ - [SmplkitGeneratedClient::Logging::LogGroupCreateRequest](docs/LogGroupCreateRequest.md)
+ - [SmplkitGeneratedClient::Logging::LogGroupCreateResource](docs/LogGroupCreateResource.md)
  - [SmplkitGeneratedClient::Logging::LogGroupListResponse](docs/LogGroupListResponse.md)
  - [SmplkitGeneratedClient::Logging::LogGroupRequest](docs/LogGroupRequest.md)
  - [SmplkitGeneratedClient::Logging::LogGroupResource](docs/LogGroupResource.md)

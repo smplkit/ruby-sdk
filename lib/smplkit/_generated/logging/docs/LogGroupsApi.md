@@ -13,11 +13,11 @@ All URIs are relative to *http://localhost*
 
 ## create_log_group
 
-> <LogGroupResponse> create_log_group(log_group_request)
+> <LogGroupResponse> create_log_group(log_group_create_request)
 
 Create Log Group
 
-Create a log group.  The caller may supply a key in `data.id`; if omitted, the server generates one from `name`.
+Create a log group.  The caller supplies the log group's key as `data.id`. The id is required, must be unique within the account across loggers and groups, and is immutable for the lifetime of the group.
 
 ### Examples
 
@@ -31,11 +31,11 @@ SmplkitGeneratedClient::Logging.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Logging::LogGroupsApi.new
-log_group_request = SmplkitGeneratedClient::Logging::LogGroupRequest.new({data: SmplkitGeneratedClient::Logging::LogGroupResource.new({type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupRequest | 
+log_group_create_request = SmplkitGeneratedClient::Logging::LogGroupCreateRequest.new({data: SmplkitGeneratedClient::Logging::LogGroupCreateResource.new({id: 'id_example', type: 'log_group', attributes: SmplkitGeneratedClient::Logging::LogGroup.new({name: 'name_example'})})}) # LogGroupCreateRequest | 
 
 begin
   # Create Log Group
-  result = api_instance.create_log_group(log_group_request)
+  result = api_instance.create_log_group(log_group_create_request)
   p result
 rescue SmplkitGeneratedClient::Logging::ApiError => e
   puts "Error when calling LogGroupsApi->create_log_group: #{e}"
@@ -46,12 +46,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<LogGroupResponse>, Integer, Hash)> create_log_group_with_http_info(log_group_request)
+> <Array(<LogGroupResponse>, Integer, Hash)> create_log_group_with_http_info(log_group_create_request)
 
 ```ruby
 begin
   # Create Log Group
-  data, status_code, headers = api_instance.create_log_group_with_http_info(log_group_request)
+  data, status_code, headers = api_instance.create_log_group_with_http_info(log_group_create_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <LogGroupResponse>
@@ -64,7 +64,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **log_group_request** | [**LogGroupRequest**](LogGroupRequest.md) |  |  |
+| **log_group_create_request** | [**LogGroupCreateRequest**](LogGroupCreateRequest.md) |  |  |
 
 ### Return type
 

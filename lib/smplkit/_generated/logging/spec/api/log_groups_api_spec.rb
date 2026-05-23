@@ -34,8 +34,8 @@ describe 'LogGroupsApi' do
 
   # unit tests for create_log_group
   # Create Log Group
-  # Create a log group.  The caller may supply a key in &#x60;data.id&#x60;; if omitted, the server generates one from &#x60;name&#x60;.
-  # @param log_group_request 
+  # Create a log group.  The caller supplies the log group&#39;s key as &#x60;data.id&#x60;. The id is required, must be unique within the account across loggers and groups, and is immutable for the lifetime of the group.
+  # @param log_group_create_request 
   # @param [Hash] opts the optional parameters
   # @return [LogGroupResponse]
   describe 'create_log_group test' do

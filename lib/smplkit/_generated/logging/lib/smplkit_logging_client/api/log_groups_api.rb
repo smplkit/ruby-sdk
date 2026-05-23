@@ -20,27 +20,27 @@ module SmplkitGeneratedClient::Logging
       @api_client = api_client
     end
     # Create Log Group
-    # Create a log group.  The caller may supply a key in `data.id`; if omitted, the server generates one from `name`.
-    # @param log_group_request [LogGroupRequest] 
+    # Create a log group.  The caller supplies the log group's key as `data.id`. The id is required, must be unique within the account across loggers and groups, and is immutable for the lifetime of the group.
+    # @param log_group_create_request [LogGroupCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [LogGroupResponse]
-    def create_log_group(log_group_request, opts = {})
-      data, _status_code, _headers = create_log_group_with_http_info(log_group_request, opts)
+    def create_log_group(log_group_create_request, opts = {})
+      data, _status_code, _headers = create_log_group_with_http_info(log_group_create_request, opts)
       data
     end
 
     # Create Log Group
-    # Create a log group.  The caller may supply a key in &#x60;data.id&#x60;; if omitted, the server generates one from &#x60;name&#x60;.
-    # @param log_group_request [LogGroupRequest] 
+    # Create a log group.  The caller supplies the log group&#39;s key as &#x60;data.id&#x60;. The id is required, must be unique within the account across loggers and groups, and is immutable for the lifetime of the group.
+    # @param log_group_create_request [LogGroupCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(LogGroupResponse, Integer, Hash)>] LogGroupResponse data, response status code and response headers
-    def create_log_group_with_http_info(log_group_request, opts = {})
+    def create_log_group_with_http_info(log_group_create_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: LogGroupsApi.create_log_group ...'
       end
-      # verify the required parameter 'log_group_request' is set
-      if @api_client.config.client_side_validation && log_group_request.nil?
-        fail ArgumentError, "Missing the required parameter 'log_group_request' when calling LogGroupsApi.create_log_group"
+      # verify the required parameter 'log_group_create_request' is set
+      if @api_client.config.client_side_validation && log_group_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'log_group_create_request' when calling LogGroupsApi.create_log_group"
       end
       # resource path
       local_var_path = '/api/v1/log_groups'
@@ -62,7 +62,7 @@ module SmplkitGeneratedClient::Logging
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(log_group_request)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(log_group_create_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'LogGroupResponse'
