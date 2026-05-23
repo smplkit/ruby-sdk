@@ -17,11 +17,11 @@ All URIs are relative to *http://localhost*
 
 ## create_forwarder
 
-> <ForwarderResponse> create_forwarder(forwarder_request)
+> <ForwarderResponse> create_forwarder(forwarder_create_request)
 
 Create Forwarder
 
-Create a forwarder for this account.
+Create a forwarder for this account.  The caller supplies the forwarder's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the forwarder.
 
 ### Examples
 
@@ -35,11 +35,11 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_request = SmplkitGeneratedClient::Audit::ForwarderRequest.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::DATADOG, configuration: SmplkitGeneratedClient::Audit::HttpConfiguration.new({url: 'url_example'})})})}) # ForwarderRequest | 
+forwarder_create_request = SmplkitGeneratedClient::Audit::ForwarderCreateRequest.new({data: SmplkitGeneratedClient::Audit::ForwarderCreateResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::DATADOG, configuration: SmplkitGeneratedClient::Audit::HttpConfiguration.new({url: 'url_example'})})})}) # ForwarderCreateRequest | 
 
 begin
   # Create Forwarder
-  result = api_instance.create_forwarder(forwarder_request)
+  result = api_instance.create_forwarder(forwarder_create_request)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
   puts "Error when calling ForwardersApi->create_forwarder: #{e}"
@@ -50,12 +50,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ForwarderResponse>, Integer, Hash)> create_forwarder_with_http_info(forwarder_request)
+> <Array(<ForwarderResponse>, Integer, Hash)> create_forwarder_with_http_info(forwarder_create_request)
 
 ```ruby
 begin
   # Create Forwarder
-  data, status_code, headers = api_instance.create_forwarder_with_http_info(forwarder_request)
+  data, status_code, headers = api_instance.create_forwarder_with_http_info(forwarder_create_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ForwarderResponse>
@@ -68,7 +68,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **forwarder_request** | [**ForwarderRequest**](ForwarderRequest.md) |  |  |
+| **forwarder_create_request** | [**ForwarderCreateRequest**](ForwarderCreateRequest.md) |  |  |
 
 ### Return type
 
@@ -90,7 +90,7 @@ end
 
 Delete Forwarder
 
-Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same name.
+Delete a forwarder.  Past delivery log entries are retained. A new forwarder may be created later under the same id.
 
 ### Examples
 
@@ -104,7 +104,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
+forwarder_id = 'forwarder_id_example' # String | 
 
 begin
   # Delete Forwarder
@@ -241,7 +241,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
+forwarder_id = 'forwarder_id_example' # String | 
 
 begin
   # Get Forwarder
@@ -310,7 +310,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
+forwarder_id = 'forwarder_id_example' # String | 
 opts = {
   filter_status: 'filter_status_example', # String | 
   filter_created_at: 'filter_created_at_example', # String | 
@@ -474,7 +474,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
+forwarder_id = 'forwarder_id_example' # String | 
 
 begin
   # Retry Failed Forwarder Deliveries
@@ -543,7 +543,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
+forwarder_id = 'forwarder_id_example' # String | 
 delivery_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
 
 begin
@@ -614,7 +614,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_id = '38400000-8cf0-11bd-b23e-10b96e4ef00d' # String | 
+forwarder_id = 'forwarder_id_example' # String | 
 forwarder_request = SmplkitGeneratedClient::Audit::ForwarderRequest.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::DATADOG, configuration: SmplkitGeneratedClient::Audit::HttpConfiguration.new({url: 'url_example'})})})}) # ForwarderRequest | 
 
 begin

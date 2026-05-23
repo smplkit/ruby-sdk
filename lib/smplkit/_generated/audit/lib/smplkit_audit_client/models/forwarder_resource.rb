@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # JSON:API resource envelope for a forwarder.  `id` must not be specified for create requests (the server assigns it).
+  # JSON:API resource envelope for a forwarder.  The caller supplies `id` (the forwarder's key) on create.
   class ForwarderResource < ApiModelBase
     attr_accessor :id
 
