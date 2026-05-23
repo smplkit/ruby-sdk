@@ -35,7 +35,7 @@ describe 'EnvironmentsApi' do
   # unit tests for create_environment
   # Create Environment
   # Create a new environment. The caller provides the id (key) in the request body.
-  # @param environment_request 
+  # @param environment_create_request 
   # @param [Hash] opts the optional parameters
   # @return [EnvironmentResponse]
   describe 'create_environment test' do

@@ -21,26 +21,26 @@ module SmplkitGeneratedClient::App
     end
     # Create Environment
     # Create a new environment. The caller provides the id (key) in the request body.
-    # @param environment_request [EnvironmentRequest] 
+    # @param environment_create_request [EnvironmentCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [EnvironmentResponse]
-    def create_environment(environment_request, opts = {})
-      data, _status_code, _headers = create_environment_with_http_info(environment_request, opts)
+    def create_environment(environment_create_request, opts = {})
+      data, _status_code, _headers = create_environment_with_http_info(environment_create_request, opts)
       data
     end
 
     # Create Environment
     # Create a new environment. The caller provides the id (key) in the request body.
-    # @param environment_request [EnvironmentRequest] 
+    # @param environment_create_request [EnvironmentCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(EnvironmentResponse, Integer, Hash)>] EnvironmentResponse data, response status code and response headers
-    def create_environment_with_http_info(environment_request, opts = {})
+    def create_environment_with_http_info(environment_create_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: EnvironmentsApi.create_environment ...'
       end
-      # verify the required parameter 'environment_request' is set
-      if @api_client.config.client_side_validation && environment_request.nil?
-        fail ArgumentError, "Missing the required parameter 'environment_request' when calling EnvironmentsApi.create_environment"
+      # verify the required parameter 'environment_create_request' is set
+      if @api_client.config.client_side_validation && environment_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'environment_create_request' when calling EnvironmentsApi.create_environment"
       end
       # resource path
       local_var_path = '/api/v1/environments'
@@ -62,7 +62,7 @@ module SmplkitGeneratedClient::App
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(environment_request)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(environment_create_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'EnvironmentResponse'

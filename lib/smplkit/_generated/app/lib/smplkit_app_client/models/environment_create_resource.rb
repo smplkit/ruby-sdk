@@ -14,8 +14,9 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # JSON:API resource envelope for a service.  The caller supplies ``id`` (the service's key) on create.
-  class ServiceResource < ApiModelBase
+  # JSON:API resource envelope for creating an environment (id required).
+  class EnvironmentCreateResource < ApiModelBase
+    # Client-supplied resource id.
     attr_accessor :id
 
     attr_accessor :type
@@ -68,14 +69,13 @@ module SmplkitGeneratedClient::App
       {
         :'id' => :'String',
         :'type' => :'String',
-        :'attributes' => :'Service'
+        :'attributes' => :'Environment'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'id',
       ])
     end
 
@@ -83,20 +83,22 @@ module SmplkitGeneratedClient::App
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::ServiceResource` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::EnvironmentCreateResource` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::ServiceResource`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::EnvironmentCreateResource`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
       if attributes.key?(:'id')
         self.id = attributes[:'id']
+      else
+        self.id = nil
       end
 
       if attributes.key?(:'type')
@@ -117,6 +119,10 @@ module SmplkitGeneratedClient::App
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
+      if @id.nil?
+        invalid_properties.push('invalid value for "id", id cannot be nil.')
+      end
+
       if @type.nil?
         invalid_properties.push('invalid value for "type", type cannot be nil.')
       end
@@ -132,17 +138,28 @@ module SmplkitGeneratedClient::App
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      return false if @id.nil?
       return false if @type.nil?
-      type_validator = EnumAttributeValidator.new('String', ["service"])
+      type_validator = EnumAttributeValidator.new('String', ["environment"])
       return false unless type_validator.valid?(@type)
       return false if @attributes.nil?
       true
     end
 
+    # Custom attribute writer method with validation
+    # @param [Object] id Value to be assigned
+    def id=(id)
+      if id.nil?
+        fail ArgumentError, 'id cannot be nil'
+      end
+
+      @id = id
+    end
+
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] type Object to be assigned
     def type=(type)
-      validator = EnumAttributeValidator.new('String', ["service"])
+      validator = EnumAttributeValidator.new('String', ["environment"])
       unless validator.valid?(type)
         fail ArgumentError, "invalid value for \"type\", must be one of #{validator.allowable_values}."
       end

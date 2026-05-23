@@ -58,6 +58,8 @@ docs/EmailResource.md
 docs/EmailResponse.md
 docs/EmailsApi.md
 docs/Environment.md
+docs/EnvironmentCreateRequest.md
+docs/EnvironmentCreateResource.md
 docs/EnvironmentListResponse.md
 docs/EnvironmentRequest.md
 docs/EnvironmentResource.md
@@ -112,6 +114,8 @@ docs/ProductResource.md
 docs/ProductsApi.md
 docs/RegisterRequest.md
 docs/Service.md
+docs/ServiceCreateRequest.md
+docs/ServiceCreateResource.md
 docs/ServiceListResponse.md
 docs/ServiceRequest.md
 docs/ServiceResource.md
@@ -206,6 +210,8 @@ lib/smplkit_app_client/models/email.rb
 lib/smplkit_app_client/models/email_resource.rb
 lib/smplkit_app_client/models/email_response.rb
 lib/smplkit_app_client/models/environment.rb
+lib/smplkit_app_client/models/environment_create_request.rb
+lib/smplkit_app_client/models/environment_create_resource.rb
 lib/smplkit_app_client/models/environment_list_response.rb
 lib/smplkit_app_client/models/environment_request.rb
 lib/smplkit_app_client/models/environment_resource.rb
@@ -255,6 +261,8 @@ lib/smplkit_app_client/models/product_list_response.rb
 lib/smplkit_app_client/models/product_resource.rb
 lib/smplkit_app_client/models/register_request.rb
 lib/smplkit_app_client/models/service.rb
+lib/smplkit_app_client/models/service_create_request.rb
+lib/smplkit_app_client/models/service_create_resource.rb
 lib/smplkit_app_client/models/service_list_response.rb
 lib/smplkit_app_client/models/service_request.rb
 lib/smplkit_app_client/models/service_resource.rb
@@ -341,6 +349,8 @@ spec/models/discount_tier_spec.rb
 spec/models/email_resource_spec.rb
 spec/models/email_response_spec.rb
 spec/models/email_spec.rb
+spec/models/environment_create_request_spec.rb
+spec/models/environment_create_resource_spec.rb
 spec/models/environment_list_response_spec.rb
 spec/models/environment_request_spec.rb
 spec/models/environment_resource_spec.rb
@@ -390,6 +400,8 @@ spec/models/product_list_response_spec.rb
 spec/models/product_resource_spec.rb
 spec/models/product_spec.rb
 spec/models/register_request_spec.rb
+spec/models/service_create_request_spec.rb
+spec/models/service_create_resource_spec.rb
 spec/models/service_list_response_spec.rb
 spec/models/service_request_spec.rb
 spec/models/service_resource_spec.rb
