@@ -59,9 +59,9 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "passes transform_type and transform through verbatim" do
       fwd = forwarders.new_forwarder(
         fwd_id, name: "x", forwarder_type: "http",
-        configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
-        transform_type: Smplkit::Audit::TransformType::JSONATA,
-        transform: "{ \"event\": $.action }"
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
+                transform_type: Smplkit::Audit::TransformType::JSONATA,
+                transform: "{ \"event\": $.action }"
       )
       expect(fwd.transform_type).to eq("JSONATA")
       expect(fwd.transform).to eq("{ \"event\": $.action }")
@@ -73,7 +73,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       # at the boundary rather than letting the server return a 400.
       fwd = forwarders.new_forwarder(
         "", name: "x", forwarder_type: "http",
-        configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+            configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       expect { fwd.save }.to raise_error(ArgumentError, /id is required/)
     end
@@ -81,7 +81,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "leaves transform and transform_type nil when neither is provided" do
       fwd = forwarders.new_forwarder(
         fwd_id, name: "x", forwarder_type: "http",
-        configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       expect(fwd.transform).to be_nil
       expect(fwd.transform_type).to be_nil
@@ -91,8 +91,8 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect do
         forwarders.new_forwarder(
           fwd_id, name: "x", forwarder_type: "http",
-          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
-          transform: "$"
+                  configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
+                  transform: "$"
         )
       end.to raise_error(ArgumentError, /both nil or both set/)
     end
@@ -101,8 +101,8 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect do
         forwarders.new_forwarder(
           fwd_id, name: "x", forwarder_type: "http",
-          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
-          transform_type: Smplkit::Audit::TransformType::JSONATA
+                  configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
+                  transform_type: Smplkit::Audit::TransformType::JSONATA
         )
       end.to raise_error(ArgumentError, /both nil or both set/)
     end
@@ -111,9 +111,9 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect do
         forwarders.new_forwarder(
           fwd_id, name: "x", forwarder_type: "http",
-          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
-          transform_type: Smplkit::Audit::TransformType::JSONATA,
-          transform: { "event" => "$.action" }
+                  configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
+                  transform_type: Smplkit::Audit::TransformType::JSONATA,
+                  transform: { "event" => "$.action" }
         )
       end.to raise_error(ArgumentError, /must be a String when transform_type is JSONATA/)
     end
@@ -124,7 +124,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       )
       fwd = forwarders.new_forwarder(
         fwd_id, name: "x", forwarder_type: "http",
-        configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       fwd.transform_type = Smplkit::Audit::TransformType::JSONATA
       expect { fwd.save }.to raise_error(ArgumentError, /both nil or both set/)
@@ -134,8 +134,8 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect do
         forwarders.new_forwarder(
           fwd_id, name: "x", forwarder_type: "http",
-          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
-          transform: "$", transform_type: "JQ"
+                  configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
+                  transform: "$", transform_type: "JQ"
         )
       end.to raise_error(ArgumentError, /Unknown TransformType/)
     end
@@ -145,7 +145,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect do
         forwarders.new_forwarder(
           fwd_id, name: "x", forwarder_type: "http",
-          configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+                  configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
         ).save
       end.to raise_error(Smplkit::ConnectionError)
     end
@@ -443,7 +443,7 @@ RSpec.describe "Smplkit::Audit::HttpConfiguration TLS knobs" do
 
   it "defaults tls_verify to true and ca_cert to nil" do
     cfg = Smplkit::Audit::HttpConfiguration.new(url: "https://x")
-    expect(cfg.tls_verify).to eq(true)
+    expect(cfg.tls_verify).to be(true)
     expect(cfg.ca_cert).to be_nil
   end
 
@@ -468,10 +468,10 @@ RSpec.describe "Smplkit::Audit::HttpConfiguration TLS knobs" do
     )
     fwd = forwarders.new_forwarder(
       fwd_id, name: "n", forwarder_type: "http",
-      configuration: Smplkit::Audit::HttpConfiguration.new(
-        url: "https://x", tls_verify: false,
-        ca_cert: "-----BEGIN CERTIFICATE-----\nfoo\n-----END CERTIFICATE-----"
-      )
+              configuration: Smplkit::Audit::HttpConfiguration.new(
+                url: "https://x", tls_verify: false,
+                ca_cert: "-----BEGIN CERTIFICATE-----\nfoo\n-----END CERTIFICATE-----"
+              )
     )
     fwd.save
     expect(captured).to include('"tls_verify":false')
@@ -498,7 +498,7 @@ RSpec.describe "Smplkit::Audit::HttpConfiguration TLS knobs" do
       headers: json_api
     )
     fwd = forwarders.get(fwd_id)
-    expect(fwd.configuration.tls_verify).to eq(false)
+    expect(fwd.configuration.tls_verify).to be(false)
     expect(fwd.configuration.ca_cert).to include("BEGIN CERTIFICATE")
   end
 
@@ -520,7 +520,7 @@ RSpec.describe "Smplkit::Audit::HttpConfiguration TLS knobs" do
       headers: json_api
     )
     fwd = forwarders.get(fwd_id)
-    expect(fwd.configuration.tls_verify).to eq(true)
+    expect(fwd.configuration.tls_verify).to be(true)
     expect(fwd.configuration.ca_cert).to be_nil
   end
 end

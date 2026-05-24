@@ -56,7 +56,7 @@ module Smplkit
       #   nil or both set, or when +transform_type+ is +JSONATA+ and +transform+
       #   is not a +String+.
       # @return [Smplkit::Audit::Forwarder]
-      def new_forwarder(id, name: nil, forwarder_type:, configuration:,
+      def new_forwarder(id, forwarder_type:, configuration:, name: nil,
                         enabled: true, description: nil,
                         filter: nil, transform: nil, transform_type: nil)
         Smplkit::Audit::Forwarder.send(:validate_transform_pair!, transform, transform_type)
@@ -122,6 +122,7 @@ module Smplkit
         if forwarder.id.nil? || forwarder.id.empty?
           raise ArgumentError, "Forwarder.id is required on create (caller-supplied key)"
         end
+
         resp = Smplkit::Audit.call_api { @api.create_forwarder(build_create_body(forwarder)) }
         Smplkit::Audit::Forwarder.from_resource(resp.data, client: self)
       end
