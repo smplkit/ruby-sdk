@@ -47,7 +47,7 @@ describe 'FlagsApi' do
   # unit tests for create_flag
   # Create Flag
   # Create a new feature flag. The caller provides the id (the flag key) in the request body.
-  # @param flag_request 
+  # @param flag_create_request 
   # @param [Hash] opts the optional parameters
   # @return [FlagResponse]
   describe 'create_flag test' do

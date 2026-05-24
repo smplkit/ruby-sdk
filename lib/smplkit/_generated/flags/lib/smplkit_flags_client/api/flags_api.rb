@@ -89,26 +89,26 @@ module SmplkitGeneratedClient::Flags
 
     # Create Flag
     # Create a new feature flag. The caller provides the id (the flag key) in the request body.
-    # @param flag_request [FlagRequest] 
+    # @param flag_create_request [FlagCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [FlagResponse]
-    def create_flag(flag_request, opts = {})
-      data, _status_code, _headers = create_flag_with_http_info(flag_request, opts)
+    def create_flag(flag_create_request, opts = {})
+      data, _status_code, _headers = create_flag_with_http_info(flag_create_request, opts)
       data
     end
 
     # Create Flag
     # Create a new feature flag. The caller provides the id (the flag key) in the request body.
-    # @param flag_request [FlagRequest] 
+    # @param flag_create_request [FlagCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(FlagResponse, Integer, Hash)>] FlagResponse data, response status code and response headers
-    def create_flag_with_http_info(flag_request, opts = {})
+    def create_flag_with_http_info(flag_create_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: FlagsApi.create_flag ...'
       end
-      # verify the required parameter 'flag_request' is set
-      if @api_client.config.client_side_validation && flag_request.nil?
-        fail ArgumentError, "Missing the required parameter 'flag_request' when calling FlagsApi.create_flag"
+      # verify the required parameter 'flag_create_request' is set
+      if @api_client.config.client_side_validation && flag_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'flag_create_request' when calling FlagsApi.create_flag"
       end
       # resource path
       local_var_path = '/api/v1/flags'
@@ -130,7 +130,7 @@ module SmplkitGeneratedClient::Flags
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(flag_request)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(flag_create_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'FlagResponse'

@@ -83,7 +83,7 @@ end
 
 ## create_flag
 
-> <FlagResponse> create_flag(flag_request)
+> <FlagResponse> create_flag(flag_create_request)
 
 Create Flag
 
@@ -101,11 +101,11 @@ SmplkitGeneratedClient::Flags.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Flags::FlagsApi.new
-flag_request = SmplkitGeneratedClient::Flags::FlagRequest.new({data: SmplkitGeneratedClient::Flags::FlagResource.new({type: 'flag', attributes: SmplkitGeneratedClient::Flags::Flag.new({name: 'name_example', type: 'BOOLEAN', default: 3.56})})}) # FlagRequest | 
+flag_create_request = SmplkitGeneratedClient::Flags::FlagCreateRequest.new({data: SmplkitGeneratedClient::Flags::FlagCreateResource.new({id: 'id_example', type: 'flag', attributes: SmplkitGeneratedClient::Flags::Flag.new({name: 'name_example', type: 'BOOLEAN', default: 3.56})})}) # FlagCreateRequest | 
 
 begin
   # Create Flag
-  result = api_instance.create_flag(flag_request)
+  result = api_instance.create_flag(flag_create_request)
   p result
 rescue SmplkitGeneratedClient::Flags::ApiError => e
   puts "Error when calling FlagsApi->create_flag: #{e}"
@@ -116,12 +116,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<FlagResponse>, Integer, Hash)> create_flag_with_http_info(flag_request)
+> <Array(<FlagResponse>, Integer, Hash)> create_flag_with_http_info(flag_create_request)
 
 ```ruby
 begin
   # Create Flag
-  data, status_code, headers = api_instance.create_flag_with_http_info(flag_request)
+  data, status_code, headers = api_instance.create_flag_with_http_info(flag_create_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <FlagResponse>
@@ -134,7 +134,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **flag_request** | [**FlagRequest**](FlagRequest.md) |  |  |
+| **flag_create_request** | [**FlagCreateRequest**](FlagCreateRequest.md) |  |  |
 
 ### Return type
 
