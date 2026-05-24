@@ -83,7 +83,7 @@ end
 
 ## create_config
 
-> <ConfigResponse> create_config(config_request)
+> <ConfigResponse> create_config(config_create_request)
 
 Create Config
 
@@ -101,11 +101,11 @@ SmplkitGeneratedClient::Config.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Config::ConfigsApi.new
-config_request = SmplkitGeneratedClient::Config::ConfigRequest.new({data: SmplkitGeneratedClient::Config::ConfigResource.new({type: 'config', attributes: SmplkitGeneratedClient::Config::Config.new({name: 'name_example'})})}) # ConfigRequest | 
+config_create_request = SmplkitGeneratedClient::Config::ConfigCreateRequest.new({data: SmplkitGeneratedClient::Config::ConfigCreateResource.new({id: 'id_example', type: 'config', attributes: SmplkitGeneratedClient::Config::Config.new({name: 'name_example'})})}) # ConfigCreateRequest | 
 
 begin
   # Create Config
-  result = api_instance.create_config(config_request)
+  result = api_instance.create_config(config_create_request)
   p result
 rescue SmplkitGeneratedClient::Config::ApiError => e
   puts "Error when calling ConfigsApi->create_config: #{e}"
@@ -116,12 +116,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ConfigResponse>, Integer, Hash)> create_config_with_http_info(config_request)
+> <Array(<ConfigResponse>, Integer, Hash)> create_config_with_http_info(config_create_request)
 
 ```ruby
 begin
   # Create Config
-  data, status_code, headers = api_instance.create_config_with_http_info(config_request)
+  data, status_code, headers = api_instance.create_config_with_http_info(config_create_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <ConfigResponse>
@@ -134,7 +134,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **config_request** | [**ConfigRequest**](ConfigRequest.md) |  |  |
+| **config_create_request** | [**ConfigCreateRequest**](ConfigCreateRequest.md) |  |  |
 
 ### Return type
 

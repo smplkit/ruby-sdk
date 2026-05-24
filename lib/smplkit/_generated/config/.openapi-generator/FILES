@@ -11,6 +11,8 @@ docs/Config.md
 docs/ConfigBulkItem.md
 docs/ConfigBulkRequest.md
 docs/ConfigBulkResponse.md
+docs/ConfigCreateRequest.md
+docs/ConfigCreateResource.md
 docs/ConfigItemDefinition.md
 docs/ConfigItemOverride.md
 docs/ConfigListResponse.md
@@ -37,6 +39,8 @@ lib/smplkit_config_client/models/config.rb
 lib/smplkit_config_client/models/config_bulk_item.rb
 lib/smplkit_config_client/models/config_bulk_request.rb
 lib/smplkit_config_client/models/config_bulk_response.rb
+lib/smplkit_config_client/models/config_create_request.rb
+lib/smplkit_config_client/models/config_create_resource.rb
 lib/smplkit_config_client/models/config_item_definition.rb
 lib/smplkit_config_client/models/config_item_override.rb
 lib/smplkit_config_client/models/config_list_response.rb
@@ -56,6 +60,8 @@ spec/api/usage_api_spec.rb
 spec/models/config_bulk_item_spec.rb
 spec/models/config_bulk_request_spec.rb
 spec/models/config_bulk_response_spec.rb
+spec/models/config_create_request_spec.rb
+spec/models/config_create_resource_spec.rb
 spec/models/config_item_definition_spec.rb
 spec/models/config_item_override_spec.rb
 spec/models/config_list_response_spec.rb

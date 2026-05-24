@@ -89,26 +89,26 @@ module SmplkitGeneratedClient::Config
 
     # Create Config
     # Create a config for this account.  The caller supplies the config's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the config.
-    # @param config_request [ConfigRequest] 
+    # @param config_create_request [ConfigCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ConfigResponse]
-    def create_config(config_request, opts = {})
-      data, _status_code, _headers = create_config_with_http_info(config_request, opts)
+    def create_config(config_create_request, opts = {})
+      data, _status_code, _headers = create_config_with_http_info(config_create_request, opts)
       data
     end
 
     # Create Config
     # Create a config for this account.  The caller supplies the config&#39;s key as &#x60;data.id&#x60;. Keys are unique within an account and immutable for the lifetime of the config.
-    # @param config_request [ConfigRequest] 
+    # @param config_create_request [ConfigCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ConfigResponse, Integer, Hash)>] ConfigResponse data, response status code and response headers
-    def create_config_with_http_info(config_request, opts = {})
+    def create_config_with_http_info(config_create_request, opts = {})
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: ConfigsApi.create_config ...'
       end
-      # verify the required parameter 'config_request' is set
-      if @api_client.config.client_side_validation && config_request.nil?
-        fail ArgumentError, "Missing the required parameter 'config_request' when calling ConfigsApi.create_config"
+      # verify the required parameter 'config_create_request' is set
+      if @api_client.config.client_side_validation && config_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'config_create_request' when calling ConfigsApi.create_config"
       end
       # resource path
       local_var_path = '/api/v1/configs'
@@ -130,7 +130,7 @@ module SmplkitGeneratedClient::Config
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body] || @api_client.object_to_http_body(config_request)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(config_create_request)
 
       # return_type
       return_type = opts[:debug_return_type] || 'ConfigResponse'
