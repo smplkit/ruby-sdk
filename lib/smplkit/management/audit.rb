@@ -56,13 +56,14 @@ module Smplkit
       #   nil or both set, or when +transform_type+ is +JSONATA+ and +transform+
       #   is not a +String+.
       # @return [Smplkit::Audit::Forwarder]
-      def new_forwarder(name:, forwarder_type:, configuration:,
+      def new_forwarder(id, name: nil, forwarder_type:, configuration:,
                         enabled: true, description: nil,
                         filter: nil, transform: nil, transform_type: nil)
         Smplkit::Audit::Forwarder.send(:validate_transform_pair!, transform, transform_type)
         Smplkit::Audit::Forwarder.new(
           self,
-          name: name,
+          id: id,
+          name: name || id,
           forwarder_type: forwarder_type,
           configuration: configuration,
           enabled: enabled,
@@ -118,7 +119,10 @@ module Smplkit
       # @api private — POST a new forwarder. Called by
       #   {Smplkit::Audit::Forwarder#save} on unsaved instances.
       def _create_forwarder(forwarder)
-        resp = Smplkit::Audit.call_api { @api.create_forwarder(build_body(forwarder)) }
+        if forwarder.id.nil? || forwarder.id.empty?
+          raise ArgumentError, "Forwarder.id is required on create (caller-supplied key)"
+        end
+        resp = Smplkit::Audit.call_api { @api.create_forwarder(build_create_body(forwarder)) }
         Smplkit::Audit::Forwarder.from_resource(resp.data, client: self)
       end
 
@@ -138,8 +142,8 @@ module Smplkit
 
       private
 
-      def build_body(forwarder)
-        attrs = SmplkitGeneratedClient::Audit::Forwarder.new(
+      def build_attrs(forwarder)
+        SmplkitGeneratedClient::Audit::Forwarder.new(
           name: forwarder.name,
           description: forwarder.description,
           forwarder_type: Smplkit::Audit::ForwarderType.coerce(forwarder.forwarder_type),
@@ -149,10 +153,26 @@ module Smplkit
           transform: forwarder.transform,
           configuration: Smplkit::Audit::HttpConfiguration.to_wire(forwarder.configuration)
         )
-        resource = SmplkitGeneratedClient::Audit::ForwarderResource.new(
-          id: forwarder.id ? forwarder.id.to_s : "",
+      end
+
+      def build_create_body(forwarder)
+        # Create uses the distinct ForwarderCreateRequest envelope; the
+        # audit service requires data.id (the customer-supplied key) on
+        # create and 409s on conflict.
+        resource = SmplkitGeneratedClient::Audit::ForwarderCreateResource.new(
+          id: forwarder.id.to_s,
           type: "forwarder",
-          attributes: attrs
+          attributes: build_attrs(forwarder)
+        )
+        SmplkitGeneratedClient::Audit::ForwarderCreateRequest.new(data: resource)
+      end
+
+      def build_body(forwarder)
+        # Update path uses the generic ForwarderRequest envelope.
+        resource = SmplkitGeneratedClient::Audit::ForwarderResource.new(
+          id: forwarder.id.to_s,
+          type: "forwarder",
+          attributes: build_attrs(forwarder)
         )
         SmplkitGeneratedClient::Audit::ForwarderRequest.new(data: resource)
       end

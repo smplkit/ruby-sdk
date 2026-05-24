@@ -12,7 +12,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     )
   end
   let(:base_url) { "https://audit.smplkit.test" }
-  let(:fwd_id) { "11111111-2222-3333-4444-555555555555" }
+  let(:fwd_id) { "datadog-prod" }
   let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
 
   def forwarder_resource(name: "Datadog production", description: nil,
@@ -42,6 +42,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
         status: 201, body: { data: forwarder_resource }.to_json, headers: json_api
       )
       fwd = forwarders.new_forwarder(
+        fwd_id,
         name: "Datadog production", forwarder_type: "datadog",
         configuration: Smplkit::Audit::HttpConfiguration.new(
           method: "POST", url: "https://siem.example.com/in",
@@ -57,7 +58,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
 
     it "passes transform_type and transform through verbatim" do
       fwd = forwarders.new_forwarder(
-        name: "x", forwarder_type: "http",
+        fwd_id, name: "x", forwarder_type: "http",
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
         transform_type: Smplkit::Audit::TransformType::JSONATA,
         transform: "{ \"event\": $.action }"
@@ -68,7 +69,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
 
     it "leaves transform and transform_type nil when neither is provided" do
       fwd = forwarders.new_forwarder(
-        name: "x", forwarder_type: "http",
+        fwd_id, name: "x", forwarder_type: "http",
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       expect(fwd.transform).to be_nil
@@ -78,7 +79,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "raises when transform is provided without transform_type" do
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "http",
+          fwd_id, name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
           transform: "$"
         )
@@ -88,7 +89,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "raises when transform_type is provided without transform" do
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "http",
+          fwd_id, name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
           transform_type: Smplkit::Audit::TransformType::JSONATA
         )
@@ -98,7 +99,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "raises when transform_type is JSONATA and transform is not a String" do
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "http",
+          fwd_id, name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
           transform_type: Smplkit::Audit::TransformType::JSONATA,
           transform: { "event" => "$.action" }
@@ -111,7 +112,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
         status: 201, body: { data: forwarder_resource }.to_json, headers: json_api
       )
       fwd = forwarders.new_forwarder(
-        name: "x", forwarder_type: "http",
+        fwd_id, name: "x", forwarder_type: "http",
         configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
       )
       fwd.transform_type = Smplkit::Audit::TransformType::JSONATA
@@ -121,7 +122,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     it "raises when transform_type is not a known enum value" do
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "http",
+          fwd_id, name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x"),
           transform: "$", transform_type: "JQ"
         )
@@ -132,7 +133,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       stub_request(:post, "#{base_url}/api/v1/forwarders").to_raise(Errno::ECONNREFUSED)
       expect do
         forwarders.new_forwarder(
-          name: "x", forwarder_type: "http",
+          fwd_id, name: "x", forwarder_type: "http",
           configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
         ).save
       end.to raise_error(Smplkit::ConnectionError)

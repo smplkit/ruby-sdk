@@ -36,11 +36,11 @@ JSONATA
 manage = Smplkit::ManagementClient.new
 
 begin
-  forwarder_name = "showcase-#{SecureRandom.hex(3)}"
+  forwarder_id = "showcase-#{SecureRandom.hex(3)}"
 
   # create a new forwarder
   forwarder = manage.audit.forwarders.new_forwarder(
-    name: forwarder_name,
+    forwarder_id,
     forwarder_type: Smplkit::Audit::ForwarderType::HTTP,
     configuration: Smplkit::Audit::HttpConfiguration.new(
       method: Smplkit::Audit::HttpMethod::POST,

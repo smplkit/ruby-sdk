@@ -311,7 +311,10 @@ module Smplkit
     # Re-supply real values before calling {#save}; the SDK does not cache
     # them client-side.
     class Forwarder
-      # @return [String, nil] Server-assigned UUID, +nil+ until {#save} has run.
+      # @return [String, nil] Caller-supplied unique identifier (key) for this
+      #   forwarder. Unique within an account; immutable for the lifetime of
+      #   the forwarder. +nil+ only while the object represents an unsaved
+      #   instance constructed without an id (which {#save} would then reject).
       attr_accessor :id
 
       # @return [String] Display name. Free-form.
