@@ -262,12 +262,23 @@ module Smplkit
     #   @return [String] Status the destination must return for delivery to count
     #     as success — an exact code (+"200"+, +"204"+) or a class (+"2xx"+, +"4xx"+).
     #     Defaults to +"2xx"+.
+    # @!attribute [rw] tls_verify
+    #   @return [Boolean] Whether to verify the destination's TLS certificate
+    #     chain. Defaults to +true+; flip to +false+ only for short-lived
+    #     testing against a destination that serves an untrusted certificate.
+    #     Prefer pinning the issuing CA via +ca_cert+ for long-lived self-signed
+    #     setups.
+    # @!attribute [rw] ca_cert
+    #   @return [String, nil] Optional PEM-encoded certificate (or bundle)
+    #     trusted in addition to the system CA store. Ignored when
+    #     +tls_verify+ is +false+. +nil+ (the default) means "use system CAs
+    #     only".
     #
     # rubocop:disable Lint/StructNewOverride -- ``:method`` matches the
     # API attribute and shadowing Struct#method is the expected ergonomics.
-    HttpConfiguration = Struct.new(:method, :url, :headers, :success_status, keyword_init: true) do
-      def initialize(method: HttpMethod::POST, url: "", headers: nil, success_status: "2xx")
-        super(method: HttpMethod.coerce(method), url: url, headers: headers || [], success_status: success_status)
+    HttpConfiguration = Struct.new(:method, :url, :headers, :success_status, :tls_verify, :ca_cert, keyword_init: true) do
+      def initialize(method: HttpMethod::POST, url: "", headers: nil, success_status: "2xx", tls_verify: true, ca_cert: nil)
+        super(method: HttpMethod.coerce(method), url: url, headers: headers || [], success_status: success_status, tls_verify: tls_verify, ca_cert: ca_cert)
       end
 
       def self.to_wire(src)
@@ -284,18 +295,25 @@ module Smplkit
                           end
             SmplkitGeneratedClient::Audit::HttpHeader.new(name: name, value: value)
           end,
-          success_status: h.success_status
+          success_status: h.success_status,
+          tls_verify: h.tls_verify,
+          ca_cert: h.ca_cert
         )
       end
 
       def self.from_wire(src)
         return new if src.nil?
 
+        # Absent ``tls_verify`` on the wire means a forwarder persisted
+        # before the field landed — default to verifying so its prior
+        # secure behaviour is preserved.
         new(
           method: src.method || HttpMethod::POST,
           url: src.url || "",
           headers: (src.headers || []).map { |h| HttpHeader.new(name: h.name, value: h.value) },
-          success_status: src.success_status || "2xx"
+          success_status: src.success_status || "2xx",
+          tls_verify: src.tls_verify.nil? ? true : src.tls_verify,
+          ca_cert: src.ca_cert
         )
       end
     end
