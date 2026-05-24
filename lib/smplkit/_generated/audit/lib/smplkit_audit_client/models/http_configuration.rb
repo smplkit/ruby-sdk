@@ -28,6 +28,12 @@ module SmplkitGeneratedClient::Audit
     # HTTP response status that indicates a successful delivery. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
     attr_accessor :success_status
 
+    # Whether to verify the destination server's TLS certificate against trusted certificate authorities. Defaults to `true` and should be left on for any production destination. Set to `false` only for development or short-lived testing against a destination that presents an untrusted certificate (e.g. a Splunk Cloud trial stack on `:8088` serving its default self-signed certificate). When `false`, deliveries proceed without certificate verification — they are vulnerable to man-in-the-middle attacks. For long-lived self-signed setups, pin the issuing CA via `ca_cert` instead of disabling verification entirely.
+    attr_accessor :tls_verify
+
+    # Optional PEM-encoded certificate (or bundle) used to verify the destination server's TLS certificate, in addition to the system trust store. Use this to pin a private or self-signed CA (e.g. Splunk's default `SplunkCommonCA`) without disabling verification entirely via `tls_verify`. Must contain one or more `-----BEGIN CERTIFICATE-----` blocks. Ignored when `tls_verify` is `false`.
+    attr_accessor :ca_cert
+
     class EnumAttributeValidator
       attr_reader :datatype
       attr_reader :allowable_values
@@ -56,7 +62,9 @@ module SmplkitGeneratedClient::Audit
         :'method' => :'method',
         :'url' => :'url',
         :'headers' => :'headers',
-        :'success_status' => :'success_status'
+        :'success_status' => :'success_status',
+        :'tls_verify' => :'tls_verify',
+        :'ca_cert' => :'ca_cert'
       }
     end
 
@@ -76,13 +84,16 @@ module SmplkitGeneratedClient::Audit
         :'method' => :'String',
         :'url' => :'String',
         :'headers' => :'Array<HttpHeader>',
-        :'success_status' => :'String'
+        :'success_status' => :'String',
+        :'tls_verify' => :'Boolean',
+        :'ca_cert' => :'String'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'ca_cert'
       ])
     end
 
@@ -125,6 +136,16 @@ module SmplkitGeneratedClient::Audit
       else
         self.success_status = '2xx'
       end
+
+      if attributes.key?(:'tls_verify')
+        self.tls_verify = attributes[:'tls_verify']
+      else
+        self.tls_verify = true
+      end
+
+      if attributes.key?(:'ca_cert')
+        self.ca_cert = attributes[:'ca_cert']
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -148,6 +169,10 @@ module SmplkitGeneratedClient::Audit
         invalid_properties.push('invalid value for "success_status", the character length must be smaller than or equal to 3.')
       end
 
+      if !@ca_cert.nil? && @ca_cert.to_s.length > 65536
+        invalid_properties.push('invalid value for "ca_cert", the character length must be smaller than or equal to 65536.')
+      end
+
       invalid_properties
     end
 
@@ -161,6 +186,7 @@ module SmplkitGeneratedClient::Audit
       return false if @url.to_s.length > 2048
       return false if @url.to_s.length < 1
       return false if !@success_status.nil? && @success_status.to_s.length > 3
+      return false if !@ca_cert.nil? && @ca_cert.to_s.length > 65536
       true
     end
 
@@ -206,6 +232,16 @@ module SmplkitGeneratedClient::Audit
       @success_status = success_status
     end
 
+    # Custom attribute writer method with validation
+    # @param [Object] ca_cert Value to be assigned
+    def ca_cert=(ca_cert)
+      if !ca_cert.nil? && ca_cert.to_s.length > 65536
+        fail ArgumentError, 'invalid value for "ca_cert", the character length must be smaller than or equal to 65536.'
+      end
+
+      @ca_cert = ca_cert
+    end
+
     # Checks equality by comparing each attribute.
     # @param [Object] Object to be compared
     def ==(o)
@@ -214,7 +250,9 @@ module SmplkitGeneratedClient::Audit
           method == o.method &&
           url == o.url &&
           headers == o.headers &&
-          success_status == o.success_status
+          success_status == o.success_status &&
+          tls_verify == o.tls_verify &&
+          ca_cert == o.ca_cert
     end
 
     # @see the `==` method
@@ -226,7 +264,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [method, url, headers, success_status].hash
+      [method, url, headers, success_status, tls_verify, ca_cert].hash
     end
 
     # Builds the object from hash

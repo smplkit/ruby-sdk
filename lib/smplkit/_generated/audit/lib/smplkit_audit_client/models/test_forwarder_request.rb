@@ -31,6 +31,12 @@ module SmplkitGeneratedClient::Audit
     # Per-request timeout in milliseconds. Capped at 30 seconds.
     attr_accessor :timeout_ms
 
+    # Whether to verify the destination server's TLS certificate. Mirrors the parent forwarder field of the same name — see its description for security guidance. Defaults to `true`.
+    attr_accessor :tls_verify
+
+    # Optional PEM-encoded certificate (or bundle) used to verify the destination server's TLS certificate. Mirrors the parent forwarder field. Must contain one or more `-----BEGIN CERTIFICATE-----` blocks.
+    attr_accessor :ca_cert
+
     # Request body sent to the destination. When omitted, an empty body is sent (suitable for connectivity probes). When set, the body is sent verbatim — pair with an appropriate `Content-Type` entry in `headers` so the destination interprets it correctly. Limit 1 MiB.
     attr_accessor :body
 
@@ -64,6 +70,8 @@ module SmplkitGeneratedClient::Audit
         :'headers' => :'headers',
         :'success_status' => :'success_status',
         :'timeout_ms' => :'timeout_ms',
+        :'tls_verify' => :'tls_verify',
+        :'ca_cert' => :'ca_cert',
         :'body' => :'body'
       }
     end
@@ -86,6 +94,8 @@ module SmplkitGeneratedClient::Audit
         :'headers' => :'Array<HttpHeader>',
         :'success_status' => :'String',
         :'timeout_ms' => :'Integer',
+        :'tls_verify' => :'Boolean',
+        :'ca_cert' => :'String',
         :'body' => :'String'
       }
     end
@@ -94,6 +104,7 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_nullable
       Set.new([
         :'timeout_ms',
+        :'ca_cert',
         :'body'
       ])
     end
@@ -142,6 +153,16 @@ module SmplkitGeneratedClient::Audit
         self.timeout_ms = attributes[:'timeout_ms']
       end
 
+      if attributes.key?(:'tls_verify')
+        self.tls_verify = attributes[:'tls_verify']
+      else
+        self.tls_verify = true
+      end
+
+      if attributes.key?(:'ca_cert')
+        self.ca_cert = attributes[:'ca_cert']
+      end
+
       if attributes.key?(:'body')
         self.body = attributes[:'body']
       end
@@ -176,6 +197,10 @@ module SmplkitGeneratedClient::Audit
         invalid_properties.push('invalid value for "timeout_ms", must be greater than or equal to 1.')
       end
 
+      if !@ca_cert.nil? && @ca_cert.to_s.length > 65536
+        invalid_properties.push('invalid value for "ca_cert", the character length must be smaller than or equal to 65536.')
+      end
+
       if !@body.nil? && @body.to_s.length > 1048576
         invalid_properties.push('invalid value for "body", the character length must be smaller than or equal to 1048576.')
       end
@@ -195,6 +220,7 @@ module SmplkitGeneratedClient::Audit
       return false if !@success_status.nil? && @success_status.to_s.length > 3
       return false if !@timeout_ms.nil? && @timeout_ms > 30000
       return false if !@timeout_ms.nil? && @timeout_ms < 1
+      return false if !@ca_cert.nil? && @ca_cert.to_s.length > 65536
       return false if !@body.nil? && @body.to_s.length > 1048576
       true
     end
@@ -256,6 +282,16 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Custom attribute writer method with validation
+    # @param [Object] ca_cert Value to be assigned
+    def ca_cert=(ca_cert)
+      if !ca_cert.nil? && ca_cert.to_s.length > 65536
+        fail ArgumentError, 'invalid value for "ca_cert", the character length must be smaller than or equal to 65536.'
+      end
+
+      @ca_cert = ca_cert
+    end
+
+    # Custom attribute writer method with validation
     # @param [Object] body Value to be assigned
     def body=(body)
       if !body.nil? && body.to_s.length > 1048576
@@ -275,6 +311,8 @@ module SmplkitGeneratedClient::Audit
           headers == o.headers &&
           success_status == o.success_status &&
           timeout_ms == o.timeout_ms &&
+          tls_verify == o.tls_verify &&
+          ca_cert == o.ca_cert &&
           body == o.body
     end
 
@@ -287,7 +325,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [method, url, headers, success_status, timeout_ms, body].hash
+      [method, url, headers, success_status, timeout_ms, tls_verify, ca_cert, body].hash
     end
 
     # Builds the object from hash
