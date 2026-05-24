@@ -14,8 +14,8 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Flags
-  # JSON:API request envelope for updating a flag.
-  class FlagRequest < ApiModelBase
+  # JSON:API request envelope for creating a flag.  Distinct from :class:`FlagRequest` because create requires caller-supplied ``data.id`` while update does not.
+  class FlagCreateRequest < ApiModelBase
     attr_accessor :data
 
     # Attribute mapping from ruby-style variable name to JSON key.
@@ -38,7 +38,7 @@ module SmplkitGeneratedClient::Flags
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'data' => :'FlagResource'
+        :'data' => :'FlagCreateResource'
       }
     end
 
@@ -52,14 +52,14 @@ module SmplkitGeneratedClient::Flags
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Flags::FlagRequest` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Flags::FlagCreateRequest` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Flags::FlagRequest`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Flags::FlagCreateRequest`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
