@@ -67,6 +67,17 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect(fwd.transform).to eq("{ \"event\": $.action }")
     end
 
+    it "raises ArgumentError when save() is called on a forwarder without an id" do
+      # ``id`` is caller-supplied per ADR-013 — instances built with an
+      # empty or nil id can't be POSTed; the wrapper rejects the create
+      # at the boundary rather than letting the server return a 400.
+      fwd = forwarders.new_forwarder(
+        "", name: "x", forwarder_type: "http",
+        configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+      )
+      expect { fwd.save }.to raise_error(ArgumentError, /id is required/)
+    end
+
     it "leaves transform and transform_type nil when neither is provided" do
       fwd = forwarders.new_forwarder(
         fwd_id, name: "x", forwarder_type: "http",
@@ -415,6 +426,102 @@ RSpec.describe "Smplkit::Audit.call_api" do
     err = SmplkitGeneratedClient::Audit::ApiError.new(code: 200, response_body: "")
     expect { Smplkit::Audit.call_api { raise err } }
       .to raise_error(SmplkitGeneratedClient::Audit::ApiError)
+  end
+end
+
+RSpec.describe "Smplkit::Audit::HttpConfiguration TLS knobs" do
+  let(:resolved) do
+    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+      api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
+    )
+  end
+  let(:mgmt) { Smplkit::ManagementClient.from_resolved(resolved) }
+  let(:forwarders) { mgmt.audit.forwarders }
+  let(:base_url) { "https://audit.smplkit.test" }
+  let(:fwd_id) { "datadog-prod" }
+  let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
+
+  it "defaults tls_verify to true and ca_cert to nil" do
+    cfg = Smplkit::Audit::HttpConfiguration.new(url: "https://x")
+    expect(cfg.tls_verify).to eq(true)
+    expect(cfg.ca_cert).to be_nil
+  end
+
+  it "sends tls_verify and ca_cert on the wire when set" do
+    captured = nil
+    stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
+      captured = req.body
+      true
+    end.to_return(
+      status: 201,
+      body: {
+        data: {
+          id: fwd_id, type: "forwarder",
+          attributes: {
+            name: "n", forwarder_type: "http", enabled: true,
+            configuration: { method: "POST", url: "https://x", headers: [], success_status: "2xx" },
+            created_at: "2026-05-07T12:00:00Z", updated_at: "2026-05-07T12:00:00Z", version: 1
+          }
+        }
+      }.to_json,
+      headers: json_api
+    )
+    fwd = forwarders.new_forwarder(
+      fwd_id, name: "n", forwarder_type: "http",
+      configuration: Smplkit::Audit::HttpConfiguration.new(
+        url: "https://x", tls_verify: false,
+        ca_cert: "-----BEGIN CERTIFICATE-----\nfoo\n-----END CERTIFICATE-----"
+      )
+    )
+    fwd.save
+    expect(captured).to include('"tls_verify":false')
+    expect(captured).to include('"ca_cert":"-----BEGIN CERTIFICATE-----')
+  end
+
+  it "reads tls_verify and ca_cert back from the wire" do
+    stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+      status: 200,
+      body: {
+        data: {
+          id: fwd_id, type: "forwarder",
+          attributes: {
+            name: "n", forwarder_type: "http", enabled: true,
+            configuration: {
+              method: "POST", url: "https://x", headers: [], success_status: "2xx",
+              tls_verify: false,
+              ca_cert: "-----BEGIN CERTIFICATE-----\nfoo\n-----END CERTIFICATE-----"
+            },
+            created_at: "2026-05-07T12:00:00Z", updated_at: "2026-05-07T12:00:00Z", version: 1
+          }
+        }
+      }.to_json,
+      headers: json_api
+    )
+    fwd = forwarders.get(fwd_id)
+    expect(fwd.configuration.tls_verify).to eq(false)
+    expect(fwd.configuration.ca_cert).to include("BEGIN CERTIFICATE")
+  end
+
+  it "defaults tls_verify to true when the wire omits it" do
+    # Forwarders persisted before the field landed must read back as
+    # tls_verify=true so they keep their prior secure default.
+    stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+      status: 200,
+      body: {
+        data: {
+          id: fwd_id, type: "forwarder",
+          attributes: {
+            name: "n", forwarder_type: "http", enabled: true,
+            configuration: { method: "POST", url: "https://x", headers: [], success_status: "2xx" },
+            created_at: "2026-05-07T12:00:00Z", updated_at: "2026-05-07T12:00:00Z", version: 1
+          }
+        }
+      }.to_json,
+      headers: json_api
+    )
+    fwd = forwarders.get(fwd_id)
+    expect(fwd.configuration.tls_verify).to eq(true)
+    expect(fwd.configuration.ca_cert).to be_nil
   end
 end
 
