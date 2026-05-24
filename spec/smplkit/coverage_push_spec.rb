@@ -448,14 +448,18 @@ RSpec.describe Smplkit::Config::ConfigItem do
 end
 
 RSpec.describe Smplkit::Config::ConfigEnvironment do
-  it "treats already-typed Hash values as wrapped overrides" do
+  # Per ADR-024 §2.4 env overrides are flat +{key: rawValue}+ — no typed
+  # wrapper. The legacy +{"value" => raw, "type" => t}+ shape is tolerated
+  # at the boundary by unwrapping to the raw value.
+  it "unwraps legacy typed-Hash overrides to raw values" do
     env = described_class.new(values: { "k" => { "value" => 1, "type" => "NUMBER" } })
     expect(env.values).to eq("k" => 1)
   end
 
-  it "wraps raw values into the typed shape" do
+  it "stores raw values directly without wrapping" do
     env = described_class.new(values: { "k" => "raw" })
-    expect(env.values_raw["k"]).to eq("value" => "raw")
+    expect(env.values_raw["k"]).to eq("raw")
+    expect(env.values["k"]).to eq("raw")
   end
 end
 

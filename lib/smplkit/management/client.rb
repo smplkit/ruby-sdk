@@ -666,14 +666,12 @@ module Smplkit
       def config_envs_to_wire(environments)
         return nil if environments.empty?
 
-        # ConfigItemOverride only carries +value+ on the wire — environment
-        # overrides override the value, not the type or description.
+        # Per ADR-024 §2.4 the wire shape for env overrides is a flat
+        # +{env: {key: rawValue}}+ map — no envelope, no per-key type
+        # wrapper. The generated +Config.environments+ attribute accepts
+        # +Hash<String, Hash<String, Object>>+ directly.
         environments.each_with_object({}) do |(env_key, env_obj), out|
-          values = env_obj.values_raw.each_with_object({}) do |(k, v), inner|
-            v_hash = v.is_a?(Hash) ? v : { "value" => v }
-            inner[k] = SmplkitGeneratedClient::Config::ConfigItemOverride.new(value: v_hash["value"])
-          end
-          out[env_key] = SmplkitGeneratedClient::Config::EnvironmentOverride.new(values: values)
+          out[env_key] = env_obj.values
         end
       end
 

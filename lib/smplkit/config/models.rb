@@ -41,26 +41,32 @@ module Smplkit
     # Read-only inspection container. Mutation is performed via +Config+'s
     # setters with +environment:+ (e.g.
     # +cfg.set_string("k", "v", environment: "production")+).
+    #
+    # Per ADR-024 §2.4 the wire shape for env overrides is flat —
+    # +{env: {key: rawValue}}+ — so the in-memory representation is
+    # simply a Hash of raw values, with no typed wrapper.
     class ConfigEnvironment
       def initialize(values: nil)
         @values_raw = {}
         return unless values
 
         values.each do |k, v|
-          @values_raw[k] = v.is_a?(Hash) && v.key?("value") ? v : { "value" => v }
+          # Tolerate a legacy +{ "value" => raw, "type" => t }+ wrapper in
+          # case a caller passes the old shape; unwrap to the raw value.
+          @values_raw[k] = v.is_a?(Hash) && v.key?("value") ? v["value"] : v
         end
       end
 
       # Returns overrides as a plain Hash +{ "key" => raw_value }+.
       def values
-        @values_raw.transform_values { |v| v["value"] }
+        @values_raw.dup
       end
 
-      # Returns the full typed overrides
-      # +{ "key" => { "value" => v, "type" => t, "description" => d } }+
-      # (read-only deep copy).
+      # Returns overrides as a plain Hash +{ "key" => raw_value }+. Retained
+      # as a separate accessor for backward compatibility; identical to
+      # +values+ now that env overrides are stored flat.
       def values_raw
-        @values_raw.transform_values { |v| v.is_a?(Hash) ? v.dup : v }
+        @values_raw.dup
       end
 
       def _replace_raw(values)
@@ -175,9 +181,11 @@ module Smplkit
             @items << ConfigItem.new(name: name, value: value, type: type, description: description)
           end
         else
+          # Per ADR-024 §2.4 env overrides carry the raw value only — type
+          # and description live on the base item, not on the override.
           env = (@environments[environment] ||= ConfigEnvironment.new)
           raw = env.values_raw
-          raw[name] = { "value" => value, "type" => type, "description" => description }.compact
+          raw[name] = value
           env._replace_raw(raw)
         end
         self

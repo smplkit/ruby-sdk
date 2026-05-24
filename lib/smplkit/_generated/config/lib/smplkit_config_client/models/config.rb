@@ -28,7 +28,7 @@ module SmplkitGeneratedClient::Config
     # Map of item keys to item definitions declared on this config. Keys must be unique within the config; declared types are immutable once set and must match any type declared for the same key on an ancestor.
     attr_accessor :items
 
-    # Map of environment keys to per-environment override sets. An environment override applies when this config is resolved against that environment.
+    # Map of environment keys to per-environment overrides. Each environment maps to a flat object of item key to override value (e.g. `{\"production\": {\"database.host\": \"db-prod.internal\"}}`). Only the keys being overridden need to be present. Override values must conform to the item's declared `type`; `type` and `description` are always resolved from the defining configuration and are never redeclared on an override.
     attr_accessor :environments
 
     # Whether this config is admin-managed (`true`) or auto-discovered by an SDK and not yet claimed (`false`). Configs created through the console or `POST /api/v1/configs` are always managed. Configs registered via `POST /api/v1/configs/bulk` land unmanaged. Setting this field to `true` on a PUT promotes a discovered config to managed, which consumes a slot of the `config.managed_configurations` entitlement.
@@ -71,7 +71,7 @@ module SmplkitGeneratedClient::Config
         :'description' => :'String',
         :'parent' => :'String',
         :'items' => :'Hash<String, ConfigItemDefinition>',
-        :'environments' => :'Hash<String, EnvironmentOverride>',
+        :'environments' => :'Hash<String, Hash<String, Object>>',
         :'managed' => :'Boolean',
         :'created_at' => :'Time',
         :'updated_at' => :'Time'
