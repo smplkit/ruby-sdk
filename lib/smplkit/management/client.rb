@@ -11,6 +11,7 @@ module Smplkit
   #   - +mgmt.contexts.*+
   #   - +mgmt.context_types.*+
   #   - +mgmt.environments.*+
+  #   - +mgmt.services.*+
   #   - +mgmt.account_settings.*+
   #   - +mgmt.config.*+
   #   - +mgmt.flags.*+
@@ -33,7 +34,7 @@ module Smplkit
     # per exhaustive fetch.
     RUNTIME_PAGE_SIZE = 1000
 
-    attr_reader :contexts, :context_types, :environments, :account_settings,
+    attr_reader :contexts, :context_types, :environments, :services, :account_settings,
                 :config, :flags, :loggers, :log_groups, :audit
 
     def self.from_resolved(resolved, extra_headers: nil)
@@ -61,6 +62,7 @@ module Smplkit
       @contexts = ContextsNamespace.new(@app_api_client)
       @context_types = ContextTypesNamespace.new(@app_api_client)
       @environments = EnvironmentsNamespace.new(@app_api_client)
+      @services = ServicesNamespace.new(@app_api_client)
       @account_settings = AccountSettingsNamespace.new(@app_api_client)
       @config = ConfigNamespace.new(@config_api_client)
       @flags = FlagsNamespace.new(@flags_api_client)
@@ -401,6 +403,84 @@ module Smplkit
           name: attrs["name"], color: color,
           classification: attrs["classification"] || Management::EnvironmentClassification::STANDARD,
           description: attrs["description"],
+          created_at: attrs["created_at"], updated_at: attrs["updated_at"]
+        )
+      end
+    end
+
+    class ServicesNamespace
+      def initialize(api_client)
+        @api = SmplkitGeneratedClient::App::ServicesApi.new(api_client)
+      end
+
+      def list(page_number: nil, page_size: nil)
+        opts = {}
+        opts[:page_number] = page_number unless page_number.nil?
+        opts[:page_size] = page_size unless page_size.nil?
+        response = ErrorMapping.call { @api.list_services(opts) }
+        (response.data || []).map { |r| from_resource(ResourceShim.from_model(r)) }
+      end
+
+      def get(key)
+        response = ErrorMapping.call { @api.get_service(key) }
+        from_resource(ResourceShim.from_model(response.data))
+      end
+
+      def delete(key)
+        ErrorMapping.call { @api.delete_service(key) }
+        true
+      end
+
+      def new(key, name: nil)
+        Management::Service.new(
+          self,
+          key: key,
+          name: name || Smplkit::Helpers.key_to_display_name(key)
+        )
+      end
+
+      def _create_service(svc)
+        response = ErrorMapping.call { @api.create_service(create_body_for(svc)) }
+        from_resource(ResourceShim.from_model(response.data))
+      end
+
+      def _update_service(svc)
+        response = ErrorMapping.call { @api.update_service(svc.key, body_for(svc)) }
+        from_resource(ResourceShim.from_model(response.data))
+      end
+
+      private
+
+      def body_for(svc)
+        SmplkitGeneratedClient::App::ServiceRequest.new(
+          data: SmplkitGeneratedClient::App::ServiceResource.new(
+            type: "service",
+            id: svc.key,
+            attributes: SmplkitGeneratedClient::App::Service.new(
+              name: svc.name
+            )
+          )
+        )
+      end
+
+      def create_body_for(svc)
+        SmplkitGeneratedClient::App::ServiceCreateRequest.new(
+          data: SmplkitGeneratedClient::App::ServiceCreateResource.new(
+            type: "service",
+            id: svc.key,
+            attributes: SmplkitGeneratedClient::App::Service.new(
+              name: svc.name
+            )
+          )
+        )
+      end
+
+      def from_resource(resource)
+        attrs = resource["attributes"] || {}
+        Management::Service.new(
+          self,
+          id: resource["id"], key: attrs["key"] || resource["id"],
+          name: attrs["name"],
           created_at: attrs["created_at"], updated_at: attrs["updated_at"]
         )
       end

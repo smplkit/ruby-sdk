@@ -100,6 +100,51 @@ module Smplkit
       end
     end
 
+    # A service resource — a backend application or microservice in the
+    # customer's stack that contexts can be evaluated against.
+    class Service
+      attr_accessor :id, :key, :name, :created_at, :updated_at
+
+      def initialize(client = nil, key:, id: nil, name: nil,
+                     created_at: nil, updated_at: nil)
+        @client = client
+        @id = id
+        @key = key
+        @name = name
+        @created_at = created_at
+        @updated_at = updated_at
+      end
+
+      def save
+        raise "Service was constructed without a client; cannot save" if @client.nil?
+
+        updated =
+          if @created_at.nil?
+            @client._create_service(self)
+          else
+            @client._update_service(self)
+          end
+        _apply(updated)
+        self
+      end
+      alias save! save
+
+      def delete
+        raise "Service was constructed without a client; cannot delete" if @client.nil?
+
+        @client.delete(@key)
+      end
+      alias delete! delete
+
+      def _apply(other)
+        @id = other.id
+        @key = other.key
+        @name = other.name
+        @created_at = other.created_at
+        @updated_at = other.updated_at
+      end
+    end
+
     # An account-wide settings resource.
     class AccountSettings
       attr_accessor :id, :environment_order, :default_environment, :updated_at

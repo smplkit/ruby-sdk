@@ -83,6 +83,58 @@ RSpec.describe Smplkit::Management::ContextType do
   end
 end
 
+RSpec.describe Smplkit::Management::Service do
+  subject(:svc) { described_class.new(client, key: "user_service", name: "User Service") }
+
+  let(:client) do
+    instance_double(Smplkit::ManagementClient::ServicesNamespace,
+                    _create_service: nil, _update_service: nil, delete: true)
+  end
+
+  it "carries identity and metadata" do
+    expect(svc.key).to eq("user_service")
+    expect(svc.name).to eq("User Service")
+  end
+
+  it "raises on save when constructed without a client" do
+    bare = described_class.new(key: "k")
+    expect { bare.save }.to raise_error(RuntimeError, /without a client/)
+    expect { bare.delete }.to raise_error(RuntimeError, /without a client/)
+  end
+
+  it "save calls _create_service when never persisted" do
+    fresh = described_class.new(key: "x", name: "X")
+    allow(client).to receive(:_create_service).and_return(fresh)
+    svc.save
+    expect(client).to have_received(:_create_service).with(svc)
+  end
+
+  it "save calls _update_service when previously persisted" do
+    persisted = described_class.new(key: "user_service", name: "User Service", created_at: "now")
+    persisted.instance_variable_set(:@client, client)
+    updated = described_class.new(key: "user_service", name: "Renamed", created_at: "now")
+    allow(client).to receive(:_update_service).and_return(updated)
+    persisted.save
+    expect(client).to have_received(:_update_service)
+  end
+
+  it "delete dispatches to the namespace" do
+    svc.delete
+    expect(client).to have_received(:delete).with("user_service")
+  end
+
+  it "save! aliases save" do
+    fresh = described_class.new(key: "x", name: "X")
+    allow(client).to receive(:_create_service).and_return(fresh)
+    expect { svc.save! }.not_to raise_error
+  end
+
+  it "delete! aliases delete" do
+    expect { svc.delete! }.not_to raise_error
+    expect(client).to have_received(:delete).with("user_service")
+  end
+end
+
 RSpec.describe Smplkit::Management::AccountSettings do
   subject(:settings) { described_class.new(client, environment_order: ["staging"]) }
 

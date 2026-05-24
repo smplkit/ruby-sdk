@@ -198,6 +198,63 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
     end
   end
 
+  describe "ServicesNamespace" do
+    let(:svc_data) do
+      { "id" => "user_service", "type" => "service",
+        "attributes" => { "name" => "User Service" } }
+    end
+
+    it "list returns Services" do
+      stub_get("app", "/api/v1/services",
+               { "data" => [svc_data], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } })
+      expect(mgmt.services.list.first.name).to eq("User Service")
+    end
+
+    it "list forwards page_number and page_size to the generated client" do
+      capture, = stub_get_capture(
+        %r{https://app\.smplkit\.test/api/v1/services\b},
+        { "data" => [svc_data], "meta" => { "pagination" => { "page" => 2, "size" => 50 } } }
+      )
+      mgmt.services.list(page_number: 2, page_size: 50)
+      expect(capture[:uri]).to include("page%5Bnumber%5D=2")
+      expect(capture[:uri]).to include("page%5Bsize%5D=50")
+    end
+
+    it "get fetches one" do
+      stub_get("app", "/api/v1/services/user_service", { "data" => svc_data })
+      expect(mgmt.services.get("user_service").name).to eq("User Service")
+    end
+
+    it "delete sends DELETE" do
+      stub_delete("app", "/api/v1/services/user_service")
+      expect(mgmt.services.delete("user_service")).to be(true)
+    end
+
+    it "create POSTs the body" do
+      stub_post("app", "/api/v1/services", { "data" => svc_data })
+      svc = mgmt.services.new("user_service")
+      mgmt.services._create_service(svc)
+      expect(WebMock).to have_requested(:post, "https://app.smplkit.test/api/v1/services")
+    end
+
+    it "update PUTs" do
+      stub_put("app", "/api/v1/services/user_service", { "data" => svc_data })
+      svc = mgmt.services.new("user_service")
+      mgmt.services._update_service(svc)
+      expect(WebMock).to have_requested(:put, "https://app.smplkit.test/api/v1/services/user_service")
+    end
+
+    it "new builds a default display name from the key" do
+      svc = mgmt.services.new("user_service")
+      expect(svc.name).to eq("User Service")
+    end
+
+    it "new accepts an explicit name" do
+      svc = mgmt.services.new("user_service", name: "Custom")
+      expect(svc.name).to eq("Custom")
+    end
+  end
+
   describe "AccountSettingsNamespace" do
     it "get fetches the account settings" do
       stub_get("app", "/api/v1/accounts/current/settings",
