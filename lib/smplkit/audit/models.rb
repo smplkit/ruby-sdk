@@ -276,9 +276,18 @@ module Smplkit
     #
     # rubocop:disable Lint/StructNewOverride -- ``:method`` matches the
     # API attribute and shadowing Struct#method is the expected ergonomics.
-    HttpConfiguration = Struct.new(:method, :url, :headers, :success_status, :tls_verify, :ca_cert, keyword_init: true) do
-      def initialize(method: HttpMethod::POST, url: "", headers: nil, success_status: "2xx", tls_verify: true, ca_cert: nil)
-        super(method: HttpMethod.coerce(method), url: url, headers: headers || [], success_status: success_status, tls_verify: tls_verify, ca_cert: ca_cert)
+    HttpConfiguration = Struct.new(
+      :method, :url, :headers, :success_status, :tls_verify, :ca_cert,
+      keyword_init: true
+    ) do
+      def initialize(
+        method: HttpMethod::POST, url: "", headers: nil,
+        success_status: "2xx", tls_verify: true, ca_cert: nil
+      )
+        super(
+          method: HttpMethod.coerce(method), url: url, headers: headers || [],
+          success_status: success_status, tls_verify: tls_verify, ca_cert: ca_cert
+        )
       end
 
       def self.to_wire(src)
@@ -312,7 +321,11 @@ module Smplkit
           url: src.url || "",
           headers: (src.headers || []).map { |h| HttpHeader.new(name: h.name, value: h.value) },
           success_status: src.success_status || "2xx",
+          # rubocop:disable Style/RedundantCondition -- nil and false are
+          # distinct: nil means "field absent on the wire" (default to true);
+          # explicit false means "verification disabled".
           tls_verify: src.tls_verify.nil? ? true : src.tls_verify,
+          # rubocop:enable Style/RedundantCondition
           ca_cert: src.ca_cert
         )
       end
