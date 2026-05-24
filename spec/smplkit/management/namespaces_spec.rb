@@ -315,7 +315,15 @@ RSpec.describe "Smplkit::ManagementClient namespaces" do
       cfg.set_string("api.host", "x")
       cfg.set_string("api.host", "stg.example.com", environment: "staging")
       mgmt.config._create_config(cfg)
-      expect(WebMock).to have_requested(:post, "https://config.smplkit.test/api/v1/configs")
+      # Per ADR-024 §2.4 the wire shape for env overrides is flat —
+      # +{env: {key: rawValue}}+ — with no +values+ envelope and no
+      # per-key type wrapper.
+      expect(WebMock).to(have_requested(:post, "https://config.smplkit.test/api/v1/configs")
+        .with do |req|
+          attrs = JSON.parse(req.body).dig("data", "attributes")
+          attrs["items"]["api.host"].slice("value", "type") == { "value" => "x", "type" => "STRING" } &&
+            attrs["environments"] == { "staging" => { "api.host" => "stg.example.com" } }
+        end)
     end
 
     it "update PUTs" do

@@ -290,10 +290,12 @@ RSpec.describe Smplkit::ManagementClient::ConfigNamespace do
   let(:mgmt) { Smplkit::ManagementClient.from_resolved(resolved) }
 
   it "config_to_chain_entry (in Helpers) serializes per-environment overrides" do
+    # Per ADR-024 §2.4 env entries are flat +{key: rawValue}+ maps — no
+    # +values+ envelope, no per-key type wrapper. Type lives on the base
+    # item.
     cfg = mgmt.config.new_config("showcase")
     cfg.set_string("api.host", "stg.example.com", environment: "staging")
     chain_entry = Smplkit::Config::Helpers.config_to_chain_entry(cfg)
-    expect(chain_entry["environments"]["staging"]["values"])
-      .to eq("api.host" => { "value" => "stg.example.com", "type" => "STRING" })
+    expect(chain_entry["environments"]["staging"]).to eq("api.host" => "stg.example.com")
   end
 end

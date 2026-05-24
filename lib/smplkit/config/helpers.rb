@@ -22,7 +22,9 @@ module Smplkit
         end
 
         environments = (attrs["environments"] || {}).each_with_object({}) do |(env, env_data), out|
-          env_values = env_data.is_a?(Hash) ? (env_data["values"] || {}) : {}
+          # Per ADR-024 §2.4 env_data is already the flat override map
+          # +{key: rawValue}+ — the old +{values: {...}}+ envelope is gone.
+          env_values = env_data.is_a?(Hash) ? env_data : {}
           out[env] = ConfigEnvironment.new(values: env_values)
         end
 
@@ -88,7 +90,9 @@ module Smplkit
            { "value" => item.value, "type" => item.type, "description" => item.description }.compact]
         end
         environments = config.environments.each_with_object({}) do |(env_key, env_obj), out|
-          out[env_key] = { "values" => env_obj.values_raw }
+          # Per ADR-024 §2.4 env entries are flat +{key: rawValue}+ maps —
+          # no +values+ envelope, no per-key type wrapper.
+          out[env_key] = env_obj.values
         end
         { "id" => config.id, "items" => items_hash, "environments" => environments }
       end
@@ -102,9 +106,10 @@ module Smplkit
         chain.reverse_each do |config_data|
           raw_items = config_data["items"] || config_data["values"] || {}
           base_values = unwrap_items(raw_items)
+          # Per ADR-024 §2.4 env entries are flat +{key: rawValue}+ maps —
+          # the resolver reads the env entry directly as the override map.
           env_data = (config_data["environments"] || {})[environment] || {}
-          env_raw = env_data.is_a?(Hash) ? (env_data["values"] || {}) : {}
-          env_values = unwrap_items(env_raw)
+          env_values = env_data.is_a?(Hash) ? env_data : {}
           config_resolved = deep_merge(base_values, env_values)
           accumulated = deep_merge(accumulated, config_resolved)
         end

@@ -57,9 +57,10 @@ RSpec.describe Smplkit::Config::Helpers do
 
   describe ".resolve_chain" do
     it "applies child over parent and env over base" do
+      # Per ADR-024 §2.4 env entries are flat +{key: rawValue}+ maps.
       chain = [
         { "items" => { "feature.beta" => false },
-          "environments" => { "staging" => { "values" => { "feature.beta" => true } } } },
+          "environments" => { "staging" => { "feature.beta" => true } } },
         { "items" => { "api.host" => "default", "feature.beta" => false } }
       ]
       expect(described_class.resolve_chain(chain, "staging")).to eq("api.host" => "default", "feature.beta" => true)
