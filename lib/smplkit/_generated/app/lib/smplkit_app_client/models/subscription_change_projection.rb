@@ -19,10 +19,10 @@ module SmplkitGeneratedClient::App
     # Product key affected by this change.
     attr_accessor :product
 
-    # Current plan for this product, or `FREE` if it is being added.
+    # Current plan for this product, or `free` if it is being added.
     attr_accessor :from_plan
 
-    # Plan the product will be on after the change. `FREE` indicates the enrollment will be dropped.
+    # Plan the product will be on after the change. `free` indicates the enrollment will be dropped.
     attr_accessor :to_plan
 
     # Monthly cost in cents of this enrollment after the change. `0` when the enrollment will be dropped.
