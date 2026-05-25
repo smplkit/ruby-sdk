@@ -144,6 +144,13 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::MetricsApi* | [**list_metrics**](docs/MetricsApi.md#list_metrics) | **GET** /api/v1/metrics | List Metrics
 *SmplkitGeneratedClient::App::PlansApi* | [**list_plans**](docs/PlansApi.md#list_plans) | **GET** /api/v1/plans | List Plans
 *SmplkitGeneratedClient::App::ProductsApi* | [**list_products**](docs/ProductsApi.md#list_products) | **GET** /api/v1/products | List Products
+*SmplkitGeneratedClient::App::SSOApi* | [**claim_sso_domain**](docs/SSOApi.md#claim_sso_domain) | **PUT** /api/v1/accounts/current/sso_domains/{domain} | Claim SSO Domain
+*SmplkitGeneratedClient::App::SSOApi* | [**delete_sso_connection**](docs/SSOApi.md#delete_sso_connection) | **DELETE** /api/v1/accounts/current/sso_connection | Delete SSO Connection
+*SmplkitGeneratedClient::App::SSOApi* | [**get_sso_connection**](docs/SSOApi.md#get_sso_connection) | **GET** /api/v1/accounts/current/sso_connection | Get SSO Connection
+*SmplkitGeneratedClient::App::SSOApi* | [**list_sso_domains**](docs/SSOApi.md#list_sso_domains) | **GET** /api/v1/accounts/current/sso_domains | List SSO Domains
+*SmplkitGeneratedClient::App::SSOApi* | [**put_sso_connection**](docs/SSOApi.md#put_sso_connection) | **PUT** /api/v1/accounts/current/sso_connection | Create or Replace SSO Connection
+*SmplkitGeneratedClient::App::SSOApi* | [**release_sso_domain**](docs/SSOApi.md#release_sso_domain) | **DELETE** /api/v1/accounts/current/sso_domains/{domain} | Release SSO Domain
+*SmplkitGeneratedClient::App::SSOApi* | [**verify_sso_domain**](docs/SSOApi.md#verify_sso_domain) | **POST** /api/v1/accounts/current/sso_domains/{domain}/actions/verify | Verify SSO Domain
 *SmplkitGeneratedClient::App::ServicesApi* | [**create_service**](docs/ServicesApi.md#create_service) | **POST** /api/v1/services | Create Service
 *SmplkitGeneratedClient::App::ServicesApi* | [**delete_service**](docs/ServicesApi.md#delete_service) | **DELETE** /api/v1/services/{id} | Delete Service
 *SmplkitGeneratedClient::App::ServicesApi* | [**get_service**](docs/ServicesApi.md#get_service) | **GET** /api/v1/services/{id} | Get Service
@@ -257,6 +264,15 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::ProductListResponse](docs/ProductListResponse.md)
  - [SmplkitGeneratedClient::App::ProductResource](docs/ProductResource.md)
  - [SmplkitGeneratedClient::App::RegisterRequest](docs/RegisterRequest.md)
+ - [SmplkitGeneratedClient::App::SSOConnection](docs/SSOConnection.md)
+ - [SmplkitGeneratedClient::App::SSOConnectionRequest](docs/SSOConnectionRequest.md)
+ - [SmplkitGeneratedClient::App::SSOConnectionResource](docs/SSOConnectionResource.md)
+ - [SmplkitGeneratedClient::App::SSOConnectionResponse](docs/SSOConnectionResponse.md)
+ - [SmplkitGeneratedClient::App::SSODomain](docs/SSODomain.md)
+ - [SmplkitGeneratedClient::App::SSODomainListResponse](docs/SSODomainListResponse.md)
+ - [SmplkitGeneratedClient::App::SSODomainRequest](docs/SSODomainRequest.md)
+ - [SmplkitGeneratedClient::App::SSODomainResource](docs/SSODomainResource.md)
+ - [SmplkitGeneratedClient::App::SSODomainResponse](docs/SSODomainResponse.md)
  - [SmplkitGeneratedClient::App::Service](docs/Service.md)
  - [SmplkitGeneratedClient::App::ServiceCreateRequest](docs/ServiceCreateRequest.md)
  - [SmplkitGeneratedClient::App::ServiceCreateResource](docs/ServiceCreateResource.md)
