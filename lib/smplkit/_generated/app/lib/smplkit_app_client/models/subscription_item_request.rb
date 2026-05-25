@@ -19,7 +19,7 @@ module SmplkitGeneratedClient::App
     # Product key (e.g. `audit`, `config`, `flags`, `logging`).
     attr_accessor :product
 
-    # Target plan for this product. Must be a paid plan such as `STANDARD` or `PRO`; the free plan is implicit when a product is not listed.
+    # Target plan for this product. Must be a paid plan such as `standard` or `pro`; the free plan is implicit when a product is not listed.
     attr_accessor :plan
 
     # Attribute mapping from ruby-style variable name to JSON key.

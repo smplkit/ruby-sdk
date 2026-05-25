@@ -22,13 +22,13 @@ module SmplkitGeneratedClient::App
     # Product key (e.g. `audit`, `config`, `flags`, `logging`).
     attr_accessor :product
 
-    # Current plan for this product (e.g. `STANDARD`, `PRO`).
+    # Current plan for this product (e.g. `standard`, `pro`).
     attr_accessor :plan
 
     # Monthly list price for this enrollment, in cents. This value is locked at the time the enrollment was created or last had its plan changed; subsequent changes to the public price list do not affect this enrollment until the customer themselves changes their plan.
     attr_accessor :price_monthly_cents
 
-    # When a plan change is scheduled for the end of the current billing period, this is the plan that will take effect. Otherwise `null`. The value `FREE` indicates the enrollment will be dropped.
+    # When a plan change is scheduled for the end of the current billing period, this is the plan that will take effect. Otherwise `null`. The value `free` indicates the enrollment will be dropped.
     attr_accessor :pending_plan_change
 
     # ISO-8601 timestamp at which the pending plan change takes effect. Matches the subscription's `current_period_end`.
