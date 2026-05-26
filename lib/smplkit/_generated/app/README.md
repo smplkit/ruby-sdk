@@ -133,6 +133,15 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::EnvironmentsApi* | [**get_environment_usage**](docs/EnvironmentsApi.md#get_environment_usage) | **GET** /api/v1/environments/{id}/usage | Report Environment Usage
 *SmplkitGeneratedClient::App::EnvironmentsApi* | [**list_environments**](docs/EnvironmentsApi.md#list_environments) | **GET** /api/v1/environments | List Environments
 *SmplkitGeneratedClient::App::EnvironmentsApi* | [**update_environment**](docs/EnvironmentsApi.md#update_environment) | **PUT** /api/v1/environments/{id} | Update Environment
+*SmplkitGeneratedClient::App::GroupMembershipsApi* | [**create_group_membership**](docs/GroupMembershipsApi.md#create_group_membership) | **POST** /api/v1/group_memberships | Create Group Membership
+*SmplkitGeneratedClient::App::GroupMembershipsApi* | [**delete_group_membership**](docs/GroupMembershipsApi.md#delete_group_membership) | **DELETE** /api/v1/group_memberships/{id} | Delete Group Membership
+*SmplkitGeneratedClient::App::GroupMembershipsApi* | [**get_group_membership**](docs/GroupMembershipsApi.md#get_group_membership) | **GET** /api/v1/group_memberships/{id} | Get Group Membership
+*SmplkitGeneratedClient::App::GroupMembershipsApi* | [**list_group_memberships**](docs/GroupMembershipsApi.md#list_group_memberships) | **GET** /api/v1/group_memberships | List Group Memberships
+*SmplkitGeneratedClient::App::GroupsApi* | [**create_group**](docs/GroupsApi.md#create_group) | **POST** /api/v1/groups | Create Group
+*SmplkitGeneratedClient::App::GroupsApi* | [**delete_group**](docs/GroupsApi.md#delete_group) | **DELETE** /api/v1/groups/{id} | Delete Group
+*SmplkitGeneratedClient::App::GroupsApi* | [**get_group**](docs/GroupsApi.md#get_group) | **GET** /api/v1/groups/{id} | Get Group
+*SmplkitGeneratedClient::App::GroupsApi* | [**list_groups**](docs/GroupsApi.md#list_groups) | **GET** /api/v1/groups | List Groups
+*SmplkitGeneratedClient::App::GroupsApi* | [**update_group**](docs/GroupsApi.md#update_group) | **PUT** /api/v1/groups/{id} | Update Group
 *SmplkitGeneratedClient::App::InvitationsApi* | [**accept_invitation**](docs/InvitationsApi.md#accept_invitation) | **POST** /api/v1/invitations/accept | Accept Invitation
 *SmplkitGeneratedClient::App::InvitationsApi* | [**create_invitations**](docs/InvitationsApi.md#create_invitations) | **POST** /api/v1/invitations | Bulk Create Invitations
 *SmplkitGeneratedClient::App::InvitationsApi* | [**list_invitations**](docs/InvitationsApi.md#list_invitations) | **GET** /api/v1/invitations | List Invitations
@@ -225,6 +234,18 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::App::EnvironmentUsageResponse](docs/EnvironmentUsageResponse.md)
  - [SmplkitGeneratedClient::App::Error](docs/Error.md)
  - [SmplkitGeneratedClient::App::ErrorResponse](docs/ErrorResponse.md)
+ - [SmplkitGeneratedClient::App::Group](docs/Group.md)
+ - [SmplkitGeneratedClient::App::GroupCreateRequest](docs/GroupCreateRequest.md)
+ - [SmplkitGeneratedClient::App::GroupCreateResource](docs/GroupCreateResource.md)
+ - [SmplkitGeneratedClient::App::GroupListResponse](docs/GroupListResponse.md)
+ - [SmplkitGeneratedClient::App::GroupMembership](docs/GroupMembership.md)
+ - [SmplkitGeneratedClient::App::GroupMembershipListResponse](docs/GroupMembershipListResponse.md)
+ - [SmplkitGeneratedClient::App::GroupMembershipRequest](docs/GroupMembershipRequest.md)
+ - [SmplkitGeneratedClient::App::GroupMembershipResource](docs/GroupMembershipResource.md)
+ - [SmplkitGeneratedClient::App::GroupMembershipResponse](docs/GroupMembershipResponse.md)
+ - [SmplkitGeneratedClient::App::GroupRequest](docs/GroupRequest.md)
+ - [SmplkitGeneratedClient::App::GroupResource](docs/GroupResource.md)
+ - [SmplkitGeneratedClient::App::GroupResponse](docs/GroupResponse.md)
  - [SmplkitGeneratedClient::App::Invitation](docs/Invitation.md)
  - [SmplkitGeneratedClient::App::InvitationAcceptRequest](docs/InvitationAcceptRequest.md)
  - [SmplkitGeneratedClient::App::InvitationBulkCreateRequest](docs/InvitationBulkCreateRequest.md)

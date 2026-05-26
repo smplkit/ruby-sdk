@@ -14,53 +14,33 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # An invitation for a person to join an account.  Invitations carry a time-limited token; the recipient redeems the token to become a member of the inviting account at the assigned role.
-  class Invitation < ApiModelBase
-    # Email address the invitation was sent to.
-    attr_accessor :email
+  # An Environment Access Group: a named bundle of standard environments its members may manage.  A user's effective managed-environment set is the union across all their groups (or \"all\" if any of their groups grants ``[\"*\"]``). Roles answer *what* a user may do; groups answer *which environments* that capability reaches.
+  class Group < ApiModelBase
+    # Human-readable name for the group.
+    attr_accessor :name
 
-    # Role to assign on acceptance. One of `ADMIN`, `MEMBER`, or `VIEWER`.
-    attr_accessor :role
+    # Free-text description shown on the group's detail page.
+    attr_accessor :description
 
-    # Lifecycle state of the invitation. One of `PENDING`, `ACCEPTED`, `REVOKED`, or `EXPIRED`.
-    attr_accessor :status
+    # The set of environments members of this group may manage. Either the exact value `[\"*\"]` to grant every standard environment, or an explicit array of standard environment keys. Ad-hoc environments are never listed here — they are exempt from group governance and remain manageable by every member of the account.
+    attr_accessor :managed_environments
 
-    # UUID of the user who sent the invitation.
-    attr_accessor :invited_by
+    # True for built-in groups the platform reserves. The `default` group has `system=true`; it cannot be deleted or renamed, though its `managed_environments` may be narrowed.
+    attr_accessor :system
 
-    # Environment Access Group ids the invitee will be added to on acceptance, in addition to the always-applied `default` group. Empty array or `null` means default-only.
-    attr_accessor :groups
-
-    # Name of the account the recipient is being invited to join.
-    attr_accessor :account_name
-
-    # Display name of the user who sent the invitation.
-    attr_accessor :inviter_display_name
-
-    # Single-use token that the recipient redeems to accept the invitation. Echoed on responses so the inviting client can construct the acceptance link.
-    attr_accessor :token
-
-    # When the invitation token stops being redeemable.
-    attr_accessor :expires_at
-
-    # When the invitation was issued.
+    # When the group was created.
     attr_accessor :created_at
 
-    # When the invitation record was last modified.
+    # When the group was last modified.
     attr_accessor :updated_at
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'email' => :'email',
-        :'role' => :'role',
-        :'status' => :'status',
-        :'invited_by' => :'invited_by',
-        :'groups' => :'groups',
-        :'account_name' => :'account_name',
-        :'inviter_display_name' => :'inviter_display_name',
-        :'token' => :'token',
-        :'expires_at' => :'expires_at',
+        :'name' => :'name',
+        :'description' => :'description',
+        :'managed_environments' => :'managed_environments',
+        :'system' => :'system',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at'
       }
@@ -79,15 +59,10 @@ module SmplkitGeneratedClient::App
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'email' => :'String',
-        :'role' => :'String',
-        :'status' => :'String',
-        :'invited_by' => :'String',
-        :'groups' => :'Array<String>',
-        :'account_name' => :'String',
-        :'inviter_display_name' => :'String',
-        :'token' => :'String',
-        :'expires_at' => :'Time',
+        :'name' => :'String',
+        :'description' => :'String',
+        :'managed_environments' => :'Array<String>',
+        :'system' => :'Boolean',
         :'created_at' => :'Time',
         :'updated_at' => :'Time'
       }
@@ -96,15 +71,7 @@ module SmplkitGeneratedClient::App
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'email',
-        :'role',
-        :'status',
-        :'invited_by',
-        :'groups',
-        :'account_name',
-        :'inviter_display_name',
-        :'token',
-        :'expires_at',
+        :'description',
         :'created_at',
         :'updated_at'
       ])
@@ -114,54 +81,38 @@ module SmplkitGeneratedClient::App
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::Invitation` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::Group` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::Invitation`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::Group`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'email')
-        self.email = attributes[:'email']
+      if attributes.key?(:'name')
+        self.name = attributes[:'name']
+      else
+        self.name = nil
       end
 
-      if attributes.key?(:'role')
-        self.role = attributes[:'role']
+      if attributes.key?(:'description')
+        self.description = attributes[:'description']
       end
 
-      if attributes.key?(:'status')
-        self.status = attributes[:'status']
-      end
-
-      if attributes.key?(:'invited_by')
-        self.invited_by = attributes[:'invited_by']
-      end
-
-      if attributes.key?(:'groups')
-        if (value = attributes[:'groups']).is_a?(Array)
-          self.groups = value
+      if attributes.key?(:'managed_environments')
+        if (value = attributes[:'managed_environments']).is_a?(Array)
+          self.managed_environments = value
         end
       end
 
-      if attributes.key?(:'account_name')
-        self.account_name = attributes[:'account_name']
-      end
-
-      if attributes.key?(:'inviter_display_name')
-        self.inviter_display_name = attributes[:'inviter_display_name']
-      end
-
-      if attributes.key?(:'token')
-        self.token = attributes[:'token']
-      end
-
-      if attributes.key?(:'expires_at')
-        self.expires_at = attributes[:'expires_at']
+      if attributes.key?(:'system')
+        self.system = attributes[:'system']
+      else
+        self.system = false
       end
 
       if attributes.key?(:'created_at')
@@ -178,6 +129,18 @@ module SmplkitGeneratedClient::App
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
+      if @name.nil?
+        invalid_properties.push('invalid value for "name", name cannot be nil.')
+      end
+
+      if @name.to_s.length > 255
+        invalid_properties.push('invalid value for "name", the character length must be smaller than or equal to 255.')
+      end
+
+      if !@description.nil? && @description.to_s.length > 1024
+        invalid_properties.push('invalid value for "description", the character length must be smaller than or equal to 1024.')
+      end
+
       invalid_properties
     end
 
@@ -185,7 +148,34 @@ module SmplkitGeneratedClient::App
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      return false if @name.nil?
+      return false if @name.to_s.length > 255
+      return false if !@description.nil? && @description.to_s.length > 1024
       true
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] name Value to be assigned
+    def name=(name)
+      if name.nil?
+        fail ArgumentError, 'name cannot be nil'
+      end
+
+      if name.to_s.length > 255
+        fail ArgumentError, 'invalid value for "name", the character length must be smaller than or equal to 255.'
+      end
+
+      @name = name
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] description Value to be assigned
+    def description=(description)
+      if !description.nil? && description.to_s.length > 1024
+        fail ArgumentError, 'invalid value for "description", the character length must be smaller than or equal to 1024.'
+      end
+
+      @description = description
     end
 
     # Checks equality by comparing each attribute.
@@ -193,15 +183,10 @@ module SmplkitGeneratedClient::App
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          email == o.email &&
-          role == o.role &&
-          status == o.status &&
-          invited_by == o.invited_by &&
-          groups == o.groups &&
-          account_name == o.account_name &&
-          inviter_display_name == o.inviter_display_name &&
-          token == o.token &&
-          expires_at == o.expires_at &&
+          name == o.name &&
+          description == o.description &&
+          managed_environments == o.managed_environments &&
+          system == o.system &&
           created_at == o.created_at &&
           updated_at == o.updated_at
     end
@@ -215,7 +200,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [email, role, status, invited_by, groups, account_name, inviter_display_name, token, expires_at, created_at, updated_at].hash
+      [name, description, managed_environments, system, created_at, updated_at].hash
     end
 
     # Builds the object from hash

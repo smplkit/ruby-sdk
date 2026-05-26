@@ -6,6 +6,7 @@
 | ---- | ---- | ----------- | ----- |
 | **email** | **String** | Email address to send the invitation to. |  |
 | **role** | **String** | Role to assign on acceptance. One of &#x60;ADMIN&#x60;, &#x60;MEMBER&#x60;, or &#x60;VIEWER&#x60;. &#x60;OWNER&#x60; cannot be assigned via invitation. Case-insensitive on input. | [optional][default to &#39;MEMBER&#39;] |
+| **groups** | **Array&lt;String&gt;** | Optional list of Environment Access Group ids to add the invitee to on acceptance. Every accepted invitation also yields the reserved &#x60;default&#x60; membership, regardless of this field. Unknown group ids are rejected at create time with &#x60;422&#x60;. | [optional] |
 
 ## Example
 
@@ -14,7 +15,8 @@ require 'smplkit_app_client'
 
 instance = SmplkitGeneratedClient::App::InvitationCreateItem.new(
   email: null,
-  role: null
+  role: null,
+  groups: null
 )
 ```
 
