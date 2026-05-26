@@ -14,23 +14,17 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::App
-  # One invitation in a bulk-create request.
-  class InvitationCreateItem < ApiModelBase
-    # Email address to send the invitation to.
-    attr_accessor :email
+  # JSON:API collection response for memberships.
+  class GroupMembershipListResponse < ApiModelBase
+    attr_accessor :data
 
-    # Role to assign on acceptance. One of `ADMIN`, `MEMBER`, or `VIEWER`. `OWNER` cannot be assigned via invitation. Case-insensitive on input.
-    attr_accessor :role
-
-    # Optional list of Environment Access Group ids to add the invitee to on acceptance. Every accepted invitation also yields the reserved `default` membership, regardless of this field. Unknown group ids are rejected at create time with `422`.
-    attr_accessor :groups
+    attr_accessor :meta
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'email' => :'email',
-        :'role' => :'role',
-        :'groups' => :'groups'
+        :'data' => :'data',
+        :'meta' => :'meta'
       }
     end
 
@@ -47,16 +41,14 @@ module SmplkitGeneratedClient::App
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'email' => :'String',
-        :'role' => :'String',
-        :'groups' => :'Array<String>'
+        :'data' => :'Array<GroupMembershipResource>',
+        :'meta' => :'ListMeta'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'groups'
       ])
     end
 
@@ -64,34 +56,30 @@ module SmplkitGeneratedClient::App
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::InvitationCreateItem` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::App::GroupMembershipListResponse` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::InvitationCreateItem`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::App::GroupMembershipListResponse`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'email')
-        self.email = attributes[:'email']
-      else
-        self.email = nil
-      end
-
-      if attributes.key?(:'role')
-        self.role = attributes[:'role']
-      else
-        self.role = 'MEMBER'
-      end
-
-      if attributes.key?(:'groups')
-        if (value = attributes[:'groups']).is_a?(Array)
-          self.groups = value
+      if attributes.key?(:'data')
+        if (value = attributes[:'data']).is_a?(Array)
+          self.data = value
         end
+      else
+        self.data = nil
+      end
+
+      if attributes.key?(:'meta')
+        self.meta = attributes[:'meta']
+      else
+        self.meta = nil
       end
     end
 
@@ -100,8 +88,12 @@ module SmplkitGeneratedClient::App
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @email.nil?
-        invalid_properties.push('invalid value for "email", email cannot be nil.')
+      if @data.nil?
+        invalid_properties.push('invalid value for "data", data cannot be nil.')
+      end
+
+      if @meta.nil?
+        invalid_properties.push('invalid value for "meta", meta cannot be nil.')
       end
 
       invalid_properties
@@ -111,18 +103,29 @@ module SmplkitGeneratedClient::App
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @email.nil?
+      return false if @data.nil?
+      return false if @meta.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] email Value to be assigned
-    def email=(email)
-      if email.nil?
-        fail ArgumentError, 'email cannot be nil'
+    # @param [Object] data Value to be assigned
+    def data=(data)
+      if data.nil?
+        fail ArgumentError, 'data cannot be nil'
       end
 
-      @email = email
+      @data = data
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] meta Value to be assigned
+    def meta=(meta)
+      if meta.nil?
+        fail ArgumentError, 'meta cannot be nil'
+      end
+
+      @meta = meta
     end
 
     # Checks equality by comparing each attribute.
@@ -130,9 +133,8 @@ module SmplkitGeneratedClient::App
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          email == o.email &&
-          role == o.role &&
-          groups == o.groups
+          data == o.data &&
+          meta == o.meta
     end
 
     # @see the `==` method
@@ -144,7 +146,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [email, role, groups].hash
+      [data, meta].hash
     end
 
     # Builds the object from hash

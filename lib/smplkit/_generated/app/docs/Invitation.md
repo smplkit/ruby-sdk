@@ -8,6 +8,7 @@
 | **role** | **String** | Role to assign on acceptance. One of &#x60;ADMIN&#x60;, &#x60;MEMBER&#x60;, or &#x60;VIEWER&#x60;. | [optional][readonly] |
 | **status** | **String** | Lifecycle state of the invitation. One of &#x60;PENDING&#x60;, &#x60;ACCEPTED&#x60;, &#x60;REVOKED&#x60;, or &#x60;EXPIRED&#x60;. | [optional][readonly] |
 | **invited_by** | **String** | UUID of the user who sent the invitation. | [optional][readonly] |
+| **groups** | **Array&lt;String&gt;** | Environment Access Group ids the invitee will be added to on acceptance, in addition to the always-applied &#x60;default&#x60; group. Empty array or &#x60;null&#x60; means default-only. | [optional][readonly] |
 | **account_name** | **String** | Name of the account the recipient is being invited to join. | [optional][readonly] |
 | **inviter_display_name** | **String** | Display name of the user who sent the invitation. | [optional][readonly] |
 | **token** | **String** | Single-use token that the recipient redeems to accept the invitation. Echoed on responses so the inviting client can construct the acceptance link. | [optional][readonly] |
@@ -25,6 +26,7 @@ instance = SmplkitGeneratedClient::App::Invitation.new(
   role: null,
   status: null,
   invited_by: null,
+  groups: null,
   account_name: null,
   inviter_display_name: null,
   token: null,

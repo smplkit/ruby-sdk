@@ -51,6 +51,12 @@ describe SmplkitGeneratedClient::App::Invitation do
     end
   end
 
+  describe 'test attribute "groups"' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   describe 'test attribute "account_name"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
