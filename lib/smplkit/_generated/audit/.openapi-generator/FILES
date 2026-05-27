@@ -28,6 +28,11 @@ docs/EventTypeListResponse.md
 docs/EventTypeResource.md
 docs/EventTypesApi.md
 docs/EventsApi.md
+docs/Export.md
+docs/ExportRequest.md
+docs/ExportResource.md
+docs/ExportResponse.md
+docs/ExportsApi.md
 docs/Forwarder.md
 docs/ForwarderCreateRequest.md
 docs/ForwarderCreateResource.md
@@ -73,6 +78,7 @@ lib/smplkit_audit_client.rb
 lib/smplkit_audit_client/api/categories_api.rb
 lib/smplkit_audit_client/api/event_types_api.rb
 lib/smplkit_audit_client/api/events_api.rb
+lib/smplkit_audit_client/api/exports_api.rb
 lib/smplkit_audit_client/api/forwarder_types_api.rb
 lib/smplkit_audit_client/api/forwarders_api.rb
 lib/smplkit_audit_client/api/resource_types_api.rb
@@ -99,6 +105,10 @@ lib/smplkit_audit_client/models/event_search_scan_meta.rb
 lib/smplkit_audit_client/models/event_type_attributes.rb
 lib/smplkit_audit_client/models/event_type_list_response.rb
 lib/smplkit_audit_client/models/event_type_resource.rb
+lib/smplkit_audit_client/models/export.rb
+lib/smplkit_audit_client/models/export_request.rb
+lib/smplkit_audit_client/models/export_resource.rb
+lib/smplkit_audit_client/models/export_response.rb
 lib/smplkit_audit_client/models/forwarder.rb
 lib/smplkit_audit_client/models/forwarder_create_request.rb
 lib/smplkit_audit_client/models/forwarder_create_resource.rb
@@ -140,6 +150,7 @@ smplkit_audit_client.gemspec
 spec/api/categories_api_spec.rb
 spec/api/event_types_api_spec.rb
 spec/api/events_api_spec.rb
+spec/api/exports_api_spec.rb
 spec/api/forwarder_types_api_spec.rb
 spec/api/forwarders_api_spec.rb
 spec/api/resource_types_api_spec.rb
@@ -162,6 +173,10 @@ spec/models/event_spec.rb
 spec/models/event_type_attributes_spec.rb
 spec/models/event_type_list_response_spec.rb
 spec/models/event_type_resource_spec.rb
+spec/models/export_request_spec.rb
+spec/models/export_resource_spec.rb
+spec/models/export_response_spec.rb
+spec/models/export_spec.rb
 spec/models/forwarder_create_request_spec.rb
 spec/models/forwarder_create_resource_spec.rb
 spec/models/forwarder_delivery_list_links_spec.rb
