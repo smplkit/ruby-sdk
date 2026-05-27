@@ -96,6 +96,7 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Audit::EventsApi* | [**get_event**](docs/EventsApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event
 *SmplkitGeneratedClient::Audit::EventsApi* | [**list_events**](docs/EventsApi.md#list_events) | **GET** /api/v1/events | List Events
 *SmplkitGeneratedClient::Audit::EventsApi* | [**record_event**](docs/EventsApi.md#record_event) | **POST** /api/v1/events | Record Event
+*SmplkitGeneratedClient::Audit::EventsApi* | [**search_events**](docs/EventsApi.md#search_events) | **POST** /api/v1/events/search | Search Events
 *SmplkitGeneratedClient::Audit::ForwarderTypesApi* | [**get_forwarder_type_api_v1_forwarder_types_id_get**](docs/ForwarderTypesApi.md#get_forwarder_type_api_v1_forwarder_types_id_get) | **GET** /api/v1/forwarder_types/{id} | Get Forwarder Type
 *SmplkitGeneratedClient::Audit::ForwarderTypesApi* | [**list_forwarder_types_api_v1_forwarder_types_get**](docs/ForwarderTypesApi.md#list_forwarder_types_api_v1_forwarder_types_get) | **GET** /api/v1/forwarder_types | List Forwarder Types
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**create_forwarder**](docs/ForwardersApi.md#create_forwarder) | **POST** /api/v1/forwarders | Create Forwarder
@@ -108,7 +109,6 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**retry_forwarder_delivery**](docs/ForwardersApi.md#retry_forwarder_delivery) | **POST** /api/v1/forwarders/{forwarder_id}/deliveries/{delivery_id}/actions/retry | Retry Forwarder Delivery
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**update_forwarder**](docs/ForwardersApi.md#update_forwarder) | **PUT** /api/v1/forwarders/{forwarder_id} | Update Forwarder
 *SmplkitGeneratedClient::Audit::ResourceTypesApi* | [**list_resource_types**](docs/ResourceTypesApi.md#list_resource_types) | **GET** /api/v1/resource_types | List Resource Types
-*SmplkitGeneratedClient::Audit::SearchApi* | [**search_events**](docs/SearchApi.md#search_events) | **POST** /api/v1/search/events | Search Events
 *SmplkitGeneratedClient::Audit::UsageApi* | [**list_usage**](docs/UsageApi.md#list_usage) | **GET** /api/v1/usage | List Usage
 
 
