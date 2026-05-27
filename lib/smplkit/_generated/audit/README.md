@@ -97,6 +97,8 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Audit::EventsApi* | [**list_events**](docs/EventsApi.md#list_events) | **GET** /api/v1/events | List Events
 *SmplkitGeneratedClient::Audit::EventsApi* | [**record_event**](docs/EventsApi.md#record_event) | **POST** /api/v1/events | Record Event
 *SmplkitGeneratedClient::Audit::EventsApi* | [**search_events**](docs/EventsApi.md#search_events) | **POST** /api/v1/events/search | Search Events
+*SmplkitGeneratedClient::Audit::ExportsApi* | [**create_export**](docs/ExportsApi.md#create_export) | **POST** /api/v1/exports | Create Export
+*SmplkitGeneratedClient::Audit::ExportsApi* | [**download_export**](docs/ExportsApi.md#download_export) | **GET** /api/v1/exports/{token} | Download Export
 *SmplkitGeneratedClient::Audit::ForwarderTypesApi* | [**get_forwarder_type_api_v1_forwarder_types_id_get**](docs/ForwarderTypesApi.md#get_forwarder_type_api_v1_forwarder_types_id_get) | **GET** /api/v1/forwarder_types/{id} | Get Forwarder Type
 *SmplkitGeneratedClient::Audit::ForwarderTypesApi* | [**list_forwarder_types_api_v1_forwarder_types_get**](docs/ForwarderTypesApi.md#list_forwarder_types_api_v1_forwarder_types_get) | **GET** /api/v1/forwarder_types | List Forwarder Types
 *SmplkitGeneratedClient::Audit::ForwardersApi* | [**create_forwarder**](docs/ForwardersApi.md#create_forwarder) | **POST** /api/v1/forwarders | Create Forwarder
@@ -132,6 +134,10 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::EventTypeAttributes](docs/EventTypeAttributes.md)
  - [SmplkitGeneratedClient::Audit::EventTypeListResponse](docs/EventTypeListResponse.md)
  - [SmplkitGeneratedClient::Audit::EventTypeResource](docs/EventTypeResource.md)
+ - [SmplkitGeneratedClient::Audit::Export](docs/Export.md)
+ - [SmplkitGeneratedClient::Audit::ExportRequest](docs/ExportRequest.md)
+ - [SmplkitGeneratedClient::Audit::ExportResource](docs/ExportResource.md)
+ - [SmplkitGeneratedClient::Audit::ExportResponse](docs/ExportResponse.md)
  - [SmplkitGeneratedClient::Audit::Forwarder](docs/Forwarder.md)
  - [SmplkitGeneratedClient::Audit::ForwarderCreateRequest](docs/ForwarderCreateRequest.md)
  - [SmplkitGeneratedClient::Audit::ForwarderCreateResource](docs/ForwarderCreateResource.md)
