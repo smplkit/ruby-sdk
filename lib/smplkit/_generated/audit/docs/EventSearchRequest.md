@@ -8,6 +8,8 @@
 | **filter_event_type** | **String** | Exact match on the event&#39;s &#x60;event_type&#x60; field. | [optional] |
 | **filter_resource_type** | **String** | Exact match on the event&#39;s &#x60;resource_type&#x60; field. | [optional] |
 | **filter_resource_id** | **String** | Exact match on the event&#39;s &#x60;resource_id&#x60; field. Must be accompanied by &#x60;filter[resource_type]&#x60;. | [optional] |
+| **filter_severity** | **String** | Exact match on the event&#39;s &#x60;severity&#x60; field. One of &#x60;TRACE&#x60;, &#x60;DEBUG&#x60;, &#x60;INFO&#x60;, &#x60;WARN&#x60;, &#x60;ERROR&#x60;, &#x60;FATAL&#x60;. | [optional] |
+| **filter_category** | **String** | Exact match on the event&#39;s &#x60;category&#x60; field. | [optional] |
 | **filter_actor_type** | **String** | Exact match on the event&#39;s &#x60;actor_type&#x60; field. | [optional] |
 | **filter_actor_id** | **String** | Exact match on the event&#39;s &#x60;actor_id&#x60; field. | [optional] |
 | **filter_occurred_at** | **String** | Date range using interval notation, e.g. &#x60;[2026-04-01T00:00:00Z,2026-04-15T00:00:00Z)&#x60;. Required by &#x60;filter[search]&#x60; when the resource pair isn&#39;t provided. When a JSON Logic &#x60;filter&#x60; is present, the effective range is intersected with the last 30 days. | [optional] |
@@ -27,6 +29,8 @@ instance = SmplkitGeneratedClient::Audit::EventSearchRequest.new(
   filter_event_type: null,
   filter_resource_type: null,
   filter_resource_id: null,
+  filter_severity: null,
+  filter_category: null,
   filter_actor_type: null,
   filter_actor_id: null,
   filter_occurred_at: null,

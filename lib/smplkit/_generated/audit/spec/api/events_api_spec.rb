@@ -54,6 +54,8 @@ describe 'EventsApi' do
   # @option opts [String] :filter_event_type 
   # @option opts [String] :filter_resource_type 
   # @option opts [String] :filter_resource_id 
+  # @option opts [String] :filter_severity Exact match on the event&#39;s &#x60;severity&#x60; field. One of &#x60;TRACE&#x60;, &#x60;DEBUG&#x60;, &#x60;INFO&#x60;, &#x60;WARN&#x60;, &#x60;ERROR&#x60;, &#x60;FATAL&#x60;.
+  # @option opts [String] :filter_category Exact match on the event&#39;s &#x60;category&#x60; field.
   # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
   # @option opts [Boolean] :filter_do_not_forward When set, restrict to events whose &#x60;do_not_forward&#x60; flag matches the given boolean. Forwarder previews typically pass &#x60;false&#x60; to match live-pipeline semantics (events flagged &#x60;do_not_forward&#x3D;true&#x60; are skipped by the forwarder pipeline).
   # @option opts [Integer] :page_size 

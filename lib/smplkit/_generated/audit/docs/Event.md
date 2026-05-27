@@ -8,6 +8,8 @@
 | **resource_type** | **String** | Kind of resource the event is about, e.g. &#x60;user&#x60;. Any non-empty string. |  |
 | **resource_id** | **String** | Identifier of the specific resource the event is about. |  |
 | **description** | **String** | Free-text description of the event. Included alongside &#x60;resource_id&#x60; in the &#x60;filter[search]&#x60; substring target. | [optional] |
+| **severity** | [**Severity**](Severity.md) | One of &#x60;TRACE&#x60;, &#x60;DEBUG&#x60;, &#x60;INFO&#x60;, &#x60;WARN&#x60;, &#x60;ERROR&#x60;, &#x60;FATAL&#x60;. Omit to record the event at &#x60;INFO&#x60;. Always present on read. | [optional] |
+| **category** | **String** | Free-form bucket label, e.g. &#x60;auth&#x60;, &#x60;billing&#x60;, &#x60;config-change&#x60;. Stored exactly as supplied. Drives the &#x60;filter[category]&#x60; filter and the &#x60;GET /api/v1/categories&#x60; discovery endpoint. | [optional] |
 | **occurred_at** | **Time** | When the event actually happened. Defaults to the server receipt time (&#x60;created_at&#x60;). | [optional] |
 | **actor_type** | **String** | Kind of actor that caused the event, e.g. &#x60;USER&#x60;, &#x60;API_KEY&#x60;, &#x60;SYSTEM&#x60;, or any other label you choose. Free-form string; the API does not constrain or interpret it. | [optional] |
 | **actor_id** | **String** | Identifier of the actor that caused the event. Free-form string — any identifier scheme is accepted. | [optional] |
@@ -27,6 +29,8 @@ instance = SmplkitGeneratedClient::Audit::Event.new(
   resource_type: null,
   resource_id: null,
   description: null,
+  severity: null,
+  category: null,
   occurred_at: null,
   actor_type: null,
   actor_id: null,
