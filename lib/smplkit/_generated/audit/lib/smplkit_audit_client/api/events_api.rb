@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for this account.  Default sort is `-occurred_at` (newest occurrence first). Sort by `occurred_at` or `created_at`, ascending or descending — keep the same `sort` value across paginated requests so the cursor stays consistent. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id` or `description`.  Two filter-combination rules:  - `filter[resource_id]` must be accompanied by `filter[resource_type]`   (the index is keyed on the pair). - `filter[search]` must be accompanied by either `filter[occurred_at]`   or `filter[resource_type]` + `filter[resource_id]` (substring   matching has no index, so an unbounded substring scan is rejected).  No other filter combinations are required — calling the endpoint with no query parameters returns the latest events for the account, paginated.  `page[size]` defaults to 1000 and must not exceed 1000.
+    # List audit events for this account.  Default sort is `-occurred_at` (newest occurrence first). Sort by `occurred_at` or `created_at`, ascending or descending — keep the same `sort` value across paginated requests so the cursor stays consistent. Filters are exact-match except `filter[occurred_at]`, which uses interval notation (e.g. `[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)`), and `filter[search]`, which is a case-insensitive substring match against `resource_id` or `description`.  Two filter-combination rules:  - `filter[resource_id]` must be accompanied by `filter[resource_type]`   (the index is keyed on the pair). - `filter[search]` must be accompanied by either `filter[occurred_at]`   or `filter[resource_type]` + `filter[resource_id]` (substring   matching has no index, so an unbounded substring scan is rejected).  No other filter combinations are required — calling the endpoint with no query parameters returns the latest events for the account, paginated.  `page[size]` defaults to 1000 and must not exceed 1000.  Pass `format=CSV` or `format=JSONL` to stream a download of the full filtered result set instead of a paginated JSON:API response. The download honors every supplied filter and ignores `page[size]` and `page[after]`.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -95,6 +95,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [Boolean] :filter_do_not_forward When set, restrict to events whose &#x60;do_not_forward&#x60; flag matches the given boolean. Forwarder previews typically pass &#x60;false&#x60; to match live-pipeline semantics (events flagged &#x60;do_not_forward&#x3D;true&#x60; are skipped by the forwarder pipeline).
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
+    # @option opts [String] :format When set, stream a download of the full filtered result set in the chosen format instead of returning a paginated JSON:API response. &#x60;page[size]&#x60; and &#x60;page[after]&#x60; are ignored in this mode; every event matching the supplied filters is emitted. &#x60;CSV&#x60; writes one row per event with the event payload (&#x60;data&#x60;) serialized as a single JSON-encoded cell. &#x60;JSONL&#x60; writes one JSON object per line with the event payload nested as a JSON object. Omit this parameter to receive the paginated JSON:API response.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-occurred_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;occurred_at&#x60;, &#x60;-occurred_at&#x60;. (default to '-occurred_at')
     # @return [EventListResponse]
     def list_events(opts = {})
@@ -103,7 +104,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Events
-    # List audit events for this account.  Default sort is &#x60;-occurred_at&#x60; (newest occurrence first). Sort by &#x60;occurred_at&#x60; or &#x60;created_at&#x60;, ascending or descending — keep the same &#x60;sort&#x60; value across paginated requests so the cursor stays consistent. Filters are exact-match except &#x60;filter[occurred_at]&#x60;, which uses interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)&#x60;), and &#x60;filter[search]&#x60;, which is a case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;.  Two filter-combination rules:  - &#x60;filter[resource_id]&#x60; must be accompanied by &#x60;filter[resource_type]&#x60;   (the index is keyed on the pair). - &#x60;filter[search]&#x60; must be accompanied by either &#x60;filter[occurred_at]&#x60;   or &#x60;filter[resource_type]&#x60; + &#x60;filter[resource_id]&#x60; (substring   matching has no index, so an unbounded substring scan is rejected).  No other filter combinations are required — calling the endpoint with no query parameters returns the latest events for the account, paginated.  &#x60;page[size]&#x60; defaults to 1000 and must not exceed 1000.
+    # List audit events for this account.  Default sort is &#x60;-occurred_at&#x60; (newest occurrence first). Sort by &#x60;occurred_at&#x60; or &#x60;created_at&#x60;, ascending or descending — keep the same &#x60;sort&#x60; value across paginated requests so the cursor stays consistent. Filters are exact-match except &#x60;filter[occurred_at]&#x60;, which uses interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,2026-01-31T00:00:00Z)&#x60;), and &#x60;filter[search]&#x60;, which is a case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;.  Two filter-combination rules:  - &#x60;filter[resource_id]&#x60; must be accompanied by &#x60;filter[resource_type]&#x60;   (the index is keyed on the pair). - &#x60;filter[search]&#x60; must be accompanied by either &#x60;filter[occurred_at]&#x60;   or &#x60;filter[resource_type]&#x60; + &#x60;filter[resource_id]&#x60; (substring   matching has no index, so an unbounded substring scan is rejected).  No other filter combinations are required — calling the endpoint with no query parameters returns the latest events for the account, paginated.  &#x60;page[size]&#x60; defaults to 1000 and must not exceed 1000.  Pass &#x60;format&#x3D;CSV&#x60; or &#x60;format&#x3D;JSONL&#x60; to stream a download of the full filtered result set instead of a paginated JSON:API response. The download honors every supplied filter and ignores &#x60;page[size]&#x60; and &#x60;page[after]&#x60;.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_occurred_at 
     # @option opts [String] :filter_actor_type 
@@ -115,6 +116,7 @@ module SmplkitGeneratedClient::Audit
     # @option opts [Boolean] :filter_do_not_forward When set, restrict to events whose &#x60;do_not_forward&#x60; flag matches the given boolean. Forwarder previews typically pass &#x60;false&#x60; to match live-pipeline semantics (events flagged &#x60;do_not_forward&#x3D;true&#x60; are skipped by the forwarder pipeline).
     # @option opts [Integer] :page_size 
     # @option opts [String] :page_after 
+    # @option opts [String] :format When set, stream a download of the full filtered result set in the chosen format instead of returning a paginated JSON:API response. &#x60;page[size]&#x60; and &#x60;page[after]&#x60; are ignored in this mode; every event matching the supplied filters is emitted. &#x60;CSV&#x60; writes one row per event with the event payload (&#x60;data&#x60;) serialized as a single JSON-encoded cell. &#x60;JSONL&#x60; writes one JSON object per line with the event payload nested as a JSON object. Omit this parameter to receive the paginated JSON:API response.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-occurred_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;occurred_at&#x60;, &#x60;-occurred_at&#x60;. (default to '-occurred_at')
     # @return [Array<(EventListResponse, Integer, Hash)>] EventListResponse data, response status code and response headers
     def list_events_with_http_info(opts = {})
@@ -125,6 +127,10 @@ module SmplkitGeneratedClient::Audit
         fail ArgumentError, 'invalid value for "opts[:"page_size"]" when calling EventsApi.list_events, must be greater than or equal to 1.'
       end
 
+      allowable_values = ["CSV", "JSONL"]
+      if @api_client.config.client_side_validation && opts[:'format'] && !allowable_values.include?(opts[:'format'])
+        fail ArgumentError, "invalid value for \"format\", must be one of #{allowable_values}"
+      end
       allowable_values = ["created_at", "-created_at", "occurred_at", "-occurred_at"]
       if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
         fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
@@ -144,6 +150,7 @@ module SmplkitGeneratedClient::Audit
       query_params[:'filter[do_not_forward]'] = opts[:'filter_do_not_forward'] if !opts[:'filter_do_not_forward'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
       query_params[:'page[after]'] = opts[:'page_after'] if !opts[:'page_after'].nil?
+      query_params[:'format'] = opts[:'format'] if !opts[:'format'].nil?
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
 
       # header parameters
@@ -247,6 +254,74 @@ module SmplkitGeneratedClient::Audit
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: EventsApi#record_event\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Search Events
+    # Search audit events with column filters and an optional JSON Logic expression.  Without a JSON Logic `filter`: behaves like `GET /api/v1/events` with the same column filters.  With a JSON Logic `filter`: the search is silently capped to the last 30 days by `occurred_at` (intersected with any explicit `filter[occurred_at]` the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same `json-logic-qubit` evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response's `meta.scan` block reports the scan stats so a selective filter doesn't look like \"0 matches\" when the truth is \"ceiling reached.\"
+    # @param event_search_request [EventSearchRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [EventSearchResponse]
+    def search_events(event_search_request, opts = {})
+      data, _status_code, _headers = search_events_with_http_info(event_search_request, opts)
+      data
+    end
+
+    # Search Events
+    # Search audit events with column filters and an optional JSON Logic expression.  Without a JSON Logic &#x60;filter&#x60;: behaves like &#x60;GET /api/v1/events&#x60; with the same column filters.  With a JSON Logic &#x60;filter&#x60;: the search is silently capped to the last 30 days by &#x60;occurred_at&#x60; (intersected with any explicit &#x60;filter[occurred_at]&#x60; the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same &#x60;json-logic-qubit&#x60; evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response&#39;s &#x60;meta.scan&#x60; block reports the scan stats so a selective filter doesn&#39;t look like \&quot;0 matches\&quot; when the truth is \&quot;ceiling reached.\&quot;
+    # @param event_search_request [EventSearchRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(EventSearchResponse, Integer, Hash)>] EventSearchResponse data, response status code and response headers
+    def search_events_with_http_info(event_search_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: EventsApi.search_events ...'
+      end
+      # verify the required parameter 'event_search_request' is set
+      if @api_client.config.client_side_validation && event_search_request.nil?
+        fail ArgumentError, "Missing the required parameter 'event_search_request' when calling EventsApi.search_events"
+      end
+      # resource path
+      local_var_path = '/api/v1/events/search'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(event_search_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'EventSearchResponse'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['HTTPBearer']
+
+      new_options = opts.merge(
+        :operation => :"EventsApi.search_events",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: EventsApi#search_events\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

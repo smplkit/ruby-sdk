@@ -75,7 +75,6 @@ require 'smplkit_audit_client/api/events_api'
 require 'smplkit_audit_client/api/forwarder_types_api'
 require 'smplkit_audit_client/api/forwarders_api'
 require 'smplkit_audit_client/api/resource_types_api'
-require 'smplkit_audit_client/api/search_api'
 require 'smplkit_audit_client/api/usage_api'
 
 module SmplkitGeneratedClient::Audit
