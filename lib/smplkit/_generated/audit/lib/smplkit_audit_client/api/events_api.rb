@@ -91,6 +91,8 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_event_type 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
+    # @option opts [String] :filter_severity Exact match on the event&#39;s &#x60;severity&#x60; field. One of &#x60;TRACE&#x60;, &#x60;DEBUG&#x60;, &#x60;INFO&#x60;, &#x60;WARN&#x60;, &#x60;ERROR&#x60;, &#x60;FATAL&#x60;.
+    # @option opts [String] :filter_category Exact match on the event&#39;s &#x60;category&#x60; field.
     # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
     # @option opts [Boolean] :filter_do_not_forward When set, restrict to events whose &#x60;do_not_forward&#x60; flag matches the given boolean. Forwarder previews typically pass &#x60;false&#x60; to match live-pipeline semantics (events flagged &#x60;do_not_forward&#x3D;true&#x60; are skipped by the forwarder pipeline).
     # @option opts [Integer] :page_size 
@@ -112,6 +114,8 @@ module SmplkitGeneratedClient::Audit
     # @option opts [String] :filter_event_type 
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :filter_resource_id 
+    # @option opts [String] :filter_severity Exact match on the event&#39;s &#x60;severity&#x60; field. One of &#x60;TRACE&#x60;, &#x60;DEBUG&#x60;, &#x60;INFO&#x60;, &#x60;WARN&#x60;, &#x60;ERROR&#x60;, &#x60;FATAL&#x60;.
+    # @option opts [String] :filter_category Exact match on the event&#39;s &#x60;category&#x60; field.
     # @option opts [String] :filter_search Case-insensitive substring match against &#x60;resource_id&#x60; or &#x60;description&#x60;. Use &#x60;filter[resource_id]&#x60; for an exact match on &#x60;resource_id&#x60;.
     # @option opts [Boolean] :filter_do_not_forward When set, restrict to events whose &#x60;do_not_forward&#x60; flag matches the given boolean. Forwarder previews typically pass &#x60;false&#x60; to match live-pipeline semantics (events flagged &#x60;do_not_forward&#x3D;true&#x60; are skipped by the forwarder pipeline).
     # @option opts [Integer] :page_size 
@@ -146,6 +150,8 @@ module SmplkitGeneratedClient::Audit
       query_params[:'filter[event_type]'] = opts[:'filter_event_type'] if !opts[:'filter_event_type'].nil?
       query_params[:'filter[resource_type]'] = opts[:'filter_resource_type'] if !opts[:'filter_resource_type'].nil?
       query_params[:'filter[resource_id]'] = opts[:'filter_resource_id'] if !opts[:'filter_resource_id'].nil?
+      query_params[:'filter[severity]'] = opts[:'filter_severity'] if !opts[:'filter_severity'].nil?
+      query_params[:'filter[category]'] = opts[:'filter_category'] if !opts[:'filter_category'].nil?
       query_params[:'filter[search]'] = opts[:'filter_search'] if !opts[:'filter_search'].nil?
       query_params[:'filter[do_not_forward]'] = opts[:'filter_do_not_forward'] if !opts[:'filter_do_not_forward'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?

@@ -28,6 +28,12 @@ module SmplkitGeneratedClient::Audit
     # Free-text description of the event. Included alongside `resource_id` in the `filter[search]` substring target.
     attr_accessor :description
 
+    # One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`. Omit to record the event at `INFO`. Always present on read.
+    attr_accessor :severity
+
+    # Free-form bucket label, e.g. `auth`, `billing`, `config-change`. Stored exactly as supplied. Drives the `filter[category]` filter and the `GET /api/v1/categories` discovery endpoint.
+    attr_accessor :category
+
     # When the event actually happened. Defaults to the server receipt time (`created_at`).
     attr_accessor :occurred_at
 
@@ -52,6 +58,28 @@ module SmplkitGeneratedClient::Audit
     # The idempotency key used to deduplicate the record. Echoes the `Idempotency-Key` header if one was supplied, otherwise a key derived from the event's content.
     attr_accessor :idempotency_key
 
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
@@ -59,6 +87,8 @@ module SmplkitGeneratedClient::Audit
         :'resource_type' => :'resource_type',
         :'resource_id' => :'resource_id',
         :'description' => :'description',
+        :'severity' => :'severity',
+        :'category' => :'category',
         :'occurred_at' => :'occurred_at',
         :'actor_type' => :'actor_type',
         :'actor_id' => :'actor_id',
@@ -87,6 +117,8 @@ module SmplkitGeneratedClient::Audit
         :'resource_type' => :'String',
         :'resource_id' => :'String',
         :'description' => :'String',
+        :'severity' => :'Severity',
+        :'category' => :'String',
         :'occurred_at' => :'Time',
         :'actor_type' => :'String',
         :'actor_id' => :'String',
@@ -102,6 +134,8 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_nullable
       Set.new([
         :'description',
+        :'severity',
+        :'category',
         :'occurred_at',
         :'actor_type',
         :'actor_id',
@@ -147,6 +181,14 @@ module SmplkitGeneratedClient::Audit
 
       if attributes.key?(:'description')
         self.description = attributes[:'description']
+      end
+
+      if attributes.key?(:'severity')
+        self.severity = attributes[:'severity']
+      end
+
+      if attributes.key?(:'category')
+        self.category = attributes[:'category']
       end
 
       if attributes.key?(:'occurred_at')
@@ -282,6 +324,8 @@ module SmplkitGeneratedClient::Audit
           resource_type == o.resource_type &&
           resource_id == o.resource_id &&
           description == o.description &&
+          severity == o.severity &&
+          category == o.category &&
           occurred_at == o.occurred_at &&
           actor_type == o.actor_type &&
           actor_id == o.actor_id &&
@@ -301,7 +345,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [event_type, resource_type, resource_id, description, occurred_at, actor_type, actor_id, actor_label, data, do_not_forward, created_at, idempotency_key].hash
+      [event_type, resource_type, resource_id, description, severity, category, occurred_at, actor_type, actor_id, actor_label, data, do_not_forward, created_at, idempotency_key].hash
     end
 
     # Builds the object from hash

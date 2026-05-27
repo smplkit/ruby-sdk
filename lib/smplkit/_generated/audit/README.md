@@ -67,9 +67,8 @@ SmplkitGeneratedClient::Audit.configure do |config|
   config.configure_faraday_connection { |connection| 'YOUR CONNECTION CONFIG PROC' }
 end
 
-api_instance = SmplkitGeneratedClient::Audit::EventTypesApi.new
+api_instance = SmplkitGeneratedClient::Audit::CategoriesApi.new
 opts = {
-  filter_resource_type: 'filter_resource_type_example', # String | 
   sort: 'key', # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `key`, `-key`.
   page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
   page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
@@ -77,11 +76,11 @@ opts = {
 }
 
 begin
-  #List Event Types
-  result = api_instance.list_event_types(opts)
+  #List Categories
+  result = api_instance.list_categories(opts)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
-  puts "Exception when calling EventTypesApi->list_event_types: #{e}"
+  puts "Exception when calling CategoriesApi->list_categories: #{e}"
 end
 
 ```
@@ -92,6 +91,7 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*SmplkitGeneratedClient::Audit::CategoriesApi* | [**list_categories**](docs/CategoriesApi.md#list_categories) | **GET** /api/v1/categories | List Categories
 *SmplkitGeneratedClient::Audit::EventTypesApi* | [**list_event_types**](docs/EventTypesApi.md#list_event_types) | **GET** /api/v1/event_types | List Event Types
 *SmplkitGeneratedClient::Audit::EventsApi* | [**get_event**](docs/EventsApi.md#get_event) | **GET** /api/v1/events/{event_id} | Get Event
 *SmplkitGeneratedClient::Audit::EventsApi* | [**list_events**](docs/EventsApi.md#list_events) | **GET** /api/v1/events | List Events
@@ -114,6 +114,9 @@ Class | Method | HTTP request | Description
 
 ## Documentation for Models
 
+ - [SmplkitGeneratedClient::Audit::CategoryAttributes](docs/CategoryAttributes.md)
+ - [SmplkitGeneratedClient::Audit::CategoryListResponse](docs/CategoryListResponse.md)
+ - [SmplkitGeneratedClient::Audit::CategoryResource](docs/CategoryResource.md)
  - [SmplkitGeneratedClient::Audit::Event](docs/Event.md)
  - [SmplkitGeneratedClient::Audit::EventListLinks](docs/EventListLinks.md)
  - [SmplkitGeneratedClient::Audit::EventListMeta](docs/EventListMeta.md)
@@ -159,6 +162,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::ResourceTypeListResponse](docs/ResourceTypeListResponse.md)
  - [SmplkitGeneratedClient::Audit::ResourceTypeResource](docs/ResourceTypeResource.md)
  - [SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary](docs/RetryFailedDeliveriesSummary.md)
+ - [SmplkitGeneratedClient::Audit::Severity](docs/Severity.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderRequest](docs/TestForwarderRequest.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderResponse](docs/TestForwarderResponse.md)
  - [SmplkitGeneratedClient::Audit::UsageAttributes](docs/UsageAttributes.md)

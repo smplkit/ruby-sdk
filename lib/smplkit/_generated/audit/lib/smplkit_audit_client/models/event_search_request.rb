@@ -28,6 +28,12 @@ module SmplkitGeneratedClient::Audit
     # Exact match on the event's `resource_id` field. Must be accompanied by `filter[resource_type]`.
     attr_accessor :filter_resource_id
 
+    # Exact match on the event's `severity` field. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`.
+    attr_accessor :filter_severity
+
+    # Exact match on the event's `category` field.
+    attr_accessor :filter_category
+
     # Exact match on the event's `actor_type` field.
     attr_accessor :filter_actor_type
 
@@ -59,6 +65,8 @@ module SmplkitGeneratedClient::Audit
         :'filter_event_type' => :'filter[event_type]',
         :'filter_resource_type' => :'filter[resource_type]',
         :'filter_resource_id' => :'filter[resource_id]',
+        :'filter_severity' => :'filter[severity]',
+        :'filter_category' => :'filter[category]',
         :'filter_actor_type' => :'filter[actor_type]',
         :'filter_actor_id' => :'filter[actor_id]',
         :'filter_occurred_at' => :'filter[occurred_at]',
@@ -87,6 +95,8 @@ module SmplkitGeneratedClient::Audit
         :'filter_event_type' => :'String',
         :'filter_resource_type' => :'String',
         :'filter_resource_id' => :'String',
+        :'filter_severity' => :'String',
+        :'filter_category' => :'String',
         :'filter_actor_type' => :'String',
         :'filter_actor_id' => :'String',
         :'filter_occurred_at' => :'String',
@@ -105,6 +115,8 @@ module SmplkitGeneratedClient::Audit
         :'filter_event_type',
         :'filter_resource_type',
         :'filter_resource_id',
+        :'filter_severity',
+        :'filter_category',
         :'filter_actor_type',
         :'filter_actor_id',
         :'filter_occurred_at',
@@ -146,6 +158,14 @@ module SmplkitGeneratedClient::Audit
 
       if attributes.key?(:'filter_resource_id')
         self.filter_resource_id = attributes[:'filter_resource_id']
+      end
+
+      if attributes.key?(:'filter_severity')
+        self.filter_severity = attributes[:'filter_severity']
+      end
+
+      if attributes.key?(:'filter_category')
+        self.filter_category = attributes[:'filter_category']
       end
 
       if attributes.key?(:'filter_actor_type')
@@ -237,6 +257,8 @@ module SmplkitGeneratedClient::Audit
           filter_event_type == o.filter_event_type &&
           filter_resource_type == o.filter_resource_type &&
           filter_resource_id == o.filter_resource_id &&
+          filter_severity == o.filter_severity &&
+          filter_category == o.filter_category &&
           filter_actor_type == o.filter_actor_type &&
           filter_actor_id == o.filter_actor_id &&
           filter_occurred_at == o.filter_occurred_at &&
@@ -256,7 +278,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [filter, filter_event_type, filter_resource_type, filter_resource_id, filter_actor_type, filter_actor_id, filter_occurred_at, filter_search, filter_do_not_forward, page_size, page_after, sort].hash
+      [filter, filter_event_type, filter_resource_type, filter_resource_id, filter_severity, filter_category, filter_actor_type, filter_actor_id, filter_occurred_at, filter_search, filter_do_not_forward, page_size, page_after, sort].hash
     end
 
     # Builds the object from hash
