@@ -101,6 +101,7 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::App::AuthApi* | [**begin_oidc_login**](docs/AuthApi.md#begin_oidc_login) | **GET** /api/v1/auth/oidc/{provider} | Begin OIDC Login
 *SmplkitGeneratedClient::App::AuthApi* | [**handle_oidc_callback**](docs/AuthApi.md#handle_oidc_callback) | **GET** /api/v1/auth/callback/{provider} | Handle OIDC Callback
 *SmplkitGeneratedClient::App::AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /api/v1/auth/login | Login
+*SmplkitGeneratedClient::App::AuthApi* | [**refresh_auth_token**](docs/AuthApi.md#refresh_auth_token) | **POST** /api/v1/auth/refresh | Refresh Auth Token
 *SmplkitGeneratedClient::App::AuthApi* | [**register**](docs/AuthApi.md#register) | **POST** /api/v1/auth/register | Register
 *SmplkitGeneratedClient::App::AuthApi* | [**resend_verification**](docs/AuthApi.md#resend_verification) | **POST** /api/v1/auth/resend-verification | Resend Verification Email
 *SmplkitGeneratedClient::App::AuthApi* | [**verify_email**](docs/AuthApi.md#verify_email) | **POST** /api/v1/auth/verify-email | Verify Email

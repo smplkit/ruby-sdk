@@ -75,6 +75,17 @@ describe 'AuthApi' do
     end
   end
 
+  # unit tests for refresh_auth_token
+  # Refresh Auth Token
+  # Validates the caller&#39;s current bearer token and issues a fresh one with re-resolved claims. Use this on app load so claims that can change between mint sites — most notably the caller&#39;s managed environment set — pick up the latest server-side state without requiring a sign-out/sign-in cycle. Returns 401 when the bearer is expired, revoked, or otherwise invalid. API keys are not eligible for refresh and receive 400.
+  # @param [Hash] opts the optional parameters
+  # @return [AuthTokenResponse]
+  describe 'refresh_auth_token test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for register
   # Register
   # Creates a new account with email and password and returns an authentication token.
