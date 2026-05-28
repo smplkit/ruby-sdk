@@ -7,6 +7,7 @@ All URIs are relative to *http://localhost*
 | [**begin_oidc_login**](AuthApi.md#begin_oidc_login) | **GET** /api/v1/auth/oidc/{provider} | Begin OIDC Login |
 | [**handle_oidc_callback**](AuthApi.md#handle_oidc_callback) | **GET** /api/v1/auth/callback/{provider} | Handle OIDC Callback |
 | [**login**](AuthApi.md#login) | **POST** /api/v1/auth/login | Login |
+| [**refresh_auth_token**](AuthApi.md#refresh_auth_token) | **POST** /api/v1/auth/refresh | Refresh Auth Token |
 | [**register**](AuthApi.md#register) | **POST** /api/v1/auth/register | Register |
 | [**resend_verification**](AuthApi.md#resend_verification) | **POST** /api/v1/auth/resend-verification | Resend Verification Email |
 | [**verify_email**](AuthApi.md#verify_email) | **POST** /api/v1/auth/verify-email | Verify Email |
@@ -217,6 +218,72 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## refresh_auth_token
+
+> <AuthTokenResponse> refresh_auth_token
+
+Refresh Auth Token
+
+Validates the caller's current bearer token and issues a fresh one with re-resolved claims. Use this on app load so claims that can change between mint sites — most notably the caller's managed environment set — pick up the latest server-side state without requiring a sign-out/sign-in cycle. Returns 401 when the bearer is expired, revoked, or otherwise invalid. API keys are not eligible for refresh and receive 400.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_app_client'
+# setup authorization
+SmplkitGeneratedClient::App.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::App::AuthApi.new
+
+begin
+  # Refresh Auth Token
+  result = api_instance.refresh_auth_token
+  p result
+rescue SmplkitGeneratedClient::App::ApiError => e
+  puts "Error when calling AuthApi->refresh_auth_token: #{e}"
+end
+```
+
+#### Using the refresh_auth_token_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<AuthTokenResponse>, Integer, Hash)> refresh_auth_token_with_http_info
+
+```ruby
+begin
+  # Refresh Auth Token
+  data, status_code, headers = api_instance.refresh_auth_token_with_http_info
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <AuthTokenResponse>
+rescue SmplkitGeneratedClient::App::ApiError => e
+  puts "Error when calling AuthApi->refresh_auth_token_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**AuthTokenResponse**](AuthTokenResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 
