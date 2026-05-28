@@ -21,6 +21,13 @@ updates:
       prefix: "fix"
       include: "scope"
     open-pull-requests-limit: 10
+    # SDK floor protection: widen the existing range rather than
+    # replacing it. For `~> X.Y` and `>= X, < Y` constraints in the
+    # gemspec, a new major causes Dependabot to widen the range so
+    # consumers on either the old or new major can still install
+    # the gem. Without this, Dependabot would replace the gemspec
+    # constraint and silently lock out customers on older versions.
+    versioning-strategy: widen
     groups:
       bundler:
         update-types:
