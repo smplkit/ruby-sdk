@@ -36,7 +36,7 @@ module SmplkitGeneratedClient::App
     # Per-product breakdown of changes the desired state would produce. Products that would remain unchanged are omitted.
     attr_accessor :changes
 
-    # Total amount that would be charged at confirmation time, in cents. The sum of `prorated_charge_today_cents` across `IMMEDIATE` changes.
+    # Total amount in cents that would be charged at confirmation time — the sum of `prorated_charge_today_cents` across all changes. `0` when there is no immediate charge (for example when changes apply to an already-active subscription and the prorated amounts are carried onto the next invoice instead).
     attr_accessor :total_charge_today_cents
 
     # Projected total of the next monthly invoice in cents, after all scheduled changes have taken effect.
