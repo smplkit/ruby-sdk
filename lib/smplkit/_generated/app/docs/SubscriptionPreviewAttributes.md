@@ -11,7 +11,7 @@
 | **projected_total_cents** | **Integer** | Projected final monthly total in cents after the change. |  |
 | **projected_next_tier** | [**NextTierResponse**](NextTierResponse.md) |  | [optional] |
 | **changes** | [**Array&lt;SubscriptionChangeProjection&gt;**](SubscriptionChangeProjection.md) | Per-product breakdown of changes the desired state would produce. Products that would remain unchanged are omitted. |  |
-| **total_charge_today_cents** | **Integer** | Total amount that would be charged at confirmation time, in cents. The sum of &#x60;prorated_charge_today_cents&#x60; across &#x60;IMMEDIATE&#x60; changes. |  |
+| **total_charge_today_cents** | **Integer** | Total amount in cents that would be charged at confirmation time — the sum of &#x60;prorated_charge_today_cents&#x60; across all changes. &#x60;0&#x60; when there is no immediate charge (for example when changes apply to an already-active subscription and the prorated amounts are carried onto the next invoice instead). |  |
 | **next_invoice_total_cents** | **Integer** | Projected total of the next monthly invoice in cents, after all scheduled changes have taken effect. |  |
 
 ## Example

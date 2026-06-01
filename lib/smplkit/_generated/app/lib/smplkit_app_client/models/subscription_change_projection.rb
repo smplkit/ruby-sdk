@@ -31,7 +31,7 @@ module SmplkitGeneratedClient::App
     # `IMMEDIATE` when the change takes effect at confirmation time (and a prorated charge may apply today). `NEXT_PERIOD` when the change takes effect at the end of the current billing period.
     attr_accessor :effect
 
-    # When `effect` is `IMMEDIATE`, the estimated prorated charge for the remainder of the current billing period in cents. Always `0` when `effect` is `NEXT_PERIOD`.
+    # Amount in cents that confirming this change would charge at confirmation time for this product. Reflects the discounted, prorated charge for the remainder of the current billing period. May be `0` even when `effect` is `IMMEDIATE` — when the product is being added to an already-active subscription the prorated amount is carried onto the next invoice rather than charged immediately. Always `0` when `effect` is `NEXT_PERIOD`.
     attr_accessor :prorated_charge_today_cents
 
     # When `effect` is `NEXT_PERIOD`, the ISO-8601 timestamp at which the change takes effect. `null` when `effect` is `IMMEDIATE` (the change applies on confirmation).
