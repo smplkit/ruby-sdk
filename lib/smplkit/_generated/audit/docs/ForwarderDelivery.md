@@ -7,7 +7,7 @@
 | **forwarder_id** | **String** | Forwarder the delivery belongs to. |  |
 | **event_id** | **String** | Event that was being delivered. |  |
 | **attempt_number** | **Integer** | 1 for the initial delivery, incremented for each retry. |  |
-| **status** | **String** | Delivery outcome. &#x60;SUCCEEDED&#x60; and &#x60;FAILED&#x60; are the live-delivery outcomes; &#x60;FILTERED_OUT&#x60; is recorded when the forwarder&#39;s filter rejected the event. |  |
+| **status** | **String** | Delivery outcome. &#x60;SUCCEEDED&#x60; when the destination accepted the event, &#x60;FAILED&#x60; when the delivery attempt did not succeed. Events that a forwarder&#39;s filter rejected are not recorded as deliveries. |  |
 | **request** | **Hash&lt;String, Object&gt;** | JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event. | [optional] |
 | **response_status** | **Integer** | HTTP status code returned by the destination. | [optional] |
 | **response_body** | **String** | Response body returned by the destination. | [optional] |
