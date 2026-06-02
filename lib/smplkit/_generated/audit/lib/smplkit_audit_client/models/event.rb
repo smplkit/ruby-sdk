@@ -49,7 +49,7 @@ module SmplkitGeneratedClient::Audit
     # Free-form payload attached to the event. Use it for resource snapshots (by convention under `data.snapshot`), request identifiers, or any other context the event needs to carry.
     attr_accessor :data
 
-    # When `true`, the event is recorded but not delivered to any forwarder. A delivery log entry with status `SKIPPED_DO_NOT_FORWARD` is written for each enabled forwarder so the skip is visible in the delivery log.
+    # When `true`, the event is recorded but not delivered to any forwarder, and no delivery log entries are created for it.
     attr_accessor :do_not_forward
 
     # When the event was received and recorded.

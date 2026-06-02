@@ -82,7 +82,7 @@ describe 'ForwardersApi' do
 
   # unit tests for list_forwarder_deliveries
   # List Forwarder Deliveries
-  # List delivery log entries for a forwarder.  Default sort is &#x60;-created_at&#x60; (newest first). Filter by &#x60;status&#x60; (one of &#x60;SUCCEEDED&#x60;, &#x60;FAILED&#x60;, &#x60;FILTERED_OUT&#x60;, &#x60;SKIPPED_DO_NOT_FORWARD&#x60; — case-insensitive), by &#x60;event_id&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
+  # List delivery log entries for a forwarder.  Default sort is &#x60;-created_at&#x60; (newest first). Filter by &#x60;status&#x60; (one of &#x60;SUCCEEDED&#x60;, &#x60;FAILED&#x60;, &#x60;FILTERED_OUT&#x60; — case-insensitive), by &#x60;event_id&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_status 
