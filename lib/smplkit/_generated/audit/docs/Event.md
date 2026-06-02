@@ -15,7 +15,7 @@
 | **actor_id** | **String** | Identifier of the actor that caused the event. Free-form string — any identifier scheme is accepted. | [optional] |
 | **actor_label** | **String** | Human-readable label for the actor (e.g. an email address or API key name) at the time the event was recorded. | [optional] |
 | **data** | **Hash&lt;String, Object&gt;** | Free-form payload attached to the event. Use it for resource snapshots (by convention under &#x60;data.snapshot&#x60;), request identifiers, or any other context the event needs to carry. | [optional] |
-| **do_not_forward** | **Boolean** | When &#x60;true&#x60;, the event is recorded but not delivered to any forwarder. A delivery log entry with status &#x60;SKIPPED_DO_NOT_FORWARD&#x60; is written for each enabled forwarder so the skip is visible in the delivery log. | [optional][default to false] |
+| **do_not_forward** | **Boolean** | When &#x60;true&#x60;, the event is recorded but not delivered to any forwarder, and no delivery log entries are created for it. | [optional][default to false] |
 | **created_at** | **Time** | When the event was received and recorded. | [optional][readonly] |
 | **idempotency_key** | **String** | The idempotency key used to deduplicate the record. Echoes the &#x60;Idempotency-Key&#x60; header if one was supplied, otherwise a key derived from the event&#39;s content. | [optional][readonly] |
 

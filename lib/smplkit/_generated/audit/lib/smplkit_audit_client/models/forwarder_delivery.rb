@@ -25,7 +25,7 @@ module SmplkitGeneratedClient::Audit
     # 1 for the initial delivery, incremented for each retry.
     attr_accessor :attempt_number
 
-    # Delivery outcome. `SUCCEEDED` and `FAILED` are the live-delivery outcomes; `FILTERED_OUT` is recorded when the forwarder's filter rejected the event; `SKIPPED_DO_NOT_FORWARD` is recorded when the event was emitted with `do_not_forward=true`.
+    # Delivery outcome. `SUCCEEDED` and `FAILED` are the live-delivery outcomes; `FILTERED_OUT` is recorded when the forwarder's filter rejected the event.
     attr_accessor :status
 
     # JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event.
@@ -221,7 +221,7 @@ module SmplkitGeneratedClient::Audit
       return false if @event_id.nil?
       return false if @attempt_number.nil?
       return false if @status.nil?
-      status_validator = EnumAttributeValidator.new('String', ["SUCCEEDED", "FAILED", "FILTERED_OUT", "SKIPPED_DO_NOT_FORWARD"])
+      status_validator = EnumAttributeValidator.new('String', ["SUCCEEDED", "FAILED", "FILTERED_OUT"])
       return false unless status_validator.valid?(@status)
       true
     end
@@ -259,7 +259,7 @@ module SmplkitGeneratedClient::Audit
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] status Object to be assigned
     def status=(status)
-      validator = EnumAttributeValidator.new('String', ["SUCCEEDED", "FAILED", "FILTERED_OUT", "SKIPPED_DO_NOT_FORWARD"])
+      validator = EnumAttributeValidator.new('String', ["SUCCEEDED", "FAILED", "FILTERED_OUT"])
       unless validator.valid?(status)
         fail ArgumentError, "invalid value for \"status\", must be one of #{validator.allowable_values}."
       end
