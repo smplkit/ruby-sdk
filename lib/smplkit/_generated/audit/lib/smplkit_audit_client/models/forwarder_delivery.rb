@@ -17,10 +17,10 @@ module SmplkitGeneratedClient::Audit
   # A log entry for one attempt to deliver an event to a forwarder.
   class ForwarderDelivery < ApiModelBase
     # Forwarder the delivery belongs to.
-    attr_accessor :forwarder_id
+    attr_accessor :forwarder
 
     # Event that was being delivered.
-    attr_accessor :event_id
+    attr_accessor :event
 
     # 1 for the initial delivery, incremented for each retry.
     attr_accessor :attempt_number
@@ -71,8 +71,8 @@ module SmplkitGeneratedClient::Audit
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'forwarder_id' => :'forwarder_id',
-        :'event_id' => :'event_id',
+        :'forwarder' => :'forwarder',
+        :'event' => :'event',
         :'attempt_number' => :'attempt_number',
         :'status' => :'status',
         :'request' => :'request',
@@ -97,8 +97,8 @@ module SmplkitGeneratedClient::Audit
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'forwarder_id' => :'String',
-        :'event_id' => :'String',
+        :'forwarder' => :'String',
+        :'event' => :'String',
         :'attempt_number' => :'Integer',
         :'status' => :'String',
         :'request' => :'Hash<String, Object>',
@@ -138,16 +138,16 @@ module SmplkitGeneratedClient::Audit
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'forwarder_id')
-        self.forwarder_id = attributes[:'forwarder_id']
+      if attributes.key?(:'forwarder')
+        self.forwarder = attributes[:'forwarder']
       else
-        self.forwarder_id = nil
+        self.forwarder = nil
       end
 
-      if attributes.key?(:'event_id')
-        self.event_id = attributes[:'event_id']
+      if attributes.key?(:'event')
+        self.event = attributes[:'event']
       else
-        self.event_id = nil
+        self.event = nil
       end
 
       if attributes.key?(:'attempt_number')
@@ -194,12 +194,12 @@ module SmplkitGeneratedClient::Audit
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @forwarder_id.nil?
-        invalid_properties.push('invalid value for "forwarder_id", forwarder_id cannot be nil.')
+      if @forwarder.nil?
+        invalid_properties.push('invalid value for "forwarder", forwarder cannot be nil.')
       end
 
-      if @event_id.nil?
-        invalid_properties.push('invalid value for "event_id", event_id cannot be nil.')
+      if @event.nil?
+        invalid_properties.push('invalid value for "event", event cannot be nil.')
       end
 
       if @attempt_number.nil?
@@ -217,8 +217,8 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @forwarder_id.nil?
-      return false if @event_id.nil?
+      return false if @forwarder.nil?
+      return false if @event.nil?
       return false if @attempt_number.nil?
       return false if @status.nil?
       status_validator = EnumAttributeValidator.new('String', ["SUCCEEDED", "FAILED"])
@@ -227,23 +227,23 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] forwarder_id Value to be assigned
-    def forwarder_id=(forwarder_id)
-      if forwarder_id.nil?
-        fail ArgumentError, 'forwarder_id cannot be nil'
+    # @param [Object] forwarder Value to be assigned
+    def forwarder=(forwarder)
+      if forwarder.nil?
+        fail ArgumentError, 'forwarder cannot be nil'
       end
 
-      @forwarder_id = forwarder_id
+      @forwarder = forwarder
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] event_id Value to be assigned
-    def event_id=(event_id)
-      if event_id.nil?
-        fail ArgumentError, 'event_id cannot be nil'
+    # @param [Object] event Value to be assigned
+    def event=(event)
+      if event.nil?
+        fail ArgumentError, 'event cannot be nil'
       end
 
-      @event_id = event_id
+      @event = event
     end
 
     # Custom attribute writer method with validation
@@ -271,8 +271,8 @@ module SmplkitGeneratedClient::Audit
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          forwarder_id == o.forwarder_id &&
-          event_id == o.event_id &&
+          forwarder == o.forwarder &&
+          event == o.event &&
           attempt_number == o.attempt_number &&
           status == o.status &&
           request == o.request &&
@@ -292,7 +292,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [forwarder_id, event_id, attempt_number, status, request, response_status, response_body, latency_ms, error, created_at].hash
+      [forwarder, event, attempt_number, status, request, response_status, response_body, latency_ms, error, created_at].hash
     end
 
     # Builds the object from hash
