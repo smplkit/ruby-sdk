@@ -34,8 +34,9 @@ describe 'AccountApi' do
 
   # unit tests for delete_account
   # Delete Current Account
-  # Permanently delete the current account and all associated data.
+  # Delete the current account and all associated data. By default the account is soft-deleted and may be restored by contacting support. Set &#x60;purge&#x3D;true&#x60; to permanently and irreversibly erase the account and all of its data across every service, with no possibility of recovery.
   # @param [Hash] opts the optional parameters
+  # @option opts [Boolean] :purge When true, permanently and irreversibly erase the account and all of its data with no possibility of recovery. When false (the default), the account is soft-deleted and may be restored.
   # @return [nil]
   describe 'delete_account test' do
     it 'should work' do

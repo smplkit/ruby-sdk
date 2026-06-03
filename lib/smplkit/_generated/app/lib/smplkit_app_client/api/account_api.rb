@@ -20,8 +20,9 @@ module SmplkitGeneratedClient::App
       @api_client = api_client
     end
     # Delete Current Account
-    # Permanently delete the current account and all associated data.
+    # Delete the current account and all associated data. By default the account is soft-deleted and may be restored by contacting support. Set `purge=true` to permanently and irreversibly erase the account and all of its data across every service, with no possibility of recovery.
     # @param [Hash] opts the optional parameters
+    # @option opts [Boolean] :purge When true, permanently and irreversibly erase the account and all of its data with no possibility of recovery. When false (the default), the account is soft-deleted and may be restored. (default to false)
     # @return [nil]
     def delete_account(opts = {})
       delete_account_with_http_info(opts)
@@ -29,8 +30,9 @@ module SmplkitGeneratedClient::App
     end
 
     # Delete Current Account
-    # Permanently delete the current account and all associated data.
+    # Delete the current account and all associated data. By default the account is soft-deleted and may be restored by contacting support. Set &#x60;purge&#x3D;true&#x60; to permanently and irreversibly erase the account and all of its data across every service, with no possibility of recovery.
     # @param [Hash] opts the optional parameters
+    # @option opts [Boolean] :purge When true, permanently and irreversibly erase the account and all of its data with no possibility of recovery. When false (the default), the account is soft-deleted and may be restored. (default to false)
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers
     def delete_account_with_http_info(opts = {})
       if @api_client.config.debugging
@@ -41,6 +43,7 @@ module SmplkitGeneratedClient::App
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'purge'] = opts[:'purge'] if !opts[:'purge'].nil?
 
       # header parameters
       header_params = opts[:header_params] || {}
