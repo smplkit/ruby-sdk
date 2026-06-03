@@ -14,11 +14,11 @@ All URIs are relative to *http://localhost*
 
 ## delete_account
 
-> delete_account
+> delete_account(opts)
 
 Delete Current Account
 
-Permanently delete the current account and all associated data.
+Delete the current account and all associated data. By default the account is soft-deleted and may be restored by contacting support. Set `purge=true` to permanently and irreversibly erase the account and all of its data across every service, with no possibility of recovery.
 
 ### Examples
 
@@ -32,10 +32,13 @@ SmplkitGeneratedClient::App.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::App::AccountApi.new
+opts = {
+  purge: true # Boolean | When true, permanently and irreversibly erase the account and all of its data with no possibility of recovery. When false (the default), the account is soft-deleted and may be restored.
+}
 
 begin
   # Delete Current Account
-  api_instance.delete_account
+  api_instance.delete_account(opts)
 rescue SmplkitGeneratedClient::App::ApiError => e
   puts "Error when calling AccountApi->delete_account: #{e}"
 end
@@ -45,12 +48,12 @@ end
 
 This returns an Array which contains the response data (`nil` in this case), status code and headers.
 
-> <Array(nil, Integer, Hash)> delete_account_with_http_info
+> <Array(nil, Integer, Hash)> delete_account_with_http_info(opts)
 
 ```ruby
 begin
   # Delete Current Account
-  data, status_code, headers = api_instance.delete_account_with_http_info
+  data, status_code, headers = api_instance.delete_account_with_http_info(opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => nil
@@ -61,7 +64,9 @@ end
 
 ### Parameters
 
-This endpoint does not need any parameter.
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **purge** | **Boolean** | When true, permanently and irreversibly erase the account and all of its data with no possibility of recovery. When false (the default), the account is soft-deleted and may be restored. | [optional][default to false] |
 
 ### Return type
 
