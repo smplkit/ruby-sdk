@@ -27,13 +27,13 @@ describe SmplkitGeneratedClient::Audit::ForwarderDelivery do
     end
   end
 
-  describe 'test attribute "forwarder_id"' do
+  describe 'test attribute "forwarder"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
   end
 
-  describe 'test attribute "event_id"' do
+  describe 'test attribute "event"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

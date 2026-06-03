@@ -4,8 +4,8 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **forwarder_id** | **String** | Forwarder the delivery belongs to. |  |
-| **event_id** | **String** | Event that was being delivered. |  |
+| **forwarder** | **String** | Forwarder the delivery belongs to. |  |
+| **event** | **String** | Event that was being delivered. |  |
 | **attempt_number** | **Integer** | 1 for the initial delivery, incremented for each retry. |  |
 | **status** | **String** | Delivery outcome. &#x60;SUCCEEDED&#x60; when the destination accepted the event, &#x60;FAILED&#x60; when the delivery attempt did not succeed. Events that a forwarder&#39;s filter rejected are not recorded as deliveries. |  |
 | **request** | **Hash&lt;String, Object&gt;** | JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event. | [optional] |
@@ -21,8 +21,8 @@
 require 'smplkit_audit_client'
 
 instance = SmplkitGeneratedClient::Audit::ForwarderDelivery.new(
-  forwarder_id: null,
-  event_id: null,
+  forwarder: null,
+  event: null,
   attempt_number: null,
   status: null,
   request: null,
