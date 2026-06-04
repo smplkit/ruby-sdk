@@ -1,0 +1,436 @@
+# SmplkitGeneratedClient::Jobs::JobsApi
+
+All URIs are relative to *http://localhost*
+
+| Method | HTTP request | Description |
+| ------ | ------------ | ----------- |
+| [**create_job**](JobsApi.md#create_job) | **POST** /api/v1/jobs | Create Job |
+| [**delete_job**](JobsApi.md#delete_job) | **DELETE** /api/v1/jobs/{job_id} | Delete Job |
+| [**get_job**](JobsApi.md#get_job) | **GET** /api/v1/jobs/{job_id} | Get Job |
+| [**list_jobs**](JobsApi.md#list_jobs) | **GET** /api/v1/jobs | List Jobs |
+| [**run_job_now**](JobsApi.md#run_job_now) | **POST** /api/v1/jobs/{job_id}/actions/run | Run Job Now |
+| [**update_job**](JobsApi.md#update_job) | **PUT** /api/v1/jobs/{job_id} | Update Job |
+
+
+## create_job
+
+> <JobResponse> create_job(job_create_request)
+
+Create Job
+
+Create a job for this account.  The caller supplies the job's id (a slug) as `data.id`. Slugs are unique within an account and immutable. An enabled job begins scheduling immediately.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_jobs_client'
+# setup authorization
+SmplkitGeneratedClient::Jobs.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
+job_create_request = SmplkitGeneratedClient::Jobs::JobCreateRequest.new({data: SmplkitGeneratedClient::Jobs::JobCreateResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Jobs::Job.new({name: 'name_example', schedule: 'schedule_example', configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new({url: 'url_example'})})})}) # JobCreateRequest | 
+
+begin
+  # Create Job
+  result = api_instance.create_job(job_create_request)
+  p result
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->create_job: #{e}"
+end
+```
+
+#### Using the create_job_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<JobResponse>, Integer, Hash)> create_job_with_http_info(job_create_request)
+
+```ruby
+begin
+  # Create Job
+  data, status_code, headers = api_instance.create_job_with_http_info(job_create_request)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <JobResponse>
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->create_job_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **job_create_request** | [**JobCreateRequest**](JobCreateRequest.md) |  |  |
+
+### Return type
+
+[**JobResponse**](JobResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: application/vnd.api+json
+- **Accept**: application/vnd.api+json
+
+
+## delete_job
+
+> delete_job(job_id)
+
+Delete Job
+
+Delete a job. Its run history is retained; the slug may be reused later.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_jobs_client'
+# setup authorization
+SmplkitGeneratedClient::Jobs.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
+job_id = 'job_id_example' # String | 
+
+begin
+  # Delete Job
+  api_instance.delete_job(job_id)
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->delete_job: #{e}"
+end
+```
+
+#### Using the delete_job_with_http_info variant
+
+This returns an Array which contains the response data (`nil` in this case), status code and headers.
+
+> <Array(nil, Integer, Hash)> delete_job_with_http_info(job_id)
+
+```ruby
+begin
+  # Delete Job
+  data, status_code, headers = api_instance.delete_job_with_http_info(job_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => nil
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->delete_job_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **job_id** | **String** |  |  |
+
+### Return type
+
+nil (empty response body)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: Not defined
+
+
+## get_job
+
+> <JobResponse> get_job(job_id)
+
+Get Job
+
+Retrieve a single job by its id (slug).
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_jobs_client'
+# setup authorization
+SmplkitGeneratedClient::Jobs.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
+job_id = 'job_id_example' # String | 
+
+begin
+  # Get Job
+  result = api_instance.get_job(job_id)
+  p result
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->get_job: #{e}"
+end
+```
+
+#### Using the get_job_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<JobResponse>, Integer, Hash)> get_job_with_http_info(job_id)
+
+```ruby
+begin
+  # Get Job
+  data, status_code, headers = api_instance.get_job_with_http_info(job_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <JobResponse>
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->get_job_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **job_id** | **String** |  |  |
+
+### Return type
+
+[**JobResponse**](JobResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/vnd.api+json
+
+
+## list_jobs
+
+> <JobListResponse> list_jobs(opts)
+
+List Jobs
+
+List this account's jobs, newest first.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_jobs_client'
+# setup authorization
+SmplkitGeneratedClient::Jobs.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
+opts = {
+  filter_enabled: true, # Boolean | 
+  page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
+  page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
+  meta_total: true # Boolean | When `true`, the response's `meta.pagination` block includes `total` (the total number of matching items across all pages) and `total_pages`. Computing these requires an extra `COUNT` query, so omit (or pass `false`) when the totals are not needed. Defaults to `false`.
+}
+
+begin
+  # List Jobs
+  result = api_instance.list_jobs(opts)
+  p result
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->list_jobs: #{e}"
+end
+```
+
+#### Using the list_jobs_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<JobListResponse>, Integer, Hash)> list_jobs_with_http_info(opts)
+
+```ruby
+begin
+  # List Jobs
+  data, status_code, headers = api_instance.list_jobs_with_http_info(opts)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <JobListResponse>
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->list_jobs_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **filter_enabled** | **Boolean** |  | [optional] |
+| **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
+| **page_size** | **Integer** | Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional][default to 1000] |
+| **meta_total** | **Boolean** | When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. | [optional][default to false] |
+
+### Return type
+
+[**JobListResponse**](JobListResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/vnd.api+json
+
+
+## run_job_now
+
+> <RunResponse> run_job_now(job_id)
+
+Run Job Now
+
+Trigger one immediate run of the job (a `MANUAL` run).  The job's schedule and enabled state are untouched. The run is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason `QUOTA_EXCEEDED` rather than being rejected here.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_jobs_client'
+# setup authorization
+SmplkitGeneratedClient::Jobs.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
+job_id = 'job_id_example' # String | 
+
+begin
+  # Run Job Now
+  result = api_instance.run_job_now(job_id)
+  p result
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->run_job_now: #{e}"
+end
+```
+
+#### Using the run_job_now_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<RunResponse>, Integer, Hash)> run_job_now_with_http_info(job_id)
+
+```ruby
+begin
+  # Run Job Now
+  data, status_code, headers = api_instance.run_job_now_with_http_info(job_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <RunResponse>
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->run_job_now_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **job_id** | **String** |  |  |
+
+### Return type
+
+[**RunResponse**](RunResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/vnd.api+json
+
+
+## update_job
+
+> <JobResponse> update_job(job_id, job_request)
+
+Update Job
+
+Replace an existing job. Every writable field is overwritten.  Enabling a paused job is a `PUT` with `enabled: true`; pausing is `enabled: false`. Editing the schedule recomputes the next fire time.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_jobs_client'
+# setup authorization
+SmplkitGeneratedClient::Jobs.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
+job_id = 'job_id_example' # String | 
+job_request = SmplkitGeneratedClient::Jobs::JobRequest.new({data: SmplkitGeneratedClient::Jobs::JobResource.new({attributes: SmplkitGeneratedClient::Jobs::Job.new({name: 'name_example', schedule: 'schedule_example', configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new({url: 'url_example'})})})}) # JobRequest | 
+
+begin
+  # Update Job
+  result = api_instance.update_job(job_id, job_request)
+  p result
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->update_job: #{e}"
+end
+```
+
+#### Using the update_job_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<JobResponse>, Integer, Hash)> update_job_with_http_info(job_id, job_request)
+
+```ruby
+begin
+  # Update Job
+  data, status_code, headers = api_instance.update_job_with_http_info(job_id, job_request)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <JobResponse>
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling JobsApi->update_job_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **job_id** | **String** |  |  |
+| **job_request** | [**JobRequest**](JobRequest.md) |  |  |
+
+### Return type
+
+[**JobResponse**](JobResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: application/vnd.api+json
+- **Accept**: application/vnd.api+json
+
