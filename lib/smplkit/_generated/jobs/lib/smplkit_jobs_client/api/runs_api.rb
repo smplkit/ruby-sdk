@@ -146,7 +146,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Runs
-    # List runs for this account, newest first (cursor paginated).  Use `filter[job]={slug}` for a single job's run history.
+    # List runs for this account, newest first (cursor paginated).  Use `filter[job]={id}` for a single job's run history.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_job 
     # @option opts [Integer] :page_size 
@@ -158,7 +158,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Runs
-    # List runs for this account, newest first (cursor paginated).  Use &#x60;filter[job]&#x3D;{slug}&#x60; for a single job&#39;s run history.
+    # List runs for this account, newest first (cursor paginated).  Use &#x60;filter[job]&#x3D;{id}&#x60; for a single job&#39;s run history.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_job 
     # @option opts [Integer] :page_size 

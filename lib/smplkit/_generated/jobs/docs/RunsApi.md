@@ -154,7 +154,7 @@ end
 
 List Runs
 
-List runs for this account, newest first (cursor paginated).  Use `filter[job]={slug}` for a single job's run history.
+List runs for this account, newest first (cursor paginated).  Use `filter[job]={id}` for a single job's run history.
 
 ### Examples
 
