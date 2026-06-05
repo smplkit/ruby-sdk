@@ -1,0 +1,408 @@
+# frozen_string_literal: true
+
+module Smplkit
+  # Smpl Jobs surface — exposed through +mgmt.jobs.*+.
+  #
+  # Unlike Config/Flags/Logging, Jobs has no live "phone-home" agent — no
+  # environment registration, no WebSocket — so its entire surface lives on
+  # the management client rather than a runtime client. A {Job} is an active
+  # record: build it with +mgmt.jobs.new(...)+, set fields, and call {Job#save}
+  # (create when new, full-replace update when it already exists) or
+  # {Job#delete}. Runs are read-only views; run actions live on
+  # +mgmt.jobs.runs+.
+  module Jobs
+    # Wrap a generated-jobs-API call and translate +ApiError+ into the
+    # +Smplkit::Error+ hierarchy. Connection-level failures (no response
+    # code) become {Smplkit::ConnectionError}; status-coded failures route
+    # through {Smplkit::Errors.raise_for_status}, which emits
+    # +PaymentRequiredError+ / +NotFoundError+ / +ConflictError+ /
+    # +ValidationError+ / +Error+ depending on the JSON:API body.
+    def self.call_api
+      yield
+    rescue SmplkitGeneratedClient::Jobs::ApiError => e
+      raise Smplkit::ConnectionError, e.message.to_s if e.code.nil? || e.code.zero?
+
+      Smplkit::Errors.raise_for_status(e.code, e.response_body.to_s)
+      # raise_for_status only returns on 2xx; if we get here the generated
+      # layer raised on a 2xx (shouldn't happen) — re-raise the original so
+      # the caller can inspect.
+      raise
+    end
+
+    # HTTP verb a job uses when it fires (ADR-049).
+    #
+    # Mirrors the jobs spec's method enum so a job's
+    # +configuration.method+ field is constrained to a known value instead
+    # of accepting any string. Members are declared in alphabetical order.
+    module HttpMethod
+      DELETE = "DELETE"
+      GET = "GET"
+      PATCH = "PATCH"
+      POST = "POST"
+      PUT = "PUT"
+
+      VALUES = [DELETE, GET, PATCH, POST, PUT].freeze
+
+      # Validate and normalize an input to a wire-format string.
+      #
+      # @param value [String, nil] a published constant or its literal string.
+      # @return [String, nil] the canonical wire value (or +nil+ when input is +nil+).
+      # @raise [ArgumentError] when +value+ is not a member of {VALUES}.
+      def self.coerce(value)
+        return nil if value.nil?
+
+        s = value.to_s
+        return s if VALUES.include?(s)
+
+        raise ArgumentError,
+              "Unknown HttpMethod #{value.inspect}; expected one of #{VALUES.inspect}"
+      end
+    end
+
+    # A single name/value HTTP header on the request a job performs.
+    #
+    # @!attribute [rw] name
+    #   @return [String] Header name (e.g. +"Authorization"+, +"Content-Type"+).
+    # @!attribute [rw] value
+    #   @return [String] Header value, plaintext on writes. The jobs service
+    #     encrypts values at rest; reads return them redacted.
+    HttpHeader = Struct.new(:name, :value, keyword_init: true)
+
+    # The HTTP request a job performs when it fires (the +http+ configuration).
+    #
+    # Extends the shared forwarder shape with the two fields a scheduled job
+    # needs beyond a forwarder: a request +body+ and a per-run +timeout+.
+    #
+    # @!attribute [rw] method
+    #   @return [String] HTTP verb used when the job fires. Defaults to {HttpMethod::POST}.
+    # @!attribute [rw] url
+    #   @return [String] Destination URL the job requests on each run.
+    # @!attribute [rw] headers
+    #   @return [Array<HttpHeader>] Headers attached to every request. Values
+    #     are redacted on reads.
+    # @!attribute [rw] body
+    #   @return [String, nil] Request body sent on each run. +nil+ (the default)
+    #     sends an empty body, suitable for a connectivity ping. Sent verbatim —
+    #     pair with a matching +Content-Type+ header.
+    # @!attribute [rw] success_status
+    #   @return [String] Status the destination must return for the run to count
+    #     as success — an exact code (+"200"+, +"204"+) or a class (+"2xx"+,
+    #     +"4xx"+). Defaults to +"2xx"+.
+    # @!attribute [rw] timeout
+    #   @return [Integer] Per-run timeout in seconds. A run that does not complete
+    #     within this many seconds fails with reason +TIMEOUT+. Defaults to 30;
+    #     bounded by your plan's maximum timeout.
+    # @!attribute [rw] tls_verify
+    #   @return [Boolean] Whether to verify the destination's TLS certificate
+    #     chain. Defaults to +true+; flip to +false+ only for short-lived
+    #     testing against an untrusted certificate. Prefer pinning the CA via
+    #     +ca_cert+.
+    # @!attribute [rw] ca_cert
+    #   @return [String, nil] Optional PEM-encoded certificate (or bundle)
+    #     trusted in addition to the system CA store. Ignored when +tls_verify+
+    #     is +false+. +nil+ (the default) means "use system CAs only".
+    #
+    # rubocop:disable Lint/StructNewOverride -- ``:method`` matches the
+    # API attribute and shadowing Struct#method is the expected ergonomics.
+    HttpConfig = Struct.new(
+      :method, :url, :headers, :body, :success_status, :timeout, :tls_verify, :ca_cert,
+      keyword_init: true
+    ) do
+      def initialize(
+        url: "", method: HttpMethod::POST, headers: nil, body: nil,
+        success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil
+      )
+        super(
+          method: HttpMethod.coerce(method), url: url, headers: headers || [], body: body,
+          success_status: success_status, timeout: timeout, tls_verify: tls_verify, ca_cert: ca_cert
+        )
+      end
+
+      def self.to_wire(src)
+        h = src.is_a?(Hash) ? new(**src) : src
+        SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(
+          method: HttpMethod.coerce(h.method),
+          url: h.url,
+          headers: (h.headers || []).map do |hdr|
+            name, value = if hdr.is_a?(Hash)
+                            [hdr[:name] || hdr["name"], hdr[:value] || hdr["value"]]
+                          else
+                            [hdr.name, hdr.value]
+                          end
+            SmplkitGeneratedClient::Jobs::HttpHeader.new(name: name, value: value)
+          end,
+          body: h.body,
+          success_status: h.success_status,
+          timeout: h.timeout,
+          tls_verify: h.tls_verify,
+          ca_cert: h.ca_cert
+        )
+      end
+
+      def self.from_wire(src)
+        return new if src.nil?
+
+        # +url+, +success_status+, and +timeout+ are required non-nil on the
+        # generated jobs config, so they pass straight through. +method+,
+        # +tls_verify+, +headers+, +body+, and +ca_cert+ are nullable and get
+        # wrapper-side defaults when the wire omits them.
+        new(
+          method: src.method || HttpMethod::POST,
+          url: src.url,
+          headers: (src.headers || []).map { |h| HttpHeader.new(name: h.name, value: h.value) },
+          body: src.body,
+          success_status: src.success_status,
+          timeout: src.timeout,
+          # rubocop:disable Style/RedundantCondition -- nil and false are
+          # distinct: nil means "field absent on the wire" (default to true);
+          # explicit false means "verification disabled".
+          tls_verify: src.tls_verify.nil? ? true : src.tls_verify,
+          # rubocop:enable Style/RedundantCondition
+          ca_cert: src.ca_cert
+        )
+      end
+    end
+    # rubocop:enable Lint/StructNewOverride
+
+    # A scheduled unit of work: an HTTP request run on a schedule.
+    #
+    # Active-record style: instantiate via +mgmt.jobs.new(...)+, mutate fields
+    # directly, and call {#save} to persist or {#delete} to remove. Header
+    # values in +configuration.headers+ are returned redacted on reads —
+    # re-supply the real values before calling {#save}; the SDK does not cache
+    # them client-side.
+    class Job
+      # @return [String] Caller-supplied unique identifier for the job (the
+      #   resource +id+). Unique within the account and immutable; the service
+      #   returns 409 if another live job already uses this id.
+      attr_accessor :id
+
+      # @return [String] Human-readable name for the job.
+      attr_accessor :name
+
+      # @return [String, nil] Free-text description. +nil+ when unset.
+      attr_accessor :description
+
+      # @return [Boolean] Whether the job is scheduling runs. +false+ pauses
+      #   without deleting.
+      attr_accessor :enabled
+
+      # @return [String] Job type. Only +"http"+ is supported today.
+      attr_accessor :type
+
+      # @return [String] When the job runs: an ISO-8601 datetime (a one-off
+      #   run), a 5-field cron expression evaluated in UTC (recurring), or the
+      #   literal +"now"+ (run once, as soon as possible). A datetime or +"now"+
+      #   job disables itself after it fires.
+      attr_accessor :schedule
+
+      # @return [HttpConfig] The HTTP request to perform when the job fires.
+      attr_accessor :configuration
+
+      # @return [String] How overlapping runs are handled. +"ALLOW"+ (the only
+      #   value) permits them.
+      attr_accessor :concurrency_policy
+
+      # @return [String, nil] The next scheduled fire time. +nil+ once a one-off
+      #   job has fired.
+      attr_accessor :next_run_at
+
+      # @return [String, nil] ISO-8601 timestamp of first persist. +nil+ for an
+      #   unsaved instance.
+      attr_accessor :created_at
+
+      # @return [String, nil] ISO-8601 timestamp of the most recent mutation.
+      attr_accessor :updated_at
+
+      # @return [String, nil] Soft-delete timestamp. +nil+ for live jobs.
+      attr_accessor :deleted_at
+
+      # @return [Integer, nil] Monotonic version counter, bumped on every
+      #   server-side write.
+      attr_accessor :version
+
+      def initialize(client = nil, id:, name:, schedule:, configuration:,
+                     description: nil, enabled: true, type: "http",
+                     concurrency_policy: "ALLOW", next_run_at: nil,
+                     created_at: nil, updated_at: nil, deleted_at: nil, version: nil)
+        @client = client
+        @id = id
+        @name = name
+        @description = description
+        @enabled = enabled
+        @type = type
+        @schedule = schedule
+        @configuration = configuration
+        @concurrency_policy = concurrency_policy
+        @next_run_at = next_run_at
+        @created_at = created_at
+        @updated_at = updated_at
+        @deleted_at = deleted_at
+        @version = version
+      end
+
+      # Create this job, or full-replace it if it already exists.
+      #
+      # Upsert behavior is driven by {#created_at}: a job with no +created_at+
+      # is created (POST); otherwise it's full-replace updated (PUT). After the
+      # call, every field is refreshed from the server response (including
+      # newly-assigned +created_at+, +version+, +next_run_at+).
+      #
+      # @return [self]
+      def save
+        raise "Job was constructed without a client; cannot save" if @client.nil?
+
+        updated = @created_at.nil? ? @client._create_job(self) : @client._update_job(self)
+        _apply(updated)
+        self
+      end
+      alias save! save
+
+      # Soft-delete this job on the server.
+      #
+      # @return [nil]
+      def delete
+        raise "Job was constructed without a client or id; cannot delete" if @client.nil? || @id.nil?
+
+        @client.delete(@id)
+      end
+      alias delete! delete
+
+      # @api private
+      def _apply(other)
+        @id = other.id
+        @name = other.name
+        @description = other.description
+        @enabled = other.enabled
+        @type = other.type
+        @schedule = other.schedule
+        @configuration = other.configuration
+        @concurrency_policy = other.concurrency_policy
+        @next_run_at = other.next_run_at
+        @created_at = other.created_at
+        @updated_at = other.updated_at
+        @deleted_at = other.deleted_at
+        @version = other.version
+      end
+
+      def self.from_resource(resource, client: nil)
+        a = resource.attributes
+        new(
+          client,
+          id: resource.id,
+          name: a.name,
+          description: a.description,
+          enabled: a.enabled.nil? || a.enabled,
+          type: a.type || "http",
+          schedule: a.schedule,
+          configuration: HttpConfig.from_wire(a.configuration),
+          concurrency_policy: a.concurrency_policy || "ALLOW",
+          next_run_at: a.next_run_at,
+          created_at: a.created_at,
+          updated_at: a.updated_at,
+          deleted_at: a.deleted_at,
+          version: a.version
+        )
+      end
+    end
+
+    # A single execution of a job (read-only).
+    #
+    # Runs are created and mutated by the jobs service, not by clients; clients
+    # influence runs only through the +run+ / +cancel+ / +rerun+ actions on
+    # +mgmt.jobs+.
+    #
+    # @!attribute [rw] id
+    #   @return [String] Server-assigned UUID for this run.
+    # @!attribute [rw] job
+    #   @return [String] The id of the job this run belongs to.
+    # @!attribute [rw] job_version
+    #   @return [Integer, nil] The job's version at the time the run executed.
+    # @!attribute [rw] trigger
+    #   @return [String] Why the run exists: +SCHEDULE+, +MANUAL+ (run now), or +RERUN+.
+    # @!attribute [rw] rerun_of
+    #   @return [String, nil] The source run's id; set only when +trigger+ is +RERUN+.
+    # @!attribute [rw] scheduled_for
+    #   @return [String, nil] The intended fire time for a scheduled run; +nil+
+    #     for manual / rerun runs.
+    # @!attribute [rw] status
+    #   @return [String] Lifecycle state of the run.
+    # @!attribute [rw] started_at
+    #   @return [String, nil] When execution started.
+    # @!attribute [rw] finished_at
+    #   @return [String, nil] When execution finished.
+    # @!attribute [rw] pending_duration_ms
+    #   @return [Integer, nil] Milliseconds the run waited as +PENDING+ before starting.
+    # @!attribute [rw] run_duration_ms
+    #   @return [Integer, nil] Milliseconds the run spent executing.
+    # @!attribute [rw] total_duration_ms
+    #   @return [Integer, nil] Milliseconds from enqueue to finish.
+    # @!attribute [rw] failure_reason
+    #   @return [String, nil] Why a +FAILED+ run failed; +nil+ otherwise.
+    # @!attribute [rw] error
+    #   @return [String, nil] Free-text failure detail, if any.
+    # @!attribute [rw] request
+    #   @return [Hash, nil] Snapshot of the request that was sent (header values redacted).
+    # @!attribute [rw] result
+    #   @return [Hash, nil] Outcome of the call (status, headers, body, ...).
+    # @!attribute [rw] created_at
+    #   @return [String, nil] When the run was enqueued (became +PENDING+).
+    Run = Struct.new(
+      :id, :job, :job_version, :trigger, :rerun_of, :scheduled_for, :status,
+      :started_at, :finished_at, :pending_duration_ms, :run_duration_ms,
+      :total_duration_ms, :failure_reason, :error, :request, :result, :created_at,
+      keyword_init: true
+    ) do
+      def self.from_resource(resource)
+        a = resource.attributes
+        new(
+          id: resource.id,
+          job: a.job,
+          job_version: a.job_version,
+          trigger: a.trigger,
+          rerun_of: a.rerun_of,
+          scheduled_for: a.scheduled_for,
+          status: a.status,
+          started_at: a.started_at,
+          finished_at: a.finished_at,
+          pending_duration_ms: a.pending_duration_ms,
+          run_duration_ms: a.run_duration_ms,
+          total_duration_ms: a.total_duration_ms,
+          failure_reason: a.failure_reason,
+          error: a.error,
+          request: a.request.nil? ? nil : Smplkit::Helpers.deep_stringify_keys(a.request),
+          result: a.result.nil? ? nil : Smplkit::Helpers.deep_stringify_keys(a.result),
+          created_at: a.created_at
+        )
+      end
+    end
+
+    # Current-period usage against the account's plan allotments (read-only).
+    #
+    # @!attribute [rw] period
+    #   @return [String] The usage period this report covers, as +YYYY-MM+ (UTC).
+    # @!attribute [rw] runs_used
+    #   @return [Integer] Runs metered so far this period.
+    # @!attribute [rw] runs_included
+    #   @return [Integer] Runs included in the plan this period (+-1+ means unlimited).
+    # @!attribute [rw] active_jobs
+    #   @return [Integer] Number of currently-enabled jobs.
+    # @!attribute [rw] active_jobs_limit
+    #   @return [Integer] Maximum enabled jobs the plan allows (+-1+ means unlimited).
+    Usage = Struct.new(
+      :period, :runs_used, :runs_included, :active_jobs, :active_jobs_limit,
+      keyword_init: true
+    ) do
+      def self.from_resource(resource)
+        a = resource.attributes
+        new(
+          period: a.period,
+          runs_used: a.runs_used,
+          runs_included: a.runs_included,
+          active_jobs: a.active_jobs,
+          active_jobs_limit: a.active_jobs_limit
+        )
+      end
+    end
+  end
+end

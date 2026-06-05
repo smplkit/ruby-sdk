@@ -35,7 +35,7 @@ module Smplkit
     RUNTIME_PAGE_SIZE = 1000
 
     attr_reader :contexts, :context_types, :environments, :services, :account_settings,
-                :config, :flags, :loggers, :log_groups, :audit
+                :config, :flags, :loggers, :log_groups, :audit, :jobs
 
     def self.from_resolved(resolved, extra_headers: nil)
       new(_resolved: resolved, extra_headers: extra_headers)
@@ -58,6 +58,7 @@ module Smplkit
       @flags_api_client = build_api_client(SmplkitGeneratedClient::Flags, "flags", cfg)
       @logging_api_client = build_api_client(SmplkitGeneratedClient::Logging, "logging", cfg)
       @audit_api_client = build_api_client(SmplkitGeneratedClient::Audit, "audit", cfg)
+      @jobs_api_client = build_api_client(SmplkitGeneratedClient::Jobs, "jobs", cfg)
 
       @contexts = ContextsNamespace.new(@app_api_client)
       @context_types = ContextTypesNamespace.new(@app_api_client)
@@ -69,6 +70,7 @@ module Smplkit
       @loggers = LoggersNamespace.new(@logging_api_client)
       @log_groups = LogGroupsNamespace.new(@logging_api_client)
       @audit = Management::AuditNamespace.new(@audit_api_client)
+      @jobs = Management::JobsNamespace.new(@jobs_api_client)
     end
 
     def close
@@ -82,6 +84,7 @@ module Smplkit
     def _flags_http = @flags_api_client
     def _logging_http = @logging_api_client
     def _audit_http = @audit_api_client
+    def _jobs_http = @jobs_api_client
 
     SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
 
