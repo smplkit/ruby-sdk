@@ -16,7 +16,7 @@ require 'time'
 module SmplkitGeneratedClient::Jobs
   # One occurrence of a job executing.
   class Run < ApiModelBase
-    # The slug of the job this run belongs to.
+    # The id of the job this run belongs to.
     attr_accessor :job
 
     # The job's version at the time the run executed.

@@ -34,7 +34,7 @@ describe 'JobsApi' do
 
   # unit tests for create_job
   # Create Job
-  # Create a job for this account.  The caller supplies the job&#39;s id (a slug) as &#x60;data.id&#x60;. Slugs are unique within an account and immutable. An enabled job begins scheduling immediately.
+  # Create a job for this account.  The caller supplies the job&#39;s id as &#x60;data.id&#x60;. Ids are unique within an account and immutable. An enabled job begins scheduling immediately.
   # @param job_create_request 
   # @param [Hash] opts the optional parameters
   # @return [JobResponse]
@@ -46,7 +46,7 @@ describe 'JobsApi' do
 
   # unit tests for delete_job
   # Delete Job
-  # Delete a job. Its run history is retained; the slug may be reused later.
+  # Delete a job. Its run history is retained; the id may be reused later.
   # @param job_id 
   # @param [Hash] opts the optional parameters
   # @return [nil]
@@ -58,7 +58,7 @@ describe 'JobsApi' do
 
   # unit tests for get_job
   # Get Job
-  # Retrieve a single job by its id (slug).
+  # Retrieve a single job by its id.
   # @param job_id 
   # @param [Hash] opts the optional parameters
   # @return [JobResponse]

@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Jobs
       @api_client = api_client
     end
     # Create Job
-    # Create a job for this account.  The caller supplies the job's id (a slug) as `data.id`. Slugs are unique within an account and immutable. An enabled job begins scheduling immediately.
+    # Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. An enabled job begins scheduling immediately.
     # @param job_create_request [JobCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [JobResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Create Job
-    # Create a job for this account.  The caller supplies the job&#39;s id (a slug) as &#x60;data.id&#x60;. Slugs are unique within an account and immutable. An enabled job begins scheduling immediately.
+    # Create a job for this account.  The caller supplies the job&#39;s id as &#x60;data.id&#x60;. Ids are unique within an account and immutable. An enabled job begins scheduling immediately.
     # @param job_create_request [JobCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(JobResponse, Integer, Hash)>] JobResponse data, response status code and response headers
@@ -88,7 +88,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Delete Job
-    # Delete a job. Its run history is retained; the slug may be reused later.
+    # Delete a job. Its run history is retained; the id may be reused later.
     # @param job_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [nil]
@@ -98,7 +98,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Delete Job
-    # Delete a job. Its run history is retained; the slug may be reused later.
+    # Delete a job. Its run history is retained; the id may be reused later.
     # @param job_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers
@@ -149,7 +149,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Get Job
-    # Retrieve a single job by its id (slug).
+    # Retrieve a single job by its id.
     # @param job_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [JobResponse]
@@ -159,7 +159,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Get Job
-    # Retrieve a single job by its id (slug).
+    # Retrieve a single job by its id.
     # @param job_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(JobResponse, Integer, Hash)>] JobResponse data, response status code and response headers

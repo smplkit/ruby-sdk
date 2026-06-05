@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Jobs
-  # JSON:API resource envelope for a job. The caller supplies `id` (the slug) on create.
+  # JSON:API resource envelope for a job. The caller supplies `id` on create.
   class JobResource < ApiModelBase
     attr_accessor :id
 

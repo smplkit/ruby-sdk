@@ -4,7 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **job** | **String** | The slug of the job this run belongs to. |  |
+| **job** | **String** | The id of the job this run belongs to. |  |
 | **job_version** | **Integer** | The job&#39;s version at the time the run executed. | [optional] |
 | **trigger** | **String** | Why the run exists: &#x60;SCHEDULE&#x60;, &#x60;MANUAL&#x60; (Run now), or &#x60;RERUN&#x60;. |  |
 | **rerun_of** | **String** | The source run&#39;s id; set only when &#x60;trigger&#x60; is &#x60;RERUN&#x60;. | [optional] |

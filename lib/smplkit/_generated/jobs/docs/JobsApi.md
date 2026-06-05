@@ -18,7 +18,7 @@ All URIs are relative to *http://localhost*
 
 Create Job
 
-Create a job for this account.  The caller supplies the job's id (a slug) as `data.id`. Slugs are unique within an account and immutable. An enabled job begins scheduling immediately.
+Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. An enabled job begins scheduling immediately.
 
 ### Examples
 
@@ -87,7 +87,7 @@ end
 
 Delete Job
 
-Delete a job. Its run history is retained; the slug may be reused later.
+Delete a job. Its run history is retained; the id may be reused later.
 
 ### Examples
 
@@ -155,7 +155,7 @@ nil (empty response body)
 
 Get Job
 
-Retrieve a single job by its id (slug).
+Retrieve a single job by its id.
 
 ### Examples
 
