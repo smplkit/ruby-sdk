@@ -10,7 +10,7 @@
 #
 # Usage:
 #
-#   bundle exec ruby examples/jobs_management_showcase.rb
+#   bundle exec ruby examples/jobs_showcase.rb
 
 require "securerandom"
 require "smplkit"

@@ -3,7 +3,7 @@
 	flags_runtime_showcase flags_management_showcase \
 	logging_runtime_showcase logging_management_showcase \
 	audit_runtime_showcase audit_management_showcase \
-	jobs_management_showcase
+	jobs_showcase
 
 install:
 	bundle install
@@ -41,5 +41,5 @@ audit_runtime_showcase: install
 audit_management_showcase: install
 	bundle exec ruby examples/audit_management_showcase.rb
 
-jobs_management_showcase: install
-	bundle exec ruby examples/jobs_management_showcase.rb
+jobs_showcase: install
+	bundle exec ruby examples/jobs_showcase.rb
