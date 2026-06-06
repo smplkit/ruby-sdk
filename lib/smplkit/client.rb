@@ -90,7 +90,7 @@ module Smplkit
       @logging = Logging::LoggingClient.new(self, manage: @manage, metrics: @metrics,
                                                   logging_base_url: logging_url, app_base_url: app_url)
       @audit = Audit::AuditClient.new(api_key: cfg.api_key, base_url: audit_url,
-                                      extra_headers: extra_headers)
+                                      environment: cfg.environment, extra_headers: extra_headers)
 
       @closed = false
       schedule_periodic_flush

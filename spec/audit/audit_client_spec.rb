@@ -24,7 +24,8 @@ RSpec.describe Smplkit::Audit::AuditClient do
           actor_label: "",
           snapshot: nil,
           data: {},
-          idempotency_key: "k"
+          idempotency_key: "k",
+          environment: "production"
         }
       }
     }.to_json
@@ -240,6 +241,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
         expect(ev.event_type).to eq("user.created")
         expect(ev.actor_type).to eq("API_KEY")
         expect(ev.actor_id).to be_nil
+        expect(ev.environment).to eq("production")
       ensure
         client._close
       end
@@ -475,6 +477,61 @@ RSpec.describe Smplkit::Audit::AuditClient do
         expect(api_client.default_headers["Authorization"]).not_to eq("Bearer overridden")
         expect(api_client.default_headers["User-Agent"]).to eq("smplkit-ruby-sdk/#{Smplkit::VERSION}")
         expect(api_client.default_headers["X-Pass"]).to eq("yes")
+      ensure
+        client._close
+      end
+    end
+  end
+
+  describe "environment scoping (ADR-055)" do
+    it "stamps X-Smplkit-Environment from the configured environment on every audit call" do
+      client = described_class.new(api_key: api_key, base_url: base_url, environment: "production")
+      begin
+        api_client = client.events.instance_variable_get(:@api).api_client
+        expect(api_client.default_headers["X-Smplkit-Environment"]).to eq("production")
+      ensure
+        client._close
+      end
+    end
+
+    it "omits X-Smplkit-Environment when no environment is configured" do
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        api_client = client.events.instance_variable_get(:@api).api_client
+        expect(api_client.default_headers).not_to have_key("X-Smplkit-Environment")
+      ensure
+        client._close
+      end
+    end
+
+    it "lets an explicit extra_headers entry override the configured environment" do
+      client = described_class.new(
+        api_key: api_key, base_url: base_url, environment: "production",
+        extra_headers: { "X-Smplkit-Environment" => "staging" }
+      )
+      begin
+        api_client = client.events.instance_variable_get(:@api).api_client
+        expect(api_client.default_headers["X-Smplkit-Environment"]).to eq("staging")
+      ensure
+        client._close
+      end
+    end
+
+    it "sends the environment header on the wire for a record call" do
+      stub = stub_request(:post, "#{base_url}/api/v1/events")
+             .with(headers: { "X-Smplkit-Environment" => "production" })
+             .to_return(status: 201, body: event_response_body,
+                        headers: { "Content-Type" => "application/vnd.api+json" })
+      client = described_class.new(api_key: api_key, base_url: base_url, environment: "production")
+      begin
+        client.events.record(event_type: "user.created", resource_type: "user", resource_id: "u-1")
+        client.events.flush(timeout: 2.0)
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          sleep 0.02
+        end
+        expect(stub).to have_been_requested.at_least_once
       ensure
         client._close
       end

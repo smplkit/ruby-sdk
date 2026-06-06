@@ -38,7 +38,9 @@ manage = Smplkit::ManagementClient.new
 begin
   forwarder_id = "showcase-#{SecureRandom.hex(3)}"
 
-  # create a new forwarder
+  # create a new forwarder, enabled in the "production" environment.
+  # Enablement is per-environment (ADR-055): a forwarder delivers in an
+  # environment only when that environment's entry has enabled: true.
   forwarder = manage.audit.forwarders.new_forwarder(
     forwarder_id,
     forwarder_type: Smplkit::Audit::ForwarderType::HTTP,
@@ -47,6 +49,9 @@ begin
       url: "https://httpbin.org/post",
       headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")]
     ),
+    environments: {
+      "production" => Smplkit::Audit::ForwarderEnvironment.new(enabled: true)
+    },
     filter: INVOICE_FILTER,
     transform_type: Smplkit::Audit::TransformType::JSONATA,
     transform: SIEM_TRANSFORM
@@ -63,16 +68,17 @@ begin
   # get a forwarder
   fetched = manage.audit.forwarders.get(forwarder.id)
   raise "id mismatch" unless fetched.id == forwarder.id
-  raise "expected enabled=true" unless fetched.enabled == true
+  raise "expected enabled in production" unless fetched.environments["production"]&.enabled == true
 
-  puts "Fetched forwarder: #{fetched.name}"
+  enabled_envs = fetched.environments.select { |_, e| e.enabled }.keys.join(", ")
+  puts "Fetched forwarder: #{fetched.name} (enabled in: #{enabled_envs})"
 
-  # update a forwarder
-  fetched.enabled = false
+  # update a forwarder — disable delivery in production
+  fetched.environments["production"].enabled = false
   fetched.save
-  raise "expected enabled=false" unless fetched.enabled == false
+  raise "expected production disabled" unless fetched.environments["production"].enabled == false
 
-  puts "Disabled forwarder: #{fetched.name} (enabled=#{fetched.enabled})"
+  puts "Disabled forwarder in production: #{fetched.name}"
 
   # delete a forwarder
   fetched.delete

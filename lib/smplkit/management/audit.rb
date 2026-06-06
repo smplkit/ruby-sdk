@@ -39,7 +39,14 @@ module Smplkit
       # @param configuration [Smplkit::Audit::HttpConfiguration] Destination
       #   request configuration. Headers carry credentials and are encrypted at
       #   rest server-side; reads return them redacted.
-      # @param enabled [Boolean] Whether the forwarder is active. Defaults +true+.
+      # @param environments [Hash{String => Smplkit::Audit::ForwarderEnvironment, Hash}, nil]
+      #   Per-environment overrides keyed by environment key (e.g.
+      #   +"production"+). A forwarder delivers in an environment only when that
+      #   environment's entry has +enabled: true+. Values may be
+      #   {Smplkit::Audit::ForwarderEnvironment} instances or plain hashes
+      #   (+{ enabled: true }+, optionally with a +:configuration+
+      #   {Smplkit::Audit::HttpConfiguration} override). Omit to create a
+      #   forwarder that delivers nowhere until enabled per environment.
       # @param description [String, nil] Optional free-text description.
       # @param filter [Hash, nil] Optional JSON Logic filter; events that don't
       #   match are recorded as +filtered_out+ deliveries.
@@ -57,7 +64,7 @@ module Smplkit
       #   is not a +String+.
       # @return [Smplkit::Audit::Forwarder]
       def new_forwarder(id, forwarder_type:, configuration:, name: nil,
-                        enabled: true, description: nil,
+                        environments: nil, description: nil,
                         filter: nil, transform: nil, transform_type: nil)
         Smplkit::Audit::Forwarder.send(:validate_transform_pair!, transform, transform_type)
         Smplkit::Audit::Forwarder.new(
@@ -66,7 +73,7 @@ module Smplkit
           name: name || id,
           forwarder_type: forwarder_type,
           configuration: configuration,
-          enabled: enabled,
+          environments: normalize_environments(environments),
           description: description,
           filter: filter,
           transform: transform,
@@ -82,10 +89,9 @@ module Smplkit
       # block (costs an extra COUNT query server-side).
       #
       # @return [ForwarderListPage]
-      def list(forwarder_type: nil, enabled: nil, page_number: nil, page_size: nil, meta_total: nil)
+      def list(forwarder_type: nil, page_number: nil, page_size: nil, meta_total: nil)
         opts = {}
         opts[:filter_forwarder_type] = Smplkit::Audit::ForwarderType.coerce(forwarder_type) if forwarder_type
-        opts[:filter_enabled] = enabled unless enabled.nil?
         opts[:page_number] = page_number if page_number
         opts[:page_size] = page_size if page_size
         opts[:meta_total] = meta_total unless meta_total.nil?
@@ -143,12 +149,49 @@ module Smplkit
 
       private
 
+      # Coerce a caller's +environments+ map to wrapper instances.
+      #
+      # Accepts either {Smplkit::Audit::ForwarderEnvironment} values or plain
+      # hashes (+{ enabled: true, configuration: HttpConfiguration.new(...) }+)
+      # so callers can use the lightweight hash form without importing the
+      # model.
+      def normalize_environments(environments)
+        return {} if environments.nil? || environments.empty?
+
+        environments.each_with_object({}) do |(env_key, value), out|
+          out[env_key.to_s] = if value.is_a?(Smplkit::Audit::ForwarderEnvironment)
+                                value
+                              else
+                                Smplkit::Audit::ForwarderEnvironment.new(
+                                  enabled: value[:enabled] || value["enabled"] || false,
+                                  configuration: value[:configuration] || value["configuration"]
+                                )
+                              end
+        end
+      end
+
+      # Convert the wrapper +environments+ map to the generated model hash.
+      #
+      # Per-environment +configuration+ overrides are sent as full
+      # {Smplkit::Audit::HttpConfiguration} payloads (plaintext headers in),
+      # mirroring the base configuration's round-trip semantics.
+      def environments_to_wire(environments)
+        (environments || {}).each_with_object({}) do |(env_key, env), out|
+          out[env_key.to_s] = SmplkitGeneratedClient::Audit::ForwarderEnvironment.new(
+            enabled: env.enabled,
+            configuration: env.configuration.nil? ? nil : Smplkit::Audit::HttpConfiguration.to_wire(env.configuration)
+          )
+        end
+      end
+
       def build_attrs(forwarder)
+        # The base ``enabled`` is server-pinned false (ADR-055); we don't send
+        # it. Enablement travels entirely through ``environments``.
         SmplkitGeneratedClient::Audit::Forwarder.new(
           name: forwarder.name,
           description: forwarder.description,
           forwarder_type: Smplkit::Audit::ForwarderType.coerce(forwarder.forwarder_type),
-          enabled: forwarder.enabled,
+          environments: environments_to_wire(forwarder.environments),
           filter: forwarder.filter,
           transform_type: Smplkit::Audit::TransformType.coerce(forwarder.transform_type),
           transform: forwarder.transform,
