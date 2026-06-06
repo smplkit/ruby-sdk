@@ -21,7 +21,7 @@ All URIs are relative to *http://localhost*
 
 Create Forwarder
 
-Create a forwarder for this account.  The caller supplies the forwarder's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the forwarder.
+Create a forwarder for this account.  The caller supplies the forwarder's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the forwarder.  Enablement is per-environment: a forwarder is enabled in an environment only via `environments[<env>].enabled`; the base `enabled` is always false. Every environment referenced in `environments` must exist and be managed for the account.
 
 ### Examples
 
@@ -227,7 +227,7 @@ end
 
 Get Forwarder
 
-Retrieve a single forwarder by id.  Header values are returned in plaintext so the resource can be round-tripped with `GET`, mutate, `PUT` without re-entering secrets.
+Retrieve a single forwarder by id.  Header values are returned in plaintext so the resource can be round-tripped with `GET`, mutate, `PUT` without re-entering secrets. The `environments` override map is scoped to the caller's environment groups.
 
 ### Examples
 
@@ -296,7 +296,7 @@ end
 
 List Forwarder Deliveries
 
-List delivery log entries for a forwarder.  Default sort is `-created_at` (newest first). Filter by `status` (`SUCCEEDED` or `FAILED`, case-insensitive), by `event`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
+List delivery log entries for a forwarder.  Scoped to the resolved environment — only that environment's deliveries for the forwarder are shown. Default sort is `-created_at` (newest first). Filter by `status` (`SUCCEEDED` or `FAILED`, case-insensitive), by `event`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
 
 ### Examples
 
@@ -379,7 +379,7 @@ end
 
 List Forwarders
 
-List forwarders for this account.  Default sort is `-created_at` (newest first).
+List forwarders for this account.  Default sort is `-created_at` (newest first). Each forwarder's `environments` override map is scoped to the caller's environment groups.
 
 ### Examples
 
@@ -395,7 +395,6 @@ end
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
 opts = {
   filter_forwarder_type: 'filter_forwarder_type_example', # String | 
-  filter_enabled: true, # Boolean | 
   sort: 'created_at', # String | Field to sort by. Prefix with `-` for descending order. Default: `-created_at`. Allowed values: `created_at`, `-created_at`, `updated_at`, `-updated_at`.
   page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
   page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
@@ -434,7 +433,6 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **filter_forwarder_type** | **String** |  | [optional] |
-| **filter_enabled** | **Boolean** |  | [optional] |
 | **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;-created_at&#39;] |
 | **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
 | **page_size** | **Integer** | Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional][default to 1000] |
@@ -460,7 +458,7 @@ end
 
 Retry Failed Forwarder Deliveries
 
-Retry every failed delivery for this forwarder.  Each failed delivery is re-attempted using the forwarder's current configuration and the original event. Returns the counts.
+Retry every failed delivery for this forwarder in the resolved environment.  Scoped to the resolved environment (a single-environment credential implies it; otherwise send the `X-Smplkit-Environment` header): only that environment's failed deliveries are re-attempted, each using the forwarder's effective configuration for that environment and the original event. Returns the counts.
 
 ### Examples
 
@@ -529,7 +527,7 @@ end
 
 Retry Forwarder Delivery
 
-Retry a single failed delivery.  Returns the new delivery log entry. The prior entry is left in place.
+Retry a single failed delivery.  The delivery is named by id, so it is authorized against the caller's permitted environment set: a delivery in an environment the caller can't access returns `404` (existence never leaks). Returns the new delivery log entry. The prior entry is left in place.
 
 ### Examples
 
@@ -600,7 +598,7 @@ end
 
 Update Forwarder
 
-Replace an existing forwarder. Every writable field is overwritten.
+Replace an existing forwarder. Every writable field is overwritten.  The `environments` override map is a full replace for the environments you can manage; overrides for environments outside your access (which were hidden from your read) are preserved. Every environment referenced in `environments` must exist and be managed.
 
 ### Examples
 

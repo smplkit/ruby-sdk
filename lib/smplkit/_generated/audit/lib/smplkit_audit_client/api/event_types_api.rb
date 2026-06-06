@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # List Event Types
-    # List the distinct `event_type` slugs recorded for this account.  Default sort is `key` ascending; pass `sort=-key` for descending. Without `filter[resource_type]`, returns one row per distinct event_type. With `filter[resource_type]`, returns the event_types recorded for that specific resource type.
+    # List the distinct `event_type` slugs recorded for this account.  Default sort is `key` ascending; pass `sort=-key` for descending. Scoped to the resolved environment. Without `filter[resource_type]`, returns one row per distinct event_type. With `filter[resource_type]`, returns the event_types recorded for that specific resource type.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;. (default to 'key')
@@ -34,7 +34,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Event Types
-    # List the distinct &#x60;event_type&#x60; slugs recorded for this account.  Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Without &#x60;filter[resource_type]&#x60;, returns one row per distinct event_type. With &#x60;filter[resource_type]&#x60;, returns the event_types recorded for that specific resource type.
+    # List the distinct &#x60;event_type&#x60; slugs recorded for this account.  Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Scoped to the resolved environment. Without &#x60;filter[resource_type]&#x60;, returns one row per distinct event_type. With &#x60;filter[resource_type]&#x60;, returns the event_types recorded for that specific resource type.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_resource_type 
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;. (default to 'key')

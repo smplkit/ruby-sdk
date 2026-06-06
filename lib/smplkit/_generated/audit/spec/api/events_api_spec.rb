@@ -34,7 +34,7 @@ describe 'EventsApi' do
 
   # unit tests for get_event
   # Get Event
-  # Retrieve a single audit event by id.
+  # Retrieve a single audit event by id.  Authorized against the caller&#39;s permitted environment set: the event is returned only if its environment is one the caller may access, otherwise &#x60;404&#x60; (the same response as a non-existent id, so existence never leaks across environments). The &#x60;X-Smplkit-Environment&#x60; header is ignored here — a single-object lookup names the object by id, it does not resolve an ambient environment.
   # @param event_id 
   # @param [Hash] opts the optional parameters
   # @return [EventResponse]
@@ -71,7 +71,7 @@ describe 'EventsApi' do
 
   # unit tests for record_event
   # Record Event
-  # Record an audit event for this account.  Returns &#x60;201 Created&#x60; on first write, &#x60;200 OK&#x60; if the request was a duplicate (matched by &#x60;Idempotency-Key&#x60; or a key derived from the event&#39;s content).  &#x60;resource_type&#x60; values beginning with &#x60;smpl.&#x60; are reserved for events that smplkit emits about its own resources and cannot be used here.
+  # Record an audit event for this account.  The event is stamped with the environment it occurred in: a single-environment credential implies it; a multi-environment or unrestricted credential must send the &#x60;X-Smplkit-Environment&#x60; header. The resolved environment must exist and be managed for the account.  Returns &#x60;201 Created&#x60; on first write, &#x60;200 OK&#x60; if the request was a duplicate (matched by &#x60;Idempotency-Key&#x60; or a key derived from the event&#39;s content). The same content recorded in two environments produces two distinct events.  &#x60;resource_type&#x60; values beginning with &#x60;smpl.&#x60; are reserved for events that smplkit emits about its own resources and cannot be used here.
   # @param event_request 
   # @param [Hash] opts the optional parameters
   # @option opts [String] :idempotency_key 
@@ -84,7 +84,7 @@ describe 'EventsApi' do
 
   # unit tests for search_events
   # Search Events
-  # Search audit events with column filters and an optional JSON Logic expression.  Without a JSON Logic &#x60;filter&#x60;: behaves like &#x60;GET /api/v1/events&#x60; with the same column filters.  With a JSON Logic &#x60;filter&#x60;: the search is silently capped to the last 30 days by &#x60;occurred_at&#x60; (intersected with any explicit &#x60;filter[occurred_at]&#x60; the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same &#x60;json-logic-qubit&#x60; evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response&#39;s &#x60;meta.scan&#x60; block reports the scan stats so a selective filter doesn&#39;t look like \&quot;0 matches\&quot; when the truth is \&quot;ceiling reached.\&quot;
+  # Search audit events with column filters and an optional JSON Logic expression.  Scoped to the resolved environment (a single-environment credential implies it; otherwise send the &#x60;X-Smplkit-Environment&#x60; header).  Without a JSON Logic &#x60;filter&#x60;: behaves like &#x60;GET /api/v1/events&#x60; with the same column filters.  With a JSON Logic &#x60;filter&#x60;: the search is silently capped to the last 30 days by &#x60;occurred_at&#x60; (intersected with any explicit &#x60;filter[occurred_at]&#x60; the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same &#x60;json-logic-qubit&#x60; evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response&#39;s &#x60;meta.scan&#x60; block reports the scan stats so a selective filter doesn&#39;t look like \&quot;0 matches\&quot; when the truth is \&quot;ceiling reached.\&quot;
   # @param event_search_request 
   # @param [Hash] opts the optional parameters
   # @return [EventSearchResponse]

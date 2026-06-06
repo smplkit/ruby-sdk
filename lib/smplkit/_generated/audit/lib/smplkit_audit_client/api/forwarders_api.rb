@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # Create Forwarder
-    # Create a forwarder for this account.  The caller supplies the forwarder's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the forwarder.
+    # Create a forwarder for this account.  The caller supplies the forwarder's key as `data.id`. Keys are unique within an account and immutable for the lifetime of the forwarder.  Enablement is per-environment: a forwarder is enabled in an environment only via `environments[<env>].enabled`; the base `enabled` is always false. Every environment referenced in `environments` must exist and be managed for the account.
     # @param forwarder_create_request [ForwarderCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [ForwarderResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Create Forwarder
-    # Create a forwarder for this account.  The caller supplies the forwarder&#39;s key as &#x60;data.id&#x60;. Keys are unique within an account and immutable for the lifetime of the forwarder.
+    # Create a forwarder for this account.  The caller supplies the forwarder&#39;s key as &#x60;data.id&#x60;. Keys are unique within an account and immutable for the lifetime of the forwarder.  Enablement is per-environment: a forwarder is enabled in an environment only via &#x60;environments[&lt;env&gt;].enabled&#x60;; the base &#x60;enabled&#x60; is always false. Every environment referenced in &#x60;environments&#x60; must exist and be managed for the account.
     # @param forwarder_create_request [ForwarderCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ForwarderResponse, Integer, Hash)>] ForwarderResponse data, response status code and response headers
@@ -217,7 +217,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Get Forwarder
-    # Retrieve a single forwarder by id.  Header values are returned in plaintext so the resource can be round-tripped with `GET`, mutate, `PUT` without re-entering secrets.
+    # Retrieve a single forwarder by id.  Header values are returned in plaintext so the resource can be round-tripped with `GET`, mutate, `PUT` without re-entering secrets. The `environments` override map is scoped to the caller's environment groups.
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [ForwarderResponse]
@@ -227,7 +227,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Get Forwarder
-    # Retrieve a single forwarder by id.  Header values are returned in plaintext so the resource can be round-tripped with &#x60;GET&#x60;, mutate, &#x60;PUT&#x60; without re-entering secrets.
+    # Retrieve a single forwarder by id.  Header values are returned in plaintext so the resource can be round-tripped with &#x60;GET&#x60;, mutate, &#x60;PUT&#x60; without re-entering secrets. The &#x60;environments&#x60; override map is scoped to the caller&#39;s environment groups.
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(ForwarderResponse, Integer, Hash)>] ForwarderResponse data, response status code and response headers
@@ -280,7 +280,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarder Deliveries
-    # List delivery log entries for a forwarder.  Default sort is `-created_at` (newest first). Filter by `status` (`SUCCEEDED` or `FAILED`, case-insensitive), by `event`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
+    # List delivery log entries for a forwarder.  Scoped to the resolved environment — only that environment's deliveries for the forwarder are shown. Default sort is `-created_at` (newest first). Filter by `status` (`SUCCEEDED` or `FAILED`, case-insensitive), by `event`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_status 
@@ -296,7 +296,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarder Deliveries
-    # List delivery log entries for a forwarder.  Default sort is &#x60;-created_at&#x60; (newest first). Filter by &#x60;status&#x60; (&#x60;SUCCEEDED&#x60; or &#x60;FAILED&#x60;, case-insensitive), by &#x60;event&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
+    # List delivery log entries for a forwarder.  Scoped to the resolved environment — only that environment&#39;s deliveries for the forwarder are shown. Default sort is &#x60;-created_at&#x60; (newest first). Filter by &#x60;status&#x60; (&#x60;SUCCEEDED&#x60; or &#x60;FAILED&#x60;, case-insensitive), by &#x60;event&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_status 
@@ -369,10 +369,9 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarders
-    # List forwarders for this account.  Default sort is `-created_at` (newest first).
+    # List forwarders for this account.  Default sort is `-created_at` (newest first). Each forwarder's `environments` override map is scoped to the caller's environment groups.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_forwarder_type 
-    # @option opts [Boolean] :filter_enabled 
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to '-created_at')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -384,10 +383,9 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarders
-    # List forwarders for this account.  Default sort is &#x60;-created_at&#x60; (newest first).
+    # List forwarders for this account.  Default sort is &#x60;-created_at&#x60; (newest first). Each forwarder&#39;s &#x60;environments&#x60; override map is scoped to the caller&#39;s environment groups.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_forwarder_type 
-    # @option opts [Boolean] :filter_enabled 
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to '-created_at')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -407,7 +405,6 @@ module SmplkitGeneratedClient::Audit
       # query parameters
       query_params = opts[:query_params] || {}
       query_params[:'filter[forwarder_type]'] = opts[:'filter_forwarder_type'] if !opts[:'filter_forwarder_type'].nil?
-      query_params[:'filter[enabled]'] = opts[:'filter_enabled'] if !opts[:'filter_enabled'].nil?
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
       query_params[:'page[number]'] = opts[:'page_number'] if !opts[:'page_number'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
@@ -448,7 +445,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Retry Failed Forwarder Deliveries
-    # Retry every failed delivery for this forwarder.  Each failed delivery is re-attempted using the forwarder's current configuration and the original event. Returns the counts.
+    # Retry every failed delivery for this forwarder in the resolved environment.  Scoped to the resolved environment (a single-environment credential implies it; otherwise send the `X-Smplkit-Environment` header): only that environment's failed deliveries are re-attempted, each using the forwarder's effective configuration for that environment and the original event. Returns the counts.
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [RetryFailedDeliveriesSummary]
@@ -458,7 +455,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Retry Failed Forwarder Deliveries
-    # Retry every failed delivery for this forwarder.  Each failed delivery is re-attempted using the forwarder&#39;s current configuration and the original event. Returns the counts.
+    # Retry every failed delivery for this forwarder in the resolved environment.  Scoped to the resolved environment (a single-environment credential implies it; otherwise send the &#x60;X-Smplkit-Environment&#x60; header): only that environment&#39;s failed deliveries are re-attempted, each using the forwarder&#39;s effective configuration for that environment and the original event. Returns the counts.
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(RetryFailedDeliveriesSummary, Integer, Hash)>] RetryFailedDeliveriesSummary data, response status code and response headers
@@ -511,7 +508,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Retry Forwarder Delivery
-    # Retry a single failed delivery.  Returns the new delivery log entry. The prior entry is left in place.
+    # Retry a single failed delivery.  The delivery is named by id, so it is authorized against the caller's permitted environment set: a delivery in an environment the caller can't access returns `404` (existence never leaks). Returns the new delivery log entry. The prior entry is left in place.
     # @param forwarder_id [String] 
     # @param delivery_id [String] 
     # @param [Hash] opts the optional parameters
@@ -522,7 +519,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Retry Forwarder Delivery
-    # Retry a single failed delivery.  Returns the new delivery log entry. The prior entry is left in place.
+    # Retry a single failed delivery.  The delivery is named by id, so it is authorized against the caller&#39;s permitted environment set: a delivery in an environment the caller can&#39;t access returns &#x60;404&#x60; (existence never leaks). Returns the new delivery log entry. The prior entry is left in place.
     # @param forwarder_id [String] 
     # @param delivery_id [String] 
     # @param [Hash] opts the optional parameters
@@ -580,7 +577,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Update Forwarder
-    # Replace an existing forwarder. Every writable field is overwritten.
+    # Replace an existing forwarder. Every writable field is overwritten.  The `environments` override map is a full replace for the environments you can manage; overrides for environments outside your access (which were hidden from your read) are preserved. Every environment referenced in `environments` must exist and be managed.
     # @param forwarder_id [String] 
     # @param forwarder_request [ForwarderRequest] 
     # @param [Hash] opts the optional parameters
@@ -591,7 +588,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Update Forwarder
-    # Replace an existing forwarder. Every writable field is overwritten.
+    # Replace an existing forwarder. Every writable field is overwritten.  The &#x60;environments&#x60; override map is a full replace for the environments you can manage; overrides for environments outside your access (which were hidden from your read) are preserved. Every environment referenced in &#x60;environments&#x60; must exist and be managed.
     # @param forwarder_id [String] 
     # @param forwarder_request [ForwarderRequest] 
     # @param [Hash] opts the optional parameters

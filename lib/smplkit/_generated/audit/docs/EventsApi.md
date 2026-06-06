@@ -16,7 +16,7 @@ All URIs are relative to *http://localhost*
 
 Get Event
 
-Retrieve a single audit event by id.
+Retrieve a single audit event by id.  Authorized against the caller's permitted environment set: the event is returned only if its environment is one the caller may access, otherwise `404` (the same response as a non-existent id, so existence never leaks across environments). The `X-Smplkit-Environment` header is ignored here — a single-object lookup names the object by id, it does not resolve an ambient environment.
 
 ### Examples
 
@@ -182,7 +182,7 @@ end
 
 Record Event
 
-Record an audit event for this account.  Returns `201 Created` on first write, `200 OK` if the request was a duplicate (matched by `Idempotency-Key` or a key derived from the event's content).  `resource_type` values beginning with `smpl.` are reserved for events that smplkit emits about its own resources and cannot be used here.
+Record an audit event for this account.  The event is stamped with the environment it occurred in: a single-environment credential implies it; a multi-environment or unrestricted credential must send the `X-Smplkit-Environment` header. The resolved environment must exist and be managed for the account.  Returns `201 Created` on first write, `200 OK` if the request was a duplicate (matched by `Idempotency-Key` or a key derived from the event's content). The same content recorded in two environments produces two distinct events.  `resource_type` values beginning with `smpl.` are reserved for events that smplkit emits about its own resources and cannot be used here.
 
 ### Examples
 
@@ -255,7 +255,7 @@ end
 
 Search Events
 
-Search audit events with column filters and an optional JSON Logic expression.  Without a JSON Logic `filter`: behaves like `GET /api/v1/events` with the same column filters.  With a JSON Logic `filter`: the search is silently capped to the last 30 days by `occurred_at` (intersected with any explicit `filter[occurred_at]` the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same `json-logic-qubit` evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response's `meta.scan` block reports the scan stats so a selective filter doesn't look like \"0 matches\" when the truth is \"ceiling reached.\"
+Search audit events with column filters and an optional JSON Logic expression.  Scoped to the resolved environment (a single-environment credential implies it; otherwise send the `X-Smplkit-Environment` header).  Without a JSON Logic `filter`: behaves like `GET /api/v1/events` with the same column filters.  With a JSON Logic `filter`: the search is silently capped to the last 30 days by `occurred_at` (intersected with any explicit `filter[occurred_at]` the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same `json-logic-qubit` evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response's `meta.scan` block reports the scan stats so a selective filter doesn't look like \"0 matches\" when the truth is \"ceiling reached.\"
 
 ### Examples
 
