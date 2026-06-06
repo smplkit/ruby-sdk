@@ -14,18 +14,18 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # HTTP request configuration used to deliver an event to the destination.  Used when the parent forwarder's ``forwarder_type`` is one of the HTTP-family destinations (``HTTP``, ``DATADOG``, ``SPLUNK_HEC``, ``SUMO_LOGIC``, ``NEW_RELIC``, ``HONEYCOMB``, ``ELASTIC``). When other transports land (``FTP``, ``SQS``, …) their own configuration schemas will join this one as members of a discriminated union under the ``configuration`` field of ``Forwarder``.
+  # HTTP request configuration for delivering a payload to a destination.  The shared base shape for any product that posts to a customer-supplied HTTP destination. Smpl Audit forwarders use it directly; Smpl Jobs extends it (adding ``body`` and ``timeout``). When other transports land (``FTP``, ``SQS``, …) their own configuration schemas will join this one as members of a discriminated union under a ``configuration`` field.
   class HttpConfiguration < ApiModelBase
-    # HTTP method used when delivering an event.
+    # HTTP method used when delivering the request.
     attr_accessor :method
 
     # Destination URL. Must be an absolute `http://` or `https://` URL with a hostname (e.g. `https://siem.example.com/in`).
     attr_accessor :url
 
-    # HTTP headers attached to each delivery request.
+    # HTTP headers attached to each request.
     attr_accessor :headers
 
-    # HTTP response status that indicates a successful delivery. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
+    # HTTP response status that indicates success. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
     attr_accessor :success_status
 
     # Whether to verify the destination server's TLS certificate against trusted certificate authorities. Defaults to `true` and should be left on for any production destination. Set to `false` only for development or short-lived testing against a destination that presents an untrusted certificate (e.g. a Splunk Cloud trial stack on `:8088` serving its default self-signed certificate). When `false`, deliveries proceed without certificate verification — they are vulnerable to man-in-the-middle attacks. For long-lived self-signed setups, pin the issuing CA via `ca_cert` instead of disabling verification entirely.
