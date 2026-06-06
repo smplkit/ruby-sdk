@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # List Categories
-    # List the distinct `category` values recorded for this account.  The resource `id` is the category value itself. Default sort is `key` ascending; pass `sort=-key` for descending. Useful for populating filter dropdowns in a UI.
+    # List the distinct `category` values recorded for this account.  The resource `id` is the category value itself. Default sort is `key` ascending; pass `sort=-key` for descending. Scoped to the resolved environment. Useful for populating filter dropdowns in a UI.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;. (default to 'key')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
@@ -33,7 +33,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Categories
-    # List the distinct &#x60;category&#x60; values recorded for this account.  The resource &#x60;id&#x60; is the category value itself. Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Useful for populating filter dropdowns in a UI.
+    # List the distinct &#x60;category&#x60; values recorded for this account.  The resource &#x60;id&#x60; is the category value itself. Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Scoped to the resolved environment. Useful for populating filter dropdowns in a UI.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;. (default to 'key')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)

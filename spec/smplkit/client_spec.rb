@@ -50,6 +50,13 @@ RSpec.describe Smplkit::Client do
     end
   end
 
+  it "wires the resolved environment into the runtime audit client header (ADR-055)" do
+    with_client do |client|
+      api_client = client.audit.events.instance_variable_get(:@api).api_client
+      expect(api_client.default_headers["X-Smplkit-Environment"]).to eq("staging")
+    end
+  end
+
   it "skips MetricsReporter when telemetry is disabled" do
     no_telemetry = Smplkit::ConfigResolution::ResolvedConfig.new(**resolved.to_h, telemetry: false)
     allow(Smplkit::ConfigResolution).to receive(:resolve_config).and_return(no_telemetry)

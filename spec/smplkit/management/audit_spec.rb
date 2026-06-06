@@ -16,14 +16,16 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
   let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
 
   def forwarder_resource(name: "Datadog production", description: nil,
-                         enabled: true, forwarder_type: "datadog",
-                         filter: nil, transform_type: nil, transform: nil)
+                         enabled: false, forwarder_type: "datadog",
+                         filter: nil, transform_type: nil, transform: nil,
+                         environments: {})
     {
       id: fwd_id,
       type: "forwarder",
       attributes: {
         name: name, description: description, forwarder_type: forwarder_type, enabled: enabled,
         filter: filter, transform_type: transform_type, transform: transform,
+        environments: environments,
         configuration: {
           method: "POST", url: "https://siem.example.com/in",
           headers: [{ name: "DD-API-KEY", value: "<redacted>" }],
@@ -159,6 +161,153 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
     end
   end
 
+  describe "environments map (ADR-055)" do
+    it "sends an environments map on create with per-env enabled + configuration override" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(
+        status: 201,
+        body: { data: forwarder_resource(
+          environments: { "production" => { enabled: true } }
+        ) }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.new_forwarder(
+        fwd_id, name: "n", forwarder_type: "http",
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base"),
+                environments: {
+                  "production" => Smplkit::Audit::ForwarderEnvironment.new(
+                    enabled: true,
+                    configuration: Smplkit::Audit::HttpConfiguration.new(
+                      url: "https://prod-override",
+                      headers: [Smplkit::Audit::HttpHeader.new(name: "X-Prod", value: "real")]
+                    )
+                  )
+                }
+      )
+      fwd.save
+      envs = captured.dig("data", "attributes", "environments")
+      expect(envs["production"]["enabled"]).to be(true)
+      expect(envs["production"]["configuration"]["url"]).to eq("https://prod-override")
+      expect(envs["production"]["configuration"]["headers"].first["value"]).to eq("real")
+    end
+
+    it "accepts a plain Hash environment entry (lightweight form)" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(
+        status: 201,
+        body: { data: forwarder_resource(environments: { "production" => { enabled: true } }) }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.new_forwarder(
+        fwd_id, name: "n", forwarder_type: "http",
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base"),
+                environments: { "production" => { enabled: true } }
+      )
+      fwd.save
+      envs = captured.dig("data", "attributes", "environments")
+      expect(envs["production"]["enabled"]).to be(true)
+      # No per-env override → inherits the base configuration (omitted on the wire).
+      expect(envs["production"]["configuration"]).to be_nil
+    end
+
+    it "defaults environments to an empty map and never sends enabled=true on the base" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: forwarder_resource }.to_json, headers: json_api)
+      fwd = forwarders.new_forwarder(
+        fwd_id, name: "n", forwarder_type: "http",
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base")
+      )
+      expect(fwd.environments).to eq({})
+      fwd.save
+      attrs = captured.dig("data", "attributes")
+      expect(attrs["environments"]).to eq({})
+      # The base ``enabled`` is server-pinned false — we never send it true.
+      expect(attrs["enabled"]).not_to be(true)
+    end
+
+    it "reads the environments map back from a get, redacting override headers" do
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200,
+        body: { data: forwarder_resource(
+          environments: {
+            "production" => {
+              enabled: true,
+              configuration: {
+                method: "POST", url: "https://prod-override",
+                headers: [{ name: "X-Prod", value: "<redacted>" }],
+                success_status: "2xx"
+              }
+            },
+            "staging" => { enabled: false, configuration: nil }
+          }
+        ) }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.get(fwd_id)
+      expect(fwd.environments.keys).to contain_exactly("production", "staging")
+      prod = fwd.environments["production"]
+      expect(prod).to be_a(Smplkit::Audit::ForwarderEnvironment)
+      expect(prod.enabled).to be(true)
+      expect(prod.configuration.url).to eq("https://prod-override")
+      expect(prod.configuration.headers.first.value).to eq("<redacted>")
+      stg = fwd.environments["staging"]
+      expect(stg.enabled).to be(false)
+      expect(stg.configuration).to be_nil
+    end
+
+    it "exposes enabled as read-only and always false on reads" do
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200,
+        body: { data: forwarder_resource(enabled: false, environments: { "production" => { enabled: true } }) }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.get(fwd_id)
+      expect(fwd.enabled).to be(false)
+    end
+
+    it "round-trips the environments map through Forwarder#save (PUT)" do
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200,
+        body: { data: forwarder_resource(environments: { "production" => { enabled: true } }) }.to_json,
+        headers: json_api
+      )
+      captured = nil
+      stub_request(:put, "#{base_url}/api/v1/forwarders/#{fwd_id}").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(
+        status: 200,
+        body: { data: forwarder_resource(environments: { "production" => { enabled: false } }) }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.get(fwd_id)
+      fwd.environments["production"].enabled = false
+      fwd.save
+      expect(captured.dig("data", "attributes", "environments", "production", "enabled")).to be(false)
+      expect(fwd.environments["production"].enabled).to be(false)
+    end
+
+    it "defaults a wire ForwarderEnvironment with absent enabled to false" do
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200,
+        body: { data: forwarder_resource(environments: { "production" => {} }) }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.get(fwd_id)
+      expect(fwd.environments["production"].enabled).to be(false)
+      expect(fwd.environments["production"].configuration).to be_nil
+    end
+  end
+
   describe "#list" do
     it "forwards offset params and surfaces pagination metadata" do
       captured_uri = nil
@@ -175,7 +324,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
           }.to_json,
           headers: json_api
         )
-      page = forwarders.list(forwarder_type: "datadog", enabled: true,
+      page = forwarders.list(forwarder_type: "datadog",
                              page_number: 2, page_size: 1, meta_total: true)
       expect(captured_uri).to include("page%5Bnumber%5D=2")
       expect(captured_uri).to include("page%5Bsize%5D=1")
@@ -183,7 +332,9 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       expect(page.pagination).to eq(page: 2, size: 1, total: 3, total_pages: 3)
     end
 
-    it "passes filter[forwarder_type] and filter[enabled] through to the generated client" do
+    it "passes filter[forwarder_type] through to the generated client" do
+      # The legacy filter[enabled] list param was removed in ADR-055 —
+      # enablement is now per-environment, not a top-level boolean.
       captured_uri = nil
       stub_request(:get, %r{#{base_url}/api/v1/forwarders\b})
         .with do |req|
@@ -193,9 +344,9 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
         .to_return(status: 200,
                    body: { data: [], meta: { pagination: { page: 1, size: 1000 } } }.to_json,
                    headers: json_api)
-      forwarders.list(forwarder_type: "datadog", enabled: false)
+      forwarders.list(forwarder_type: "datadog")
       expect(captured_uri).to include("filter%5Bforwarder_type%5D=datadog")
-      expect(captured_uri).to include("filter%5Benabled%5D=false")
+      expect(captured_uri).not_to include("filter%5Benabled%5D")
     end
 
     it "returns empty list and bare pagination on empty data" do

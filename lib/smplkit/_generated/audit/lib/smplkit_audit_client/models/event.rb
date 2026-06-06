@@ -52,6 +52,9 @@ module SmplkitGeneratedClient::Audit
     # When `true`, the event is recorded but not delivered to any forwarder, and no delivery log entries are created for it.
     attr_accessor :do_not_forward
 
+    # The environment the event occurred in. Always present on read. Resolved when the event is recorded — from a single-environment credential, or the `X-Smplkit-Environment` header for multi-environment credentials — and never set on the request body. The same content recorded in two environments produces two distinct events.
+    attr_accessor :environment
+
     # When the event was received and recorded.
     attr_accessor :created_at
 
@@ -95,6 +98,7 @@ module SmplkitGeneratedClient::Audit
         :'actor_label' => :'actor_label',
         :'data' => :'data',
         :'do_not_forward' => :'do_not_forward',
+        :'environment' => :'environment',
         :'created_at' => :'created_at',
         :'idempotency_key' => :'idempotency_key'
       }
@@ -125,6 +129,7 @@ module SmplkitGeneratedClient::Audit
         :'actor_label' => :'String',
         :'data' => :'Hash<String, Object>',
         :'do_not_forward' => :'Boolean',
+        :'environment' => :'String',
         :'created_at' => :'Time',
         :'idempotency_key' => :'String'
       }
@@ -140,6 +145,7 @@ module SmplkitGeneratedClient::Audit
         :'actor_type',
         :'actor_id',
         :'actor_label',
+        :'environment',
         :'created_at',
         :'idempotency_key'
       ])
@@ -217,6 +223,10 @@ module SmplkitGeneratedClient::Audit
         self.do_not_forward = attributes[:'do_not_forward']
       else
         self.do_not_forward = false
+      end
+
+      if attributes.key?(:'environment')
+        self.environment = attributes[:'environment']
       end
 
       if attributes.key?(:'created_at')
@@ -332,6 +342,7 @@ module SmplkitGeneratedClient::Audit
           actor_label == o.actor_label &&
           data == o.data &&
           do_not_forward == o.do_not_forward &&
+          environment == o.environment &&
           created_at == o.created_at &&
           idempotency_key == o.idempotency_key
     end
@@ -345,7 +356,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [event_type, resource_type, resource_id, description, severity, category, occurred_at, actor_type, actor_id, actor_label, data, do_not_forward, created_at, idempotency_key].hash
+      [event_type, resource_type, resource_id, description, severity, category, occurred_at, actor_type, actor_id, actor_label, data, do_not_forward, environment, created_at, idempotency_key].hash
     end
 
     # Builds the object from hash

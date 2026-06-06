@@ -16,6 +16,9 @@ require 'time'
 module SmplkitGeneratedClient::Audit
   # A log entry for one attempt to deliver an event to a forwarder.
   class ForwarderDelivery < ApiModelBase
+    # Environment the delivered event occurred in. Deliveries are scoped to one environment.
+    attr_accessor :environment
+
     # Forwarder the delivery belongs to.
     attr_accessor :forwarder
 
@@ -71,6 +74,7 @@ module SmplkitGeneratedClient::Audit
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'environment' => :'environment',
         :'forwarder' => :'forwarder',
         :'event' => :'event',
         :'attempt_number' => :'attempt_number',
@@ -97,6 +101,7 @@ module SmplkitGeneratedClient::Audit
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'environment' => :'String',
         :'forwarder' => :'String',
         :'event' => :'String',
         :'attempt_number' => :'Integer',
@@ -137,6 +142,12 @@ module SmplkitGeneratedClient::Audit
         end
         h[k.to_sym] = v
       }
+
+      if attributes.key?(:'environment')
+        self.environment = attributes[:'environment']
+      else
+        self.environment = nil
+      end
 
       if attributes.key?(:'forwarder')
         self.forwarder = attributes[:'forwarder']
@@ -194,6 +205,10 @@ module SmplkitGeneratedClient::Audit
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
+      if @environment.nil?
+        invalid_properties.push('invalid value for "environment", environment cannot be nil.')
+      end
+
       if @forwarder.nil?
         invalid_properties.push('invalid value for "forwarder", forwarder cannot be nil.')
       end
@@ -217,6 +232,7 @@ module SmplkitGeneratedClient::Audit
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      return false if @environment.nil?
       return false if @forwarder.nil?
       return false if @event.nil?
       return false if @attempt_number.nil?
@@ -224,6 +240,16 @@ module SmplkitGeneratedClient::Audit
       status_validator = EnumAttributeValidator.new('String', ["SUCCEEDED", "FAILED"])
       return false unless status_validator.valid?(@status)
       true
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] environment Value to be assigned
+    def environment=(environment)
+      if environment.nil?
+        fail ArgumentError, 'environment cannot be nil'
+      end
+
+      @environment = environment
     end
 
     # Custom attribute writer method with validation
@@ -271,6 +297,7 @@ module SmplkitGeneratedClient::Audit
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          environment == o.environment &&
           forwarder == o.forwarder &&
           event == o.event &&
           attempt_number == o.attempt_number &&
@@ -292,7 +319,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [forwarder, event, attempt_number, status, request, response_status, response_body, latency_ms, error, created_at].hash
+      [environment, forwarder, event, attempt_number, status, request, response_status, response_body, latency_ms, error, created_at].hash
     end
 
     # Builds the object from hash

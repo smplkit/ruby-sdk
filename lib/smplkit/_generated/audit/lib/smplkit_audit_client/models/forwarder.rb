@@ -25,7 +25,7 @@ module SmplkitGeneratedClient::Audit
     # Destination type.
     attr_accessor :forwarder_type
 
-    # Whether the forwarder is currently delivering events. Set to `false` to pause deliveries without deleting the forwarder.
+    # Always false. Enablement is per-environment: a forwarder delivers in an environment only when `environments[<env>].enabled` is true. The base value is pinned false and cannot be set.
     attr_accessor :enabled
 
     # JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event.
@@ -37,8 +37,11 @@ module SmplkitGeneratedClient::Audit
     # Template applied to each event before delivery. The shape depends on ``transform_type``: for `JSONATA`, a string containing a JSONata expression. Omit to deliver the event JSON unchanged.
     attr_accessor :transform
 
-    # Transport-specific delivery configuration. Shape is discriminated by ``forwarder_type``; today all destination types use ``HttpConfiguration``. Branded vendor types (everything except `http`) constrain the configuration against a per-vendor template — see `GET /api/v1/forwarder_types` for the URL pattern, fixed headers, and customer-supplied placeholders for each type.
+    # Base delivery configuration template. Shape is discriminated by ``forwarder_type``; today all destination types use ``HttpConfiguration``. Branded vendor types (everything except `http`) constrain the configuration against a per-vendor template — see `GET /api/v1/forwarder_types` for the URL pattern, fixed headers, and customer-supplied placeholders for each type. A per-environment override in `environments` replaces this template for that environment.
     attr_accessor :configuration
+
+    # Per-environment overrides keyed by environment key (e.g. `production`, `staging`). Each entry sets `enabled` (whether the forwarder delivers in that environment) and an optional `configuration` override (omit to inherit the base `configuration`). A forwarder with no entry for an environment is disabled there. Every referenced environment must exist and be managed for the account.
+    attr_accessor :environments
 
     # When the forwarder was created.
     attr_accessor :created_at
@@ -85,6 +88,7 @@ module SmplkitGeneratedClient::Audit
         :'transform_type' => :'transform_type',
         :'transform' => :'transform',
         :'configuration' => :'configuration',
+        :'environments' => :'environments',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at',
         :'deleted_at' => :'deleted_at',
@@ -113,6 +117,7 @@ module SmplkitGeneratedClient::Audit
         :'transform_type' => :'String',
         :'transform' => :'Object',
         :'configuration' => :'HttpConfiguration',
+        :'environments' => :'Hash<String, ForwarderEnvironment>',
         :'created_at' => :'Time',
         :'updated_at' => :'Time',
         :'deleted_at' => :'Time',
@@ -169,7 +174,7 @@ module SmplkitGeneratedClient::Audit
       if attributes.key?(:'enabled')
         self.enabled = attributes[:'enabled']
       else
-        self.enabled = true
+        self.enabled = false
       end
 
       if attributes.key?(:'filter')
@@ -190,6 +195,12 @@ module SmplkitGeneratedClient::Audit
         self.configuration = attributes[:'configuration']
       else
         self.configuration = nil
+      end
+
+      if attributes.key?(:'environments')
+        if (value = attributes[:'environments']).is_a?(Hash)
+          self.environments = value
+        end
       end
 
       if attributes.key?(:'created_at')
@@ -327,6 +338,7 @@ module SmplkitGeneratedClient::Audit
           transform_type == o.transform_type &&
           transform == o.transform &&
           configuration == o.configuration &&
+          environments == o.environments &&
           created_at == o.created_at &&
           updated_at == o.updated_at &&
           deleted_at == o.deleted_at &&
@@ -342,7 +354,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, description, forwarder_type, enabled, filter, transform_type, transform, configuration, created_at, updated_at, deleted_at, version].hash
+      [name, description, forwarder_type, enabled, filter, transform_type, transform, configuration, environments, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash

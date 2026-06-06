@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Categories
 
-List the distinct `category` values recorded for this account.  The resource `id` is the category value itself. Default sort is `key` ascending; pass `sort=-key` for descending. Useful for populating filter dropdowns in a UI.
+List the distinct `category` values recorded for this account.  The resource `id` is the category value itself. Default sort is `key` ascending; pass `sort=-key` for descending. Scoped to the resolved environment. Useful for populating filter dropdowns in a UI.
 
 ### Examples
 

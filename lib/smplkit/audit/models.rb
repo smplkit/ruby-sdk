@@ -165,11 +165,17 @@ module Smplkit
     #   @return [String, nil] Customer-supplied dedupe key, +nil+ if not provided.
     # @!attribute [rw] do_not_forward
     #   @return [Boolean] When +true+, skip SIEM forwarder delivery regardless of any matching filter.
+    # @!attribute [rw] environment
+    #   @return [String, nil] The environment the event was recorded in.
+    #     Read-only and always present on reads — the audit service resolves it
+    #     when the event is recorded (from a single-environment credential, or
+    #     from the runtime SDK's configured environment, which the SDK sends on
+    #     every recording call). Never set on the recording request body.
     AuditEvent = Struct.new(
       :id, :event_type, :resource_type, :resource_id,
       :occurred_at, :created_at,
       :actor_type, :actor_id, :actor_label,
-      :data, :idempotency_key, :do_not_forward,
+      :data, :idempotency_key, :do_not_forward, :environment,
       keyword_init: true
     ) do
       def self.from_resource(resource)
@@ -186,7 +192,8 @@ module Smplkit
           actor_label: attrs.actor_label,
           data: Smplkit::Helpers.deep_stringify_keys(attrs.data || {}),
           idempotency_key: attrs.idempotency_key,
-          do_not_forward: attrs.do_not_forward || false
+          do_not_forward: attrs.do_not_forward || false,
+          environment: attrs.environment
         )
       end
     end
@@ -332,6 +339,40 @@ module Smplkit
     end
     # rubocop:enable Lint/StructNewOverride
 
+    # Per-environment enablement and optional configuration override for a
+    # forwarder.
+    #
+    # A forwarder delivers events in a given environment only when that
+    # environment has an entry in {Forwarder#environments} with
+    # +enabled: true+. An environment with no entry (or +enabled: false+)
+    # receives no deliveries.
+    #
+    # @!attribute [rw] enabled
+    #   @return [Boolean] Whether the forwarder delivers events in this
+    #     environment. Defaults to +false+.
+    # @!attribute [rw] configuration
+    #   @return [HttpConfiguration, nil] Optional per-environment destination
+    #     configuration that fully replaces the forwarder's base
+    #     {Forwarder#configuration} for this environment. +nil+ (the default)
+    #     inherits the base configuration. As with the base configuration,
+    #     header values are plaintext on writes and returned redacted on reads —
+    #     re-supply real values before {Forwarder#save}.
+    ForwarderEnvironment = Struct.new(:enabled, :configuration, keyword_init: true) do
+      def initialize(enabled: false, configuration: nil)
+        super
+      end
+
+      def self.from_wire(src)
+        return new if src.nil?
+
+        cfg = src.configuration
+        new(
+          enabled: src.enabled.nil? ? false : src.enabled,
+          configuration: cfg.nil? ? nil : HttpConfiguration.from_wire(cfg)
+        )
+      end
+    end
+
     # A SIEM streaming forwarder configured on the customer's account.
     #
     # Active-record style: instantiate via
@@ -354,9 +395,20 @@ module Smplkit
       # @return [String] One of {ForwarderType::VALUES}.
       attr_accessor :forwarder_type
 
-      # @return [Boolean] When +false+, the audit service skips delivery for
-      #   this forwarder but still records +filtered_out+ deliveries.
+      # @return [Boolean] Read-only. Always +false+ — the base enablement is
+      #   pinned off. Whether a forwarder actually delivers is decided per
+      #   environment via {#environments}; mutating this field has no effect on
+      #   the server.
       attr_accessor :enabled
+
+      # @return [Hash{String => ForwarderEnvironment}] Per-environment overrides
+      #   keyed by environment key (e.g. +"production"+, +"staging"+). A
+      #   forwarder delivers in an environment only when
+      #   +environments[env].enabled+ is +true+. Each entry may carry an optional
+      #   {HttpConfiguration} override; omit it to inherit the base
+      #   {#configuration}. Every referenced environment must exist and be
+      #   managed for the account.
+      attr_accessor :environments
 
       # @return [HttpConfiguration] Destination request configuration.
       attr_accessor :configuration
@@ -393,7 +445,7 @@ module Smplkit
       attr_accessor :version
 
       def initialize(client = nil, name:, forwarder_type:, configuration:,
-                     id: nil, enabled: true, description: nil,
+                     id: nil, enabled: false, environments: nil, description: nil,
                      filter: nil, transform: nil, transform_type: nil,
                      created_at: nil, updated_at: nil, deleted_at: nil, version: nil)
         @client = client
@@ -401,7 +453,11 @@ module Smplkit
         @name = name
         @forwarder_type = ForwarderType.coerce(forwarder_type)
         @configuration = configuration
+        # ``enabled`` is server-pinned false; we keep the attribute so reads
+        # round-trip the server value, but enablement is driven by
+        # ``environments`` (see the class docstring).
         @enabled = enabled
+        @environments = environments || {}
         @description = description
         @filter = filter
         @transform = transform
@@ -451,6 +507,7 @@ module Smplkit
         @forwarder_type = other.forwarder_type
         @configuration = other.configuration
         @enabled = other.enabled
+        @environments = other.environments
         @description = other.description
         @filter = other.filter
         @transform = other.transform
@@ -483,13 +540,20 @@ module Smplkit
 
       def self.from_resource(resource, client: nil)
         a = resource.attributes
+        environments = (a.environments || {}).each_with_object({}) do |(env_key, env_raw), out|
+          out[env_key.to_s] = ForwarderEnvironment.from_wire(env_raw)
+        end
         new(
           client,
           id: resource.id,
           name: a.name,
           description: a.description,
           forwarder_type: a.forwarder_type,
-          enabled: a.enabled.nil? || a.enabled,
+          # The base ``enabled`` is server-pinned false; round-trip whatever
+          # the server returned (always false) without assuming a default of
+          # true.
+          enabled: a.enabled.nil? ? false : a.enabled,
+          environments: environments,
           filter: a.filter.nil? ? nil : Smplkit::Helpers.deep_stringify_keys(a.filter),
           transform_type: a.transform_type,
           transform: a.transform,

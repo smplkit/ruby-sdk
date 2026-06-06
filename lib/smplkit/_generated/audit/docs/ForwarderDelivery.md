@@ -4,6 +4,7 @@
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
+| **environment** | **String** | Environment the delivered event occurred in. Deliveries are scoped to one environment. |  |
 | **forwarder** | **String** | Forwarder the delivery belongs to. |  |
 | **event** | **String** | Event that was being delivered. |  |
 | **attempt_number** | **Integer** | 1 for the initial delivery, incremented for each retry. |  |
@@ -21,6 +22,7 @@
 require 'smplkit_audit_client'
 
 instance = SmplkitGeneratedClient::Audit::ForwarderDelivery.new(
+  environment: null,
   forwarder: null,
   event: null,
   attempt_number: null,
