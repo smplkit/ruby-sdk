@@ -25,7 +25,7 @@ module SmplkitGeneratedClient::App
     # The bearer token value. Returned in plaintext on the create response so the caller can capture it; subsequent reads return the same value for round-tripping.
     attr_accessor :key
 
-    # Scope restrictions applied to the key. Empty object grants full account access; populated forms are reserved for future scope syntax.
+    # Scope restrictions applied to the key, as a JSON object mapping dimension names to arrays of allowed values. An empty object (the default) grants unrestricted access. The `environments` dimension lists the environment keys the key may operate in (for example `{\"environments\": [\"production\"]}`); a request's environment must be one of them. A dimension that is absent or set to an empty array is unrestricted in that dimension.
     attr_accessor :scopes
 
     # UUID of the user who created the key.
