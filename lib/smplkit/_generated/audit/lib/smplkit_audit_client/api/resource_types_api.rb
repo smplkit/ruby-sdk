@@ -20,8 +20,9 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # List Resource Types
-    # List the distinct `resource_type` slugs recorded for this account.  The resource `id` is the slug itself. Default sort is `key` ascending; pass `sort=-key` for descending. Useful for populating filter dropdowns in a UI. Results are scoped to the resolved environment and to the resource types visible under the account's current plan.
+    # List the distinct `resource_type` slugs recorded for this account.  The resource `id` is the slug itself. Default sort is `key` ascending; pass `sort=-key` for descending. Useful for populating filter dropdowns in a UI. Results are scoped to the selected environments (see `filter[environment]`); platform resource types appear under the reserved `smplkit` value.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :filter_environment Comma-separated list of environment keys to scope results to (e.g. &#x60;production,staging&#x60;). When omitted, results are scoped to your single accessible environment; send the &#x60;X-Smplkit-Environment&#x60; header instead if you can access more than one. The reserved value &#x60;smplkit&#x60; selects platform change events that smplkit records about your own resources (flags, configuration, and so on); these are not tied to a deployment environment and are readable regardless of which environments you manage.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;. (default to 'key')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -33,8 +34,9 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Resource Types
-    # List the distinct &#x60;resource_type&#x60; slugs recorded for this account.  The resource &#x60;id&#x60; is the slug itself. Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Useful for populating filter dropdowns in a UI. Results are scoped to the resolved environment and to the resource types visible under the account&#39;s current plan.
+    # List the distinct &#x60;resource_type&#x60; slugs recorded for this account.  The resource &#x60;id&#x60; is the slug itself. Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Useful for populating filter dropdowns in a UI. Results are scoped to the selected environments (see &#x60;filter[environment]&#x60;); platform resource types appear under the reserved &#x60;smplkit&#x60; value.
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :filter_environment Comma-separated list of environment keys to scope results to (e.g. &#x60;production,staging&#x60;). When omitted, results are scoped to your single accessible environment; send the &#x60;X-Smplkit-Environment&#x60; header instead if you can access more than one. The reserved value &#x60;smplkit&#x60; selects platform change events that smplkit records about your own resources (flags, configuration, and so on); these are not tied to a deployment environment and are readable regardless of which environments you manage.
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;. (default to 'key')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
@@ -53,6 +55,7 @@ module SmplkitGeneratedClient::Audit
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'filter[environment]'] = opts[:'filter_environment'] if !opts[:'filter_environment'].nil?
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
       query_params[:'page[number]'] = opts[:'page_number'] if !opts[:'page_number'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?

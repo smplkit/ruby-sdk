@@ -28,6 +28,9 @@ module SmplkitGeneratedClient::Audit
     # Always false. Enablement is per-environment: a forwarder delivers in an environment only when `environments[<env>].enabled` is true. The base value is pinned false and cannot be set.
     attr_accessor :enabled
 
+    # When true, this forwarder also receives platform change events that smplkit records about your own resources (flag, configuration, and similar changes). Each such event is delivered through every environment this forwarder is enabled in, using that environment's resolved configuration. Defaults to false — platform change events are not forwarded unless you opt in. Independent of the per-environment `enabled` settings, since platform change events are not tied to a deployment environment.
+    attr_accessor :forward_smplkit_events
+
     # JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event.
     attr_accessor :filter
 
@@ -84,6 +87,7 @@ module SmplkitGeneratedClient::Audit
         :'description' => :'description',
         :'forwarder_type' => :'forwarder_type',
         :'enabled' => :'enabled',
+        :'forward_smplkit_events' => :'forward_smplkit_events',
         :'filter' => :'filter',
         :'transform_type' => :'transform_type',
         :'transform' => :'transform',
@@ -113,6 +117,7 @@ module SmplkitGeneratedClient::Audit
         :'description' => :'String',
         :'forwarder_type' => :'ForwarderType',
         :'enabled' => :'Boolean',
+        :'forward_smplkit_events' => :'Boolean',
         :'filter' => :'Hash<String, Object>',
         :'transform_type' => :'String',
         :'transform' => :'Object',
@@ -175,6 +180,12 @@ module SmplkitGeneratedClient::Audit
         self.enabled = attributes[:'enabled']
       else
         self.enabled = false
+      end
+
+      if attributes.key?(:'forward_smplkit_events')
+        self.forward_smplkit_events = attributes[:'forward_smplkit_events']
+      else
+        self.forward_smplkit_events = false
       end
 
       if attributes.key?(:'filter')
@@ -334,6 +345,7 @@ module SmplkitGeneratedClient::Audit
           description == o.description &&
           forwarder_type == o.forwarder_type &&
           enabled == o.enabled &&
+          forward_smplkit_events == o.forward_smplkit_events &&
           filter == o.filter &&
           transform_type == o.transform_type &&
           transform == o.transform &&
@@ -354,7 +366,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, description, forwarder_type, enabled, filter, transform_type, transform, configuration, environments, created_at, updated_at, deleted_at, version].hash
+      [name, description, forwarder_type, enabled, forward_smplkit_events, filter, transform_type, transform, configuration, environments, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash

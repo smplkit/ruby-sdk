@@ -8,6 +8,7 @@
 | **description** | **String** | Free-text description for the forwarder. | [optional] |
 | **forwarder_type** | [**ForwarderType**](ForwarderType.md) | Destination type. |  |
 | **enabled** | **Boolean** | Always false. Enablement is per-environment: a forwarder delivers in an environment only when &#x60;environments[&lt;env&gt;].enabled&#x60; is true. The base value is pinned false and cannot be set. | [optional][readonly][default to false] |
+| **forward_smplkit_events** | **Boolean** | When true, this forwarder also receives platform change events that smplkit records about your own resources (flag, configuration, and similar changes). Each such event is delivered through every environment this forwarder is enabled in, using that environment&#39;s resolved configuration. Defaults to false — platform change events are not forwarded unless you opt in. Independent of the per-environment &#x60;enabled&#x60; settings, since platform change events are not tied to a deployment environment. | [optional][default to false] |
 | **filter** | **Hash&lt;String, Object&gt;** | JSON Logic expression evaluated against each event. The event is delivered only if the expression returns truthy. Omit to deliver every event. | [optional] |
 | **transform_type** | **String** | Engine used to evaluate &#x60;&#x60;transform&#x60;&#x60;. Must be set whenever &#x60;&#x60;transform&#x60;&#x60; is set. Today only &#x60;JSONATA&#x60; is supported. | [optional] |
 | **transform** | [**AnyOf**](AnyOf.md) | Template applied to each event before delivery. The shape depends on &#x60;&#x60;transform_type&#x60;&#x60;: for &#x60;JSONATA&#x60;, a string containing a JSONata expression. Omit to deliver the event JSON unchanged. | [optional] |
@@ -28,6 +29,7 @@ instance = SmplkitGeneratedClient::Audit::Forwarder.new(
   description: null,
   forwarder_type: null,
   enabled: null,
+  forward_smplkit_events: null,
   filter: null,
   transform_type: null,
   transform: null,

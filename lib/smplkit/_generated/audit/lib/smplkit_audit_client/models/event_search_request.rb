@@ -19,6 +19,9 @@ module SmplkitGeneratedClient::Audit
     # Optional JSON Logic expression evaluated against each row after column filters narrow the candidate set. Null, absent, or an empty object disables JSON Logic filtering. When present, the search is silently capped to the last 30 days by `occurred_at` (intersected with any explicit `filter[occurred_at]` the caller supplied).
     attr_accessor :filter
 
+    # Comma-separated list of environment keys to scope results to (e.g. `production,staging`). When omitted, results are scoped to your single accessible environment; send the `X-Smplkit-Environment` header instead if you can access more than one. The reserved value `smplkit` selects platform change events that smplkit records about your own resources (flags, configuration, and so on); these are not tied to a deployment environment and are readable regardless of which environments you manage.
+    attr_accessor :filter_environment
+
     # Exact match on the event's `event_type` field.
     attr_accessor :filter_event_type
 
@@ -62,6 +65,7 @@ module SmplkitGeneratedClient::Audit
     def self.attribute_map
       {
         :'filter' => :'filter',
+        :'filter_environment' => :'filter[environment]',
         :'filter_event_type' => :'filter[event_type]',
         :'filter_resource_type' => :'filter[resource_type]',
         :'filter_resource_id' => :'filter[resource_id]',
@@ -92,6 +96,7 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_types
       {
         :'filter' => :'Hash<String, Object>',
+        :'filter_environment' => :'String',
         :'filter_event_type' => :'String',
         :'filter_resource_type' => :'String',
         :'filter_resource_id' => :'String',
@@ -112,6 +117,7 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_nullable
       Set.new([
         :'filter',
+        :'filter_environment',
         :'filter_event_type',
         :'filter_resource_type',
         :'filter_resource_id',
@@ -146,6 +152,10 @@ module SmplkitGeneratedClient::Audit
         if (value = attributes[:'filter']).is_a?(Hash)
           self.filter = value
         end
+      end
+
+      if attributes.key?(:'filter_environment')
+        self.filter_environment = attributes[:'filter_environment']
       end
 
       if attributes.key?(:'filter_event_type')
@@ -254,6 +264,7 @@ module SmplkitGeneratedClient::Audit
       return true if self.equal?(o)
       self.class == o.class &&
           filter == o.filter &&
+          filter_environment == o.filter_environment &&
           filter_event_type == o.filter_event_type &&
           filter_resource_type == o.filter_resource_type &&
           filter_resource_id == o.filter_resource_id &&
@@ -278,7 +289,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [filter, filter_event_type, filter_resource_type, filter_resource_id, filter_severity, filter_category, filter_actor_type, filter_actor_id, filter_occurred_at, filter_search, filter_do_not_forward, page_size, page_after, sort].hash
+      [filter, filter_environment, filter_event_type, filter_resource_type, filter_resource_id, filter_severity, filter_category, filter_actor_type, filter_actor_id, filter_occurred_at, filter_search, filter_do_not_forward, page_size, page_after, sort].hash
     end
 
     # Builds the object from hash
