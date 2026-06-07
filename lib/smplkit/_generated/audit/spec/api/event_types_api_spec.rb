@@ -34,8 +34,9 @@ describe 'EventTypesApi' do
 
   # unit tests for list_event_types
   # List Event Types
-  # List the distinct &#x60;event_type&#x60; slugs recorded for this account.  Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Scoped to the resolved environment. Without &#x60;filter[resource_type]&#x60;, returns one row per distinct event_type. With &#x60;filter[resource_type]&#x60;, returns the event_types recorded for that specific resource type.
+  # List the distinct &#x60;event_type&#x60; slugs recorded for this account.  Default sort is &#x60;key&#x60; ascending; pass &#x60;sort&#x3D;-key&#x60; for descending. Scoped to the selected environments (see &#x60;filter[environment]&#x60;). Without &#x60;filter[resource_type]&#x60;, returns one row per distinct event_type. With &#x60;filter[resource_type]&#x60;, returns the event_types recorded for that specific resource type.
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :filter_environment Comma-separated list of environment keys to scope results to (e.g. &#x60;production,staging&#x60;). When omitted, results are scoped to your single accessible environment; send the &#x60;X-Smplkit-Environment&#x60; header instead if you can access more than one. The reserved value &#x60;smplkit&#x60; selects platform change events that smplkit records about your own resources (flags, configuration, and so on); these are not tied to a deployment environment and are readable regardless of which environments you manage.
   # @option opts [String] :filter_resource_type 
   # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;.
   # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error.
