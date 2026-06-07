@@ -17,6 +17,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
 
   def forwarder_resource(name: "Datadog production", description: nil,
                          enabled: false, forwarder_type: "datadog",
+                         forward_smplkit_events: false,
                          filter: nil, transform_type: nil, transform: nil,
                          environments: {})
     {
@@ -24,6 +25,7 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       type: "forwarder",
       attributes: {
         name: name, description: description, forwarder_type: forwarder_type, enabled: enabled,
+        forward_smplkit_events: forward_smplkit_events,
         filter: filter, transform_type: transform_type, transform: transform,
         environments: environments,
         configuration: {
@@ -305,6 +307,96 @@ RSpec.describe Smplkit::Management::ForwardersNamespace do
       fwd = forwarders.get(fwd_id)
       expect(fwd.environments["production"].enabled).to be(false)
       expect(fwd.environments["production"].configuration).to be_nil
+    end
+  end
+
+  describe "forward_smplkit_events" do
+    it "defaults to false and omits opt-in when not set on create" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: forwarder_resource }.to_json, headers: json_api)
+      fwd = forwarders.new_forwarder(
+        fwd_id, name: "n", forwarder_type: "http",
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base")
+      )
+      expect(fwd.forward_smplkit_events).to be(false)
+      fwd.save
+      expect(captured.dig("data", "attributes", "forward_smplkit_events")).to be(false)
+    end
+
+    it "sends forward_smplkit_events=true on the wire when opted in at create" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(
+        status: 201,
+        body: { data: forwarder_resource(forward_smplkit_events: true) }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.new_forwarder(
+        fwd_id, name: "n", forwarder_type: "http",
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base"),
+                forward_smplkit_events: true
+      )
+      fwd.save
+      expect(captured.dig("data", "attributes", "forward_smplkit_events")).to be(true)
+      expect(fwd.forward_smplkit_events).to be(true)
+    end
+
+    it "changes forward_smplkit_events through Forwarder#save (PUT)" do
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200,
+        body: { data: forwarder_resource(forward_smplkit_events: false) }.to_json,
+        headers: json_api
+      )
+      captured = nil
+      stub_request(:put, "#{base_url}/api/v1/forwarders/#{fwd_id}").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(
+        status: 200,
+        body: { data: forwarder_resource(forward_smplkit_events: true) }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.get(fwd_id)
+      expect(fwd.forward_smplkit_events).to be(false)
+      fwd.forward_smplkit_events = true
+      fwd.save
+      expect(captured.dig("data", "attributes", "forward_smplkit_events")).to be(true)
+      expect(fwd.forward_smplkit_events).to be(true)
+    end
+
+    it "surfaces forward_smplkit_events on read" do
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200,
+        body: { data: forwarder_resource(forward_smplkit_events: true) }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.get(fwd_id)
+      expect(fwd.forward_smplkit_events).to be(true)
+    end
+
+    it "defaults forward_smplkit_events to false when the wire omits it" do
+      # A forwarder persisted before the field landed reads back as not opted in.
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200,
+        body: {
+          data: {
+            id: fwd_id, type: "forwarder",
+            attributes: {
+              name: "n", forwarder_type: "http", enabled: false,
+              configuration: { method: "POST", url: "https://x", headers: [], success_status: "2xx" },
+              created_at: "2026-05-07T12:00:00Z", updated_at: "2026-05-07T12:00:00Z", version: 1
+            }
+          }
+        }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.get(fwd_id)
+      expect(fwd.forward_smplkit_events).to be(false)
     end
   end
 

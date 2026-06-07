@@ -401,6 +401,16 @@ module Smplkit
       #   the server.
       attr_accessor :enabled
 
+      # @return [Boolean] When +true+, this forwarder also receives platform
+      #   change events that smplkit records about your own resources (flag,
+      #   configuration, and similar changes). Each such event is delivered
+      #   through every environment this forwarder is enabled in, using that
+      #   environment's resolved configuration. Defaults to +false+ — platform
+      #   change events are not forwarded unless you opt in. Independent of the
+      #   per-environment +enabled+ settings, since platform change events are
+      #   not tied to a deployment environment.
+      attr_accessor :forward_smplkit_events
+
       # @return [Hash{String => ForwarderEnvironment}] Per-environment overrides
       #   keyed by environment key (e.g. +"production"+, +"staging"+). A
       #   forwarder delivers in an environment only when
@@ -445,7 +455,8 @@ module Smplkit
       attr_accessor :version
 
       def initialize(client = nil, name:, forwarder_type:, configuration:,
-                     id: nil, enabled: false, environments: nil, description: nil,
+                     id: nil, enabled: false, forward_smplkit_events: false,
+                     environments: nil, description: nil,
                      filter: nil, transform: nil, transform_type: nil,
                      created_at: nil, updated_at: nil, deleted_at: nil, version: nil)
         @client = client
@@ -457,6 +468,7 @@ module Smplkit
         # round-trip the server value, but enablement is driven by
         # ``environments`` (see the class docstring).
         @enabled = enabled
+        @forward_smplkit_events = forward_smplkit_events
         @environments = environments || {}
         @description = description
         @filter = filter
@@ -507,6 +519,7 @@ module Smplkit
         @forwarder_type = other.forwarder_type
         @configuration = other.configuration
         @enabled = other.enabled
+        @forward_smplkit_events = other.forward_smplkit_events
         @environments = other.environments
         @description = other.description
         @filter = other.filter
@@ -553,6 +566,9 @@ module Smplkit
           # the server returned (always false) without assuming a default of
           # true.
           enabled: a.enabled.nil? ? false : a.enabled,
+          # ``forward_smplkit_events`` defaults to false; a forwarder persisted
+          # before the field landed reads back as not opted in.
+          forward_smplkit_events: a.forward_smplkit_events.nil? ? false : a.forward_smplkit_events,
           environments: environments,
           filter: a.filter.nil? ? nil : Smplkit::Helpers.deep_stringify_keys(a.filter),
           transform_type: a.transform_type,
