@@ -48,6 +48,11 @@ module Smplkit
       #   {Smplkit::Audit::HttpConfiguration} override). Omit to create a
       #   forwarder that delivers nowhere until enabled per environment.
       # @param description [String, nil] Optional free-text description.
+      # @param forward_smplkit_events [Boolean] When +true+, the forwarder also
+      #   receives platform change events that smplkit records about the
+      #   account's own resources (flag, configuration, and similar changes),
+      #   delivered through every environment the forwarder is enabled in.
+      #   Defaults to +false+ — omit to leave platform change events unforwarded.
       # @param filter [Hash, nil] Optional JSON Logic filter; events that don't
       #   match are recorded as +filtered_out+ deliveries.
       # @param transform [Object, nil] Optional template applied to each event
@@ -65,6 +70,7 @@ module Smplkit
       # @return [Smplkit::Audit::Forwarder]
       def new_forwarder(id, forwarder_type:, configuration:, name: nil,
                         environments: nil, description: nil,
+                        forward_smplkit_events: false,
                         filter: nil, transform: nil, transform_type: nil)
         Smplkit::Audit::Forwarder.send(:validate_transform_pair!, transform, transform_type)
         Smplkit::Audit::Forwarder.new(
@@ -75,6 +81,7 @@ module Smplkit
           configuration: configuration,
           environments: normalize_environments(environments),
           description: description,
+          forward_smplkit_events: forward_smplkit_events,
           filter: filter,
           transform: transform,
           transform_type: transform_type
@@ -191,6 +198,7 @@ module Smplkit
           name: forwarder.name,
           description: forwarder.description,
           forwarder_type: Smplkit::Audit::ForwarderType.coerce(forwarder.forwarder_type),
+          forward_smplkit_events: forwarder.forward_smplkit_events,
           environments: environments_to_wire(forwarder.environments),
           filter: forwarder.filter,
           transform_type: Smplkit::Audit::TransformType.coerce(forwarder.transform_type),
