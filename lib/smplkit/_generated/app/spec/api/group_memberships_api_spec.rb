@@ -46,7 +46,7 @@ describe 'GroupMembershipsApi' do
 
   # unit tests for delete_group_membership
   # Delete Group Membership
-  # Remove a user from a group. Returns &#x60;409&#x60; when the membership is the user&#39;s &#x60;default&#x60; membership — every user must remain in the &#x60;default&#x60; group per ADR-055 §4.
+  # Remove a user from a group. Returns &#x60;409&#x60; when removing the membership would leave the user with no group memberships in this account — every user must belong to at least one group.
   # @param id 
   # @param [Hash] opts the optional parameters
   # @return [nil]

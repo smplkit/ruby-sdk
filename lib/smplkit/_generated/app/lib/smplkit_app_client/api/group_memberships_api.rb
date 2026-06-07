@@ -88,7 +88,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Delete Group Membership
-    # Remove a user from a group. Returns `409` when the membership is the user's `default` membership — every user must remain in the `default` group per ADR-055 §4.
+    # Remove a user from a group. Returns `409` when removing the membership would leave the user with no group memberships in this account — every user must belong to at least one group.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [nil]
@@ -98,7 +98,7 @@ module SmplkitGeneratedClient::App
     end
 
     # Delete Group Membership
-    # Remove a user from a group. Returns &#x60;409&#x60; when the membership is the user&#39;s &#x60;default&#x60; membership — every user must remain in the &#x60;default&#x60; group per ADR-055 §4.
+    # Remove a user from a group. Returns &#x60;409&#x60; when removing the membership would leave the user with no group memberships in this account — every user must belong to at least one group.
     # @param id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers
