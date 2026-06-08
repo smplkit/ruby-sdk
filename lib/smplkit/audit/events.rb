@@ -79,9 +79,15 @@ module Smplkit
       # List events with filters and cursor pagination. Returns a
       # +Smplkit::Audit::ListEventsPage+ whose +#events+ is the page and
       # +#next_cursor+ is the opaque token for the next page (or nil).
+      #
+      # +environments+ is an optional array of environment keys (and/or the
+      # reserved +"smplkit"+ control-plane bucket) used to scope the read; the
+      # values are comma-joined into +filter[environment]+. Omitting it (or
+      # passing an empty array) leaves the filter unset — identical to the
+      # prior behavior on the wire.
       def list(event_type: nil, resource_type: nil, resource_id: nil,
                actor_type: nil, actor_id: nil, occurred_at_range: nil,
-               search: nil, page_size: nil, page_after: nil)
+               search: nil, environments: nil, page_size: nil, page_after: nil)
         # Generated client opts use snake_case keys that internally map
         # to the JSON:API ``filter[*]`` / ``page[*]`` query-string format
         # (see default_api.rb#list_events_with_http_info). Without the
@@ -95,6 +101,8 @@ module Smplkit
         opts[:filter_actor_id] = actor_id if actor_id
         opts[:filter_occurred_at] = occurred_at_range if occurred_at_range
         opts[:filter_search] = search if search
+        joined_environments = Smplkit::Audit.join_environments(environments)
+        opts[:filter_environment] = joined_environments if joined_environments
         opts[:page_size] = page_size if page_size
         opts[:page_after] = page_after if page_after
 

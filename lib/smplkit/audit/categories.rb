@@ -2,14 +2,15 @@
 
 module Smplkit
   module Audit
-    # +client.audit.resource_types.list+ — distinct +resource_type+ slugs
-    # seen for the account.
+    # +client.audit.categories.list+ — distinct +category+ values seen for
+    # the account.
     #
-    # Backed by a maintain-by-write side table (ADR-047 §2.5), so the
-    # response time is independent of how many years of events the
-    # account has accumulated. Sorted alphabetically; offset pagination
-    # (+page_number+ / +page_size+) per ADR-014.
-    class ResourceTypes
+    # Backed by a maintain-by-write side table populated whenever an event
+    # is recorded with a non-null +category+ (ADR-047 §2.5), so the response
+    # time is independent of how many years of events the account has
+    # accumulated. Sorted alphabetically; offset pagination (+page_number+ /
+    # +page_size+) per ADR-014.
+    class Categories
       def initialize(api)
         @api = api
       end
@@ -27,12 +28,12 @@ module Smplkit
         joined_environments = Smplkit::Audit.join_environments(environments)
         opts[:filter_environment] = joined_environments if joined_environments
 
-        resp = Smplkit::Audit.call_api { @api.list_resource_types(opts) }
-        rows = (resp.data || []).map { |r| ResourceType.from_resource(r) }
-        ResourceTypeListPage.new(rows, Smplkit::Audit.extract_pagination(resp.meta))
+        resp = Smplkit::Audit.call_api { @api.list_categories(opts) }
+        rows = (resp.data || []).map { |r| Category.from_resource(r) }
+        CategoryListPage.new(rows, Smplkit::Audit.extract_pagination(resp.meta))
       end
     end
 
-    ResourceTypeListPage = Struct.new(:resource_types, :pagination)
+    CategoryListPage = Struct.new(:categories, :pagination)
   end
 end

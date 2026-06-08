@@ -49,6 +49,28 @@ module Smplkit
       out
     end
 
+    # Coerce a caller-supplied +environments+ value into the comma-separated
+    # string the audit read endpoints expect for +filter[environment]+, or
+    # +nil+ when no filter should be sent.
+    #
+    # The audit read endpoints (events list, the resource_type / event_type /
+    # category discovery lists) accept an optional comma-separated
+    # +filter[environment]+ of real environment keys and/or the reserved
+    # +"smplkit"+ control-plane bucket (ADR-055). The wrapper takes an
+    # array of keys for an ergonomic surface and joins it here.
+    #
+    # +nil+ or an empty array (or one whose entries are all blank) returns
+    # +nil+ so the caller omits the query param entirely and behaves exactly
+    # as before — existing callers are byte-for-byte unchanged on the wire.
+    # +"smplkit"+ is passed through like any other key; it carries no special
+    # handling in the SDK.
+    def self.join_environments(environments)
+      return nil if environments.nil?
+
+      values = Array(environments).map { |e| e.to_s.strip }.reject(&:empty?)
+      values.empty? ? nil : values.join(",")
+    end
+
     # Supported SIEM forwarder destination types (ADR-047 §2.12).
     #
     # Members are declared in alphabetical order. Customers pass these
@@ -241,6 +263,30 @@ module Smplkit
         new(
           id: resource.id,
           event_type: attrs.event_type || resource.id,
+          created_at: attrs.created_at
+        )
+      end
+    end
+
+    # A distinct +category+ value seen for the account.
+    #
+    # Same shape as {ResourceType}/{EventType} — +id+ and +category+ are the
+    # same value (JSON:API surfaces the customer-facing key as the resource
+    # id, ADR-014). +created_at+ is the earliest sighting of this category
+    # for the account.
+    #
+    # @!attribute [rw] id
+    #   @return [String] JSON:API resource id (same as +category+).
+    # @!attribute [rw] category
+    #   @return [String] The distinct category value.
+    # @!attribute [rw] created_at
+    #   @return [String] ISO-8601 timestamp of the earliest sighting for this value.
+    Category = Struct.new(:id, :category, :created_at, keyword_init: true) do
+      def self.from_resource(resource)
+        attrs = resource.attributes
+        new(
+          id: resource.id,
+          category: attrs.category || resource.id,
           created_at: attrs.created_at
         )
       end
