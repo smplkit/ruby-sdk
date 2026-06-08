@@ -422,6 +422,50 @@ RSpec.describe Smplkit::Audit::AuditClient do
         client._close
       end
     end
+
+    describe "filter[environment]" do
+      def capture_events_list(args)
+        captured_uri = nil
+        stub_request(:get, %r{#{Regexp.escape(base_url)}/api/v1/events})
+          .with do |req|
+            captured_uri = req.uri.to_s
+            true
+          end
+          .to_return(status: 200, body: { data: [], meta: { page_size: 50 } }.to_json,
+                     headers: { "Content-Type" => "application/vnd.api+json" })
+
+        client = described_class.new(api_key: api_key, base_url: base_url)
+        begin
+          client.events.list(**args)
+        ensure
+          client._close
+        end
+        captured_uri
+      end
+
+      it "omits filter[environment] by default" do
+        expect(capture_events_list({})).not_to include("filter%5Benvironment%5D")
+      end
+
+      it "omits filter[environment] for an empty array" do
+        expect(capture_events_list(environments: [])).not_to include("filter%5Benvironment%5D")
+      end
+
+      it "passes a single environment value through" do
+        expect(capture_events_list(environments: ["production"]))
+          .to include("filter%5Benvironment%5D=production")
+      end
+
+      it "comma-joins multiple environment values" do
+        expect(capture_events_list(environments: %w[production staging]))
+          .to include("filter%5Benvironment%5D=production,staging")
+      end
+
+      it "accepts the reserved smplkit bucket" do
+        expect(capture_events_list(environments: ["smplkit"]))
+          .to include("filter%5Benvironment%5D=smplkit")
+      end
+    end
   end
 
   describe "buffer overflow" do
@@ -535,6 +579,34 @@ RSpec.describe Smplkit::Audit::AuditClient do
       ensure
         client._close
       end
+    end
+  end
+
+  describe ".join_environments" do
+    it "returns nil for nil" do
+      expect(Smplkit::Audit.join_environments(nil)).to be_nil
+    end
+
+    it "returns nil for an empty array" do
+      expect(Smplkit::Audit.join_environments([])).to be_nil
+    end
+
+    it "returns nil when every entry is blank" do
+      expect(Smplkit::Audit.join_environments(["", "  "])).to be_nil
+    end
+
+    it "strips surrounding whitespace and drops blank entries" do
+      expect(Smplkit::Audit.join_environments([" production ", "", "staging"]))
+        .to eq("production,staging")
+    end
+
+    it "accepts a bare string (single environment)" do
+      expect(Smplkit::Audit.join_environments("production")).to eq("production")
+    end
+
+    it "passes the reserved smplkit bucket through unchanged" do
+      expect(Smplkit::Audit.join_environments(%w[smplkit production]))
+        .to eq("smplkit,production")
     end
   end
 end

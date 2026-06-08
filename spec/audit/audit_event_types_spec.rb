@@ -86,6 +86,68 @@ RSpec.describe Smplkit::Audit::EventTypes do
     expect(page.pagination).to eq(page: 1, size: 1000)
   end
 
+  describe "filter[environment]" do
+    def stub_capture(&capture)
+      stub_request(:get, %r{#{base_url}/api/v1/event_types\b})
+        .with(&capture)
+        .to_return(
+          status: 200,
+          body: { data: [], meta: { pagination: { page: 1, size: 1000 } } }.to_json,
+          headers: { "Content-Type" => "application/vnd.api+json" }
+        )
+    end
+
+    it "omits filter[environment] by default" do
+      captured_uri = nil
+      stub_capture do |req|
+        captured_uri = req.uri.to_s
+        true
+      end
+      client.event_types.list
+      expect(captured_uri).not_to include("filter%5Benvironment%5D")
+    end
+
+    it "omits filter[environment] for an empty array" do
+      captured_uri = nil
+      stub_capture do |req|
+        captured_uri = req.uri.to_s
+        true
+      end
+      client.event_types.list(environments: [])
+      expect(captured_uri).not_to include("filter%5Benvironment%5D")
+    end
+
+    it "passes a single environment value through" do
+      captured_uri = nil
+      stub_capture do |req|
+        captured_uri = req.uri.to_s
+        true
+      end
+      client.event_types.list(environments: ["production"])
+      expect(captured_uri).to include("filter%5Benvironment%5D=production")
+    end
+
+    it "comma-joins multiple environment values" do
+      captured_uri = nil
+      stub_capture do |req|
+        captured_uri = req.uri.to_s
+        true
+      end
+      client.event_types.list(environments: %w[production staging])
+      expect(captured_uri).to include("filter%5Benvironment%5D=production,staging")
+    end
+
+    it "accepts the reserved smplkit bucket alongside a real environment" do
+      captured_uri = nil
+      stub_capture do |req|
+        captured_uri = req.uri.to_s
+        true
+      end
+      client.event_types.list(environments: %w[smplkit production])
+      expect(captured_uri).to include("filter%5Benvironment%5D=smplkit,production")
+    end
+  end
+
   it "falls back to id when attributes.event_type is missing" do
     # Defensive path — JSON:API guarantees +id+ is always present, so the
     # wrapper still surfaces something useful even if the server ever

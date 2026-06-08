@@ -18,12 +18,19 @@ module Smplkit
         @api = api
       end
 
-      def list(filter_resource_type: nil, page_number: nil, page_size: nil, meta_total: nil)
+      # +environments+ is an optional array of environment keys (and/or the
+      # reserved +"smplkit"+ control-plane bucket) used to scope the read;
+      # the values are comma-joined into +filter[environment]+. Omitting it
+      # (or passing an empty array) leaves the filter unset — identical to
+      # the prior behavior on the wire.
+      def list(filter_resource_type: nil, page_number: nil, page_size: nil, meta_total: nil, environments: nil)
         opts = {}
         opts[:filter_resource_type] = filter_resource_type if filter_resource_type
         opts[:page_number] = page_number if page_number
         opts[:page_size] = page_size if page_size
         opts[:meta_total] = meta_total unless meta_total.nil?
+        joined_environments = Smplkit::Audit.join_environments(environments)
+        opts[:filter_environment] = joined_environments if joined_environments
 
         resp = Smplkit::Audit.call_api { @api.list_event_types(opts) }
         rows = (resp.data || []).map { |r| EventType.from_resource(r) }
