@@ -58,6 +58,13 @@ Gem::Specification.new do |spec|
   spec.add_dependency "concurrent-ruby", "~> 1.2"
   spec.add_dependency "faraday", "~> 2.7"
   spec.add_dependency "faraday-multipart", "~> 1.0"
+  # Keepalive connection pooling for the generated Faraday clients. The
+  # default +net/http+ adapter opens and tears down a fresh TCP(+TLS)
+  # connection on every request; this adapter reuses a pooled keepalive
+  # connection across calls (see +Smplkit::HttpPool+). Floor kept wide for
+  # adoptability — the 2.x line targets Faraday 2.x (pure Ruby, depends only
+  # on net-http-persistent + connection_pool; Ruby floor 2.4, below ours).
+  spec.add_dependency "faraday-net_http_persistent", ">= 2.0", "< 3"
   spec.add_dependency "json_logic", "~> 0.0"
   # Required by the openapi-generator-produced clients in
   # +lib/smplkit/_generated+ for content-type sniffing on multipart bodies.

@@ -97,6 +97,7 @@ module Smplkit
       configuration.base_path = ""
       configuration.access_token = cfg.api_key
       configuration.debugging = cfg.debug
+      HttpPool.configure(configuration)
       generated_module::ApiClient.new(configuration).tap do |client|
         client.default_headers["User-Agent"] = "smplkit-ruby-sdk/#{Smplkit::VERSION}"
         @extra_headers&.each do |k, v|

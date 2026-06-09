@@ -37,6 +37,7 @@ end
 
 require_relative "smplkit/errors"
 require_relative "smplkit/debug"
+require_relative "smplkit/http_pool"
 require_relative "smplkit/helpers"
 require_relative "smplkit/log_level"
 require_relative "smplkit/context"

@@ -23,6 +23,7 @@ module Smplkit
         cfg.scheme = URI.parse(base_url).scheme
         cfg.access_token = api_key
         cfg.timeout = timeout
+        HttpPool.configure(cfg)
         api_client = SmplkitGeneratedClient::Audit::ApiClient.new(cfg)
         api_client.default_headers["User-Agent"] = "smplkit-ruby-sdk/#{Smplkit::VERSION}"
         # Runtime audit ops are environment-scoped: record / list / get /
