@@ -28,7 +28,7 @@ end
 
 api_instance = SmplkitGeneratedClient::Audit::CategoriesApi.new
 opts = {
-  filter_environment: 'filter_environment_example', # String | Comma-separated list of environment keys to scope results to (e.g. `production,staging`). When omitted, results are scoped to your single accessible environment; send the `X-Smplkit-Environment` header instead if you can access more than one. The reserved value `smplkit` selects platform change events that smplkit records about your own resources (flags, configuration, and so on); these are not tied to a deployment environment and are readable regardless of which environments you manage.
+  filter_environment: 'filter_environment_example', # String | Comma-separated list of environment keys to scope results to (e.g. `production,staging`). When omitted, results cover every environment you can access. The reserved value `smplkit` selects platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402.
   sort: 'key', # String | Field to sort by. Prefix with `-` for descending order. Default: `key`. Allowed values: `key`, `-key`.
   page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
   page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
@@ -66,7 +66,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **filter_environment** | **String** | Comma-separated list of environment keys to scope results to (e.g. &#x60;production,staging&#x60;). When omitted, results are scoped to your single accessible environment; send the &#x60;X-Smplkit-Environment&#x60; header instead if you can access more than one. The reserved value &#x60;smplkit&#x60; selects platform change events that smplkit records about your own resources (flags, configuration, and so on); these are not tied to a deployment environment and are readable regardless of which environments you manage. | [optional] |
+| **filter_environment** | **String** | Comma-separated list of environment keys to scope results to (e.g. &#x60;production,staging&#x60;). When omitted, results cover every environment you can access. The reserved value &#x60;smplkit&#x60; selects platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402. | [optional] |
 | **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;key&#x60;. Allowed values: &#x60;key&#x60;, &#x60;-key&#x60;. | [optional][default to &#39;key&#39;] |
 | **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
 | **page_size** | **Integer** | Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional][default to 1000] |

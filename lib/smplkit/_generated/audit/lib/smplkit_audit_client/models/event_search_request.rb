@@ -19,7 +19,7 @@ module SmplkitGeneratedClient::Audit
     # Optional JSON Logic expression evaluated against each row after column filters narrow the candidate set. Null, absent, or an empty object disables JSON Logic filtering. When present, the search is silently capped to the last 30 days by `occurred_at` (intersected with any explicit `filter[occurred_at]` the caller supplied).
     attr_accessor :filter
 
-    # Comma-separated list of environment keys to scope results to (e.g. `production,staging`). When omitted, results are scoped to your single accessible environment; send the `X-Smplkit-Environment` header instead if you can access more than one. The reserved value `smplkit` selects platform change events that smplkit records about your own resources (flags, configuration, and so on); these are not tied to a deployment environment and are readable regardless of which environments you manage.
+    # Comma-separated list of environment keys to scope results to (e.g. `production,staging`). When omitted, results cover every environment you can access. The reserved value `smplkit` selects platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402.
     attr_accessor :filter_environment
 
     # Exact match on the event's `event_type` field.

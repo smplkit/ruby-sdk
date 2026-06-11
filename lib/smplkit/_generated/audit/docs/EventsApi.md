@@ -100,7 +100,7 @@ end
 
 api_instance = SmplkitGeneratedClient::Audit::EventsApi.new
 opts = {
-  filter_environment: 'filter_environment_example', # String | Comma-separated list of environment keys to scope results to (e.g. `production,staging`). When omitted, results are scoped to your single accessible environment; send the `X-Smplkit-Environment` header instead if you can access more than one. The reserved value `smplkit` selects platform change events that smplkit records about your own resources (flags, configuration, and so on); these are not tied to a deployment environment and are readable regardless of which environments you manage.
+  filter_environment: 'filter_environment_example', # String | Comma-separated list of environment keys to scope results to (e.g. `production,staging`). When omitted, results cover every environment you can access. The reserved value `smplkit` selects platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402.
   filter_occurred_at: 'filter_occurred_at_example', # String | 
   filter_actor_type: 'filter_actor_type_example', # String | 
   filter_actor_id: 'filter_actor_id_example', # String | 
@@ -148,7 +148,7 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **filter_environment** | **String** | Comma-separated list of environment keys to scope results to (e.g. &#x60;production,staging&#x60;). When omitted, results are scoped to your single accessible environment; send the &#x60;X-Smplkit-Environment&#x60; header instead if you can access more than one. The reserved value &#x60;smplkit&#x60; selects platform change events that smplkit records about your own resources (flags, configuration, and so on); these are not tied to a deployment environment and are readable regardless of which environments you manage. | [optional] |
+| **filter_environment** | **String** | Comma-separated list of environment keys to scope results to (e.g. &#x60;production,staging&#x60;). When omitted, results cover every environment you can access. The reserved value &#x60;smplkit&#x60; selects platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402. | [optional] |
 | **filter_occurred_at** | **String** |  | [optional] |
 | **filter_actor_type** | **String** |  | [optional] |
 | **filter_actor_id** | **String** |  | [optional] |
@@ -257,7 +257,7 @@ end
 
 Search Events
 
-Search audit events with column filters and an optional JSON Logic expression.  Scoped by `filter[environment]` (a comma-separated set). When omitted, a single-environment credential is implied; otherwise send the `X-Smplkit-Environment` header. The reserved `smplkit` value selects platform change events smplkit records about your own resources.  Without a JSON Logic `filter`: behaves like `GET /api/v1/events` with the same column filters.  With a JSON Logic `filter`: the search is silently capped to the last 30 days by `occurred_at` (intersected with any explicit `filter[occurred_at]` the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same `json-logic-qubit` evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response's `meta.scan` block reports the scan stats so a selective filter doesn't look like \"0 matches\" when the truth is \"ceiling reached.\"
+Search audit events with column filters and an optional JSON Logic expression.  Scoped by `filter[environment]` (a comma-separated set). When omitted, results cover every environment you can access. The reserved `smplkit` value selects platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402.  Without a JSON Logic `filter`: behaves like `GET /api/v1/events` with the same column filters.  With a JSON Logic `filter`: the search is silently capped to the last 30 days by `occurred_at` (intersected with any explicit `filter[occurred_at]` the caller supplied), the column filters narrow the candidate set in SQL, and the JSON Logic expression runs in memory against each candidate row using the same `json-logic-qubit` evaluator the forwarder pipeline uses. Up to 50,000 rows are scanned per request; the response's `meta.scan` block reports the scan stats so a selective filter doesn't look like \"0 matches\" when the truth is \"ceiling reached.\"
 
 ### Examples
 
