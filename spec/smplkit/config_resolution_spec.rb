@@ -141,6 +141,21 @@ RSpec.describe Smplkit::ConfigResolution do
       expect(cfg.api_key).to eq("envkey")
       expect(cfg.debug).to be(true)
     end
+
+    it "applies api_key/base_domain/scheme/debug from the config file" do
+      File.write(File.join(@home_dir, ".smplkit"), <<~INI)
+        [default]
+        api_key = filekey
+        base_domain = files.example
+        scheme = http
+        debug = true
+      INI
+      cfg = described_class.resolve_management_config(home_dir: @home_dir)
+      expect(cfg.api_key).to eq("filekey")
+      expect(cfg.base_domain).to eq("files.example")
+      expect(cfg.scheme).to eq("http")
+      expect(cfg.debug).to be(true)
+    end
   end
 
   describe ".service_url" do
