@@ -860,13 +860,17 @@ RSpec.describe Smplkit::Logging::LoggingClient do
 
     it "spawns a background flush once the batch threshold is crossed" do
       bulk = stub_bulk
-      threads_before = Thread.list.dup
+      # Run the spawned flush synchronously so coverage of the flush body never
+      # depends on background-thread timing (which flakes under CI).
+      allow(Thread).to receive(:new) { |*a, &blk|
+        blk.call(*a)
+        nil
+      }
       Smplkit::LOGGER_BATCH_FLUSH_SIZE.times do |i|
         logging.loggers.register(
           Smplkit::LoggerSource.new(name: "logger.#{i}", resolved_level: Smplkit::LogLevel::INFO)
         )
       end
-      (Thread.list - threads_before).each { |t| t.join(2) }
       expect(bulk).to have_been_requested
     end
 

@@ -467,13 +467,17 @@ RSpec.describe Smplkit::Config::ConfigClient do
     it "kicks off a background flush once the pending threshold is crossed" do
       bulk = stub_request(:post, "#{base_url}/api/v1/configs/bulk")
              .to_return(status: 200, body: { "registered" => 1 }.to_json, headers: jsonapi_headers)
-      threads_before = Thread.list.dup
+      # Run the spawned flush synchronously so coverage of the flush body never
+      # depends on background-thread timing (which flakes under CI).
+      allow(Thread).to receive(:new) { |*a, &blk|
+        blk.call(*a)
+        nil
+      }
       # CONFIG_BATCH_FLUSH_SIZE distinct config declarations cross the threshold
       # and spawn the background-flush thread.
       Smplkit::CONFIG_BATCH_FLUSH_SIZE.times do |i|
         config.register_config("cfg#{i}", service: "svc", environment: "staging")
       end
-      (Thread.list - threads_before).each { |t| t.join(2) }
       expect(bulk).to have_been_requested
     end
 
