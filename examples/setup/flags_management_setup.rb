@@ -2,15 +2,17 @@
 
 # Setup / cleanup helpers for flags_management_showcase.rb.
 
-DEMO_MGMT_FLAG_IDS = %w[checkout-v2 banner-color max-retries beta-config].freeze
+require "smplkit"
 
-def setup_management_showcase(manage)
-  cleanup_management_showcase(manage)
+DEMO_FLAG_IDS = %w[checkout-v2 banner-color max-retries ui-theme].freeze
+
+def setup_management_showcase(client)
+  cleanup_management_showcase(client)
 end
 
-def cleanup_management_showcase(manage)
-  DEMO_MGMT_FLAG_IDS.each do |flag_id|
-    manage.flags.delete(flag_id)
+def cleanup_management_showcase(client)
+  DEMO_FLAG_IDS.each do |flag_id|
+    client.flags.delete(flag_id)
   rescue Smplkit::NotFoundError
     next
   end

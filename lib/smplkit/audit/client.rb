@@ -2,18 +2,16 @@
 
 module Smplkit
   module Audit
-    # Audit-product entry point — accessed via +client.audit+.
+    # The Smpl Audit client — accessed via +client.audit+.
     #
-    # Owns event recording and read-side queries: fire-and-forget
-    # +#events.record+, plus the audit-log +list+ / +get+ and the
-    # distinct-value listings (+resource_types+, +event_types+,
-    # +categories+) that back the Activity tab filter dropdowns.
-    # ADR-047 §2.7.
-    #
-    # SIEM forwarder CRUD lives on {Smplkit::ManagementClient} under
-    # +mgmt.audit.forwarders.*+.
+    # One client exposes the full surface — there is no runtime/management
+    # split for audit. Owns event recording and read-side queries:
+    # fire-and-forget +#events.record+, plus the audit-log +list+ / +get+ and
+    # the distinct-value listings (+resource_types+, +event_types+,
+    # +categories+) that back the Activity tab filter dropdowns, plus SIEM
+    # forwarder CRUD on +#forwarders+. ADR-047 §2.7.
     class AuditClient
-      attr_reader :events, :resource_types, :event_types, :categories
+      attr_reader :events, :resource_types, :event_types, :categories, :forwarders
 
       SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
 
@@ -41,6 +39,7 @@ module Smplkit
         @resource_types = ResourceTypes.new(SmplkitGeneratedClient::Audit::ResourceTypesApi.new(api_client))
         @event_types = EventTypes.new(SmplkitGeneratedClient::Audit::EventTypesApi.new(api_client))
         @categories = Categories.new(SmplkitGeneratedClient::Audit::CategoriesApi.new(api_client))
+        @forwarders = ForwardersClient.new(SmplkitGeneratedClient::Audit::ForwardersApi.new(api_client))
       end
 
       def _close

@@ -2,502 +2,1141 @@
 
 require "spec_helper"
 
+# Tests for the fused +LoggingClient+ (one client, two surfaces):
+#   - Management surface: +loggers+ / +log_groups+ sub-clients (CRUD, discovery
+#     buffer, runtime entry fetches) — works immediately, no +install+.
+#   - Pre-install configuration: +register_adapter+ / +adapters+.
+#   - Live surface: +install+ (the consent gate), +on_change+ / +refresh+
+#     (gated, raise +NotInstalledError+ before install), the WebSocket dispatch
+#     pipeline, and +close+ / +_close+.
+#   - Module helpers: +Logging.auto_load_adapters+, +LoggerChangeEvent+.
+#
+# The client is wired with a parent double plus an injected transport pointed
+# at a WebMock host. The parent's shared WebSocket is constructed but never
+# +start+ed — dispatch is driven directly via +SharedWebSocket#dispatch+, so no
+# real socket opens.
+
+# A real +Adapters::Base+ subclass (instance_double trips
+# +is_a?(Adapters::Base)+, so the live surface needs a genuine subclass).
+# Records +install_hook+ blocks, +apply_level+ calls, and +uninstall_hook+.
+class TestAdapter < Smplkit::Logging::Adapters::Base
+  attr_reader :applied, :hook_block, :uninstalled, :install_hook_calls
+
+  def initialize(discovered = [["My.Logger", nil, Smplkit::LogLevel::INFO]])
+    super()
+    @discovered = discovered
+    @applied = []
+    @hook_block = nil
+    @uninstalled = false
+    @install_hook_calls = 0
+    @raise_on_apply = false
+  end
+
+  attr_writer :raise_on_apply
+
+  def name = "test-adapter"
+  def discover = @discovered
+
+  def apply_level(logger_name, level)
+    raise "apply boom" if @raise_on_apply
+
+    @applied << [logger_name, level]
+  end
+
+  def install_hook(&block)
+    @install_hook_calls += 1
+    @hook_block = block
+  end
+
+  def uninstall_hook
+    @uninstalled = true
+  end
+
+  # Drive the continuous-discovery callback the way a framework hook would.
+  def emit_new_logger(name, explicit, effective)
+    @hook_block&.call(name, explicit, effective)
+  end
+end
+
 RSpec.describe Smplkit::Logging::LoggingClient do
-  subject(:client) do
-    described_class.new(parent, manage: management, metrics: nil,
-                                logging_base_url: "https://logging.smplkit.test",
-                                app_base_url: "https://app.smplkit.test")
-  end
+  subject(:logging) { described_class.new(parent: parent, transport: transport, metrics: metrics) }
 
-  let(:loggers_ns) do
-    instance_double(
-      Smplkit::ManagementClient::LoggersNamespace,
-      register: nil, flush: nil,
-      list_logger_entries: {},
-      get_logger_entry: ["rails", logger_entry]
+  let(:base_url) { "https://logging.smplkit.test" }
+  let(:tcfg) do
+    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+      api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end
-  let(:groups_ns) do
-    instance_double(
-      Smplkit::ManagementClient::LogGroupsNamespace,
-      list_group_entries: {},
-      get_group_entry: ["g1", group_entry]
-    )
-  end
-  let(:management) do
-    instance_double(Smplkit::ManagementClient, loggers: loggers_ns, log_groups: groups_ns)
-  end
-  let(:ws) do
-    Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k")
-  end
+  let(:transport) { Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Logging, "logging", tcfg) }
+  let(:ws) { Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
   let(:parent) do
-    double(_service: "svc", _environment: "production", _ensure_ws: ws)
+    double("Smplkit::Client",
+           _environment: "staging", _service: "svc",
+           _ensure_started: nil, _ensure_ws: ws)
   end
-  let(:logger_entry) do
-    { "level" => "WARN", "group" => nil, "managed" => true, "environments" => {} }
-  end
-  let(:group_entry) do
-    { "level" => "DEBUG", "group" => nil, "environments" => {} }
-  end
-  let(:adapter) do
-    instance_double(Smplkit::Logging::Adapters::Base, name: "fake",
-                                                      discover: [["rails", nil, Smplkit::LogLevel::INFO]],
-                                                      install_hook: nil,
-                                                      apply_level: nil,
-                                                      uninstall_hook: nil)
+  let(:metrics) { nil }
+  let(:adapter) { TestAdapter.new }
+
+  # Always release the (never-started) WebSocket / adapter hooks so no
+  # background state leaks between examples.
+  after { logging.close }
+
+  # ----------------------------------------------------------------
+  # JSON:API fixtures
+  # ----------------------------------------------------------------
+
+  def jsonapi_headers
+    { "Content-Type" => "application/vnd.api+json" }
   end
 
-  before do
-    # instance_double trips +is_a?(Adapters::Base)+ — set the adapter list
-    # directly so the suite can use mocked adapters.
-    client.instance_variable_set(:@adapters, [adapter])
+  # A logger JSON:API resource. +environments+ is the per-env override map.
+  def logger_resource(id, level: nil, group: nil, managed: true, environments: {}, name: nil)
+    {
+      "id" => id, "type" => "logger",
+      "attributes" => {
+        "name" => name || id, "level" => level, "group" => group,
+        "managed" => managed, "environments" => environments,
+        "created_at" => "2026-01-01T00:00:00Z", "updated_at" => "2026-01-01T00:00:00Z"
+      }
+    }
   end
+
+  def group_resource(id, level: nil, parent_id: nil, environments: {}, name: nil)
+    {
+      "id" => id, "type" => "log_group",
+      "attributes" => {
+        "name" => name || id, "level" => level, "parent_id" => parent_id,
+        "environments" => environments,
+        "created_at" => "2026-01-01T00:00:00Z", "updated_at" => "2026-01-01T00:00:00Z"
+      }
+    }
+  end
+
+  def list_body(*resources)
+    {
+      "data" => resources,
+      "meta" => { "pagination" => { "page" => 1, "size" => 1000, "total" => resources.length,
+                                    "total_pages" => 1 } }
+    }.to_json
+  end
+
+  # Stub GET /api/v1/loggers (paginated list) with one page of resources.
+  def stub_loggers_list(*resources)
+    stub_request(:get, "#{base_url}/api/v1/loggers")
+      .with(query: hash_including({}))
+      .to_return(status: 200, body: list_body(*resources), headers: jsonapi_headers)
+  end
+
+  # Stub GET /api/v1/log_groups (paginated list).
+  def stub_groups_list(*resources)
+    stub_request(:get, "#{base_url}/api/v1/log_groups")
+      .with(query: hash_including({}))
+      .to_return(status: 200, body: list_body(*resources), headers: jsonapi_headers)
+  end
+
+  def stub_logger_get(id, resource, status: 200)
+    body = status == 200 ? { "data" => resource }.to_json : %({"errors":[{"status":"404"}]})
+    stub_request(:get, "#{base_url}/api/v1/loggers/#{id}")
+      .to_return(status: status, body: body, headers: jsonapi_headers)
+  end
+
+  def stub_group_get(id, resource, status: 200)
+    body = status == 200 ? { "data" => resource }.to_json : %({"errors":[{"status":"404"}]})
+    stub_request(:get, "#{base_url}/api/v1/log_groups/#{id}")
+      .to_return(status: status, body: body, headers: jsonapi_headers)
+  end
+
+  def stub_bulk
+    stub_request(:post, "#{base_url}/api/v1/loggers/bulk")
+      .to_return(status: 200, body: { "registered" => 1 }.to_json, headers: jsonapi_headers)
+  end
+
+  # ----------------------------------------------------------------
+  # register_adapter / adapters (pre-install, ungated)
+  # ----------------------------------------------------------------
+
+  describe "#register_adapter" do
+    it "appends a Base subclass before install and disables auto-loading" do
+      logging.register_adapter(adapter)
+      expect(logging.adapters).to eq([adapter])
+    end
+
+    it "returns self for chaining" do
+      expect(logging.register_adapter(adapter)).to equal(logging)
+    end
+
+    it "rejects a non-Base instance with ArgumentError" do
+      expect { logging.register_adapter(Object.new) }.to raise_error(ArgumentError, /Adapters::Base/)
+    end
+
+    it "raises RuntimeError when called after install" do
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      expect { logging.register_adapter(TestAdapter.new) }
+        .to raise_error(RuntimeError, /after install/)
+    end
+
+    it "returns a copy of the adapter list (mutating it does not affect the client)" do
+      logging.register_adapter(adapter)
+      copy = logging.adapters
+      copy << :extra
+      expect(logging.adapters).to eq([adapter])
+    end
+  end
+
+  # ----------------------------------------------------------------
+  # install: discover -> register -> flush -> fetch -> apply
+  # ----------------------------------------------------------------
 
   describe "#install" do
-    it "applies the resolved level to the adapter on install" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
-      allow(groups_ns).to receive(:list_group_entries).and_return({})
+    it "discovers, bulk-registers (normalized id), fetches, and applies the resolved level" do
+      adapter = TestAdapter.new([["My.Logger", nil, Smplkit::LogLevel::INFO]])
+      captured = nil
+      bulk = stub_request(:post, "#{base_url}/api/v1/loggers/bulk")
+             .to_return do |req|
+               captured = JSON.parse(req.body)
+               { status: 200, body: { "registered" => 1 }.to_json, headers: jsonapi_headers }
+             end
+      stub_loggers_list(logger_resource("my.logger", level: "DEBUG"))
+      stub_groups_list
 
-      client.install
-      expect(adapter).to have_received(:apply_level).with("rails", Smplkit::LogLevel::WARN)
+      logging.register_adapter(adapter)
+      logging.install
+
+      expect(bulk).to have_been_requested
+      # The discovered name "My.Logger" is normalized to "my.logger" in the bulk body.
+      ids = captured["loggers"].map { |l| l["id"] }
+      expect(ids).to contain_exactly("my.logger")
+      # The resolved DEBUG level is applied against the original (un-normalized) name.
+      expect(adapter.applied).to eq([["My.Logger", Smplkit::LogLevel::DEBUG]])
+      expect(parent).to have_received(:_ensure_started)
     end
 
     it "applies a group-inherited level when the logger has no direct level" do
-      inherit_logger = { "level" => nil, "group" => "g1", "managed" => true, "environments" => {} }
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => inherit_logger)
-      allow(groups_ns).to receive(:list_group_entries).and_return("g1" => group_entry)
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: nil, group: "g1"))
+      stub_groups_list(group_resource("g1", level: "WARN"))
 
-      client.install
-      expect(adapter).to have_received(:apply_level).with("rails", Smplkit::LogLevel::DEBUG)
+      logging.register_adapter(adapter)
+      logging.install
+      expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::WARN]])
+    end
+
+    it "applies an environment-override level (staging) over the base level" do
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(
+        logger_resource("my.logger", level: "INFO", environments: { "staging" => { "level" => "TRACE" } })
+      )
+      stub_groups_list
+
+      logging.register_adapter(adapter)
+      logging.install
+      expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::TRACE]])
     end
 
     it "skips unmanaged loggers" do
-      unmanaged = { "level" => "ERROR", "group" => nil, "managed" => false, "environments" => {} }
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => unmanaged)
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "ERROR", managed: false))
+      stub_groups_list
 
-      client.install
-      expect(adapter).not_to have_received(:apply_level)
+      logging.register_adapter(adapter)
+      logging.install
+      expect(adapter.applied).to be_empty
     end
 
     it "skips loggers absent from the server-side cache" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return({})
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list # empty
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      expect(adapter.applied).to be_empty
+    end
 
-      client.install
-      expect(adapter).not_to have_received(:apply_level)
+    it "installs continuous-discovery hooks on every adapter" do
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      expect(adapter.install_hook_calls).to eq(1)
+      expect(adapter.hook_block).to be_a(Proc)
     end
 
     it "registers WebSocket handlers for every level-affecting event" do
-      allow(ws).to receive(:on)
-      client.install
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      registered = ws.instance_variable_get(:@listeners)
       %w[logger_changed logger_deleted group_changed group_deleted loggers_changed].each do |event|
-        expect(ws).to have_received(:on).with(event)
+        expect(registered.keys).to include(event)
       end
     end
 
-    it "swallows a fetch failure and continues with adapter wiring" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_raise(Smplkit::ConnectionError, "down")
-      expect { client.install }.not_to raise_error
-      expect(client.instance_variable_get(:@installed)).to be(true)
+    it "is idempotent — a second install does not re-hook or re-fetch" do
+      stub_bulk
+      list = stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      logging.install
+      expect(adapter.install_hook_calls).to eq(1)
+      expect(list).to have_been_requested.once
+    end
+
+    it "auto-loads the built-in adapters when none are explicitly registered" do
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.install
+      expect(logging.adapters.map(&:name)).to include("stdlib-logger")
+    end
+
+    it "swallows a fetch failure and still installs the WS handlers" do
+      stub_bulk
+      stub_request(:get, "#{base_url}/api/v1/loggers")
+        .with(query: hash_including({}))
+        .to_return(status: 500, body: "boom")
+      stub_groups_list
+      logging.register_adapter(adapter)
+      expect { logging.install }.not_to raise_error
+      registered = ws.instance_variable_get(:@listeners)
+      expect(registered.keys).to include("logger_changed")
     end
 
     it "swallows a flush failure and continues with fetch + apply" do
-      allow(loggers_ns).to receive(:flush).and_raise(Smplkit::ConnectionError, "down")
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
-      expect { client.install }.not_to raise_error
-      expect(adapter).to have_received(:apply_level).with("rails", Smplkit::LogLevel::WARN)
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_request(:post, "#{base_url}/api/v1/loggers/bulk").to_return(status: 500, body: "boom")
+      stub_loggers_list(logger_resource("my.logger", level: "WARN"))
+      stub_groups_list
+      logging.register_adapter(adapter)
+      expect { logging.install }.not_to raise_error
+      expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::WARN]])
     end
 
-    it "is idempotent on repeat invocation" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return({})
+    it "swallows an adapter discover error and carries on" do
+      bad = TestAdapter.new
+      allow(bad).to receive(:discover).and_raise(StandardError, "discover boom")
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(bad)
+      expect { logging.install }.not_to raise_error
+    end
+
+    it "swallows an adapter install_hook error and carries on" do
+      bad = TestAdapter.new([])
+      allow(bad).to receive(:install_hook).and_raise(StandardError, "hook boom")
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(bad)
+      expect { logging.install }.not_to raise_error
+    end
+
+    it "records a metric per applied logger when metrics is present" do
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      metrics = instance_double(Smplkit::MetricsReporter, record: nil)
+      client = described_class.new(parent: parent, transport: transport, metrics: metrics)
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "DEBUG"))
+      stub_groups_list
+      client.register_adapter(adapter)
       client.install
-      client.install
-      expect(adapter).to have_received(:install_hook).once
+      expect(metrics).to have_received(:record).with(
+        "logging.level_changes", unit: "changes", dimensions: { "logger" => "my.logger" }
+      )
+      client.close
+    end
+
+    it "applies a cached level to a logger discovered after install via the hook" do
+      adapter = TestAdapter.new([])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
+      # A new logger appears post-install; the hook re-resolves from cache.
+      adapter.emit_new_logger("My.Logger", nil, Smplkit::LogLevel::INFO)
+      expect(adapter.applied).to eq([["My.Logger", Smplkit::LogLevel::ERROR]])
+    end
+
+    it "does not apply when a hook-discovered logger is absent from the cache" do
+      adapter = TestAdapter.new([])
+      stub_bulk
+      stub_loggers_list # empty
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
+      adapter.emit_new_logger("ghost.logger", nil, Smplkit::LogLevel::INFO)
+      expect(adapter.applied).to be_empty
+    end
+
+    it "does not apply when a hook-discovered logger is unmanaged in the cache" do
+      adapter = TestAdapter.new([])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "ERROR", managed: false))
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
+      adapter.emit_new_logger("my.logger", nil, Smplkit::LogLevel::INFO)
+      expect(adapter.applied).to be_empty
     end
   end
 
-  describe "#refresh" do
-    it "re-resolves levels and fires change listeners on a delta" do
-      first = { "level" => "WARN", "group" => nil, "managed" => true, "environments" => {} }
-      second = { "level" => "ERROR", "group" => nil, "managed" => true, "environments" => {} }
-      allow(loggers_ns).to receive(:list_logger_entries).and_return({ "rails" => first }, "rails" => second)
-      allow(groups_ns).to receive(:list_group_entries).and_return({})
+  # ----------------------------------------------------------------
+  # on_change / refresh gating + behavior
+  # ----------------------------------------------------------------
+
+  describe "#on_change (gating)" do
+    it "raises NotInstalledError before install" do
+      expect { logging.on_change { |_e| nil } }.to raise_error(Smplkit::NotInstalledError)
+    end
+
+    it "raises ArgumentError without a block (after install)" do
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      expect { logging.on_change }.to raise_error(ArgumentError, /requires a block/)
+    end
+
+    it "returns the registered block" do
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      block = proc { |_e| }
+      expect(logging.on_change(&block)).to equal(block)
+    end
+  end
+
+  describe "#refresh (gating)" do
+    it "raises NotInstalledError before install" do
+      expect { logging.refresh }.to raise_error(Smplkit::NotInstalledError)
+    end
+
+    it "re-resolves and fires a global listener on a level delta" do
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "WARN"))
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
 
       events = []
-      client.on_change { |e| events << [e.name, e.level&.name] }
-      client.install
-      events.clear
+      logging.on_change { |e| events << [e.name, e.level, e.source] }
+      adapter.applied.clear
+      # Re-stub the list with a moved level.
+      stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
+      logging.refresh
 
-      client.refresh
-      expect(adapter).to have_received(:apply_level).with("rails", Smplkit::LogLevel::ERROR)
-      expect(events).to eq([%w[rails ERROR]])
+      expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::ERROR]])
+      expect(events).to eq([["my.logger", "ERROR", "manual"]])
+    end
+
+    it "fires a key-scoped listener for its own logger only (id not normalized)" do
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "WARN"))
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+
+      seen = []
+      other = []
+      logging.on_change("my.logger") { |e| seen << e.name }
+      logging.on_change("other.logger") { |e| other << e.name }
+      stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
+      logging.refresh
+      expect(seen).to eq(["my.logger"])
+      expect(other).to be_empty
     end
 
     it "does not fire when the resolved level is unchanged" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
-      allow(groups_ns).to receive(:list_group_entries).and_return({})
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "WARN"))
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
 
       events = []
-      client.on_change { |e| events << e.name }
-      client.install
-      events.clear
-
-      client.refresh
-      expect(events).to be_empty
-    end
-  end
-
-  describe "#handle_group_changed" do
-    it "fires a change event for a logger whose level moves with its group" do
-      inherit_logger = { "level" => nil, "group" => "g1", "managed" => true, "environments" => {} }
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => inherit_logger)
-      allow(groups_ns).to receive(:list_group_entries).and_return("g1" => group_entry)
-
-      events = []
-      client.on_change { |e| events << [e.name, e.level&.name] }
-      client.install
-      events.clear
-
-      allow(groups_ns).to receive(:get_group_entry).with("g1")
-                                                   .and_return(["g1",
-                                                                { "level" => "FATAL", "group" => nil,
-                                                                  "environments" => {} }])
-      client.send(:handle_group_changed, "id" => "g1")
-
-      expect(adapter).to have_received(:apply_level).with("rails", Smplkit::LogLevel::FATAL)
-      expect(events).to eq([%w[rails FATAL]])
-    end
-
-    it "ignores empty group ids" do
-      client.install
-      expect { client.send(:handle_group_changed, {}) }.not_to raise_error
-    end
-
-    it "swallows a fetch failure and leaves the cache untouched" do
-      inherit_logger = { "level" => nil, "group" => "g1", "managed" => true, "environments" => {} }
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => inherit_logger)
-      allow(groups_ns).to receive(:list_group_entries).and_return("g1" => group_entry)
-      client.install
-
-      allow(groups_ns).to receive(:get_group_entry).and_raise(Smplkit::ConnectionError, "down")
-      expect { client.send(:handle_group_changed, "id" => "g1") }.not_to raise_error
-      expect(client.instance_variable_get(:@groups_cache)["g1"]).to eq(group_entry)
-    end
-  end
-
-  describe "#handle_group_deleted" do
-    it "drops the group, re-applies dependents, fires no event for the deleted key" do
-      inherit_logger = { "level" => nil, "group" => "g1", "managed" => true, "environments" => {} }
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => inherit_logger)
-      allow(groups_ns).to receive(:list_group_entries).and_return("g1" => group_entry)
-
-      events = []
-      client.on_change { |e| events << [e.name, e.level&.name] }
-      client.install
-      events.clear
-
-      client.send(:handle_group_deleted, "id" => "g1")
-
-      # rails: previously resolved to DEBUG via g1, now falls back to INFO
-      expect(adapter).to have_received(:apply_level).with("rails", Smplkit::LogLevel::INFO)
-      expect(events).to eq([%w[rails INFO]])
-      expect(events.map(&:first)).not_to include("g1")
-    end
-
-    it "no-ops on an unknown group id" do
-      client.install
-      events = []
-      client.on_change { |e| events << e.name }
-      client.send(:handle_group_deleted, "id" => "ghost")
+      logging.on_change { |e| events << e.name }
+      stub_loggers_list(logger_resource("my.logger", level: "WARN"))
+      logging.refresh
       expect(events).to be_empty
     end
 
-    it "ignores an empty id" do
-      client.install
-      expect { client.send(:handle_group_deleted, {}) }.not_to raise_error
+    it "swallows a listener exception and keeps firing the rest" do
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "WARN"))
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+
+      seen = []
+      logging.on_change { raise "boom" }
+      logging.on_change { |e| seen << e.name }
+      stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
+      expect { logging.refresh }.not_to raise_error
+      expect(seen).to eq(["my.logger"])
+    end
+
+    it "swallows an apply_level exception so other adapters still receive the level" do
+      bad = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      ok  = TestAdapter.new([])
+      bad.raise_on_apply = true
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "WARN"))
+      stub_groups_list
+      logging.register_adapter(bad)
+      logging.register_adapter(ok)
+      logging.install
+      stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
+      expect { logging.refresh }.not_to raise_error
+      expect(ok.applied.last).to eq(["my.logger", Smplkit::LogLevel::ERROR])
     end
   end
 
-  describe "#handle_logger_changed" do
-    it "re-resolves and applies the new level after fetching the logger entry" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
-      client.install
+  # ----------------------------------------------------------------
+  # WebSocket dispatch pipeline (after install)
+  # ----------------------------------------------------------------
 
-      allow(loggers_ns).to receive(:get_logger_entry).with("rails")
-                                                     .and_return(["rails",
-                                                                  { "level" => "ERROR", "group" => nil,
-                                                                    "managed" => true, "environments" => {} }])
+  describe "WebSocket dispatch" do
+    # Install with one direct-level logger; clear applied/stubs afterward.
+    def install_with_logger(level: "WARN", group: nil, name: "my.logger")
+      adapter = TestAdapter.new([[name, nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource(name, level: level, group: group))
+      stub_groups_list(*(@initial_groups || []))
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
+      adapter
+    end
 
+    it "logger_changed re-resolves + applies + fires on a delta" do
+      adapter = install_with_logger(level: "WARN")
       events = []
-      client.on_change { |e| events << [e.name, e.level&.name] }
-      client.send(:handle_logger_changed, "id" => "Rails")
-
-      expect(adapter).to have_received(:apply_level).with("rails", Smplkit::LogLevel::ERROR)
-      expect(events).to eq([%w[rails ERROR]])
+      logging.on_change { |e| events << [e.name, e.level, e.source] }
+      stub_logger_get("my.logger", logger_resource("my.logger", level: "ERROR"))
+      ws.dispatch("logger_changed", { "id" => "my.logger" })
+      expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::ERROR]])
+      expect(events).to eq([["my.logger", "ERROR", "websocket"]])
     end
 
-    it "ignores empty logger ids" do
-      client.install
-      expect { client.send(:handle_logger_changed, {}) }.not_to raise_error
-    end
-
-    it "swallows a fetch failure without crashing" do
-      client.install
-      allow(loggers_ns).to receive(:get_logger_entry).and_raise(Smplkit::ConnectionError, "down")
-      expect { client.send(:handle_logger_changed, "id" => "rails") }.not_to raise_error
-    end
-  end
-
-  describe "#handle_logger_deleted" do
-    it "fires no event for the deleted logger itself" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
-      client.install
-
+    it "logger_changed fires nothing when the effective level is unchanged" do
+      adapter = install_with_logger(level: "WARN")
       events = []
-      client.on_change { |e| events << e.name }
-      client.send(:handle_logger_deleted, "id" => "rails")
+      logging.on_change { |e| events << e.name }
+      stub_logger_get("my.logger", logger_resource("my.logger", level: "WARN"))
+      ws.dispatch("logger_changed", { "id" => "my.logger" })
       expect(events).to be_empty
+      expect(adapter.applied).to be_empty
     end
 
-    it "fires for dot-descendants whose effective level moves" do
-      ancestor_entry = { "level" => "WARN", "group" => nil, "managed" => true, "environments" => {} }
-      descendant_entry = { "level" => nil, "group" => nil, "managed" => true, "environments" => {} }
-      cascade_adapter = instance_double(
-        Smplkit::Logging::Adapters::Base, name: "fake",
-                                          discover: [["com.acme", nil, Smplkit::LogLevel::INFO],
-                                                     ["com.acme.x", nil, Smplkit::LogLevel::INFO]],
-                                          install_hook: nil, apply_level: nil, uninstall_hook: nil
+    it "logger_changed swallows a fetch failure and leaves the cache intact" do
+      adapter = install_with_logger(level: "WARN")
+      events = []
+      logging.on_change { |e| events << e.name }
+      stub_request(:get, "#{base_url}/api/v1/loggers/my.logger").to_return(status: 500, body: "boom")
+      expect { ws.dispatch("logger_changed", { "id" => "my.logger" }) }.not_to raise_error
+      expect(events).to be_empty
+      expect(adapter.applied).to be_empty
+    end
+
+    it "logger_changed with no id is a safe no-op (empty-key fetch)" do
+      install_with_logger(level: "WARN")
+      stub_request(:get, "#{base_url}/api/v1/loggers/").to_return(status: 500, body: "boom")
+      expect { ws.dispatch("logger_changed", {}) }.not_to raise_error
+    end
+
+    it "logger_deleted drops the logger and re-applies dependents" do
+      # Two dot-related loggers: parent direct WARN, child inherits via ancestry.
+      adapter = TestAdapter.new(
+        [["com.acme", nil, Smplkit::LogLevel::INFO], ["com.acme.x", nil, Smplkit::LogLevel::INFO]]
       )
-      client.instance_variable_set(:@adapters, [cascade_adapter])
-      allow(loggers_ns).to receive(:list_logger_entries)
-        .and_return("com.acme" => ancestor_entry, "com.acme.x" => descendant_entry)
-      allow(groups_ns).to receive(:list_group_entries).and_return({})
+      stub_bulk
+      stub_loggers_list(
+        logger_resource("com.acme", level: "WARN"),
+        logger_resource("com.acme.x", level: nil)
+      )
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
 
-      client.install
       events = []
-      client.on_change { |e| events << [e.name, e.level&.name] }
-
-      client.send(:handle_logger_deleted, "id" => "com.acme")
-      # com.acme.x was resolving via dot-ancestry to com.acme (WARN); after
-      # deletion it falls back to INFO and must fire.
+      logging.on_change { |e| events << [e.name, e.level] }
+      ws.dispatch("logger_deleted", { "id" => "com.acme" })
+      # com.acme.x resolved to WARN via ancestry; after deletion falls back to INFO.
+      expect(adapter.applied).to eq([["com.acme.x", Smplkit::LogLevel::INFO]])
       expect(events).to eq([["com.acme.x", "INFO"]])
+      expect(events.map(&:first)).not_to include("com.acme")
     end
 
-    it "no-ops on an unknown logger id" do
-      client.install
+    it "group_changed re-fetches the group and re-applies dependent loggers" do
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: nil, group: "g1"))
+      stub_groups_list(group_resource("g1", level: "WARN"))
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
+
       events = []
-      client.on_change { |e| events << e.name }
-      client.send(:handle_logger_deleted, "id" => "ghost")
-      expect(events).to be_empty
+      logging.on_change { |e| events << [e.name, e.level] }
+      stub_group_get("g1", group_resource("g1", level: "FATAL"))
+      ws.dispatch("group_changed", { "id" => "g1" })
+      expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::FATAL]])
+      expect(events).to eq([["my.logger", "FATAL"]])
     end
 
-    it "ignores an empty id" do
-      client.install
-      expect { client.send(:handle_logger_deleted, {}) }.not_to raise_error
-    end
-  end
+    it "group_changed swallows a fetch failure and leaves the cache untouched" do
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: nil, group: "g1"))
+      stub_groups_list(group_resource("g1", level: "WARN"))
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
 
-  describe "change-listener fanout (diagnostics)" do
-    # Helper — builds a mock adapter that "discovers" the given normalized
-    # names so they end up in @name_map after install.
-    def adapter_for(ids)
-      instance_double(
-        Smplkit::Logging::Adapters::Base,
-        name: "fake",
-        discover: ids.map { |id| [id, nil, Smplkit::LogLevel::INFO] },
-        install_hook: nil, apply_level: nil, uninstall_hook: nil
-      )
+      stub_request(:get, "#{base_url}/api/v1/log_groups/g1").to_return(status: 500, body: "boom")
+      expect { ws.dispatch("group_changed", { "id" => "g1" }) }.not_to raise_error
+      expect(adapter.applied).to be_empty
     end
 
-    # Diagnostic 1: dot-ancestor cascade via logger_changed.
-    it "fires per-logger when logger_changed cascades through dot-ancestors" do
-      ids = %w[com.acme com.acme.payments com.acme.api com.acme.db com.acme.queue com.acme.auth]
-      ancestor = { "level" => "WARN", "group" => nil, "managed" => true, "environments" => {} }
-      descendant = { "level" => nil, "group" => nil, "managed" => true, "environments" => {} }
-      cascade_adapter = adapter_for(ids)
-      client.instance_variable_set(:@adapters, [cascade_adapter])
-      initial_cache = ids.to_h { |id| [id, id == "com.acme" ? ancestor : descendant] }
-      allow(loggers_ns).to receive(:list_logger_entries).and_return(initial_cache)
-      allow(groups_ns).to receive(:list_group_entries).and_return({})
+    it "group_deleted drops the group and re-applies dependents" do
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: nil, group: "g1"))
+      stub_groups_list(group_resource("g1", level: "WARN"))
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
 
-      client.install
       events = []
-      client.on_change { |e| events << [e.name, e.level&.name] }
-
-      new_ancestor = { "level" => "ERROR", "group" => nil, "managed" => true, "environments" => {} }
-      allow(loggers_ns).to receive(:get_logger_entry).with("com.acme")
-                                                     .and_return(["com.acme", new_ancestor])
-      client.send(:handle_logger_changed, "id" => "com.acme")
-
-      expect(events.length).to eq(6)
-      expect(events.map(&:first)).to match_array(ids)
-      events.each { |(_, lvl)| expect(lvl).to eq("ERROR") }
+      logging.on_change { |e| events << [e.name, e.level] }
+      ws.dispatch("group_deleted", { "id" => "g1" })
+      # my.logger resolved to WARN via g1; after deletion falls back to INFO.
+      expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::INFO]])
+      expect(events).to eq([["my.logger", "INFO"]])
     end
 
-    # Diagnostic 2: group cascade via group_changed.
-    it "fires per-logger when group_changed cascades to dependent loggers" do
-      ids = %w[app.db app.queue app.api]
-      logger_via_group = { "level" => nil, "group" => "app", "managed" => true, "environments" => {} }
-      group_warn = { "level" => "WARN", "group" => nil, "environments" => {} }
-      group_error = { "level" => "ERROR", "group" => nil, "environments" => {} }
-      cascade_adapter = adapter_for(ids)
-      client.instance_variable_set(:@adapters, [cascade_adapter])
-      allow(loggers_ns).to receive(:list_logger_entries)
-        .and_return(ids.to_h { |id| [id, logger_via_group] })
-      allow(groups_ns).to receive(:list_group_entries).and_return("app" => group_warn)
+    it "loggers_changed triggers a full re-fetch + apply pass" do
+      adapter = TestAdapter.new([["my.logger", nil, Smplkit::LogLevel::INFO]])
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "WARN"))
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
 
-      client.install
       events = []
-      client.on_change { |e| events << [e.name, e.level&.name] }
-
-      allow(groups_ns).to receive(:get_group_entry).with("app").and_return(["app", group_error])
-      client.send(:handle_group_changed, "id" => "app")
-
-      expect(events.length).to eq(3)
-      expect(events.map(&:first)).to match_array(ids)
-      events.each { |(_, lvl)| expect(lvl).to eq("ERROR") }
+      logging.on_change { |e| events << [e.name, e.level] }
+      stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
+      stub_groups_list
+      ws.dispatch("loggers_changed", {})
+      expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::ERROR]])
+      expect(events).to eq([["my.logger", "ERROR"]])
     end
 
-    # Diagnostic 3: group_deleted cascades; deleted key itself fires nothing.
-    it "fires per-dependent on group_deleted; deleted key emits no event" do
-      ids = %w[app.db app.queue app.api]
-      logger_via_group = { "level" => nil, "group" => "app", "managed" => true, "environments" => {} }
-      group_warn = { "level" => "WARN", "group" => nil, "environments" => {} }
-      cascade_adapter = adapter_for(ids)
-      client.instance_variable_set(:@adapters, [cascade_adapter])
-      allow(loggers_ns).to receive(:list_logger_entries)
-        .and_return(ids.to_h { |id| [id, logger_via_group] })
-      allow(groups_ns).to receive(:list_group_entries).and_return("app" => group_warn)
-
-      client.install
-      events = []
-      client.on_change { |e| events << [e.name, e.level&.name] }
-
-      client.send(:handle_group_deleted, "id" => "app")
-
-      expect(events.length).to eq(3)
-      expect(events.map(&:first)).to match_array(ids)
-      events.each { |(_, lvl)| expect(lvl).to eq("INFO") }
-      expect(events.map(&:first)).not_to include("app")
+    it "loggers_changed swallows a re-fetch failure" do
+      install_with_logger(level: "WARN")
+      stub_request(:get, "#{base_url}/api/v1/loggers")
+        .with(query: hash_including({}))
+        .to_return(status: 500, body: "boom")
+      expect { ws.dispatch("loggers_changed", {}) }.not_to raise_error
     end
 
-    # Diagnostic 4: no-op edit (no effective-level change) → no fire.
-    it "fires nothing for a logger_changed whose effective level is unchanged" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
-      allow(groups_ns).to receive(:list_group_entries).and_return({})
-
-      client.install
-      events = []
-      client.on_change { |e| events << e.name }
-
-      # Same entry on re-fetch — only a name / description-style edit, no
-      # effective-level change.
-      allow(loggers_ns).to receive(:get_logger_entry).with("rails")
-                                                     .and_return(["rails", logger_entry])
-      client.send(:handle_logger_changed, "id" => "rails")
-
-      expect(events).to be_empty
-    end
-
-    it "per-logger fanout: each delta fires every global listener exactly once" do
+    it "global + key-scoped listeners both receive each per-logger delta" do
       ids = %w[app.db app.queue]
-      logger_via_group = { "level" => nil, "group" => "app", "managed" => true, "environments" => {} }
-      cascade_adapter = adapter_for(ids)
-      client.instance_variable_set(:@adapters, [cascade_adapter])
-      allow(loggers_ns).to receive(:list_logger_entries)
-        .and_return(ids.to_h { |id| [id, logger_via_group] })
-      allow(groups_ns).to receive(:list_group_entries)
-        .and_return("app" => { "level" => "WARN", "group" => nil, "environments" => {} })
+      adapter = TestAdapter.new(ids.map { |id| [id, nil, Smplkit::LogLevel::INFO] })
+      stub_bulk
+      stub_loggers_list(*ids.map { |id| logger_resource(id, level: nil, group: "app") })
+      stub_groups_list(group_resource("app", level: "WARN"))
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
 
-      client.install
       global_a = []
       global_b = []
       key_db = []
-      client.on_change { |e| global_a << e.name }
-      client.on_change { |e| global_b << e.name }
-      client.on_change("app.db") { |e| key_db << e.name }
+      logging.on_change { |e| global_a << e.name }
+      logging.on_change { |e| global_b << e.name }
+      logging.on_change("app.db") { |e| key_db << e.name }
 
-      allow(groups_ns).to receive(:get_group_entry).with("app")
-                                                   .and_return(["app",
-                                                                { "level" => "ERROR", "group" => nil,
-                                                                  "environments" => {} }])
-      client.send(:handle_group_changed, "id" => "app")
+      stub_group_get("app", group_resource("app", level: "ERROR"))
+      ws.dispatch("group_changed", { "id" => "app" })
 
-      # Two loggers moved → each global listener fires twice.
       expect(global_a.length).to eq(2)
       expect(global_b.length).to eq(2)
-      # Key-scoped listener for app.db fires once (only its own delta).
       expect(key_db).to eq(["app.db"])
     end
   end
 
-  describe "#handle_loggers_changed" do
-    it "triggers a full re-fetch + apply pass" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return({})
-      client.install
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
+  # ----------------------------------------------------------------
+  # close / _close
+  # ----------------------------------------------------------------
 
-      client.send(:handle_loggers_changed, {})
-      expect(adapter).to have_received(:apply_level).with("rails", Smplkit::LogLevel::WARN)
+  describe "#close" do
+    it "uninstalls adapter hooks and calls off for every WS handler" do
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      listeners = ws.instance_variable_get(:@listeners)
+      expect(listeners["logger_changed"]).not_to be_empty
+
+      allow(ws).to receive(:off).and_call_original
+      logging.close
+      expect(adapter.uninstalled).to be(true)
+      %w[logger_changed logger_deleted group_changed group_deleted loggers_changed].each do |event|
+        expect(ws).to have_received(:off).with(event, an_instance_of(Proc))
+      end
+    end
+
+    it "is a no-op before install and never raises" do
+      expect { logging.close }.not_to raise_error
+    end
+
+    it "swallows an adapter uninstall_hook error" do
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      bad = TestAdapter.new([])
+      logging.register_adapter(bad)
+      logging.install
+      allow(bad).to receive(:uninstall_hook).and_raise(StandardError, "uninstall boom")
+      expect { logging.close }.not_to raise_error
+    end
+
+    it "does not stop the parent's shared WebSocket (wired client)" do
+      stub_bulk
+      stub_loggers_list
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      logging.close
+      expect(ws.connection_status).to eq("disconnected")
+    end
+
+    it "_close aliases close" do
+      expect { logging._close }.not_to raise_error
     end
   end
 
-  describe "listener and adapter resilience" do
-    it "swallows a listener exception and keeps firing the next one" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
-      client.install
+  # ----------------------------------------------------------------
+  # Management surface: loggers sub-client CRUD + discovery buffer
+  # ----------------------------------------------------------------
 
-      seen = []
-      client.on_change { raise "boom" }
-      client.on_change { |e| seen << e.name }
+  describe "#loggers (LoggersClient)" do
+    it "new returns an unsaved SmplLogger" do
+      logger = logging.loggers.new("my.logger")
+      expect(logger).to be_a(Smplkit::Logging::SmplLogger)
+      expect(logger.name).to eq("my.logger")
+      expect(logger.managed).to be(true)
+    end
 
-      client.refresh.tap do
-        # force a delta so listeners fire
-        allow(loggers_ns).to receive(:list_logger_entries)
-          .and_return("rails" => { "level" => "ERROR", "group" => nil, "managed" => true, "environments" => {} })
+    it "new(managed: false) carries the flag through" do
+      expect(logging.loggers.new("my.logger", managed: false).managed).to be(false)
+    end
+
+    it "list maps every returned resource to a SmplLogger" do
+      stub_loggers_list(logger_resource("a", level: "INFO"), logger_resource("b", level: "DEBUG"))
+      loggers = logging.loggers.list
+      expect(loggers.map(&:id)).to contain_exactly("a", "b")
+      expect(loggers.map(&:name)).to contain_exactly("a", "b")
+    end
+
+    it "list forwards page_number / page_size" do
+      stub = stub_request(:get, "#{base_url}/api/v1/loggers")
+             .with(query: { "page[number]" => "2", "page[size]" => "10" })
+             .to_return(status: 200, body: list_body, headers: jsonapi_headers)
+      logging.loggers.list(page_number: 2, page_size: 10)
+      expect(stub).to have_been_requested
+    end
+
+    it "list returns [] when data is empty" do
+      stub_loggers_list
+      expect(logging.loggers.list).to eq([])
+    end
+
+    it "get fetches a single logger by id" do
+      stub_logger_get("my.logger", logger_resource("my.logger", level: "WARN"))
+      logger = logging.loggers.get("my.logger")
+      expect(logger.id).to eq("my.logger")
+      expect(logger.level).to eq(Smplkit::LogLevel::WARN)
+    end
+
+    it "get raises NotFoundError on a 404" do
+      stub_logger_get("missing", nil, status: 404)
+      expect { logging.loggers.get("missing") }.to raise_error(Smplkit::NotFoundError)
+    end
+
+    it "delete issues a DELETE and returns nil" do
+      stub = stub_request(:delete, "#{base_url}/api/v1/loggers/my.logger").to_return(status: 204, body: "")
+      expect(logging.loggers.delete("my.logger")).to be_nil
+      expect(stub).to have_been_requested
+    end
+
+    it "SmplLogger#save PUTs via _update_logger" do
+      stub_logger_get("my.logger", logger_resource("my.logger", level: "INFO"))
+      logger = logging.loggers.get("my.logger")
+      put = stub_request(:put, "#{base_url}/api/v1/loggers/my.logger")
+            .to_return(status: 200,
+                       body: { "data" => logger_resource("my.logger", level: "ERROR") }.to_json,
+                       headers: jsonapi_headers)
+      logger.level = Smplkit::LogLevel::ERROR
+      logger.save
+      expect(put).to have_been_requested
+      expect(logger.level).to eq(Smplkit::LogLevel::ERROR)
+    end
+
+    it "register normalizes the name, bumps pending_count, and flush POSTs the normalized id" do
+      src = Smplkit::LoggerSource.new(name: "My/Logger:Engine", resolved_level: Smplkit::LogLevel::DEBUG)
+      logging.loggers.register(src)
+      expect(logging.loggers.pending_count).to eq(1)
+
+      captured = nil
+      bulk = stub_request(:post, "#{base_url}/api/v1/loggers/bulk")
+             .to_return do |req|
+               captured = JSON.parse(req.body)
+               { status: 200, body: { "registered" => 1 }.to_json, headers: jsonapi_headers }
+             end
+      logging.loggers.flush
+      expect(bulk).to have_been_requested
+      expect(captured["loggers"].map { |l| l["id"] }).to eq(["my.logger.engine"])
+      expect(logging.loggers.pending_count).to eq(0)
+    end
+
+    it "register(items, flush: true) flushes immediately" do
+      bulk = stub_bulk
+      src = Smplkit::LoggerSource.new(name: "my.logger", resolved_level: Smplkit::LogLevel::INFO)
+      logging.loggers.register(src, flush: true)
+      expect(bulk).to have_been_requested
+      expect(logging.loggers.pending_count).to eq(0)
+    end
+
+    it "register accepts an array of sources" do
+      srcs = [
+        Smplkit::LoggerSource.new(name: "a", resolved_level: Smplkit::LogLevel::INFO),
+        Smplkit::LoggerSource.new(name: "b", resolved_level: Smplkit::LogLevel::DEBUG)
+      ]
+      logging.loggers.register(srcs)
+      expect(logging.loggers.pending_count).to eq(2)
+    end
+
+    it "flush is a no-op when nothing is pending" do
+      logging.loggers.flush
+      expect(a_request(:post, "#{base_url}/api/v1/loggers/bulk")).not_to have_been_made
+    end
+
+    it "flush_sync aliases flush" do
+      bulk = stub_bulk
+      logging.loggers.register(
+        Smplkit::LoggerSource.new(name: "my.logger", resolved_level: Smplkit::LogLevel::INFO)
+      )
+      logging.loggers.flush_sync
+      expect(bulk).to have_been_requested
+    end
+
+    it "spawns a background flush once the batch threshold is crossed" do
+      bulk = stub_bulk
+      threads_before = Thread.list.dup
+      Smplkit::LOGGER_BATCH_FLUSH_SIZE.times do |i|
+        logging.loggers.register(
+          Smplkit::LoggerSource.new(name: "logger.#{i}", resolved_level: Smplkit::LogLevel::INFO)
+        )
       end
-      client.refresh
-      expect(seen).to eq(["rails"])
+      (Thread.list - threads_before).each { |t| t.join(2) }
+      expect(bulk).to have_been_requested
     end
 
-    it "swallows an adapter exception so other adapters still receive the level" do
-      ok = instance_double(Smplkit::Logging::Adapters::Base, name: "ok",
-                                                             discover: [], install_hook: nil,
-                                                             apply_level: nil, uninstall_hook: nil)
-      bad = instance_double(Smplkit::Logging::Adapters::Base, name: "bad",
-                                                              discover: [], install_hook: nil,
-                                                              uninstall_hook: nil)
-      allow(bad).to receive(:apply_level).and_raise("boom")
-      fresh = described_class.new(parent, manage: management, metrics: nil,
-                                          logging_base_url: "https://x", app_base_url: "https://y")
-      fresh.instance_variable_set(:@adapters, [bad, ok])
-      # The local registry needs at least one normalized name to apply for.
-      fresh.instance_variable_set(:@name_map, "rails" => "rails")
-      fresh.instance_variable_set(:@loggers_cache, "rails" => logger_entry)
-      fresh.send(:apply_levels, source: "websocket")
-      expect(ok).to have_received(:apply_level).with("rails", Smplkit::LogLevel::WARN)
+    it "swallows an error raised by the threshold background flush" do
+      allow(logging.loggers).to receive(:flush).and_raise(StandardError, "threshold boom")
+      threads_before = Thread.list.dup
+      expect do
+        Smplkit::LOGGER_BATCH_FLUSH_SIZE.times do |i|
+          logging.loggers.register(
+            Smplkit::LoggerSource.new(name: "logger.#{i}", resolved_level: Smplkit::LogLevel::INFO)
+          )
+        end
+        (Thread.list - threads_before).each { |t| t.join(2) }
+      end.not_to raise_error
     end
 
-    it "key-scoped listeners only fire for their own logger" do
-      allow(loggers_ns).to receive(:list_logger_entries).and_return("rails" => logger_entry)
-      client.install
-
-      seen = []
-      client.on_change("rails") { |e| seen << e.name }
-      client.on_change("other") { |e| seen << "other:#{e.name}" }
-
-      # Force a delta on rails:
-      allow(loggers_ns).to receive(:list_logger_entries)
-        .and_return("rails" => { "level" => "ERROR", "group" => nil, "managed" => true, "environments" => {} })
-      client.refresh
-      expect(seen).to eq(["rails"])
+    it "list_logger_entries returns an id-keyed resolution-cache hash" do
+      stub_loggers_list(
+        logger_resource("a", level: "WARN", group: "g1", managed: true,
+                             environments: { "staging" => { "level" => "TRACE" } })
+      )
+      entries = logging.loggers.list_logger_entries
+      expect(entries).to eq(
+        "a" => { "level" => "WARN", "group" => "g1", "managed" => true,
+                 "environments" => { "staging" => { "level" => "TRACE" } } }
+      )
     end
 
-    it "raises ArgumentError when on_change is called without a block" do
-      expect { client.on_change }.to raise_error(ArgumentError)
+    it "list_logger_entries defaults managed to true when the attribute is absent" do
+      resource = logger_resource("a", level: "WARN")
+      resource["attributes"].delete("managed")
+      stub_loggers_list(resource)
+      expect(logging.loggers.list_logger_entries["a"]["managed"]).to be(true)
     end
 
-    it "rejects non-adapter values from register_adapter" do
-      expect { client.register_adapter("nope") }.to raise_error(ArgumentError)
+    it "get_logger_entry returns the [id, entry] pair" do
+      stub_logger_get("a", logger_resource("a", level: "ERROR"))
+      id, entry = logging.loggers.get_logger_entry("a")
+      expect(id).to eq("a")
+      expect(entry["level"]).to eq("ERROR")
     end
+  end
+
+  # ----------------------------------------------------------------
+  # Management surface: log_groups sub-client CRUD
+  # ----------------------------------------------------------------
+
+  describe "#log_groups (LogGroupsClient)" do
+    it "new returns an unsaved SmplLogGroup with a defaulted display name" do
+      group = logging.log_groups.new("payment_services")
+      expect(group).to be_a(Smplkit::Logging::SmplLogGroup)
+      expect(group.key).to eq("payment_services")
+      expect(group.name).to eq("Payment Services")
+      expect(group.parent_id).to be_nil
+    end
+
+    it "new honours an explicit name and parent group" do
+      group = logging.log_groups.new("child", name: "Child Group", group: "parent")
+      expect(group.name).to eq("Child Group")
+      expect(group.parent_id).to eq("parent")
+    end
+
+    it "list maps every returned resource to a SmplLogGroup" do
+      stub_groups_list(group_resource("a", level: "WARN"), group_resource("b"))
+      groups = logging.log_groups.list
+      expect(groups.map(&:key)).to contain_exactly("a", "b")
+    end
+
+    it "list forwards page_number / page_size" do
+      stub = stub_request(:get, "#{base_url}/api/v1/log_groups")
+             .with(query: { "page[number]" => "3", "page[size]" => "5" })
+             .to_return(status: 200, body: list_body, headers: jsonapi_headers)
+      logging.log_groups.list(page_number: 3, page_size: 5)
+      expect(stub).to have_been_requested
+    end
+
+    it "list returns [] when data is empty" do
+      stub_groups_list
+      expect(logging.log_groups.list).to eq([])
+    end
+
+    it "get fetches a single group by id" do
+      stub_group_get("g1", group_resource("g1", level: "WARN"))
+      group = logging.log_groups.get("g1")
+      expect(group.key).to eq("g1")
+      expect(group.level).to eq(Smplkit::LogLevel::WARN)
+    end
+
+    it "delete issues a DELETE and returns nil" do
+      stub = stub_request(:delete, "#{base_url}/api/v1/log_groups/g1").to_return(status: 204, body: "")
+      expect(logging.log_groups.delete("g1")).to be_nil
+      expect(stub).to have_been_requested
+    end
+
+    it "SmplLogGroup#save POSTs a brand-new group (no created_at)" do
+      captured = nil
+      post = stub_request(:post, "#{base_url}/api/v1/log_groups")
+             .to_return do |req|
+               captured = JSON.parse(req.body)
+               { status: 201, body: { "data" => group_resource("g1", level: "WARN") }.to_json,
+                 headers: jsonapi_headers }
+             end
+      group = logging.log_groups.new("g1", name: "Group One")
+      group.level = Smplkit::LogLevel::WARN
+      group.save
+      expect(post).to have_been_requested
+      expect(captured["data"]["attributes"]["name"]).to eq("Group One")
+      expect(group.created_at).not_to be_nil
+    end
+
+    it "SmplLogGroup#save PUTs an existing group (created_at present)" do
+      stub_group_get("g1", group_resource("g1", level: "WARN"))
+      group = logging.log_groups.get("g1")
+      put = stub_request(:put, "#{base_url}/api/v1/log_groups/g1")
+            .to_return(status: 200,
+                       body: { "data" => group_resource("g1", level: "ERROR") }.to_json,
+                       headers: jsonapi_headers)
+      group.level = Smplkit::LogLevel::ERROR
+      group.save
+      expect(put).to have_been_requested
+      expect(group.level).to eq(Smplkit::LogLevel::ERROR)
+    end
+
+    it "list_group_entries returns an id-keyed resolution-cache hash (parent_id as group)" do
+      stub_groups_list(
+        group_resource("g1", level: "WARN", parent_id: "root",
+                             environments: { "staging" => { "level" => "TRACE" } })
+      )
+      entries = logging.log_groups.list_group_entries
+      expect(entries).to eq(
+        "g1" => { "level" => "WARN", "group" => "root",
+                  "environments" => { "staging" => { "level" => "TRACE" } } }
+      )
+    end
+
+    it "get_group_entry returns the [id, entry] pair" do
+      stub_group_get("g1", group_resource("g1", level: "FATAL"))
+      id, entry = logging.log_groups.get_group_entry("g1")
+      expect(id).to eq("g1")
+      expect(entry["level"]).to eq("FATAL")
+    end
+  end
+
+  # ----------------------------------------------------------------
+  # Module helpers
+  # ----------------------------------------------------------------
+
+  describe "Smplkit::Logging helpers" do
+    it "auto_load_adapters always loads stdlib and (since the gem is bundled) semantic-logger" do
+      adapters = Smplkit::Logging.auto_load_adapters
+      names = adapters.map(&:name)
+      expect(names).to include("stdlib-logger")
+      expect(names).to include("semantic-logger")
+    end
+
+    it "auto_load_adapters skips the semantic-logger adapter when the gem is unavailable" do
+      original = Smplkit::Logging.method(:require)
+      allow(Smplkit::Logging).to receive(:require) do |lib|
+        raise LoadError, "no semantic_logger" if lib == "semantic_logger"
+
+        original.call(lib)
+      end
+      names = Smplkit::Logging.auto_load_adapters.map(&:name)
+      expect(names).to eq(["stdlib-logger"])
+    end
+  end
+
+  describe "Smplkit::Logging::LoggerChangeEvent" do
+    it "exposes name / level / source and compares structurally" do
+      a = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: "WARN", source: "ws")
+      b = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: "WARN", source: "ws")
+      c = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: "ERROR", source: "ws")
+      expect(a.name).to eq("x")
+      expect(a.level).to eq("WARN")
+      expect(a.source).to eq("ws")
+      expect(a).to eq(b)
+      expect(a).not_to eq(c)
+      expect(a).not_to eq("not an event")
+    end
+  end
+end
+
+# --- LoggingClient standalone construction -----------------------------
+#
+# The standalone shape builds + owns its own logging transport and WebSocket
+# (no parent). +close+ tears down only what it owns.
+RSpec.describe "Smplkit::Logging::LoggingClient (standalone)" do
+  subject(:logging) do
+    Smplkit::Logging::LoggingClient.new(
+      "sk_standalone", environment: "staging",
+                       base_url: "https://logging.smplkit.test", base_domain: "smplkit.test"
+    )
+  end
+
+  after { logging.close }
+
+  def jsonapi_headers
+    { "Content-Type" => "application/vnd.api+json" }
+  end
+
+  it "builds and owns its own logging transport, reaching the resolved base URL" do
+    stub = stub_request(:get, "https://logging.smplkit.test/api/v1/loggers/my.logger")
+           .to_return(
+             status: 200,
+             body: {
+               "data" => {
+                 "id" => "my.logger", "type" => "logger",
+                 "attributes" => { "name" => "my.logger", "level" => "WARN",
+                                   "managed" => true, "environments" => {} }
+               }
+             }.to_json,
+             headers: jsonapi_headers
+           )
+    logger = logging.loggers.get("my.logger")
+    expect(logger.id).to eq("my.logger")
+    expect(stub).to have_been_requested
+  end
+
+  it "#close before any install is a no-op" do
+    expect { logging.close }.not_to raise_error
+  end
+
+  it "opens and owns its WebSocket on install, then tears it down on close" do
+    fake_ws = instance_double(Smplkit::SharedWebSocket, start: nil, stop: nil, on: nil, off: nil)
+    allow(Smplkit::SharedWebSocket).to receive(:new).and_return(fake_ws)
+    custom = TestAdapter.new([])
+    logging.register_adapter(custom)
+    stub_request(:post, "https://logging.smplkit.test/api/v1/loggers/bulk")
+      .to_return(status: 200, body: "{}", headers: jsonapi_headers)
+    stub_request(:get, "https://logging.smplkit.test/api/v1/loggers")
+      .with(query: hash_including({}))
+      .to_return(status: 200,
+                 body: { "data" => [], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }.to_json,
+                 headers: jsonapi_headers)
+    stub_request(:get, "https://logging.smplkit.test/api/v1/log_groups")
+      .with(query: hash_including({}))
+      .to_return(status: 200,
+                 body: { "data" => [], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }.to_json,
+                 headers: jsonapi_headers)
+
+    logging.install
+    expect(fake_ws).to have_received(:start)
+    expect(fake_ws).to have_received(:on).with("logger_changed")
+    expect(fake_ws).to have_received(:on).with("loggers_changed")
+
+    logging.close
+    expect(fake_ws).to have_received(:stop)
+  end
+end
+
+# --- LoggingClient.open ------------------------------------------------
+RSpec.describe "Smplkit::Logging::LoggingClient.open" do
+  # +.open+ forwards only keyword args to +new+, whose +api_key+ is positional;
+  # supply the key through the environment so resolution succeeds without it.
+  around do |example|
+    original = ENV.fetch("SMPLKIT_API_KEY", nil)
+    ENV["SMPLKIT_API_KEY"] = "sk_open"
+    example.run
+  ensure
+    ENV["SMPLKIT_API_KEY"] = original
+  end
+
+  it "yields a client and closes it on exit" do
+    yielded = nil
+    Smplkit::Logging::LoggingClient.open(
+      base_url: "https://logging.smplkit.test", base_domain: "smplkit.test"
+    ) do |client|
+      expect(client).to be_a(Smplkit::Logging::LoggingClient)
+      yielded = client
+    end
+    expect(yielded).to be_a(Smplkit::Logging::LoggingClient)
   end
 end

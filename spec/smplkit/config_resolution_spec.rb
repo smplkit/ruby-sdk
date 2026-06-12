@@ -46,6 +46,14 @@ RSpec.describe Smplkit::ConfigResolution do
     end
   end
 
+  describe ".read_config_file" do
+    it "returns an empty hash when reading the file raises" do
+      File.write(File.join(@home_dir, ".smplkit"), "[default]\napi_key = abc\n")
+      allow(File).to receive(:read).and_raise(Errno::EACCES, "permission denied")
+      expect(described_class.send(:read_config_file, "default", home_dir: @home_dir)).to eq({})
+    end
+  end
+
   describe ".resolve_config" do
     it "errors when required fields are missing" do
       expect do

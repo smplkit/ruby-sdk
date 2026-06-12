@@ -2,13 +2,21 @@
 
 require "spec_helper"
 
-# Tests for the runtime config client (declarative bind() + get() escape hatch):
+# Tests for the fused +ConfigClient+ (one client, two surfaces):
 #   - Discovery helpers (value_to_item_type, iter_items, apply_change_to_target)
-#   - ConfigClient#bind — Hash + Struct flavors, parent chaining, sync-from-cache
-#   - ConfigClient#get — three forms, registration semantics
+#   - ConfigChangeEvent value semantics
 #   - LiveConfigProxy — dict-like read API, on_change forwarding
-#   - on_change listeners — global/config-scoped/item-scoped
-#   - WebSocket dispatch — in-place mutation of bound targets
+#   - ConfigClient management surface — new / get / list / delete, Config#save,
+#     discovery buffer (register_config / register_config_item / flush /
+#     pending_count)
+#   - ConfigClient live surface — lazy connect, subscribe, get_value, bind,
+#     on_change, refresh, the WebSocket dispatch pipeline, and close
+#
+# The live surface makes real HTTP through the generated
+# +SmplkitGeneratedClient::Config::ConfigsApi+, so the client is wired with a
+# parent double plus an injected transport pointed at a WebMock host. The
+# parent's shared WebSocket is constructed but never +start+ed — dispatch is
+# driven directly via +SharedWebSocket#dispatch+, so no real socket opens.
 
 # --- Fixture types ----------------------------------------------------
 
@@ -201,508 +209,828 @@ RSpec.describe Smplkit::Config::ConfigChangeEvent do
     b = described_class.new(config_id: "c", item_key: "k", old_value: 1, new_value: 2, source: "ws")
     c = described_class.new(config_id: "c", item_key: "k", old_value: 1, new_value: 3, source: "ws")
     expect(a).to eq(b)
+    expect(a.eql?(b)).to be true
     expect(a.hash).to eq(b.hash)
     expect(a).not_to eq(c)
     expect(a).not_to eq("not an event")
   end
 end
 
-# --- ConfigClient base -------------------------------------------------
+# --- Config.resolve_parent_id -----------------------------------------
+
+RSpec.describe "Smplkit::Config.resolve_parent_id" do
+  it "passes nil through" do
+    expect(Smplkit::Config.resolve_parent_id(nil)).to be_nil
+  end
+
+  it "passes a String id through" do
+    expect(Smplkit::Config.resolve_parent_id("billing")).to eq("billing")
+  end
+
+  it "reads the id off a saved Config" do
+    parent = Smplkit::Config::Config.new(nil, key: "billing", id: "billing")
+    expect(Smplkit::Config.resolve_parent_id(parent)).to eq("billing")
+  end
+
+  it "raises when the Config has no id" do
+    parent = Smplkit::Config::Config.new(nil, key: "billing", id: nil)
+    expect { Smplkit::Config.resolve_parent_id(parent) }
+      .to raise_error(ArgumentError, /must be saved/)
+  end
+
+  it "raises when the Config id is empty" do
+    parent = Smplkit::Config::Config.new(nil, key: "billing", id: "")
+    expect { Smplkit::Config.resolve_parent_id(parent) }
+      .to raise_error(ArgumentError, /must be saved/)
+  end
+end
+
+# --- ConfigClient -----------------------------------------------------
 
 RSpec.describe Smplkit::Config::ConfigClient do
-  subject(:client) { described_class.new(parent, manage: manage, metrics: metrics) }
+  subject(:config) { described_class.new(parent: parent, transport: transport, metrics: metrics) }
 
+  let(:base_url) { "https://config.smplkit.test" }
+  let(:tcfg) do
+    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+      api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
+    )
+  end
+  let(:transport) { Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Config, "config", tcfg) }
+  let(:ws) { Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
   let(:parent) do
     double("Smplkit::Client",
-           _environment: "production",
-           _service: "showcase-billing",
-           _ensure_ws: instance_double(Smplkit::SharedWebSocket, on: nil))
+           _environment: "staging", _service: "svc",
+           _ensure_started: nil, _ensure_ws: ws)
   end
-  let(:mgmt_config) do
-    instance_double(Smplkit::ManagementClient::ConfigNamespace,
-                    flush: nil,
-                    register_config: nil,
-                    register_config_item: nil,
-                    list: [],
-                    pending_count: 0)
-  end
-  let(:manage) { double("ManagementClient", config: mgmt_config) }
   let(:metrics) { nil }
 
-  # --- bind ---------------------------------------------------------
+  # Always release the (never-started) WebSocket / transport so no background
+  # thread leaks between examples.
+  after { config.close }
+
+  # JSON:API config resource Hash for response bodies.
+  def cfg_resource(id, items: {}, environments: {}, parent: nil, name: nil, description: nil)
+    {
+      "id" => id, "type" => "config",
+      "attributes" => {
+        "name" => name || id, "description" => description, "parent" => parent,
+        "items" => items.transform_values { |v| { "value" => v, "type" => "STRING" } },
+        "environments" => environments,
+        "created_at" => "2026-01-01T00:00:00Z", "updated_at" => "2026-01-01T00:00:00Z"
+      }
+    }
+  end
+
+  def list_body(*resources)
+    { "data" => resources, "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }.to_json
+  end
+
+  def jsonapi_headers
+    { "Content-Type" => "application/vnd.api+json" }
+  end
+
+  # Stub the paginated list endpoint with a single page of resources.
+  def stub_list(*resources)
+    stub_request(:get, "#{base_url}/api/v1/configs")
+      .with(query: hash_including({}))
+      .to_return(status: 200, body: list_body(*resources), headers: jsonapi_headers)
+  end
+
+  # Stub a single-config GET (200 with a resource, or a 404).
+  def stub_get(id, resource, status: 200)
+    body = status == 200 ? { "data" => resource }.to_json : %({"errors":[{"status":"404"}]})
+    stub_request(:get, "#{base_url}/api/v1/configs/#{id}")
+      .to_return(status: status, body: body, headers: jsonapi_headers)
+  end
+
+  # ----------------------------------------------------------------
+  # Management surface: CRUD
+  # ----------------------------------------------------------------
+
+  describe "#new" do
+    it "returns an unsaved Config with a defaulted display name" do
+      cfg = config.new("billing_plan")
+      expect(cfg).to be_a(Smplkit::Config::Config)
+      expect(cfg.key).to eq("billing_plan")
+      expect(cfg.name).to eq("Billing Plan")
+      expect(cfg.parent_id).to be_nil
+    end
+
+    it "honours an explicit name, description, and string parent" do
+      cfg = config.new("pro", name: "Pro Tier", description: "the pro plan", parent: "base")
+      expect(cfg.name).to eq("Pro Tier")
+      expect(cfg.description).to eq("the pro plan")
+      expect(cfg.parent_id).to eq("base")
+    end
+
+    it "resolves a Config instance passed as parent to its id" do
+      base = config.new("base")
+      base.instance_variable_set(:@id, "base")
+      child = config.new("child", parent: base)
+      expect(child.parent_id).to eq("base")
+    end
+  end
+
+  describe "#get" do
+    it "fetches the editable Config by id" do
+      stub_get("billing", cfg_resource("billing", items: { "max_seats" => 5 }, name: "Billing"))
+      cfg = config.get("billing")
+      expect(cfg).to be_a(Smplkit::Config::Config)
+      expect(cfg.key).to eq("billing")
+      expect(cfg.name).to eq("Billing")
+      expect(cfg.items.map(&:name)).to contain_exactly("max_seats")
+    end
+
+    it "raises NotFoundError on a 404" do
+      stub_get("missing", nil, status: 404)
+      expect { config.get("missing") }.to raise_error(Smplkit::NotFoundError)
+    end
+  end
+
+  describe "#list" do
+    it "maps every returned resource to a Config" do
+      stub_request(:get, "#{base_url}/api/v1/configs")
+        .with(query: hash_including({}))
+        .to_return(status: 200,
+                   body: list_body(cfg_resource("a"), cfg_resource("b")),
+                   headers: jsonapi_headers)
+      configs = config.list
+      expect(configs.map(&:key)).to contain_exactly("a", "b")
+    end
+
+    it "forwards page_number and page_size as query params" do
+      stub = stub_request(:get, "#{base_url}/api/v1/configs")
+             .with(query: { "page[number]" => "2", "page[size]" => "10" })
+             .to_return(status: 200, body: list_body, headers: jsonapi_headers)
+      config.list(page_number: 2, page_size: 10)
+      expect(stub).to have_been_requested
+    end
+
+    it "returns an empty array when data is empty" do
+      stub_request(:get, "#{base_url}/api/v1/configs")
+        .with(query: hash_including({}))
+        .to_return(status: 200, body: list_body, headers: jsonapi_headers)
+      expect(config.list).to eq([])
+    end
+  end
+
+  describe "#delete" do
+    it "issues a DELETE and returns nil" do
+      stub = stub_request(:delete, "#{base_url}/api/v1/configs/billing")
+             .to_return(status: 204, body: "")
+      expect(config.delete("billing")).to be_nil
+      expect(stub).to have_been_requested
+    end
+  end
+
+  describe "Config#save (via _create_config / _update_config)" do
+    it "POSTs a brand-new config (no created_at)" do
+      stub = stub_request(:post, "#{base_url}/api/v1/configs")
+             .to_return(status: 201,
+                        body: { "data" => cfg_resource("billing", items: { "max_seats" => 5 }) }.to_json,
+                        headers: jsonapi_headers)
+      cfg = config.new("billing")
+      cfg.set_number("max_seats", 5)
+      cfg.save
+      expect(stub).to have_been_requested
+      expect(cfg.created_at).not_to be_nil
+    end
+
+    it "PUTs an existing config (created_at present)" do
+      stub_get("billing", cfg_resource("billing", items: { "max_seats" => 5 }))
+      cfg = config.get("billing")
+      put = stub_request(:put, "#{base_url}/api/v1/configs/billing")
+            .to_return(status: 200,
+                       body: { "data" => cfg_resource("billing", items: { "max_seats" => 9 }) }.to_json,
+                       headers: jsonapi_headers)
+      cfg.set_number("max_seats", 9)
+      cfg.save
+      expect(put).to have_been_requested
+      expect(cfg.items.find { |i| i.name == "max_seats" }.value).to eq(9)
+    end
+
+    it "serializes items and environment overrides into the request body" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/configs")
+        .to_return do |req|
+          captured = JSON.parse(req.body)
+          { status: 201, body: { "data" => cfg_resource("billing") }.to_json, headers: jsonapi_headers }
+        end
+      cfg = config.new("billing", description: "desc")
+      cfg.set_number("max_seats", 5)
+      cfg.set_number("max_seats", 25, environment: "production")
+      cfg.save
+      attrs = captured["data"]["attributes"]
+      expect(attrs["items"]["max_seats"]).to include("value" => 5, "type" => "NUMBER")
+      expect(attrs["environments"]).to eq("production" => { "max_seats" => 25 })
+    end
+  end
+
+  # ----------------------------------------------------------------
+  # Management surface: discovery buffer
+  # ----------------------------------------------------------------
+
+  describe "discovery buffer" do
+    it "register_config queues a declaration and bumps pending_count" do
+      expect { config.register_config("billing", service: "svc", environment: "staging") }
+        .to change(config, :pending_count).from(0).to(1)
+    end
+
+    it "register_config_item adds an item under a declared config" do
+      config.register_config("billing", service: "svc", environment: "staging")
+      expect { config.register_config_item("billing", "max_seats", "NUMBER", 5) }
+        .not_to(change(config, :pending_count))
+    end
+
+    it "flush POSTs the bulk batch and clears pending" do
+      bulk = stub_request(:post, "#{base_url}/api/v1/configs/bulk")
+             .to_return(status: 200, body: { "registered" => 1 }.to_json, headers: jsonapi_headers)
+      config.register_config("billing", service: "svc", environment: "staging")
+      config.register_config_item("billing", "max_seats", "NUMBER", 5)
+      config.flush
+      expect(bulk).to have_been_requested
+      expect(config.pending_count).to eq(0)
+    end
+
+    it "flush is a no-op when nothing is pending" do
+      config.flush
+      expect(a_request(:post, "#{base_url}/api/v1/configs/bulk")).not_to have_been_made
+    end
+
+    it "flush swallows bulk-register errors (fire-and-forget)" do
+      stub_request(:post, "#{base_url}/api/v1/configs/bulk").to_return(status: 500, body: "boom")
+      config.register_config("billing", service: "svc", environment: "staging")
+      expect { config.flush }.not_to raise_error
+    end
+
+    it "kicks off a background flush once the pending threshold is crossed" do
+      bulk = stub_request(:post, "#{base_url}/api/v1/configs/bulk")
+             .to_return(status: 200, body: { "registered" => 1 }.to_json, headers: jsonapi_headers)
+      threads_before = Thread.list.dup
+      # CONFIG_BATCH_FLUSH_SIZE distinct config declarations cross the threshold
+      # and spawn the background-flush thread.
+      Smplkit::CONFIG_BATCH_FLUSH_SIZE.times do |i|
+        config.register_config("cfg#{i}", service: "svc", environment: "staging")
+      end
+      (Thread.list - threads_before).each { |t| t.join(2) }
+      expect(bulk).to have_been_requested
+    end
+
+    it "swallows an error raised by the threshold background flush" do
+      # The spawned flush raises; the thread's rescue must keep it from crashing.
+      allow(config).to receive(:flush).and_raise(StandardError, "threshold boom")
+      threads_before = Thread.list.dup
+      expect do
+        Smplkit::CONFIG_BATCH_FLUSH_SIZE.times do |i|
+          config.register_config("cfg#{i}", service: "svc", environment: "staging")
+        end
+        (Thread.list - threads_before).each { |t| t.join(2) }
+      end.not_to raise_error
+    end
+  end
+
+  # ----------------------------------------------------------------
+  # Live surface: lazy connect + subscribe
+  # ----------------------------------------------------------------
+
+  describe "#subscribe and lazy connect" do
+    it "connects on first use, flushing discovery before the initial fetch" do
+      bulk = stub_request(:post, "#{base_url}/api/v1/configs/bulk")
+             .to_return(status: 200, body: { "registered" => 1 }.to_json, headers: jsonapi_headers)
+      list = stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      # Queue a discovery declaration so the connect-time flush has work to do.
+      config.register_config("seed", service: "svc", environment: "staging")
+      config.register_config_item("seed", "k", "STRING", "v")
+
+      proxy = config.subscribe("billing")
+      expect(proxy).to be_a(Smplkit::Config::LiveConfigProxy)
+      expect(proxy.config_id).to eq("billing")
+      expect(bulk).to have_been_requested
+      expect(list).to have_been_requested
+    end
+
+    it "swallows a connect-time discovery-flush error and still connects" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      # Make the pre-connect flush raise; ensure_connected must catch it and
+      # carry on to the initial fetch.
+      allow(config).to receive(:flush).and_raise(StandardError, "flush boom")
+      expect { config.subscribe("billing") }.not_to raise_error
+      expect(config.get_value("billing", "max_seats")).to eq(5)
+    end
+
+    it "returns a proxy whose reads reflect the resolved cache" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      proxy = config.subscribe("billing")
+      expect(proxy["max_seats"]).to eq(5)
+    end
+
+    it "returns the same proxy instance on repeat subscribe" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      a = config.subscribe("billing")
+      b = config.subscribe("billing")
+      expect(a).to equal(b)
+    end
+
+    it "raises NotFoundError for an unknown config" do
+      stub_list
+      expect { config.subscribe("missing") }.to raise_error(Smplkit::NotFoundError, /not found/)
+    end
+
+    it "registers the config declaration for code-first observability" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config.subscribe("billing")
+      # The "billing" declaration is queued in the discovery buffer.
+      expect(config.pending_count).to be >= 1
+    end
+
+    it "resolves parent chains and folds env overrides into the cache" do
+      base = cfg_resource("base", items: { "max_seats" => 5, "tier" => "base" })
+      pro = cfg_resource("pro", items: { "max_seats" => 50 }, parent: "base",
+                                environments: { "staging" => { "max_seats" => 99 } })
+      stub_list(base, pro)
+      proxy = config.subscribe("pro")
+      expect(proxy["max_seats"]).to eq(99)  # env override wins
+      expect(proxy["tier"]).to eq("base")   # inherited from parent
+    end
+  end
+
+  # ----------------------------------------------------------------
+  # Live surface: get_value
+  # ----------------------------------------------------------------
+
+  describe "#get_value (no default)" do
+    before { stub_list(cfg_resource("db", items: { "host" => "h" })) }
+
+    it "returns the resolved value" do
+      expect(config.get_value("db", "host")).to eq("h")
+    end
+
+    it "stringifies a symbol key" do
+      expect(config.get_value("db", :host)).to eq("h")
+    end
+
+    it "raises NotFoundError when the config is unknown" do
+      expect { config.get_value("missing", "host") }.to raise_error(Smplkit::NotFoundError)
+    end
+
+    it "raises KeyError when the key is unknown" do
+      expect { config.get_value("db", "missing") }.to raise_error(KeyError, /missing/)
+    end
+
+    it "does not register anything" do
+      config.get_value("db", "host")
+      expect(config.pending_count).to eq(0)
+    end
+  end
+
+  describe "#get_value (with default)" do
+    before { stub_list(cfg_resource("db", items: { "host" => "real" })) }
+
+    it "returns the cached value when present" do
+      expect(config.get_value("db", "host", "fallback")).to eq("real")
+    end
+
+    it "returns the default when the config is missing, without raising" do
+      expect(config.get_value("missing", "host", "fallback")).to eq("fallback")
+    end
+
+    it "returns the default when the key is missing, without raising" do
+      expect(config.get_value("db", "no_such_key", "fallback")).to eq("fallback")
+    end
+
+    it "treats an explicit nil default as a real default (does not raise)" do
+      expect(config.get_value("missing", "k", nil)).to be_nil
+    end
+
+    it "registers the config and the inferred-type key for observability" do
+      config.get_value("billing", "max_seats", 5)
+      expect(config.pending_count).to be >= 1
+    end
+  end
+
+  # ----------------------------------------------------------------
+  # Live surface: bind
+  # ----------------------------------------------------------------
 
   describe "#bind" do
     it "returns the same Hash instance back" do
+      stub_list
       payload = { "host" => "h", "port" => 5432 }
-      result = client.bind("db", payload)
-      expect(result).to equal(payload)
+      expect(config.bind("db", payload)).to equal(payload)
     end
 
     it "returns the same Struct instance back" do
+      stub_list
       instance = Billing.new(max_seats: 10, tier: "pro")
-      result = client.bind("billing", instance)
-      expect(result).to equal(instance)
+      expect(config.bind("billing", instance)).to equal(instance)
     end
 
     it "is idempotent — repeated calls with the same id return the original" do
+      stub_list
       first = { "k" => "v1" }
       second = { "k" => "v2" }
-      a = client.bind("db", first)
-      b = client.bind("db", second)
-      expect(a).to equal(first)
-      expect(b).to equal(first)
+      expect(config.bind("db", first)).to equal(first)
+      expect(config.bind("db", second)).to equal(first)
     end
 
     it "raises TypeError for non-Hash, non-Struct targets" do
-      expect { client.bind("billing", "just a string") }
-        .to raise_error(TypeError, /Hash or Struct/)
-      expect { client.bind("billing", 42) }
-        .to raise_error(TypeError, /Hash or Struct/)
-      expect { client.bind("billing", [1, 2]) }
-        .to raise_error(TypeError, /Hash or Struct/)
+      stub_list
+      expect { config.bind("billing", "just a string") }.to raise_error(TypeError, /Hash or Struct/)
+      expect { config.bind("billing", 42) }.to raise_error(TypeError, /Hash or Struct/)
+      expect { config.bind("billing", [1, 2]) }.to raise_error(TypeError, /Hash or Struct/)
     end
 
-    it "registers the config with the Struct's class name as `name`" do
-      expect(mgmt_config).to receive(:register_config).with(
-        "billing",
-        service: "showcase-billing", environment: "production",
-        parent: nil, name: "Billing", description: nil
-      )
-      client.bind("billing", Billing.new(max_seats: 5))
+    it "seeds the cache in-memory for a brand-new config (no network beyond connect)" do
+      stub_list
+      config.bind("db", { "host" => "h", "port" => 5432 })
+      expect(config.get_value("db", "host")).to eq("h")
+      expect(config.get_value("db", "port")).to eq(5432)
     end
 
-    it "registers a dict-bind config with name=nil" do
-      expect(mgmt_config).to receive(:register_config).with(
-        "db",
-        service: "showcase-billing", environment: "production",
-        parent: nil, name: nil, description: nil
-      )
-      client.bind("db", { "host" => "h" })
-    end
-
-    it "leaves name=nil when the Struct class is anonymous" do
-      anonymous = Struct.new(:foo, keyword_init: true).new(foo: 1)
-      expect(mgmt_config).to receive(:register_config).with(
-        "anon",
-        hash_including(name: nil)
-      )
-      client.bind("anon", anonymous)
-    end
-
-    it "registers every Struct member as an explicit override" do
-      keys = []
-      allow(mgmt_config).to receive(:register_config_item) { |_id, k, *| keys << k }
-      client.bind("billing", Billing.new(max_seats: 5, tier: "free"))
-      expect(keys).to contain_exactly("max_seats", "tier")
-    end
-
-    it "registers every Hash key as an explicit override" do
-      keys = []
-      allow(mgmt_config).to receive(:register_config_item) { |_id, k, *| keys << k }
-      client.bind("db", { "host" => "h", "port" => 5432, "tls" => true })
-      expect(keys).to contain_exactly("host", "port", "tls")
-    end
-
-    it "infers item types from runtime values for dict binds" do
-      registered = {}
-      allow(mgmt_config).to receive(:register_config_item) { |_, k, t, v, _| registered[k] = [t, v] }
-      client.bind("db", { "host" => "h", "port" => 5432, "tls" => true })
-      expect(registered["host"]).to eq(%w[STRING h])
-      expect(registered["port"]).to eq(["NUMBER", 5432])
-      expect(registered["tls"]).to eq(["BOOLEAN", true])
-    end
-
-    it "flattens nested Hash bind to dot-notation" do
-      keys = []
-      allow(mgmt_config).to receive(:register_config_item) { |_, k, *| keys << k }
-      client.bind("db", { "primary" => { "host" => "h", "port" => 5432 } })
-      expect(keys).to contain_exactly("primary.host", "primary.port")
-    end
-
-    it "wires a parent chain via a previously-bound target" do
-      base = client.bind("base", Billing.new(max_seats: 5, tier: "base"))
-      expect(mgmt_config).to receive(:register_config).with(
-        "pro", hash_including(parent: "base")
-      )
-      client.bind("pro", Billing.new(max_seats: 50, tier: "pro"), parent: base)
-    end
-
-    it "supports cross-type parent chaining (dict child, Struct parent)" do
-      base = client.bind("base", Billing.new(max_seats: 5))
-      expect(mgmt_config).to receive(:register_config).with(
-        "child", hash_including(parent: "base")
-      )
-      client.bind("child", { "override_key" => 1 }, parent: base)
-    end
-
-    it "rejects an unbound parent reference" do
-      stray = Billing.new(max_seats: 5)
-      expect { client.bind("pro", Billing.new, parent: stray) }
-        .to raise_error(ArgumentError, /previously returned from client.config.bind/)
-    end
-
-    it "syncs the bound Struct from cache (Hash items override in-code values)" do
-      cached = build_config(key: "billing", items: { "max_seats" => 999, "tier" => "enterprise" })
-      allow(mgmt_config).to receive(:list).and_return([cached])
+    it "syncs a bound Struct from cache when the config exists server-side" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 999, "tier" => "enterprise" }))
       instance = Billing.new(max_seats: 5, tier: "free")
-      result = client.bind("billing", instance)
+      result = config.bind("billing", instance)
       expect(result.max_seats).to eq(999)
       expect(result.tier).to eq("enterprise")
     end
 
-    it "syncs a bound Hash from cache" do
-      cached = build_config(key: "db", items: { "host" => "remote", "port" => 9999 })
-      allow(mgmt_config).to receive(:list).and_return([cached])
+    it "syncs a bound Hash from cache when the config exists server-side" do
+      stub_list(cfg_resource("db", items: { "host" => "remote", "port" => 9999 }))
       target = { "host" => "local", "port" => 5432 }
-      result = client.bind("db", target)
+      result = config.bind("db", target)
       expect(result["host"]).to eq("remote")
       expect(result["port"]).to eq(9999)
     end
 
-    it "flushes the management buffer BEFORE the initial fetch" do
-      call_log = []
-      allow(mgmt_config).to receive(:flush) { call_log << :flush }
-      allow(mgmt_config).to receive(:list) {
-        call_log << :list
-        []
-      }
-      client.bind("db", { "k" => "v" })
-      expect(call_log).to eq(%i[flush list])
+    it "wires a parent chain through a previously-bound target" do
+      stub_list
+      base = config.bind("base", Billing.new(max_seats: 5, tier: "base"))
+      config.bind("child", { "max_seats" => 50 }, parent: base)
+      # Child seed resolves through the bound parent chain — tier inherited.
+      expect(config.get_value("child", "tier")).to eq("base")
+      expect(config.get_value("child", "max_seats")).to eq(50)
     end
 
-    it "swallows pre-start flush errors" do
-      allow(mgmt_config).to receive(:flush).and_raise(StandardError, "boom")
-      expect { client.bind("db", { "k" => "v" }) }.not_to raise_error
-    end
-  end
-
-  # --- get ---------------------------------------------------------
-
-  describe "#get (full config)" do
-    it "returns a LiveConfigProxy bound to the id" do
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => "v" })])
-      proxy = client.get("billing")
-      expect(proxy).to be_a(Smplkit::Config::LiveConfigProxy)
-      expect(proxy.config_id).to eq("billing")
+    it "rejects an unbound parent reference" do
+      stub_list
+      stray = Billing.new(max_seats: 5)
+      expect { config.bind("pro", Billing.new, parent: stray) }
+        .to raise_error(ArgumentError, /previously returned from client.config.bind/)
     end
 
-    it "returns the same proxy on repeat calls" do
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => "v" })])
-      a = client.get("billing")
-      b = client.get("billing")
-      expect(a).to equal(b)
-    end
-
-    it "raises NotFoundError when the config is missing" do
-      expect { client.get("missing") }.to raise_error(Smplkit::NotFoundError, /not found/)
-    end
-
-    it "does not register anything (lookup-only escape hatch)" do
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => "v" })])
-      expect(mgmt_config).not_to receive(:register_config_item)
-      client.get("billing")
+    it "keeps a brand-new seed alive across a refresh that omits it (merge_pending_seeds)" do
+      stub_list # initial connect: empty server
+      config.bind("db", { "host" => "h", "port" => 5432 })
+      expect(config.get_value("db", "host")).to eq("h")
+      # A refresh that still does not include "db" must NOT drop the seed.
+      config.refresh
+      expect(config.get_value("db", "host")).to eq("h")
     end
   end
 
-  describe "#get (single value, no default)" do
-    before do
-      allow(mgmt_config).to receive(:list).and_return([
-                                                        build_config(key: "db", items: { "host" => "h" })
-                                                      ])
-    end
+  # ----------------------------------------------------------------
+  # Live surface: on_change + refresh
+  # ----------------------------------------------------------------
 
-    it "returns the cached value" do
-      expect(client.get("db", "host")).to eq("h")
-    end
-
-    it "raises NotFoundError when the config is unknown" do
-      expect { client.get("missing", "host") }.to raise_error(Smplkit::NotFoundError)
-    end
-
-    it "raises KeyError when the key is unknown" do
-      expect { client.get("db", "missing") }.to raise_error(KeyError, /missing/)
-    end
-
-    it "does not register anything" do
-      expect(mgmt_config).not_to receive(:register_config_item)
-      expect(mgmt_config).not_to receive(:register_config)
-      client.get("db", "host")
-    end
-  end
-
-  describe "#get (single value, with default)" do
-    before do
-      allow(mgmt_config).to receive(:list).and_return([
-                                                        build_config(key: "db", items: { "host" => "real" })
-                                                      ])
-    end
-
-    it "returns the cached value when present" do
-      expect(client.get("db", "host", "fallback")).to eq("real")
-    end
-
-    it "returns the default when the config is missing" do
-      allow(mgmt_config).to receive(:list).and_return([])
-      client.refresh
-      expect(client.get("missing", "host", "fallback")).to eq("fallback")
-    end
-
-    it "returns the default when the key is missing" do
-      expect(client.get("db", "no_such_key", "fallback")).to eq("fallback")
-    end
-
-    it "auto-registers the config and key" do
-      expect(mgmt_config).to receive(:register_config).with(
-        "billing", service: "showcase-billing", environment: "production",
-                   parent: nil, name: nil, description: nil
-      )
-      expect(mgmt_config).to receive(:register_config_item)
-        .with("billing", "max_seats", "NUMBER", 5, nil)
-      client.get("billing", "max_seats", 5)
-    end
-
-    it "infers the type from the default value" do
-      types = {}
-      allow(mgmt_config).to receive(:register_config_item) { |_, k, t, *| types[k] = t }
-      client.get("c", "n", 5)
-      client.get("c", "f", 1.5)
-      client.get("c", "s", "hi")
-      client.get("c", "b", true)
-      expect(types).to eq("n" => "NUMBER", "f" => "NUMBER", "s" => "STRING", "b" => "BOOLEAN")
-    end
-
-    it "treats `nil` as a real default (does not raise)" do
-      expect(client.get("missing", "k", nil)).to be_nil
-    end
-
-    it "stringifies non-string keys" do
-      expect(client.get("db", :host, "fallback")).to eq("real")
-    end
-  end
-
-  # --- on_change ----------------------------------------------------
-
-  describe "#on_change" do
-    before { allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => 0 })]) }
-
+  describe "#on_change and #refresh" do
     it "raises without a block" do
-      expect { client.on_change }.to raise_error(ArgumentError, /requires a block/)
+      stub_list
+      expect { config.on_change }.to raise_error(ArgumentError, /requires a block/)
     end
 
-    it "fires the global listener on any change" do
-      client.start
+    it "returns the registered block" do
+      stub_list
       seen = []
-      client.on_change { |e| seen << [e.config_id, e.item_key, e.old_value, e.new_value] }
-      # Simulate a refresh delivering a new value.
-      allow(mgmt_config).to receive(:list).and_return([
-                                                        build_config(key: "billing", items: { "k" => 1 })
-                                                      ])
-      client.refresh
+      block = proc { |e| seen << e }
+      expect(config.on_change(&block)).to equal(block)
+    end
+
+    it "does not replay the initial load to a freshly-registered listener" do
+      # on_change auto-connects, so the initial do_refresh("initial") fires
+      # before the listener is recorded — the listener only sees later changes.
+      stub_list(cfg_resource("billing", items: { "k" => 0 }))
+      seen = []
+      config.on_change { |e| seen << e.source }
+      expect(seen).to be_empty
+    end
+
+    it "fires the global listener on any change delivered by refresh" do
+      stub_list(cfg_resource("billing", items: { "k" => 0 }))
+      config._ensure_connected
+      seen = []
+      config.on_change { |e| seen << [e.config_id, e.item_key, e.old_value, e.new_value] }
+      stub_list(cfg_resource("billing", items: { "k" => 1 }))
+      config.refresh
       expect(seen).to eq([["billing", "k", 0, 1]])
     end
 
-    it "fires listeners against an empty old_cache during initial start" do
+    it "fires a config-scoped listener only for matching ids" do
+      stub_list(cfg_resource("billing", items: { "k" => 0 }))
+      config._ensure_connected
       seen = []
-      client.on_change { |e| seen << [e.config_id, e.item_key, e.old_value, e.new_value, e.source] }
-      client.start
-      expect(seen).to eq([["billing", "k", nil, 0, "initial"]])
-    end
-
-    it "fires the config-scoped listener only for matching ids" do
-      seen = []
-      client.on_change("other") { |e| seen << e.config_id }
-      client.start
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => 1 })])
-      client.refresh
+      config.on_change("other") { |e| seen << e.config_id }
+      stub_list(cfg_resource("billing", items: { "k" => 1 }))
+      config.refresh
       expect(seen).to be_empty
     end
 
-    it "fires the item-scoped listener only for matching item keys" do
+    it "fires an item-scoped listener only for matching item keys" do
+      stub_list(cfg_resource("billing", items: { "k" => 0 }))
+      config._ensure_connected
       seen = []
-      client.on_change("billing", item_key: "z") { |e| seen << e.item_key }
-      client.start
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => 1 })])
-      client.refresh
+      config.on_change("billing", item_key: "z") { |e| seen << e.item_key }
+      stub_list(cfg_resource("billing", items: { "k" => 1 }))
+      config.refresh
       expect(seen).to be_empty
+    end
+
+    it "fires an item-scoped listener for the matching item key" do
+      stub_list(cfg_resource("billing", items: { "k" => 0 }))
+      config._ensure_connected
+      seen = []
+      config.on_change("billing", item_key: "k") { |e| seen << e.new_value }
+      stub_list(cfg_resource("billing", items: { "k" => 7 }))
+      config.refresh
+      expect(seen).to eq([7])
     end
 
     it "swallows exceptions raised by a listener" do
-      client.on_change { raise "boom" }
-      client.start
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => 1 })])
-      expect { client.refresh }.not_to raise_error
+      stub_list(cfg_resource("billing", items: { "k" => 0 }))
+      config._ensure_connected
+      config.on_change { raise "boom" }
+      stub_list(cfg_resource("billing", items: { "k" => 1 }))
+      expect { config.refresh }.not_to raise_error
     end
-  end
 
-  # --- refresh + WebSocket dispatch ---------------------------------
-
-  describe "#refresh and the WebSocket pipeline" do
-    let(:billing_initial) { build_config(key: "billing", items: { "max_seats" => 5 }) }
-    let(:billing_updated) { build_config(key: "billing", items: { "max_seats" => 50 }) }
-
-    it "mutates a bound Struct in place when a refresh delivers a new value" do
-      allow(mgmt_config).to receive(:list).and_return([billing_initial])
+    it "mutates a bound Struct in place when refresh delivers a new value" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
       instance = Billing.new(max_seats: 5)
-      client.bind("billing", instance)
-      allow(mgmt_config).to receive(:list).and_return([billing_updated])
-      client.refresh
+      config.bind("billing", instance)
+      stub_list(cfg_resource("billing", items: { "max_seats" => 50 }))
+      config.refresh
       expect(instance.max_seats).to eq(50)
     end
 
-    it "mutates a bound Hash in place when a refresh delivers a new value" do
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "db", items: { "timeout" => 30 })])
+    it "mutates a bound Hash in place when refresh delivers a new value" do
+      stub_list(cfg_resource("db", items: { "timeout" => 30 }))
       payload = { "timeout" => 30 }
-      client.bind("db", payload)
-      allow(mgmt_config).to receive(:list).and_return([
-                                                        build_config(key: "db", items: { "timeout" => 120 })
-                                                      ])
-      client.refresh
+      config.bind("db", payload)
+      stub_list(cfg_resource("db", items: { "timeout" => 120 }))
+      config.refresh
       expect(payload["timeout"]).to eq(120)
     end
 
-    it "listeners reading the bound object after a change see the new value" do
-      allow(mgmt_config).to receive(:list).and_return([billing_initial])
+    it "listeners reading a bound object after a change see the new value" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
       instance = Billing.new(max_seats: 5)
-      client.bind("billing", instance)
+      config.bind("billing", instance)
       observed = []
-      client.on_change("billing", item_key: "max_seats") { |_| observed << instance.max_seats }
-      allow(mgmt_config).to receive(:list).and_return([billing_updated])
-      client.refresh
+      config.on_change("billing", item_key: "max_seats") { |_| observed << instance.max_seats }
+      stub_list(cfg_resource("billing", items: { "max_seats" => 50 }))
+      config.refresh
       expect(observed).to eq([50])
     end
+  end
 
-    it "subscribes to config_changed, config_deleted, and configs_changed on start" do
-      ws = instance_double(Smplkit::SharedWebSocket)
-      allow(parent).to receive(:_ensure_ws).and_return(ws)
-      events = []
-      allow(ws).to receive(:on) { |name, &_blk| events << name }
-      client.start
-      expect(events).to include("config_changed", "config_deleted", "configs_changed")
+  # ----------------------------------------------------------------
+  # Live surface: WebSocket dispatch pipeline
+  # ----------------------------------------------------------------
+
+  describe "WebSocket dispatch" do
+    it "registers config_changed / config_deleted / configs_changed handlers on connect" do
+      stub_list
+      config._ensure_connected
+      registered = ws.instance_variable_get(:@listeners)
+      expect(registered.keys).to include("config_changed", "config_deleted", "configs_changed")
     end
 
-    it "is idempotent — repeated start() does not re-subscribe" do
-      ws = instance_double(Smplkit::SharedWebSocket)
-      allow(parent).to receive(:_ensure_ws).and_return(ws)
-      count = 0
-      allow(ws).to receive(:on) { count += 1 }
-      client.start
-      client.start
-      expect(count).to eq(3)
+    it "config_changed refetches a single config and updates the cache + bound object" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      instance = Billing.new(max_seats: 5)
+      config.bind("billing", instance)
+      stub_get("billing", cfg_resource("billing", items: { "max_seats" => 99 }))
+      ws.dispatch("config_changed", { "id" => "billing" })
+      expect(config.get_value("billing", "max_seats")).to eq(99)
+      expect(instance.max_seats).to eq(99)
+    end
+
+    it "config_changed accepts the `key` field as the id" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      stub_get("billing", cfg_resource("billing", items: { "max_seats" => 42 }))
+      ws.dispatch("config_changed", { "key" => "billing" })
+      expect(config.get_value("billing", "max_seats")).to eq(42)
+    end
+
+    it "config_changed with no id falls back to a full refresh" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      stub_list(cfg_resource("billing", items: { "max_seats" => 7 }))
+      ws.dispatch("config_changed", {})
+      expect(config.get_value("billing", "max_seats")).to eq(7)
+    end
+
+    it "config_changed swallows a fetch error and leaves the cache intact" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      stub_request(:get, "#{base_url}/api/v1/configs/billing").to_return(status: 500, body: "boom")
+      ws.dispatch("config_changed", { "id" => "billing" })
+      expect(config.get_value("billing", "max_seats")).to eq(5)
+    end
+
+    it "config_changed treats a 404 (nil config) as no change" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      # fetch_config raises NotFoundError -> rescued -> cache unchanged.
+      stub_get("billing", nil, status: 404)
+      ws.dispatch("config_changed", { "id" => "billing" })
+      expect(config.get_value("billing", "max_seats")).to eq(5)
+    end
+
+    it "config_deleted removes the config from the cache" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      ws.dispatch("config_deleted", { "id" => "billing" })
+      expect { config.get_value("billing", "max_seats") }.to raise_error(Smplkit::NotFoundError)
+    end
+
+    it "config_deleted with no id falls back to a full refresh" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      stub_list # refresh: now empty
+      ws.dispatch("config_deleted", {})
+      expect { config.get_value("billing", "max_seats") }.to raise_error(Smplkit::NotFoundError)
+    end
+
+    it "config_deleted is a no-op for an unknown config id" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      expect { ws.dispatch("config_deleted", { "id" => "unknown" }) }.not_to raise_error
+      expect(config.get_value("billing", "max_seats")).to eq(5)
+    end
+
+    it "configs_changed triggers a full refresh" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      stub_list(cfg_resource("billing", items: { "max_seats" => 88 }))
+      ws.dispatch("configs_changed", {})
+      expect(config.get_value("billing", "max_seats")).to eq(88)
+    end
+
+    it "configs_changed swallows refresh errors" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      stub_request(:get, "#{base_url}/api/v1/configs")
+        .with(query: hash_including({}))
+        .to_return(status: 500, body: "boom")
+      expect { ws.dispatch("configs_changed", {}) }.not_to raise_error
     end
   end
 
-  # --- WebSocket handlers (single + bulk) ---------------------------
+  # ----------------------------------------------------------------
+  # close + metrics + _ensure_connected idempotency
+  # ----------------------------------------------------------------
 
-  describe "WebSocket handlers" do
-    let(:billing) { build_config(key: "billing", items: { "max_seats" => 5 }) }
-    let(:billing_new) { build_config(key: "billing", items: { "max_seats" => 99 }) }
-
-    before do
-      allow(mgmt_config).to receive(:list).and_return([billing])
-      client.start
+  describe "lifecycle" do
+    it "_ensure_connected is idempotent — a second call does not refetch" do
+      list = stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      config._ensure_connected
+      expect(list).to have_been_requested.once
     end
 
-    it "handle_config_changed refetches a single config and rebuilds the cache" do
-      allow(mgmt_config).to receive(:get).with("billing").and_return(billing_new)
-      client.send(:handle_config_changed, { "key" => "billing" })
-      expect(client.get("billing")["max_seats"]).to eq(99)
+    it "#close is a near no-op for a wired client (does not close the parent's WS)" do
+      stub_list
+      config._ensure_connected
+      expect { config.close }.not_to raise_error
+      expect(ws.connection_status).to eq("disconnected")
     end
 
-    it "handle_config_changed accepts the `id` field as the key" do
-      allow(mgmt_config).to receive(:get).with("billing").and_return(billing_new)
-      client.send(:handle_config_changed, { "id" => "billing" })
-      expect(client.get("billing")["max_seats"]).to eq(99)
+    it "_close aliases close" do
+      expect { config._close }.not_to raise_error
     end
 
-    it "handle_config_changed ignores events with no key" do
-      expect { client.send(:handle_config_changed, {}) }.not_to raise_error
+    it "_cached_values returns a copy of the resolved values" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      values = config._cached_values("billing")
+      expect(values).to eq("max_seats" => 5)
+      values["max_seats"] = 999
+      expect(config._cached_values("billing")).to eq("max_seats" => 5)
     end
 
-    it "handle_config_changed silently swallows fetch errors" do
-      allow(mgmt_config).to receive(:get).and_raise(StandardError, "boom")
-      expect { client.send(:handle_config_changed, { "key" => "billing" }) }.not_to raise_error
-    end
-
-    it "handle_config_changed treats a NotFoundError as a deletion" do
-      allow(mgmt_config).to receive(:get).and_raise(Smplkit::NotFoundError, "gone")
-      client.send(:handle_config_changed, { "key" => "billing" })
-      expect { client.get("billing") }.to raise_error(Smplkit::NotFoundError)
-    end
-
-    it "handle_config_deleted removes the config from the cache" do
-      client.send(:handle_config_deleted, { "key" => "billing" })
-      expect { client.get("billing") }.to raise_error(Smplkit::NotFoundError)
-    end
-
-    it "handle_config_deleted ignores events with no key" do
-      expect { client.send(:handle_config_deleted, {}) }.not_to raise_error
-    end
-
-    it "handle_config_deleted is a no-op for an unknown config" do
-      expect { client.send(:handle_config_deleted, { "key" => "unknown" }) }.not_to raise_error
-    end
-
-    it "handle_configs_changed triggers a full refresh" do
-      allow(mgmt_config).to receive(:list).and_return([billing_new])
-      client.send(:handle_configs_changed, {})
-      expect(client.get("billing")["max_seats"]).to eq(99)
-    end
-
-    it "handle_configs_changed swallows refresh errors" do
-      allow(mgmt_config).to receive(:list).and_raise(StandardError, "boom")
-      expect { client.send(:handle_configs_changed, {}) }.not_to raise_error
-    end
-  end
-
-  # --- _close + metrics ---------------------------------------------
-
-  describe "#_close" do
-    it "is a no-op" do
-      expect { client._close }.not_to raise_error
+    it "_cached_values returns {} for an unknown config" do
+      stub_list
+      config._ensure_connected
+      expect(config._cached_values("nope")).to eq({})
     end
   end
 
   describe "metrics" do
     let(:metrics) { instance_double(Smplkit::MetricsReporter, record: nil) }
 
-    it "records config.resolutions on get(id)" do
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => "v" })])
-      expect(metrics).to receive(:record).with("config.resolutions", unit: "resolutions",
-                                                                     dimensions: { "config" => "billing" })
-      client.get("billing")
+    it "records config.resolutions on subscribe" do
+      stub_list(cfg_resource("billing", items: { "k" => "v" }))
+      expect(metrics).to receive(:record).with(
+        "config.resolutions", unit: "resolutions", dimensions: { "config" => "billing" }
+      )
+      config.subscribe("billing")
     end
 
     it "records config.changes on each value change" do
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => 0 })])
-      client.start
-      allow(mgmt_config).to receive(:list).and_return([build_config(key: "billing", items: { "k" => 1 })])
-      expect(metrics).to receive(:record).with("config.changes", unit: "changes",
-                                                                 dimensions: { "config" => "billing" })
-      client.refresh
+      stub_list(cfg_resource("billing", items: { "k" => 0 }))
+      config._ensure_connected
+      stub_list(cfg_resource("billing", items: { "k" => 1 }))
+      expect(metrics).to receive(:record).with(
+        "config.changes", unit: "changes", dimensions: { "config" => "billing" }
+      )
+      config.refresh
     end
   end
+end
 
-  describe "manage-less construction" do
-    let(:manage) { nil }
+# --- ConfigClient standalone construction -----------------------------
 
-    it "does not crash on start when no management client is attached" do
-      allow(parent).to receive(:_ensure_ws).and_return(instance_double(Smplkit::SharedWebSocket, on: nil))
-      expect { client.start }.to raise_error(NoMethodError) # @manage.config.list called below
-      # Actually: when manage is nil we have a hard requirement — exercise the
-      # _observe_* nil-guard via bind which calls register before start.
-    end
+RSpec.describe "Smplkit::Config::ConfigClient (standalone)" do
+  subject(:config) do
+    Smplkit::Config::ConfigClient.new(
+      "sk_standalone", environment: "staging",
+                       base_url: "https://config.smplkit.test", base_domain: "smplkit.test"
+    )
   end
 
-  describe "_observe_* nil guards" do
-    let(:manage) { nil }
+  after { config.close }
 
-    it "_observe_config_declaration is a no-op when manage is nil" do
-      expect { client._observe_config_declaration("id", parent: nil, name: nil, description: nil) }.not_to raise_error
-    end
+  it "builds and owns its own transport, reaching the resolved base URL" do
+    stub = stub_request(:get, "https://config.smplkit.test/api/v1/configs/billing")
+           .to_return(
+             status: 200,
+             body: {
+               "data" => {
+                 "id" => "billing", "type" => "config",
+                 "attributes" => { "name" => "Billing", "items" => {}, "environments" => {} }
+               }
+             }.to_json,
+             headers: { "Content-Type" => "application/vnd.api+json" }
+           )
+    cfg = config.get("billing")
+    expect(cfg.key).to eq("billing")
+    expect(stub).to have_been_requested
+  end
 
-    it "_observe_item_declaration is a no-op when manage is nil" do
-      expect { client._observe_item_declaration("id", "k", "STRING", "v", nil) }.not_to raise_error
+  it "#close on a standalone client that never connected is a no-op" do
+    expect { config.close }.not_to raise_error
+  end
+
+  it "opens and owns its WebSocket on first live use, then tears it down on close" do
+    # Replace the real socket with a double so ensure_ws can build + start it
+    # (and close can stop it) without opening a network connection.
+    fake_ws = instance_double(Smplkit::SharedWebSocket, start: nil, stop: nil, on: nil)
+    allow(Smplkit::SharedWebSocket).to receive(:new).and_return(fake_ws)
+    stub_request(:get, "https://config.smplkit.test/api/v1/configs")
+      .with(query: hash_including({}))
+      .to_return(
+        status: 200,
+        body: { "data" => [], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }.to_json,
+        headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+
+    config._ensure_connected
+    expect(fake_ws).to have_received(:start)
+    expect(fake_ws).to have_received(:on).with("config_changed")
+    expect(fake_ws).to have_received(:on).with("config_deleted")
+    expect(fake_ws).to have_received(:on).with("configs_changed")
+
+    config.close
+    expect(fake_ws).to have_received(:stop)
+  end
+end
+
+# --- ConfigClient.open ------------------------------------------------
+
+RSpec.describe "Smplkit::Config::ConfigClient.open" do
+  # +.open+ forwards only keyword args to +new+, whose +api_key+ is positional;
+  # supply the key through the environment so resolution succeeds without it.
+  around do |example|
+    original = ENV.fetch("SMPLKIT_API_KEY", nil)
+    ENV["SMPLKIT_API_KEY"] = "sk_open"
+    example.run
+  ensure
+    ENV["SMPLKIT_API_KEY"] = original
+  end
+
+  it "yields a client and closes it on exit" do
+    yielded = nil
+    Smplkit::Config::ConfigClient.open(
+      base_url: "https://config.smplkit.test", base_domain: "smplkit.test"
+    ) do |client|
+      expect(client).to be_a(Smplkit::Config::ConfigClient)
+      yielded = client
     end
+    # No connection was opened, so close just no-ops; assert the block ran.
+    expect(yielded).to be_a(Smplkit::Config::ConfigClient)
   end
 end
 
@@ -770,7 +1098,7 @@ RSpec.describe Smplkit::Config::LiveConfigProxy do
     expect(proxy.key?("host")).to be true
     expect(proxy.key?("missing")).to be false
     expect(proxy.include?("host")).to be true
-    expect(proxy.key?("port")).to be true
+    expect(proxy.has_key?("port")).to be true # rubocop:disable Style/PreferredHashMethods
     expect(proxy.to_h).to eq("host" => "h", "port" => 5432, "tls" => true)
     expect(proxy.items).to contain_exactly(%w[host h], ["port", 5432], ["tls", true])
   end

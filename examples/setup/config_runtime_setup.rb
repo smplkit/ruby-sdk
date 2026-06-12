@@ -2,26 +2,24 @@
 
 # Setup and simulation helpers for config_runtime_showcase.rb.
 
-DEMO_CONFIG_KEYS = %w[
+require "smplkit"
+
+DEMO_CONFIG_IDS = %w[
   showcase-billing
   showcase-common
   showcase-database
 ].freeze
 
-def simulate_admin_override(manage)
-  # Real customers never read back through the management API immediately
-  # after binding via the runtime client — this is a simulation-only step.
-  # Push pending runtime-side registrations through so the lookup below
-  # can find the freshly-declared config.
-  manage.config.flush
-  billing = manage.config.get("showcase-billing")
+def simulate_admin_override(client)
+  client.config.flush
+  billing = client.config.get("showcase-billing")
   billing.set_number("plan.max_seats", 25, environment: "production")
   billing.save
 end
 
-def cleanup_runtime_showcase(manage)
-  DEMO_CONFIG_KEYS.each do |key|
-    manage.config.delete(key)
+def cleanup_runtime_showcase(client)
+  DEMO_CONFIG_IDS.each do |config_id|
+    client.config.delete(config_id)
   rescue Smplkit::NotFoundError
     next
   end

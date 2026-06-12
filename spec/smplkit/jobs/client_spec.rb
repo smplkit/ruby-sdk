@@ -2,10 +2,15 @@
 
 require "spec_helper"
 
-RSpec.describe Smplkit::Management::JobsNamespace do
-  subject(:jobs) { mgmt.jobs }
+RSpec.describe Smplkit::Jobs::JobsClient do
+  subject(:jobs) { described_class.new(auth_client: api_client) }
 
-  let(:mgmt) { Smplkit::ManagementClient.from_resolved(resolved) }
+  let(:api_client) do
+    Smplkit::Transport.build_api_client(
+      SmplkitGeneratedClient::Jobs, "jobs", resolved,
+      accept: "application/vnd.api+json"
+    )
+  end
   let(:resolved) do
     Smplkit::ConfigResolution::ResolvedManagementConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
@@ -157,7 +162,7 @@ RSpec.describe Smplkit::Management::JobsNamespace do
   end
 
   describe "#get / save (update) / delete" do
-    it "returns a Job on get bound to the namespace" do
+    it "returns a Job on get bound to the client" do
       stub_request(:get, "#{base_url}/api/v1/jobs/#{job_id}").to_return(
         status: 200, body: { data: job_resource }.to_json, headers: json_api
       )
@@ -206,7 +211,7 @@ RSpec.describe Smplkit::Management::JobsNamespace do
       expect { detached.delete }.to raise_error(/cannot delete/)
     end
 
-    it "namespace #delete returns nil and issues DELETE by id" do
+    it "client #delete returns nil and issues DELETE by id" do
       del_stub = stub_request(:delete, "#{base_url}/api/v1/jobs/#{job_id}").to_return(status: 204)
       expect(jobs.delete(job_id)).to be_nil
       expect(del_stub).to have_been_requested
@@ -249,10 +254,15 @@ RSpec.describe Smplkit::Management::JobsNamespace do
   end
 end
 
-RSpec.describe Smplkit::Management::RunsNamespace do
-  subject(:runs) { mgmt.jobs.runs }
+RSpec.describe Smplkit::Jobs::RunsClient do
+  subject(:runs) { Smplkit::Jobs::JobsClient.new(auth_client: api_client).runs }
 
-  let(:mgmt) { Smplkit::ManagementClient.from_resolved(resolved) }
+  let(:api_client) do
+    Smplkit::Transport.build_api_client(
+      SmplkitGeneratedClient::Jobs, "jobs", resolved,
+      accept: "application/vnd.api+json"
+    )
+  end
   let(:resolved) do
     Smplkit::ConfigResolution::ResolvedManagementConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
@@ -474,10 +484,47 @@ RSpec.describe Smplkit::Jobs::Job do
   end
 end
 
+RSpec.describe Smplkit::Jobs::Usage do
+  it "round-trips a usage resource via from_resource" do
+    resource = SmplkitGeneratedClient::Jobs::UsageResource.new(
+      id: "current", type: "usage",
+      attributes: SmplkitGeneratedClient::Jobs::Usage.new(
+        period: "2026-06", runs_used: 1, runs_included: -1,
+        active_jobs: 0, active_jobs_limit: -1
+      )
+    )
+    usage = described_class.from_resource(resource)
+    expect(usage.period).to eq("2026-06")
+    expect(usage.runs_included).to eq(-1)
+    expect(usage.active_jobs_limit).to eq(-1)
+  end
+end
+
 RSpec.describe "Smplkit::Jobs.call_api" do
   it "re-raises a generated ApiError that somehow survived raise_for_status" do
     err = SmplkitGeneratedClient::Jobs::ApiError.new(code: 200, response_body: "")
     expect { Smplkit::Jobs.call_api { raise err } }
       .to raise_error(SmplkitGeneratedClient::Jobs::ApiError)
+  end
+end
+
+RSpec.describe "Smplkit::Jobs::JobsClient standalone construction" do
+  let(:tcfg) do
+    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+      api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
+    )
+  end
+  let(:api_client) { Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Jobs, "jobs", tcfg) }
+
+  it "resolves its own transport when no auth_client is given" do
+    client = Smplkit::Jobs::JobsClient.new("k", base_domain: "smplkit.test", scheme: "https")
+    expect(client).to be_a(Smplkit::Jobs::JobsClient)
+    expect(client.close).to be_nil
+  end
+
+  it "open yields the client and closes it" do
+    yielded = nil
+    Smplkit::Jobs::JobsClient.open(auth_client: api_client) { |j| yielded = j }
+    expect(yielded).to be_a(Smplkit::Jobs::JobsClient)
   end
 end

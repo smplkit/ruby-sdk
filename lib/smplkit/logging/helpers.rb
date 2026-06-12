@@ -18,6 +18,7 @@ module Smplkit
           log_group_id: attrs["log_group_id"],
           managed: attrs.fetch("managed", true),
           description: attrs["description"],
+          environments: attrs["environments"],
           created_at: attrs["created_at"],
           updated_at: attrs["updated_at"]
         )

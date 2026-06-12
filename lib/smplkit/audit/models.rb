@@ -422,7 +422,7 @@ module Smplkit
     # A SIEM streaming forwarder configured on the customer's account.
     #
     # Active-record style: instantiate via
-    # +mgmt.audit.forwarders.new_forwarder(...)+, mutate fields directly,
+    # +client.audit.forwarders.new(...)+, mutate fields directly,
     # and call {#save} to persist or {#delete} to remove. Header values in
     # +configuration.headers+ are returned redacted on reads — the GET path
     # on the audit API replaces every header value with +"<redacted>"+.
@@ -557,6 +557,45 @@ module Smplkit
         @client.delete(@id)
       end
       alias delete! delete
+
+      # Set this forwarder's destination configuration in memory.
+      #
+      # With +environment+ omitted, replaces the base {#configuration}. With
+      # +environment+ given, sets the per-environment override's configuration
+      # on {#environments}, creating the override entry if it doesn't exist yet
+      # (preserving any already-set +enabled+ on it). Call {#save} to persist.
+      def set_configuration(configuration, environment: nil)
+        if environment.nil?
+          @configuration = configuration
+        else
+          _environment_override(environment).configuration = configuration
+        end
+      end
+
+      # Set this forwarder's enablement in memory.
+      #
+      # With +environment+ omitted, sets the base {#enabled} (which the server
+      # pins false regardless — enablement is per-environment). With
+      # +environment+ given, sets the per-environment override's +enabled+ on
+      # {#environments}, creating the override entry if it doesn't exist yet
+      # (preserving any already-set +configuration+ on it). Call {#save} to
+      # persist.
+      def set_enabled(enabled, environment: nil)
+        if environment.nil?
+          @enabled = enabled
+        else
+          _environment_override(environment).enabled = enabled
+        end
+      end
+
+      # Return the override for +environment+, creating an empty one if absent.
+      #
+      # The per-environment mutators reach through here so an existing
+      # override's other field is preserved when only one of +enabled+ /
+      # +configuration+ is being set.
+      def _environment_override(environment)
+        @environments[environment] ||= ForwarderEnvironment.new
+      end
 
       # @api private
       def _apply(other)

@@ -27,6 +27,47 @@ RSpec.describe Smplkit::Context do
     expect { described_class.new("user", "u-1").save }.to raise_error(RuntimeError, /without a client/)
     expect { described_class.new("user", "u-1").delete }.to raise_error(RuntimeError, /without a client/)
   end
+
+  it "attributes= bulk-replaces and stringifies keys" do
+    ctx = described_class.new("user", "u-1", plan: "free")
+    ctx.attributes = { region: "eu", tier: 2 }
+    expect(ctx.attributes).to eq("region" => "eu", "tier" => 2)
+  end
+
+  it "attributes= treats nil as an empty hash" do
+    ctx = described_class.new("user", "u-1", plan: "free")
+    ctx.attributes = nil
+    expect(ctx.attributes).to eq({})
+  end
+
+  it "routes delete through the bound client" do
+    client = instance_double(Smplkit::Platform::ContextsClient)
+    ctx = described_class.new("user", "u-1")._bind_client(client)
+    expect(client).to receive(:delete).with("user:u-1")
+    ctx.delete
+  end
+
+  it "exposes the bound client via _client" do
+    client = Object.new
+    ctx = described_class.new("user", "u-1")._bind_client(client)
+    expect(ctx._client).to be(client)
+  end
+
+  it "implements hash, eql? and == for use as a Hash key" do
+    a = described_class.new("user", "u-1", plan: "x")
+    b = described_class.new("user", "u-1", plan: "x")
+    c = described_class.new("user", "u-2", plan: "x")
+    expect(a).to eq(b)
+    expect(a.hash).to eq(b.hash)
+    expect(a.eql?(b)).to be(true)
+    expect(a).not_to eq(c)
+    expect(a).not_to eq("not a context")
+  end
+
+  it "inspect includes type, key, name and attributes" do
+    ctx = described_class.new("user", "u-1", name: "Acme", plan: "x")
+    expect(ctx.inspect).to start_with('#<Smplkit::Context type="user" key="u-1" name="Acme" attributes=')
+  end
 end
 
 RSpec.describe Smplkit::Op do
@@ -87,5 +128,16 @@ RSpec.describe Smplkit::FlagDeclaration do
     decl = described_class.new(id: "checkout-v2", type: "BOOLEAN", default: false)
     expect(decl.id).to eq("checkout-v2")
     expect(decl.service).to be_nil
+  end
+
+  it "implements value equality and a matching hash" do
+    a = described_class.new(id: "f", type: "BOOLEAN", default: false, service: "svc", environment: "stg")
+    b = described_class.new(id: "f", type: "BOOLEAN", default: false, service: "svc", environment: "stg")
+    c = described_class.new(id: "f", type: "BOOLEAN", default: true, service: "svc", environment: "stg")
+    expect(a).to eq(b)
+    expect(a.eql?(b)).to be(true)
+    expect(a.hash).to eq(b.hash)
+    expect(a).not_to eq(c)
+    expect(a).not_to eq("not a declaration")
   end
 end

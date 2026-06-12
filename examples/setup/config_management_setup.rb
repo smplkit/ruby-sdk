@@ -1,14 +1,18 @@
 # frozen_string_literal: true
 
-DEMO_CFG_KEYS = %w[platform-defaults showcase-service-config].freeze
+# Setup / cleanup helpers for config_management_showcase.rb.
 
-def setup_config_management_showcase(manage)
-  cleanup_config_management_showcase(manage)
+require "smplkit"
+
+DEMO_CONFIG_IDS = %w[showcase-user-service showcase-common].freeze
+
+def setup_management_showcase(client)
+  cleanup_management_showcase(client)
 end
 
-def cleanup_config_management_showcase(manage)
-  DEMO_CFG_KEYS.reverse_each do |key|
-    manage.config.delete(key)
+def cleanup_management_showcase(client)
+  DEMO_CONFIG_IDS.each do |config_id|
+    client.config.delete(config_id)
   rescue Smplkit::NotFoundError
     next
   end

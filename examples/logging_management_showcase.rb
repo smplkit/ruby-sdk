@@ -2,6 +2,12 @@
 
 # Demonstrates the smplkit management SDK for Smpl Logging.
 #
+# Prerequisites:
+#   - +gem install smplkit+
+#   - A valid smplkit API key, provided via one of:
+#       - +SMPLKIT_API_KEY+ environment variable
+#       - +~/.smplkit+ configuration file (see SDK docs)
+#
 # Usage:
 #
 #   bundle exec ruby examples/logging_management_showcase.rb
@@ -9,40 +15,45 @@
 require "smplkit"
 require_relative "setup/logging_management_setup"
 
-manage = Smplkit::ManagementClient.new
+Smplkit::Client.open do |client|
+  setup_management_showcase(client)
 
-begin
-  setup_logging_management_showcase(manage)
+  # create a parent logger with a default level
+  root = client.logging.loggers.new("showcase")
+  root.set_level(Smplkit::LogLevel::INFO)
+  root.save
+  puts "Created: #{root.id} (level=#{root.level})"
+  raise unless root.level == Smplkit::LogLevel::INFO
 
-  app_group = manage.log_groups.new_log_group(
-    "showcase-service.app",
-    name: "Showcase Service / App",
-    level: Smplkit::LogLevel::INFO,
-    description: "Application-level loggers"
-  )
-  app_group.save
-  puts "Created log group: #{app_group.key}"
+  # child logger with no level (inherits from parent)
+  db = client.logging.loggers.new("showcase.db")
+  db.save
+  puts "Created: #{db.id} (inherits)"
+  raise unless db.level.nil?
 
-  # Log groups are currently flat — the platform does not support nested
-  # groups in this version, so this second group sits alongside +app_group+
-  # rather than under it.
-  db_group = manage.log_groups.new_log_group(
-    "showcase-service.db",
-    name: "Showcase Service / DB",
-    level: Smplkit::LogLevel::WARN,
-    description: "Database-related loggers"
-  )
-  db_group.save
-  puts "Created log group: #{db_group.key}"
+  # child logger with explicit level (overrides parent)
+  payments = client.logging.loggers.new("showcase.payments")
+  payments.set_level(Smplkit::LogLevel::WARN)
+  payments.save
+  puts "Created: #{payments.id} (level=#{payments.level})"
+  raise unless payments.level == Smplkit::LogLevel::WARN
 
-  groups = manage.log_groups.list
-  puts "Found #{groups.length} log groups"
+  # override log level for the production environment
+  root.set_level(Smplkit::LogLevel::ERROR, environment: "production")
+  root.save
+  puts "Set environment overrides: #{root.environments}"
+  raise unless root.environments["production"].level == Smplkit::LogLevel::ERROR
 
-  loggers = manage.loggers.list
-  puts "Found #{loggers.length} loggers"
+  # clear environment override (inherits from the default level again)
+  root.clear_level(environment: "production")
+  root.save
+  puts "Cleared production override: #{root.environments}"
+  raise if root.environments.key?("production")
 
-  cleanup_logging_management_showcase(manage)
+  # get a logger
+  fetched = client.logging.loggers.get("showcase")
+  raise unless fetched.level == Smplkit::LogLevel::INFO
+
+  cleanup_management_showcase(client)
   puts "Done!"
-ensure
-  manage.close
 end

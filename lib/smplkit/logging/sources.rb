@@ -2,7 +2,7 @@
 
 module Smplkit
   module Logging
-    # Describes a logger to register via +Smplkit::ManagementClient#loggers#register+.
+    # Describes a logger to register via +client.logging.loggers.register+.
     #
     # Used both for buffered runtime discovery (called by +Smplkit::Client+ as
     # adapters discover loggers) and for explicit registration from setup

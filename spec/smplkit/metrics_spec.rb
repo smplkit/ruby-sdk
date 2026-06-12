@@ -29,4 +29,11 @@ RSpec.describe Smplkit::MetricsReporter do
     reporter.record("after-close", unit: "x")
     expect(reporter.instance_variable_get(:@counts)).to be_empty
   end
+
+  it "swallows errors raised while sending the flush payload" do
+    reporter.record("a", unit: "x")
+    allow(reporter).to receive(:send_payload).and_raise("network down")
+    expect { reporter.flush }.not_to raise_error
+    expect(reporter.instance_variable_get(:@counts)).to be_empty
+  end
 end

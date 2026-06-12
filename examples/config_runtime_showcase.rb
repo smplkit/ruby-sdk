@@ -23,8 +23,8 @@ Plan = Struct.new(:max_seats, :trial_days, :tier, keyword_init: true)
 Common = Struct.new(:app, :support, keyword_init: true)
 Billing = Struct.new(:app, :support, :plan, keyword_init: true)
 
-Smplkit::Client.open(environment: "production", service: "showcase-billing") do |client|
-  cleanup_runtime_showcase(client.manage)
+Smplkit::Client.open(environment: "production") do |client|
+  cleanup_runtime_showcase(client)
 
   # bind Struct schemas
   common = client.config.bind("showcase-common", Common.new(
@@ -40,58 +40,57 @@ Smplkit::Client.open(environment: "production", service: "showcase-billing") do 
     ),
     parent: common
   )
-
   puts "common.app.name = #{common.app.name}"
   puts "billing.app.name = #{billing.app.name}  # inherited from common"
   puts "billing.plan.max_seats = #{billing.plan.max_seats}"
-  raise "Expected 'Acme SaaS', got #{common.app.name.inspect}" unless common.app.name == "Acme SaaS"
-  raise "Expected 5, got #{billing.plan.max_seats}" unless billing.plan.max_seats == 5
 
   # add listeners if desired
   changes = []
+
   client.config.on_change("showcase-billing", item_key: "plan.max_seats") do |event|
     changes << event
-    puts "    [CHANGE] #{event.config_id}.#{event.item_key}: " \
-         "#{event.old_value.inspect} -> #{event.new_value.inspect}"
+    puts "    [CHANGE] #{event.config_id}.#{event.item_key}: #{event.old_value.inspect} -> #{event.new_value.inspect}"
   end
 
-  # simulate someone making a change in smplkit console
-  simulate_admin_override(client.manage)
-  deadline = Time.now + 10
-  sleep(0.1) while Time.now < deadline && billing.plan.max_seats != 25
+  client.wait_until_ready
 
-  # observe changes are automatically reflected in bound objects
+  # simulate someone making a change in smplkit console
+  simulate_admin_override(client)
+  sleep(0.4)
+
+  # observe changes are automatically reflected in bound models
   puts "billing.plan.max_seats after override = #{billing.plan.max_seats}"
   raise "Expected 25, got #{billing.plan.max_seats}" unless billing.plan.max_seats == 25
-  raise "Expected at least one change event" if changes.empty?
+  raise "Expected at least one change" unless changes.length >= 1
 
   # you can also bind plain-old Hashes
   db = client.config.bind(
     "showcase-database",
     {
-      "primary" => { "host" => "db.acme.example", "port" => 5432 },
+      "primary" => {
+        "host" => "db.acme.example",
+        "port" => 5432
+      },
       "pool_size" => 10,
       "statement_timeout_ms" => 30_000
     }
   )
   puts "db['primary']['host'] = #{db["primary"]["host"]}"
   puts "db['pool_size'] = #{db["pool_size"]}"
-  raise "Expected db.acme.example" unless db["primary"]["host"] == "db.acme.example"
-  raise "Expected 10" unless db["pool_size"] == 10
+  raise unless db["primary"]["host"] == "db.acme.example"
+  raise unless db["pool_size"] == 10
 
-  # or get a config by ID (raises NotFoundError if not found; pass a
-  # default if you want a fallback)
-  common_view = client.config.get("showcase-common")
-  puts "showcase-common (via get):"
+  # or read live values via subscribe(id)
+  common_view = client.config.subscribe("showcase-common")
+  puts "showcase-common (via subscribe):"
   common_view.each_pair { |k, v| puts "    #{k} = #{v}" }
-  raise "Expected 'Acme SaaS'" unless common_view["app.name"] == "Acme SaaS"
+  raise unless common_view["app.name"] == "Acme SaaS"
 
-  # or skip the schema/Hash and just fetch specific keys directly
-  slow_query_ms = client.config.get("showcase-database", "slow_query_threshold_ms", 500)
-  puts "showcase-database.slow_query_threshold_ms = #{slow_query_ms}  " \
-       "# default used; now registered for visibility"
-  raise "Expected 500, got #{slow_query_ms}" unless slow_query_ms == 500
+  # or skip the model/hash and just fetch specific keys directly
+  slow_query_ms = client.config.get_value("showcase-database", "slow_query_threshold_ms", 500)
+  puts "showcase-database.slow_query_threshold_ms = #{slow_query_ms}  # default used (key absent)"
+  raise unless slow_query_ms == 500
 
-  cleanup_runtime_showcase(client.manage)
+  cleanup_runtime_showcase(client)
   puts "Done!"
 end

@@ -1,11 +1,14 @@
 # frozen_string_literal: true
 
 module Smplkit
-  module Management
+  module Platform
     # Whether an environment participates in the canonical ordering.
     #
     # +STANDARD+ environments are the customer's deploy targets — production,
-    # staging, development, etc.
+    # staging, development, etc. They participate in
+    # +account.settings.environment_order+ and appear in the standard Console
+    # environment columns.
+    #
     # +AD_HOC+ environments are transient targets (preview branches, individual
     # developer sandboxes) that should not appear in the standard ordering.
     module EnvironmentClassification
@@ -60,6 +63,6 @@ module Smplkit
     end
   end
 
-  Color = Management::Color
-  EnvironmentClassification = Management::EnvironmentClassification
+  Color = Platform::Color
+  EnvironmentClassification = Platform::EnvironmentClassification
 end

@@ -29,21 +29,42 @@ RSpec.describe Smplkit::HttpPool do
     end
   end
 
-  describe "wiring into the management plane" do
-    subject(:mgmt) { Smplkit::ManagementClient.from_resolved(resolved) }
-
+  describe "wiring through Transport.build_api_client" do
     let(:resolved) do
       Smplkit::ConfigResolution::ResolvedManagementConfig.new(
         api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
       )
     end
 
-    it "configures every generated service client to use the pooled adapter" do
-      %i[_app_http _config_http _flags_http _logging_http _audit_http _jobs_http].each do |svc|
-        adapter = built_adapter_for(mgmt.public_send(svc).config)
+    # Every per-service transport is built via +Transport.build_api_client+,
+    # which calls +HttpPool.configure+ on the generated +Configuration+ before
+    # constructing the client. Assert each ends up with the keepalive adapter.
+    {
+      app: SmplkitGeneratedClient::App,
+      config: SmplkitGeneratedClient::Config,
+      flags: SmplkitGeneratedClient::Flags,
+      logging: SmplkitGeneratedClient::Logging,
+      jobs: SmplkitGeneratedClient::Jobs
+    }.each do |subdomain, generated_module|
+      it "configures the #{subdomain} client to use the pooled adapter" do
+        client = Smplkit::Transport.build_api_client(generated_module, subdomain.to_s, resolved)
+        adapter = built_adapter_for(client.config)
         expect(adapter).to eq(Faraday::Adapter::NetHttpPersistent),
-                           "expected #{svc} to use NetHttpPersistent, got #{adapter}"
+                           "expected #{subdomain} to use NetHttpPersistent, got #{adapter}"
       end
+    end
+
+    it "configures the Configuration directly when called on its own" do
+      configuration = SmplkitGeneratedClient::Logging::Configuration.new
+      described_class.configure(configuration)
+      expect(built_adapter_for(configuration)).to eq(Faraday::Adapter::NetHttpPersistent)
+    end
+
+    it "is invoked by build_api_client for every constructed transport" do
+      allow(described_class).to receive(:configure).and_call_original
+      Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Logging, "logging", resolved)
+      expect(described_class).to have_received(:configure)
+        .with(an_instance_of(SmplkitGeneratedClient::Logging::Configuration))
     end
   end
 

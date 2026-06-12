@@ -33,5 +33,30 @@ RSpec.describe Smplkit::Logging::Levels do
         expect(described_class.smpl_level_to_semantic(smpl)).to eq(level)
       end
     end
+
+    it "defaults nil and unknown semantic levels to INFO" do
+      expect(described_class.semantic_level_to_smpl(nil)).to eq(Smplkit::LogLevel::INFO)
+      expect(described_class.semantic_level_to_smpl(:mystery)).to eq(Smplkit::LogLevel::INFO)
+    end
+
+    it "maps SILENT to the closest semantic level (:fatal)" do
+      expect(described_class.smpl_level_to_semantic(Smplkit::LogLevel::SILENT)).to eq(:fatal)
+    end
+  end
+
+  describe ".nearest_smpl_for" do
+    it "snaps a between-breakpoints stdlib level down to the nearest known one" do
+      # 2.5 sits between WARN (2) and ERROR (3); the nearest breakpoint at or
+      # below it is WARN.
+      expect(described_class.nearest_smpl_for(2.5)).to eq(Smplkit::LogLevel::WARN)
+    end
+
+    it "uses the lowest breakpoint when the level is below all of them" do
+      expect(described_class.nearest_smpl_for(-1)).to eq(Smplkit::LogLevel::DEBUG)
+    end
+
+    it "is reached for an unmapped stdlib level via stdlib_level_to_smpl" do
+      expect(described_class.stdlib_level_to_smpl(2.5)).to eq(Smplkit::LogLevel::WARN)
+    end
   end
 end

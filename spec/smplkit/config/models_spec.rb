@@ -30,8 +30,65 @@ RSpec.describe Smplkit::Config::Config do
     expect(config.items.map(&:name)).to eq(["b"])
   end
 
+  it "set_number, set_boolean and set_json add typed items" do
+    config.set_number("n", 1)
+    config.set_boolean("b", true)
+    config.set_json("j", { "k" => "v" })
+    by_name = config.items.to_h { |i| [i.name, i.type] }
+    expect(by_name).to eq(
+      "n" => Smplkit::Config::ItemType::NUMBER,
+      "b" => Smplkit::Config::ItemType::BOOLEAN,
+      "j" => Smplkit::Config::ItemType::JSON
+    )
+  end
+
+  it "remove_item with environment drops only the per-environment override" do
+    config.set_string("a", "stg-a", environment: "staging")
+    config.set_string("b", "stg-b", environment: "staging")
+    config.remove_item("a", environment: "staging")
+    expect(config.environments["staging"].values).to eq("b" => "stg-b")
+  end
+
+  it "remove_item with an unknown environment is a no-op" do
+    expect { config.remove_item("a", environment: "nope") }.not_to raise_error
+  end
+
   it "raises on save without a client" do
     expect { config.save }.to raise_error(RuntimeError, /without a client/)
+  end
+
+  it "delete raises without a client" do
+    expect { config.delete }.to raise_error(RuntimeError, /without a client/)
+  end
+
+  it "delete routes through the bound client" do
+    client = double("config_client")
+    bound = described_class.new(client, key: "showcase")
+    expect(client).to receive(:delete).with("showcase")
+    bound.delete
+  end
+end
+
+RSpec.describe Smplkit::Config::ConfigItem do
+  it "to_h compacts nil attributes" do
+    item = described_class.new(name: "k", value: 1, type: "NUMBER")
+    expect(item.to_h).to eq("name" => "k", "value" => 1, "type" => "NUMBER")
+  end
+
+  it "to_h includes description when present" do
+    item = described_class.new(name: "k", value: 1, type: "NUMBER", description: "doc")
+    expect(item.to_h).to eq("name" => "k", "value" => 1, "type" => "NUMBER", "description" => "doc")
+  end
+
+  it "implements value equality, eql? and a matching hash" do
+    a = described_class.new(name: "k", value: 1, type: "NUMBER")
+    b = described_class.new(name: "k", value: 1, type: "NUMBER")
+    c = described_class.new(name: "k", value: 2, type: "NUMBER")
+    expect(a).to eq(b)
+    expect(a.eql?(b)).to be(true)
+    expect(a.hash).to eq(b.hash)
+    expect(a).not_to eq(c)
+    expect(a).not_to eq("not an item")
   end
 end
 
@@ -102,6 +159,23 @@ RSpec.describe Smplkit::Config::Helpers do
       cfg = Smplkit::Config::Config.new(nil, id: "x", key: "x", items: [item])
       entry = described_class.config_to_chain_entry(cfg)
       expect(entry["items"]["k"]).to eq("value" => 1, "type" => "NUMBER", "description" => "doc")
+    end
+  end
+
+  describe ".config_from_json" do
+    it "wraps a bare (non-typed-hash) item value as a JSON item" do
+      resource = {
+        "id" => "cfg-1",
+        "attributes" => {
+          "key" => "showcase",
+          "items" => { "raw" => [1, 2, 3] }
+        }
+      }
+      cfg = described_class.config_from_json(nil, resource)
+      item = cfg.items.first
+      expect(item.name).to eq("raw")
+      expect(item.value).to eq([1, 2, 3])
+      expect(item.type).to eq(Smplkit::Config::ItemType::JSON)
     end
   end
 end

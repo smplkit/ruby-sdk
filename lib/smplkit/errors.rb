@@ -84,6 +84,14 @@ module Smplkit
   # subscription plan does not include the required entitlement.
   class PaymentRequiredError < Error; end
 
+  # Raised when a logging operation is attempted before +install+.
+  #
+  # Smpl Logging monkey-patches the standard logging framework, so it stays
+  # opt-in: its live surface requires an explicit +LoggingClient#install+
+  # first. Config and flags connect lazily on first live use and never raise
+  # this.
+  class NotInstalledError < Error; end
+
   module Errors
     module_function
 

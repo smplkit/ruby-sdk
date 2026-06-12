@@ -44,9 +44,25 @@ require_relative "smplkit/context"
 require_relative "smplkit/config_resolution"
 require_relative "smplkit/metrics"
 require_relative "smplkit/ws"
+
+# Internal foundation shared by every product client.
+require_relative "smplkit/buffers"
+require_relative "smplkit/api_support"
+require_relative "smplkit/transport"
+
+# Flags types (incl. Context) load before platform, which references Context.
 require_relative "smplkit/flags/types"
 require_relative "smplkit/flags/models"
 require_relative "smplkit/flags/helpers"
+
+# Platform + account (the cross-cutting surfaces) before the product clients
+# that borrow them.
+require_relative "smplkit/platform/types"
+require_relative "smplkit/platform/models"
+require_relative "smplkit/platform/client"
+require_relative "smplkit/account/models"
+require_relative "smplkit/account/client"
+
 require_relative "smplkit/flags/client"
 require_relative "smplkit/config/models"
 require_relative "smplkit/config/helpers"
@@ -66,14 +82,10 @@ require_relative "smplkit/audit/events"
 require_relative "smplkit/audit/resource_types"
 require_relative "smplkit/audit/event_types"
 require_relative "smplkit/audit/categories"
+require_relative "smplkit/audit/forwarders"
 require_relative "smplkit/audit/client"
 require_relative "smplkit/jobs/models"
-require_relative "smplkit/management/types"
-require_relative "smplkit/management/models"
-require_relative "smplkit/management/buffer"
-require_relative "smplkit/management/audit"
-require_relative "smplkit/management/jobs"
-require_relative "smplkit/management/client"
+require_relative "smplkit/jobs/client"
 require_relative "smplkit/client"
 
 require_relative "smplkit/railtie" if defined?(Rails::Railtie)

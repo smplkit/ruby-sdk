@@ -74,6 +74,29 @@ RSpec.describe Smplkit::Flags::Flag do
   it "delete raises without an id" do
     expect { flag.delete }.to raise_error(RuntimeError)
   end
+
+  it "delete routes through the bound client when an id is present" do
+    client = double("flags_client")
+    bound = described_class.new(client, id: "checkout-v2", name: "Checkout V2", type: "BOOLEAN", default: false)
+    expect(client).to receive(:delete).with("checkout-v2")
+    bound.delete
+  end
+
+  describe "#clear_rules" do
+    it "clears rules in a single environment when specified" do
+      flag.add_rule(Smplkit::Rule.new("Enterprise", environment: "staging")
+                                 .when("user.plan", Smplkit::Op::EQ, "enterprise").serve(true))
+      flag.clear_rules(environment: "staging")
+      expect(flag.environments["staging"].rules).to eq([])
+    end
+
+    it "clears rules across all known environments when omitted" do
+      flag.add_rule(Smplkit::Rule.new("a", environment: "staging").serve(true))
+      flag.add_rule(Smplkit::Rule.new("b", environment: "production").serve(false))
+      flag.clear_rules
+      expect(flag.environments.values.map(&:rules)).to all(eq([]))
+    end
+  end
 end
 
 RSpec.describe Smplkit::Flags::FlagEnvironment do

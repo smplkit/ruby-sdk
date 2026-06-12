@@ -26,9 +26,9 @@ module Smplkit
   # arguments) carry the data that targeting rules evaluate against.
   #
   # Used for both authoring (+flag.get(context: [...])+,
-  # +client.set_context([...])+, +mgmt.contexts.register([...])+) and reading
-  # (+mgmt.contexts.list/get+ return populated +Context+ instances with
-  # +save+ / +delete+ ready to call).
+  # +client.set_context([...])+, +client.platform.contexts.register([...])+) and
+  # reading (+client.platform.contexts.list/get+ return populated +Context+
+  # instances with +save+ / +delete+ ready to call).
   #
   # Examples:
   #
@@ -141,10 +141,9 @@ module Smplkit
 
   # Describes a flag declaration for buffered registration.
   #
-  # Used by +Smplkit::ManagementClient#flags#register+ to queue declarations
-  # for bulk registration. +service+ and +environment+ default to +nil+; the
-  # runtime client fills them from the active +Smplkit::Client+ when it
-  # forwards declarations.
+  # Used by +client.flags.register+ to queue declarations for bulk
+  # registration. +service+ and +environment+ default to +nil+; the client
+  # fills them from the active +Smplkit::Client+ when it forwards declarations.
   class FlagDeclaration
     attr_reader :id, :type, :default, :service, :environment
 

@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 # Setup / cleanup helpers for flags_runtime_showcase.rb.
-#
-# Mirrors examples/setup/flags_runtime_setup.py from the Python SDK.
+
+require "smplkit"
 
 DEMO_FLAG_IDS = %w[checkout-v2 banner-color max-retries].freeze
 
-def setup_runtime_showcase(manage)
-  cleanup_runtime_showcase(manage)
+def setup_runtime_showcase(client)
+  cleanup_runtime_showcase(client)
 
-  checkout = manage.flags.new_boolean_flag(
+  checkout = client.flags.new_boolean_flag(
     "checkout-v2",
     default: false,
     description: "Controls rollout of the new checkout experience."
@@ -28,7 +28,7 @@ def setup_runtime_showcase(manage)
   )
   checkout.save
 
-  banner = manage.flags.new_string_flag(
+  banner = client.flags.new_string_flag(
     "banner-color",
     default: "red",
     name: "Banner Color",
@@ -52,7 +52,7 @@ def setup_runtime_showcase(manage)
   )
   banner.save
 
-  retries = manage.flags.new_number_flag(
+  retries = client.flags.new_number_flag(
     "max-retries",
     default: 3,
     description: "Maximum number of API retries before failing."
@@ -66,9 +66,9 @@ def setup_runtime_showcase(manage)
   retries.save
 end
 
-def cleanup_runtime_showcase(manage)
+def cleanup_runtime_showcase(client)
   DEMO_FLAG_IDS.each do |flag_id|
-    manage.flags.delete(flag_id)
+    client.flags.delete(flag_id)
   rescue Smplkit::NotFoundError
     next
   end

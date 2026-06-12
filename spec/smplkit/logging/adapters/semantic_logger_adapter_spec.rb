@@ -76,30 +76,40 @@ RSpec.describe Smplkit::Logging::Adapters::SemanticLoggerAdapter do
 end
 
 RSpec.describe Smplkit::Logging::LoggingClient do
-  subject(:client) do
-    described_class.new(parent, manage: management, metrics: nil,
-                                logging_base_url: "https://logging.smplkit.test",
-                                app_base_url: "https://app.smplkit.test")
-  end
+  subject(:client) { described_class.new(parent: parent, transport: transport, metrics: nil) }
 
-  let(:loggers_ns) do
-    instance_double(Smplkit::ManagementClient::LoggersNamespace,
-                    register: nil, get: nil, list: [], delete: true,
-                    flush: nil, list_logger_entries: {})
+  let(:base_url) { "https://logging.smplkit.test" }
+  let(:tcfg) do
+    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+      api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
+    )
   end
-  let(:groups_ns) do
-    instance_double(Smplkit::ManagementClient::LogGroupsNamespace, list_group_entries: {})
-  end
-  let(:management) do
-    instance_double(Smplkit::ManagementClient, loggers: loggers_ns, log_groups: groups_ns)
-  end
+  let(:transport) { Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Logging, "logging", tcfg) }
   let(:ws) { Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
-  let(:parent) { double(_service: "svc", _environment: "stg", _ensure_ws: ws) }
+  let(:parent) do
+    double(_service: "svc", _environment: "stg", _ensure_started: nil, _ensure_ws: ws)
+  end
 
-  it "auto-loads adapters when install runs without explicit registration" do
+  after { client.close }
+
+  # Minimal install wiring: empty loggers/groups, empty bulk.
+  def stub_install
+    stub_request(:post, "#{base_url}/api/v1/loggers/bulk")
+      .to_return(status: 200, body: "{}", headers: { "Content-Type" => "application/vnd.api+json" })
+    %w[loggers log_groups].each do |path|
+      stub_request(:get, "#{base_url}/api/v1/#{path}")
+        .with(query: hash_including({}))
+        .to_return(status: 200,
+                   body: { "data" => [], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }.to_json,
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+    end
+  end
+
+  it "auto-loads adapters (including semantic-logger) when install runs without explicit registration" do
+    stub_install
     client.install
     names = client.adapters.map(&:name)
-    expect(names).to include("stdlib-logger")
+    expect(names).to include("stdlib-logger", "semantic-logger")
   end
 
   it "register_adapter appends a custom adapter" do
@@ -119,14 +129,18 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     expect { client.register_adapter(Object.new) }.to raise_error(ArgumentError)
   end
 
-  it "on_change captures a global listener" do
+  it "on_change (after install) captures a global listener" do
+    stub_install
+    client.install
     block = ->(_e) {}
     client.on_change(&block)
     expect(client.instance_variable_get(:@global_listeners)).to include(block)
   end
 
-  it "on_change with a name normalizes and scopes to that key" do
-    client.on_change("App/Database") {}
+  it "on_change (after install) scopes a named listener to that key verbatim (no normalization)" do
+    stub_install
+    client.install
+    client.on_change("app.database") {}
     keyed = client.instance_variable_get(:@key_listeners)
     expect(keyed.keys).to include("app.database")
   end

@@ -34,7 +34,7 @@ module Smplkit
     )
 
     ResolvedManagementConfig = Struct.new(
-      :api_key, :base_domain, :scheme, :debug,
+      :api_key, :base_domain, :scheme, :debug, :extra_headers,
       keyword_init: true
     )
 
@@ -136,16 +136,22 @@ module Smplkit
       }
       ctor.each { |k, v| resolved[k] = v unless v.nil? }
 
-      missing_required(resolved, "environment", active_profile)
-      missing_required(resolved, "service", active_profile)
+      # Validate required fields.
+      #
+      # +environment+ and +service+ are OPTIONAL: an audit-only or jobs-only
+      # customer needs neither, and when +environment+ is absent the server
+      # derives it from the API key (the key can be scoped to an environment).
+      # config/flags/logging simply send no environment signal when it's unset.
+      # +api_key+ remains required.
       missing_required(resolved, "api_key", active_profile)
 
       ResolvedConfig.new(
         api_key: resolved["api_key"].to_s,
         base_domain: resolved["base_domain"].to_s,
         scheme: resolved["scheme"].to_s,
-        environment: resolved["environment"].to_s,
-        service: resolved["service"].to_s,
+        # Preserve nil rather than coercing to the literal string "".
+        environment: resolved["environment"]&.to_s,
+        service: resolved["service"]&.to_s,
         debug: resolved["debug"] ? true : false,
         telemetry: resolved["telemetry"] ? true : false
       )
