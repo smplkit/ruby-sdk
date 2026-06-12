@@ -772,11 +772,13 @@ module Smplkit
       def trigger_background_flush_if_needed
         return unless @buffer.pending_count >= CONFIG_BATCH_FLUSH_SIZE
 
-        Thread.new do
-          flush
-        rescue StandardError => e
-          Smplkit.debug("registration", "threshold config flush failed: #{e.class}: #{e.message}")
-        end
+        Thread.new { threshold_flush }
+      end
+
+      def threshold_flush
+        flush
+      rescue StandardError => e
+        Smplkit.debug("registration", "threshold config flush failed: #{e.class}: #{e.message}")
       end
 
       # ----------------------------------------------------------------

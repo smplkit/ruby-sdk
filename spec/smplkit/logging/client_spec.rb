@@ -870,17 +870,9 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       expect(bulk).to have_been_requested
     end
 
-    it "swallows an error raised by the threshold background flush" do
+    it "threshold_flush swallows an error raised by the flush" do
       allow(logging.loggers).to receive(:flush).and_raise(StandardError, "threshold boom")
-      threads_before = Thread.list.dup
-      expect do
-        Smplkit::LOGGER_BATCH_FLUSH_SIZE.times do |i|
-          logging.loggers.register(
-            Smplkit::LoggerSource.new(name: "logger.#{i}", resolved_level: Smplkit::LogLevel::INFO)
-          )
-        end
-        (Thread.list - threads_before).each { |t| t.join(2) }
-      end.not_to raise_error
+      expect { logging.loggers.send(:threshold_flush) }.not_to raise_error
     end
 
     it "list_logger_entries returns an id-keyed resolution-cache hash" do

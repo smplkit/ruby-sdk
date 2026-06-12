@@ -477,16 +477,16 @@ RSpec.describe Smplkit::Config::ConfigClient do
       expect(bulk).to have_been_requested
     end
 
-    it "swallows an error raised by the threshold background flush" do
-      # The spawned flush raises; the thread's rescue must keep it from crashing.
+    it "threshold_flush delegates to flush on the happy path" do
+      allow(config).to receive(:flush)
+      config.send(:threshold_flush)
+      expect(config).to have_received(:flush)
+    end
+
+    it "threshold_flush swallows an error raised by the flush" do
+      # The spawned flush raises; the rescue must keep the thread from crashing.
       allow(config).to receive(:flush).and_raise(StandardError, "threshold boom")
-      threads_before = Thread.list.dup
-      expect do
-        Smplkit::CONFIG_BATCH_FLUSH_SIZE.times do |i|
-          config.register_config("cfg#{i}", service: "svc", environment: "staging")
-        end
-        (Thread.list - threads_before).each { |t| t.join(2) }
-      end.not_to raise_error
+      expect { config.send(:threshold_flush) }.not_to raise_error
     end
   end
 
