@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Audit
       @api_client = api_client
     end
     # Get Event
-    # Retrieve a single audit event by id.  Authorized against the caller's permitted environment set: the event is returned only if its environment is one the caller may access, otherwise `404` (the same response as a non-existent id, so existence never leaks across environments). The `X-Smplkit-Environment` header is ignored here — a single-object lookup names the object by id, it does not resolve an ambient environment.
+    # Retrieve a single audit event by id.  Authorized against the caller's permitted environment set: the event is returned only if its environment is one the caller may access, otherwise `404` (the same response as a non-existent id, so existence never leaks across environments). A single-object lookup names the object by id; it does not resolve a target environment.
     # @param event_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [EventResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Get Event
-    # Retrieve a single audit event by id.  Authorized against the caller&#39;s permitted environment set: the event is returned only if its environment is one the caller may access, otherwise &#x60;404&#x60; (the same response as a non-existent id, so existence never leaks across environments). The &#x60;X-Smplkit-Environment&#x60; header is ignored here — a single-object lookup names the object by id, it does not resolve an ambient environment.
+    # Retrieve a single audit event by id.  Authorized against the caller&#39;s permitted environment set: the event is returned only if its environment is one the caller may access, otherwise &#x60;404&#x60; (the same response as a non-existent id, so existence never leaks across environments). A single-object lookup names the object by id; it does not resolve a target environment.
     # @param event_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(EventResponse, Integer, Hash)>] EventResponse data, response status code and response headers
@@ -197,7 +197,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Record Event
-    # Record an audit event for this account.  The event is stamped with the environment it occurred in: a single-environment credential implies it; a multi-environment or unrestricted credential must send the `X-Smplkit-Environment` header. The resolved environment must exist and be managed for the account.  Returns `201 Created` on first write, `200 OK` if the request was a duplicate (matched by `Idempotency-Key` or a key derived from the event's content). The same content recorded in two environments produces two distinct events.  `resource_type` values beginning with `smpl.` are reserved for events that smplkit emits about its own resources and cannot be used here.
+    # Record an audit event for this account.  The event is stamped with the environment it occurred in. Name the target environment in the request body's `environment` field; omit it and a single-environment credential implies it, while a multi-environment or unrestricted credential must name it. The named environment must be one the caller may access and must exist and be managed for the account.  Returns `201 Created` on first write, `200 OK` if the request was a duplicate (matched by `Idempotency-Key` or a key derived from the event's content). The same content recorded in two environments produces two distinct events.  `resource_type` values beginning with `smpl.` are reserved for events that smplkit emits about its own resources and cannot be used here.
     # @param event_request [EventRequest] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :idempotency_key 
@@ -208,7 +208,7 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Record Event
-    # Record an audit event for this account.  The event is stamped with the environment it occurred in: a single-environment credential implies it; a multi-environment or unrestricted credential must send the &#x60;X-Smplkit-Environment&#x60; header. The resolved environment must exist and be managed for the account.  Returns &#x60;201 Created&#x60; on first write, &#x60;200 OK&#x60; if the request was a duplicate (matched by &#x60;Idempotency-Key&#x60; or a key derived from the event&#39;s content). The same content recorded in two environments produces two distinct events.  &#x60;resource_type&#x60; values beginning with &#x60;smpl.&#x60; are reserved for events that smplkit emits about its own resources and cannot be used here.
+    # Record an audit event for this account.  The event is stamped with the environment it occurred in. Name the target environment in the request body&#39;s &#x60;environment&#x60; field; omit it and a single-environment credential implies it, while a multi-environment or unrestricted credential must name it. The named environment must be one the caller may access and must exist and be managed for the account.  Returns &#x60;201 Created&#x60; on first write, &#x60;200 OK&#x60; if the request was a duplicate (matched by &#x60;Idempotency-Key&#x60; or a key derived from the event&#39;s content). The same content recorded in two environments produces two distinct events.  &#x60;resource_type&#x60; values beginning with &#x60;smpl.&#x60; are reserved for events that smplkit emits about its own resources and cannot be used here.
     # @param event_request [EventRequest] 
     # @param [Hash] opts the optional parameters
     # @option opts [String] :idempotency_key 

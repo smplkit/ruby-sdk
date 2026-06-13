@@ -14,7 +14,7 @@ All URIs are relative to *http://localhost*
 
 Create Export
 
-Mint a short-lived signed URL to stream an events download.  The request body specifies `format` (`CSV` or `JSONL`) and any subset of the event filters accepted by `GET /api/v1/events`. The response returns the signed URL plus its expiry (30 seconds from mint). Open the URL in a browser to stream the file to disk; no `Authorization` header is required at download time.  Filter rules match `GET /api/v1/events`: `filter[resource_id]` requires `filter[resource_type]`; `filter[search]` requires either `filter[occurred_at]` or `filter[resource_type]` + `filter[resource_id]`. Violations are rejected here at mint time.  Reads are allowed on lapsed subscriptions per the smplcore convention — same gate as the events list.
+Mint a short-lived signed URL to stream an events download.  The request body specifies `format` (`CSV` or `JSONL`) and any subset of the event filters accepted by `GET /api/v1/events`. An export is scoped to a single environment: name it in the body's `environment` field, or omit it and a single-environment credential implies it (a multi-environment credential must name it). The response returns the signed URL plus its expiry (30 seconds from mint). Open the URL in a browser to stream the file to disk; no `Authorization` header is required at download time.  Filter rules match `GET /api/v1/events`: `filter[resource_id]` requires `filter[resource_type]`; `filter[search]` requires either `filter[occurred_at]` or `filter[resource_type]` + `filter[resource_id]`. Violations are rejected here at mint time.  Reads are allowed on lapsed subscriptions per the smplcore convention — same gate as the events list.
 
 ### Examples
 

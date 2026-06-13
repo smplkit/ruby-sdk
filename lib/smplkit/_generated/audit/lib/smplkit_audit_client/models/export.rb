@@ -19,6 +19,9 @@ module SmplkitGeneratedClient::Audit
     # Output format for the download. `CSV` writes one row per event with the event payload (`data`) serialized as a JSON-encoded cell. `JSONL` writes one JSON object per line with `data` preserved as a nested object.
     attr_accessor :format
 
+    # The single environment the export is scoped to. Omit it and a single-environment credential implies it (a multi-environment credential must name it), and a named environment must be one the caller may access. An export always covers exactly one environment.
+    attr_accessor :environment
+
     # Date range using interval notation, e.g. `[2026-04-01T00:00:00Z,2026-04-15T00:00:00Z)`.
     attr_accessor :filter_occurred_at
 
@@ -75,6 +78,7 @@ module SmplkitGeneratedClient::Audit
     def self.attribute_map
       {
         :'format' => :'format',
+        :'environment' => :'environment',
         :'filter_occurred_at' => :'filter[occurred_at]',
         :'filter_actor_type' => :'filter[actor_type]',
         :'filter_actor_id' => :'filter[actor_id]',
@@ -102,6 +106,7 @@ module SmplkitGeneratedClient::Audit
     def self.openapi_types
       {
         :'format' => :'String',
+        :'environment' => :'String',
         :'filter_occurred_at' => :'String',
         :'filter_actor_type' => :'String',
         :'filter_actor_id' => :'String',
@@ -118,6 +123,7 @@ module SmplkitGeneratedClient::Audit
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'environment',
         :'filter_occurred_at',
         :'filter_actor_type',
         :'filter_actor_id',
@@ -151,6 +157,10 @@ module SmplkitGeneratedClient::Audit
         self.format = attributes[:'format']
       else
         self.format = nil
+      end
+
+      if attributes.key?(:'environment')
+        self.environment = attributes[:'environment']
       end
 
       if attributes.key?(:'filter_occurred_at')
@@ -232,6 +242,7 @@ module SmplkitGeneratedClient::Audit
       return true if self.equal?(o)
       self.class == o.class &&
           format == o.format &&
+          environment == o.environment &&
           filter_occurred_at == o.filter_occurred_at &&
           filter_actor_type == o.filter_actor_type &&
           filter_actor_id == o.filter_actor_id &&
@@ -253,7 +264,7 @@ module SmplkitGeneratedClient::Audit
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [format, filter_occurred_at, filter_actor_type, filter_actor_id, filter_event_type, filter_resource_type, filter_resource_id, filter_search, filter_do_not_forward, url, expires_at].hash
+      [format, environment, filter_occurred_at, filter_actor_type, filter_actor_id, filter_event_type, filter_resource_type, filter_resource_id, filter_search, filter_do_not_forward, url, expires_at].hash
     end
 
     # Builds the object from hash
