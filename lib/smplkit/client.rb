@@ -124,9 +124,11 @@ module Smplkit
       # borrows the shared logging transport and WebSocket. The two management
       # sub-clients live at client.logging.loggers / client.logging.log_groups.
       @logging = Logging::LoggingClient.new(parent: self, transport: @transports.logging_http, metrics: @metrics)
-      # Audit's full surface on one client; this runtime instance carries the
-      # configured environment as ``X-Smplkit-Environment`` and owns its own
-      # transport (closed in ``close``).
+      # Audit's full surface on one client; this runtime instance scopes audit
+      # ops to the configured environment via the body-driven path (ADR-055):
+      # ``events.record`` stamps it on the event body and the read surfaces
+      # default ``filter[environment]`` to it. Owns its own transport (closed in
+      # ``close``).
       @audit = Audit::AuditClient.new(
         api_key: cfg.api_key, base_url: audit_url, environment: cfg.environment, extra_headers: extra_headers
       )

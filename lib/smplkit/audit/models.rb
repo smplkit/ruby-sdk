@@ -79,6 +79,28 @@ module Smplkit
       values.empty? ? nil : values.join(",")
     end
 
+    # Resolve the +filter[environment]+ value for a read surface.
+    #
+    # An explicit, non-empty +environments+ list always wins and is comma-joined
+    # via {join_environments}. Otherwise the client's configured +default+
+    # environment scopes the read — the body-driven replacement for the old
+    # per-request +X-Smplkit-Environment+ header (ADR-055), which previously
+    # scoped every read to the client's environment. A client with no configured
+    # environment and no explicit list returns +nil+ so the caller omits the
+    # query param and the credential's own scoping applies server-side.
+    #
+    # @param environments [Array<String>, String, nil] Explicit per-call
+    #   environment filter; an empty/blank value falls through to +default+.
+    # @param default [String, nil] The client's configured environment.
+    # @return [String, nil] The +filter[environment]+ value, or +nil+ to omit it.
+    # @api private
+    def self.resolve_environment_filter(environments, default)
+      joined = join_environments(environments)
+      return joined unless joined.nil?
+
+      default
+    end
+
     # Supported SIEM forwarder destination types.
     #
     # Members are declared in alphabetical order. Customers pass these
@@ -204,7 +226,7 @@ module Smplkit
     #     Read-only and always present on reads — the audit service resolves it
     #     when the event is recorded (from a single-environment credential, or
     #     from the runtime SDK's configured environment, which the SDK sends on
-    #     every recording call). Never set on the recording request body.
+    #     the recording request body).
     AuditEvent = Struct.new(
       :id, :event_type, :resource_type, :resource_id,
       :occurred_at, :created_at,

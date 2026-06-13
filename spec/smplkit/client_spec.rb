@@ -60,10 +60,16 @@ RSpec.describe Smplkit::Client do
       client.close
     end
 
-    it "wires the resolved environment into the runtime audit client header (ADR-055)" do
+    it "wires the resolved environment into the runtime audit sub-clients (ADR-055)" do
       with_client do |client|
+        # Body-driven scoping: the env travels on the record body and as the
+        # default filter[environment] on reads, not as a transport header.
         api_client = client.audit.events.instance_variable_get(:@api).api_client
-        expect(api_client.default_headers["X-Smplkit-Environment"]).to eq("staging")
+        expect(api_client.default_headers).not_to have_key("X-Smplkit-Environment")
+        expect(client.audit.events.instance_variable_get(:@environment)).to eq("staging")
+        expect(client.audit.resource_types.instance_variable_get(:@environment)).to eq("staging")
+        expect(client.audit.event_types.instance_variable_get(:@environment)).to eq("staging")
+        expect(client.audit.categories.instance_variable_get(:@environment)).to eq("staging")
       end
     end
 

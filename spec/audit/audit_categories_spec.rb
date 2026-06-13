@@ -143,5 +143,35 @@ RSpec.describe Smplkit::Audit::Categories do
       client.categories.list(environments: ["smplkit"])
       expect(captured_uri).to include("filter%5Benvironment%5D=smplkit")
     end
+
+    it "defaults filter[environment] to the configured environment (ADR-055)" do
+      captured_uri = nil
+      stub_capture do |req|
+        captured_uri = req.uri.to_s
+        true
+      end
+      scoped = Smplkit::Audit::AuditClient.new(api_key: api_key, base_url: base_url, environment: "production")
+      begin
+        scoped.categories.list
+      ensure
+        scoped._close
+      end
+      expect(captured_uri).to include("filter%5Benvironment%5D=production")
+    end
+
+    it "lets an explicit environments arg override the configured environment" do
+      captured_uri = nil
+      stub_capture do |req|
+        captured_uri = req.uri.to_s
+        true
+      end
+      scoped = Smplkit::Audit::AuditClient.new(api_key: api_key, base_url: base_url, environment: "production")
+      begin
+        scoped.categories.list(environments: ["staging"])
+      ensure
+        scoped._close
+      end
+      expect(captured_uri).to include("filter%5Benvironment%5D=staging")
+    end
   end
 end

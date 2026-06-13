@@ -8,16 +8,19 @@ module Smplkit
     # Response time is independent of how many years of events the account has
     # accumulated. Sorted alphabetically; offset paginated.
     class Categories
-      def initialize(api)
+      def initialize(api, environment: nil)
         @api = api
+        @environment = environment
       end
 
       # List the distinct +category+ values seen in the account.
       #
       # +environments+ scopes the listing to a set of environments: pass an
       # array of environment keys and/or the reserved +"smplkit"+ control-plane
-      # bucket; the values are comma-joined into +filter[environment]+. Omitting
-      # it (or passing an empty array) leaves the filter off entirely.
+      # bucket; the values are comma-joined into +filter[environment]+. Omit it
+      # (the default) to scope the listing to the client's configured
+      # environment; with no configured environment the filter is left off
+      # entirely.
       #
       # @param page_number [Integer, nil] 1-based page index. Omit for the first
       #   page.
@@ -28,7 +31,8 @@ module Smplkit
       #   count server-side). Omit to skip it.
       # @param environments [Array<String>, nil] Environment keys and/or the
       #   reserved +"smplkit"+ control-plane bucket to scope the listing to. Omit
-      #   to leave the filter off entirely.
+      #   to fall back to the client's configured environment; with no configured
+      #   environment the filter is left off entirely.
       # @return [Smplkit::Audit::CategoryListPage] A page of the matching
       #   category values.
       def list(page_number: nil, page_size: nil, meta_total: nil, environments: nil)
@@ -36,8 +40,8 @@ module Smplkit
         opts[:page_number] = page_number if page_number
         opts[:page_size] = page_size if page_size
         opts[:meta_total] = meta_total unless meta_total.nil?
-        joined_environments = Smplkit::Audit.join_environments(environments)
-        opts[:filter_environment] = joined_environments if joined_environments
+        resolved_environment = Smplkit::Audit.resolve_environment_filter(environments, @environment)
+        opts[:filter_environment] = resolved_environment if resolved_environment
 
         resp = Smplkit::Audit.call_api { @api.list_categories(opts) }
         rows = (resp.data || []).map { |r| Category.from_resource(r) }

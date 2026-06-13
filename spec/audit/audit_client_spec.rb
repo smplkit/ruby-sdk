@@ -591,18 +591,62 @@ RSpec.describe Smplkit::Audit::AuditClient do
   end
 
   describe "environment scoping (ADR-055)" do
-    it "stamps X-Smplkit-Environment from the configured environment on every audit call" do
+    # Record a single event and return the parsed request body. The audit
+    # service moved environment resolution off the dead X-Smplkit-Environment
+    # header onto the request body, so the SDK stamps it there now.
+    def capture_record_body(client)
+      captured = nil
+      stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: event_response_body,
+                    headers: { "Content-Type" => "application/vnd.api+json" })
+      client.events.record(event_type: "user.created", resource_type: "user", resource_id: "u-1")
+      client.events.flush(timeout: 2.0)
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+      until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+            || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+        sleep 0.02
+      end
+      captured
+    end
+
+    # Capture the request URI of one events.list read.
+    def capture_events_list_uri(client, **args)
+      captured_uri = nil
+      stub_request(:get, %r{#{Regexp.escape(base_url)}/api/v1/events})
+        .with do |req|
+          captured_uri = req.uri.to_s
+          true
+        end
+        .to_return(status: 200, body: { data: [], meta: { page_size: 50 } }.to_json,
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+      client.events.list(**args)
+      captured_uri
+    end
+
+    it "stamps the configured environment onto the record request body" do
       client = described_class.new(api_key: api_key, base_url: base_url, environment: "production")
       begin
-        api_client = client.events.instance_variable_get(:@api).api_client
-        expect(api_client.default_headers["X-Smplkit-Environment"]).to eq("production")
+        captured = capture_record_body(client)
+        expect(captured.dig("data", "attributes", "environment")).to eq("production")
       ensure
         client._close
       end
     end
 
-    it "omits X-Smplkit-Environment when no environment is configured" do
+    it "omits environment from the record body when none is configured" do
       client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        captured = capture_record_body(client)
+        expect(captured.dig("data", "attributes")).not_to have_key("environment")
+      ensure
+        client._close
+      end
+    end
+
+    it "no longer stamps an X-Smplkit-Environment header on the transport" do
+      client = described_class.new(api_key: api_key, base_url: base_url, environment: "production")
       begin
         api_client = client.events.instance_variable_get(:@api).api_client
         expect(api_client.default_headers).not_to have_key("X-Smplkit-Environment")
@@ -611,34 +655,22 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
 
-    it "lets an explicit extra_headers entry override the configured environment" do
-      client = described_class.new(
-        api_key: api_key, base_url: base_url, environment: "production",
-        extra_headers: { "X-Smplkit-Environment" => "staging" }
-      )
+    it "defaults filter[environment] on a list read to the configured environment" do
+      client = described_class.new(api_key: api_key, base_url: base_url, environment: "production")
       begin
-        api_client = client.events.instance_variable_get(:@api).api_client
-        expect(api_client.default_headers["X-Smplkit-Environment"]).to eq("staging")
+        expect(capture_events_list_uri(client, page_size: 1))
+          .to include("filter%5Benvironment%5D=production")
       ensure
         client._close
       end
     end
 
-    it "sends the environment header on the wire for a record call" do
-      stub = stub_request(:post, "#{base_url}/api/v1/events")
-             .with(headers: { "X-Smplkit-Environment" => "production" })
-             .to_return(status: 201, body: event_response_body,
-                        headers: { "Content-Type" => "application/vnd.api+json" })
+    it "lets an explicit environments arg override the configured environment on a list read" do
       client = described_class.new(api_key: api_key, base_url: base_url, environment: "production")
       begin
-        client.events.record(event_type: "user.created", resource_type: "user", resource_id: "u-1")
-        client.events.flush(timeout: 2.0)
-        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
-        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
-              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
-          sleep 0.02
-        end
-        expect(stub).to have_been_requested.at_least_once
+        uri = capture_events_list_uri(client, environments: ["staging"])
+        expect(uri).to include("filter%5Benvironment%5D=staging")
+        expect(uri).not_to include("production")
       ensure
         client._close
       end
@@ -670,6 +702,27 @@ RSpec.describe Smplkit::Audit::AuditClient do
     it "passes the reserved smplkit bucket through unchanged" do
       expect(Smplkit::Audit.join_environments(%w[smplkit production]))
         .to eq("smplkit,production")
+    end
+  end
+
+  describe ".resolve_environment_filter" do
+    it "comma-joins an explicit non-empty list, ignoring the default" do
+      expect(Smplkit::Audit.resolve_environment_filter(%w[production staging], "dev"))
+        .to eq("production,staging")
+    end
+
+    it "falls back to the default when the list is nil" do
+      expect(Smplkit::Audit.resolve_environment_filter(nil, "production")).to eq("production")
+    end
+
+    it "falls back to the default when the list is empty or all-blank" do
+      expect(Smplkit::Audit.resolve_environment_filter([], "production")).to eq("production")
+      expect(Smplkit::Audit.resolve_environment_filter(["  "], "production")).to eq("production")
+    end
+
+    it "returns nil when neither a list nor a default is given" do
+      expect(Smplkit::Audit.resolve_environment_filter(nil, nil)).to be_nil
+      expect(Smplkit::Audit.resolve_environment_filter([], nil)).to be_nil
     end
   end
 

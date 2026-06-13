@@ -9,8 +9,9 @@ module Smplkit
     # +flush: true+ to block until the event is durable before continuing.
     # +#list+ and +#get+ are synchronous reads.
     class Events
-      def initialize(api)
+      def initialize(api, environment: nil)
         @api = api
+        @environment = environment
         @buffer = EventBuffer.new(api)
       end
 
@@ -105,6 +106,13 @@ module Smplkit
           data: data || {},
           do_not_forward: do_not_forward
         )
+        # Stamp the client's configured environment onto the event body — the
+        # body-driven replacement for the old +X-Smplkit-Environment+ header
+        # (ADR-055). Left off when nil so a single-environment credential
+        # resolves it server-side. Assigning conditionally (rather than passing
+        # +environment: nil+ through the constructor) keeps the field out of the
+        # serialized body entirely when unconfigured.
+        attrs.environment = @environment unless @environment.nil?
         resource = SmplkitGeneratedClient::Audit::EventResource.new(
           id: "",
           type: "event",
@@ -141,6 +149,13 @@ module Smplkit
       # +occurred_at_range+, or with both +resource_type+ and +resource_id+ —
       # or the request is rejected.
       #
+      # +environments+ scopes the read to a set of environments: pass an array
+      # of environment keys and/or the reserved +"smplkit"+ control-plane
+      # bucket; the values are sent comma-separated as +filter[environment]+.
+      # Omit it (the default) to scope the read to the client's configured
+      # environment; with no configured environment the filter is left off
+      # entirely.
+      #
       # @param event_type [String, nil] Return only events with this
       #   +event_type+. Omit to match any.
       # @param resource_type [String, nil] Return only events about this
@@ -160,7 +175,8 @@ module Smplkit
       #   or the request is rejected. Omit to disable text filtering.
       # @param environments [Array<String>, nil] Environment keys (and/or the
       #   reserved +"smplkit"+ control-plane bucket) to scope the read to. Omit
-      #   to leave the filter off entirely.
+      #   to fall back to the client's configured environment; with no configured
+      #   environment the filter is left off entirely.
       # @param page_size [Integer, nil] Maximum number of events to return in
       #   this page.
       # @param page_after [String, nil] Opaque cursor from a previous page's
@@ -183,8 +199,8 @@ module Smplkit
         opts[:filter_actor_id] = actor_id if actor_id
         opts[:filter_occurred_at] = occurred_at_range if occurred_at_range
         opts[:filter_search] = search if search
-        joined_environments = Smplkit::Audit.join_environments(environments)
-        opts[:filter_environment] = joined_environments if joined_environments
+        resolved_environment = Smplkit::Audit.resolve_environment_filter(environments, @environment)
+        opts[:filter_environment] = resolved_environment if resolved_environment
         opts[:page_size] = page_size if page_size
         opts[:page_after] = page_after if page_after
 
