@@ -82,9 +82,10 @@ describe 'ForwardersApi' do
 
   # unit tests for list_forwarder_deliveries
   # List Forwarder Deliveries
-  # List delivery log entries for a forwarder.  Scoped to the resolved environment — only that environment&#39;s deliveries for the forwarder are shown. Default sort is &#x60;-created_at&#x60; (newest first). Filter by &#x60;status&#x60; (&#x60;SUCCEEDED&#x60; or &#x60;FAILED&#x60;, case-insensitive), by &#x60;event&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
+  # List delivery log entries for a forwarder.  Scoped by environment. Pass &#x60;filter[environment]&#x60; as a comma-separated list of environment keys to restrict results to that subset of the environments you can access; omit it to cover every environment you can access. Default sort is &#x60;-created_at&#x60; (newest first). Filter by &#x60;status&#x60; (&#x60;SUCCEEDED&#x60; or &#x60;FAILED&#x60;, case-insensitive), by &#x60;event&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
+  # @option opts [String] :filter_environment Comma-separated list of environment keys to scope deliveries to (e.g. &#x60;production,staging&#x60;). When omitted, results cover every environment you can access. The reserved value &#x60;smplkit&#x60; selects deliveries of platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402.
   # @option opts [String] :filter_status 
   # @option opts [String] :filter_created_at 
   # @option opts [String] :filter_event 
@@ -116,9 +117,10 @@ describe 'ForwardersApi' do
 
   # unit tests for retry_failed_forwarder_deliveries
   # Retry Failed Forwarder Deliveries
-  # Retry every failed delivery for this forwarder in the resolved environment.  Scoped to the resolved environment (a single-environment credential implies it; otherwise send the &#x60;X-Smplkit-Environment&#x60; header): only that environment&#39;s failed deliveries are re-attempted, each using the forwarder&#39;s effective configuration for that environment and the original event. Returns the counts.
+  # Retry every failed delivery for this forwarder in the target environment.  Targets a single environment: name it in the request body&#39;s &#x60;environment&#x60; field, or omit it and a single-environment credential implies it (a multi-environment credential must name it). Only that environment&#39;s failed deliveries are re-attempted, each using the forwarder&#39;s effective configuration for that environment and the original event. Returns the counts.
   # @param forwarder_id 
   # @param [Hash] opts the optional parameters
+  # @option opts [RetryFailedDeliveriesRequest] :retry_failed_deliveries_request 
   # @return [RetryFailedDeliveriesSummary]
   describe 'retry_failed_forwarder_deliveries test' do
     it 'should work' do

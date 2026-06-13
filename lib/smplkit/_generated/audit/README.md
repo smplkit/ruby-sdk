@@ -169,6 +169,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::ResourceTypeAttributes](docs/ResourceTypeAttributes.md)
  - [SmplkitGeneratedClient::Audit::ResourceTypeListResponse](docs/ResourceTypeListResponse.md)
  - [SmplkitGeneratedClient::Audit::ResourceTypeResource](docs/ResourceTypeResource.md)
+ - [SmplkitGeneratedClient::Audit::RetryFailedDeliveriesRequest](docs/RetryFailedDeliveriesRequest.md)
  - [SmplkitGeneratedClient::Audit::RetryFailedDeliveriesSummary](docs/RetryFailedDeliveriesSummary.md)
  - [SmplkitGeneratedClient::Audit::Severity](docs/Severity.md)
  - [SmplkitGeneratedClient::Audit::TestForwarderRequest](docs/TestForwarderRequest.md)

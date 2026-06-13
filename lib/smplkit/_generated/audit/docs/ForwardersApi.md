@@ -296,7 +296,7 @@ end
 
 List Forwarder Deliveries
 
-List delivery log entries for a forwarder.  Scoped to the resolved environment — only that environment's deliveries for the forwarder are shown. Default sort is `-created_at` (newest first). Filter by `status` (`SUCCEEDED` or `FAILED`, case-insensitive), by `event`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
+List delivery log entries for a forwarder.  Scoped by environment. Pass `filter[environment]` as a comma-separated list of environment keys to restrict results to that subset of the environments you can access; omit it to cover every environment you can access. Default sort is `-created_at` (newest first). Filter by `status` (`SUCCEEDED` or `FAILED`, case-insensitive), by `event`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
 
 ### Examples
 
@@ -312,6 +312,7 @@ end
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
 forwarder_id = 'forwarder_id_example' # String | 
 opts = {
+  filter_environment: 'filter_environment_example', # String | Comma-separated list of environment keys to scope deliveries to (e.g. `production,staging`). When omitted, results cover every environment you can access. The reserved value `smplkit` selects deliveries of platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402.
   filter_status: 'filter_status_example', # String | 
   filter_created_at: 'filter_created_at_example', # String | 
   filter_event: 'filter_event_example', # String | 
@@ -352,6 +353,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **forwarder_id** | **String** |  |  |
+| **filter_environment** | **String** | Comma-separated list of environment keys to scope deliveries to (e.g. &#x60;production,staging&#x60;). When omitted, results cover every environment you can access. The reserved value &#x60;smplkit&#x60; selects deliveries of platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402. | [optional] |
 | **filter_status** | **String** |  | [optional] |
 | **filter_created_at** | **String** |  | [optional] |
 | **filter_event** | **String** |  | [optional] |
@@ -454,11 +456,11 @@ end
 
 ## retry_failed_forwarder_deliveries
 
-> <RetryFailedDeliveriesSummary> retry_failed_forwarder_deliveries(forwarder_id)
+> <RetryFailedDeliveriesSummary> retry_failed_forwarder_deliveries(forwarder_id, opts)
 
 Retry Failed Forwarder Deliveries
 
-Retry every failed delivery for this forwarder in the resolved environment.  Scoped to the resolved environment (a single-environment credential implies it; otherwise send the `X-Smplkit-Environment` header): only that environment's failed deliveries are re-attempted, each using the forwarder's effective configuration for that environment and the original event. Returns the counts.
+Retry every failed delivery for this forwarder in the target environment.  Targets a single environment: name it in the request body's `environment` field, or omit it and a single-environment credential implies it (a multi-environment credential must name it). Only that environment's failed deliveries are re-attempted, each using the forwarder's effective configuration for that environment and the original event. Returns the counts.
 
 ### Examples
 
@@ -473,10 +475,13 @@ end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
 forwarder_id = 'forwarder_id_example' # String | 
+opts = {
+  retry_failed_deliveries_request: SmplkitGeneratedClient::Audit::RetryFailedDeliveriesRequest.new # RetryFailedDeliveriesRequest | 
+}
 
 begin
   # Retry Failed Forwarder Deliveries
-  result = api_instance.retry_failed_forwarder_deliveries(forwarder_id)
+  result = api_instance.retry_failed_forwarder_deliveries(forwarder_id, opts)
   p result
 rescue SmplkitGeneratedClient::Audit::ApiError => e
   puts "Error when calling ForwardersApi->retry_failed_forwarder_deliveries: #{e}"
@@ -487,12 +492,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<RetryFailedDeliveriesSummary>, Integer, Hash)> retry_failed_forwarder_deliveries_with_http_info(forwarder_id)
+> <Array(<RetryFailedDeliveriesSummary>, Integer, Hash)> retry_failed_forwarder_deliveries_with_http_info(forwarder_id, opts)
 
 ```ruby
 begin
   # Retry Failed Forwarder Deliveries
-  data, status_code, headers = api_instance.retry_failed_forwarder_deliveries_with_http_info(forwarder_id)
+  data, status_code, headers = api_instance.retry_failed_forwarder_deliveries_with_http_info(forwarder_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <RetryFailedDeliveriesSummary>
@@ -506,6 +511,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **forwarder_id** | **String** |  |  |
+| **retry_failed_deliveries_request** | [**RetryFailedDeliveriesRequest**](RetryFailedDeliveriesRequest.md) |  | [optional] |
 
 ### Return type
 
@@ -517,8 +523,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/vnd.api+json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 
 ## retry_forwarder_delivery

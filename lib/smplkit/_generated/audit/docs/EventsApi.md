@@ -16,7 +16,7 @@ All URIs are relative to *http://localhost*
 
 Get Event
 
-Retrieve a single audit event by id.  Authorized against the caller's permitted environment set: the event is returned only if its environment is one the caller may access, otherwise `404` (the same response as a non-existent id, so existence never leaks across environments). The `X-Smplkit-Environment` header is ignored here — a single-object lookup names the object by id, it does not resolve an ambient environment.
+Retrieve a single audit event by id.  Authorized against the caller's permitted environment set: the event is returned only if its environment is one the caller may access, otherwise `404` (the same response as a non-existent id, so existence never leaks across environments). A single-object lookup names the object by id; it does not resolve a target environment.
 
 ### Examples
 
@@ -184,7 +184,7 @@ end
 
 Record Event
 
-Record an audit event for this account.  The event is stamped with the environment it occurred in: a single-environment credential implies it; a multi-environment or unrestricted credential must send the `X-Smplkit-Environment` header. The resolved environment must exist and be managed for the account.  Returns `201 Created` on first write, `200 OK` if the request was a duplicate (matched by `Idempotency-Key` or a key derived from the event's content). The same content recorded in two environments produces two distinct events.  `resource_type` values beginning with `smpl.` are reserved for events that smplkit emits about its own resources and cannot be used here.
+Record an audit event for this account.  The event is stamped with the environment it occurred in. Name the target environment in the request body's `environment` field; omit it and a single-environment credential implies it, while a multi-environment or unrestricted credential must name it. The named environment must be one the caller may access and must exist and be managed for the account.  Returns `201 Created` on first write, `200 OK` if the request was a duplicate (matched by `Idempotency-Key` or a key derived from the event's content). The same content recorded in two environments produces two distinct events.  `resource_type` values beginning with `smpl.` are reserved for events that smplkit emits about its own resources and cannot be used here.
 
 ### Examples
 

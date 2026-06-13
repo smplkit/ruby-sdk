@@ -52,7 +52,7 @@ module SmplkitGeneratedClient::Audit
     # When `true`, the event is recorded but not delivered to any forwarder, and no delivery log entries are created for it.
     attr_accessor :do_not_forward
 
-    # The environment the event occurred in. Always present on read. Resolved when the event is recorded — from a single-environment credential, or the `X-Smplkit-Environment` header for multi-environment credentials — and never set on the request body. The same content recorded in two environments produces two distinct events.
+    # The environment the event occurred in. On write, optionally names the target environment: omit it and a single-environment credential implies it (a multi-environment credential must name it), and a named environment must be one the caller may access. Always present on read as the resolved environment. The same content recorded in two environments produces two distinct events.
     attr_accessor :environment
 
     # When the event was received and recorded.

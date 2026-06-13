@@ -280,9 +280,10 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarder Deliveries
-    # List delivery log entries for a forwarder.  Scoped to the resolved environment — only that environment's deliveries for the forwarder are shown. Default sort is `-created_at` (newest first). Filter by `status` (`SUCCEEDED` or `FAILED`, case-insensitive), by `event`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
+    # List delivery log entries for a forwarder.  Scoped by environment. Pass `filter[environment]` as a comma-separated list of environment keys to restrict results to that subset of the environments you can access; omit it to cover every environment you can access. Default sort is `-created_at` (newest first). Filter by `status` (`SUCCEEDED` or `FAILED`, case-insensitive), by `event`, or by a `created_at` range using interval notation (e.g. `[2026-01-01T00:00:00Z,*)`).
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :filter_environment Comma-separated list of environment keys to scope deliveries to (e.g. &#x60;production,staging&#x60;). When omitted, results cover every environment you can access. The reserved value &#x60;smplkit&#x60; selects deliveries of platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402.
     # @option opts [String] :filter_status 
     # @option opts [String] :filter_created_at 
     # @option opts [String] :filter_event 
@@ -296,9 +297,10 @@ module SmplkitGeneratedClient::Audit
     end
 
     # List Forwarder Deliveries
-    # List delivery log entries for a forwarder.  Scoped to the resolved environment — only that environment&#39;s deliveries for the forwarder are shown. Default sort is &#x60;-created_at&#x60; (newest first). Filter by &#x60;status&#x60; (&#x60;SUCCEEDED&#x60; or &#x60;FAILED&#x60;, case-insensitive), by &#x60;event&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
+    # List delivery log entries for a forwarder.  Scoped by environment. Pass &#x60;filter[environment]&#x60; as a comma-separated list of environment keys to restrict results to that subset of the environments you can access; omit it to cover every environment you can access. Default sort is &#x60;-created_at&#x60; (newest first). Filter by &#x60;status&#x60; (&#x60;SUCCEEDED&#x60; or &#x60;FAILED&#x60;, case-insensitive), by &#x60;event&#x60;, or by a &#x60;created_at&#x60; range using interval notation (e.g. &#x60;[2026-01-01T00:00:00Z,*)&#x60;).
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :filter_environment Comma-separated list of environment keys to scope deliveries to (e.g. &#x60;production,staging&#x60;). When omitted, results cover every environment you can access. The reserved value &#x60;smplkit&#x60; selects deliveries of platform change events smplkit records about your own resources; it is included by default when your plan grants change history, and requesting it explicitly without that entitlement returns 402.
     # @option opts [String] :filter_status 
     # @option opts [String] :filter_created_at 
     # @option opts [String] :filter_event 
@@ -327,6 +329,7 @@ module SmplkitGeneratedClient::Audit
 
       # query parameters
       query_params = opts[:query_params] || {}
+      query_params[:'filter[environment]'] = opts[:'filter_environment'] if !opts[:'filter_environment'].nil?
       query_params[:'filter[status]'] = opts[:'filter_status'] if !opts[:'filter_status'].nil?
       query_params[:'filter[created_at]'] = opts[:'filter_created_at'] if !opts[:'filter_created_at'].nil?
       query_params[:'filter[event]'] = opts[:'filter_event'] if !opts[:'filter_event'].nil?
@@ -445,9 +448,10 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Retry Failed Forwarder Deliveries
-    # Retry every failed delivery for this forwarder in the resolved environment.  Scoped to the resolved environment (a single-environment credential implies it; otherwise send the `X-Smplkit-Environment` header): only that environment's failed deliveries are re-attempted, each using the forwarder's effective configuration for that environment and the original event. Returns the counts.
+    # Retry every failed delivery for this forwarder in the target environment.  Targets a single environment: name it in the request body's `environment` field, or omit it and a single-environment credential implies it (a multi-environment credential must name it). Only that environment's failed deliveries are re-attempted, each using the forwarder's effective configuration for that environment and the original event. Returns the counts.
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [RetryFailedDeliveriesRequest] :retry_failed_deliveries_request 
     # @return [RetryFailedDeliveriesSummary]
     def retry_failed_forwarder_deliveries(forwarder_id, opts = {})
       data, _status_code, _headers = retry_failed_forwarder_deliveries_with_http_info(forwarder_id, opts)
@@ -455,9 +459,10 @@ module SmplkitGeneratedClient::Audit
     end
 
     # Retry Failed Forwarder Deliveries
-    # Retry every failed delivery for this forwarder in the resolved environment.  Scoped to the resolved environment (a single-environment credential implies it; otherwise send the &#x60;X-Smplkit-Environment&#x60; header): only that environment&#39;s failed deliveries are re-attempted, each using the forwarder&#39;s effective configuration for that environment and the original event. Returns the counts.
+    # Retry every failed delivery for this forwarder in the target environment.  Targets a single environment: name it in the request body&#39;s &#x60;environment&#x60; field, or omit it and a single-environment credential implies it (a multi-environment credential must name it). Only that environment&#39;s failed deliveries are re-attempted, each using the forwarder&#39;s effective configuration for that environment and the original event. Returns the counts.
     # @param forwarder_id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [RetryFailedDeliveriesRequest] :retry_failed_deliveries_request 
     # @return [Array<(RetryFailedDeliveriesSummary, Integer, Hash)>] RetryFailedDeliveriesSummary data, response status code and response headers
     def retry_failed_forwarder_deliveries_with_http_info(forwarder_id, opts = {})
       if @api_client.config.debugging
@@ -476,13 +481,18 @@ module SmplkitGeneratedClient::Audit
       # header parameters
       header_params = opts[:header_params] || {}
       # HTTP header 'Accept' (if needed)
-      header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
 
       # form parameters
       form_params = opts[:form_params] || {}
 
       # http body (model)
-      post_body = opts[:debug_body]
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(opts[:'retry_failed_deliveries_request'])
 
       # return_type
       return_type = opts[:debug_return_type] || 'RetryFailedDeliveriesSummary'

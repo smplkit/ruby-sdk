@@ -66,6 +66,7 @@ docs/ResourceTypeAttributes.md
 docs/ResourceTypeListResponse.md
 docs/ResourceTypeResource.md
 docs/ResourceTypesApi.md
+docs/RetryFailedDeliveriesRequest.md
 docs/RetryFailedDeliveriesSummary.md
 docs/Severity.md
 docs/TestForwarderRequest.md
@@ -140,6 +141,7 @@ lib/smplkit_audit_client/models/pagination_meta.rb
 lib/smplkit_audit_client/models/resource_type_attributes.rb
 lib/smplkit_audit_client/models/resource_type_list_response.rb
 lib/smplkit_audit_client/models/resource_type_resource.rb
+lib/smplkit_audit_client/models/retry_failed_deliveries_request.rb
 lib/smplkit_audit_client/models/retry_failed_deliveries_summary.rb
 lib/smplkit_audit_client/models/severity.rb
 lib/smplkit_audit_client/models/test_forwarder_request.rb
@@ -209,6 +211,7 @@ spec/models/pagination_meta_spec.rb
 spec/models/resource_type_attributes_spec.rb
 spec/models/resource_type_list_response_spec.rb
 spec/models/resource_type_resource_spec.rb
+spec/models/retry_failed_deliveries_request_spec.rb
 spec/models/retry_failed_deliveries_summary_spec.rb
 spec/models/severity_spec.rb
 spec/models/test_forwarder_request_spec.rb
