@@ -241,23 +241,24 @@ module Smplkit
 
       # Append a constrained value to the flag's values list. Call +save+ to persist.
       #
-      # @param flag_value [FlagValue] the value entry to allow the flag to serve.
+      # @param name [String] human-readable label for the value entry.
+      # @param value [Object] the value to allow the flag to serve.
       # @return [self] this flag, so calls can be chained.
-      def add_value(flag_value)
+      def add_value(name, value)
         @values ||= []
-        @values << flag_value
+        @values << FlagValue.new(name: name, value: value)
         self
       end
 
-      # Remove the first values entry whose +name+ matches.
+      # Remove the first values entry whose +value+ matches.
       #
-      # @param name [String] the value-entry name to remove; the first match is
-      #   removed and others are left in place.
+      # @param value [Object] the value to remove. Entries are matched on their
+      #   +value+ field; the first match is removed and others are left in place.
       # @return [self] this flag, so calls can be chained.
-      def remove_value(name)
+      def remove_value(value)
         return self unless @values
 
-        @values = @values.reject { |v| v.name == name }
+        @values = @values.reject { |v| v.value == value }
         self
       end
 

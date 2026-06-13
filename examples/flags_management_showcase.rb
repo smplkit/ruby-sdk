@@ -101,7 +101,7 @@ Smplkit::Client.open do |client|
   puts "  production enabled: #{prod_enabled}"
 
   # update a flag
-  banner_flag.add_value(Smplkit::FlagValue.new(name: "Purple", value: "purple"))
+  banner_flag.add_value("Purple", "purple")
   banner_flag.default = "blue"
   banner_flag.description = "Controls the banner color — updated"
   banner_flag.add_rule(

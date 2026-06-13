@@ -231,6 +231,65 @@ RSpec.describe Smplkit::Audit::AuditClient do
     end
   end
 
+  describe "#events.record flush:" do
+    it "blocks until the buffer drains before returning" do
+      stub = stub_request(:post, "#{base_url}/api/v1/events").to_return(
+        status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        # flush: true is a deterministic barrier — record returns only after
+        # the worker thread has drained the buffer (POSTed the event), so the
+        # request is already recorded with no polling loop.
+        client.events.record(
+          event_type: "user.created", resource_type: "user", resource_id: "u-1",
+          flush: true
+        )
+        expect(stub).to have_been_requested.once
+      ensure
+        client._close
+      end
+    end
+
+    it "passes flush_timeout through to the buffer flush" do
+      stub_request(:post, "#{base_url}/api/v1/events").to_return(
+        status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        buffer = client.events.instance_variable_get(:@buffer)
+        allow(buffer).to receive(:flush).and_call_original
+        client.events.record(
+          event_type: "user.created", resource_type: "user", resource_id: "u-1",
+          flush: true, flush_timeout: 1.5
+        )
+        # Assert before _close, whose teardown drain calls flush(timeout: 5.0).
+        expect(buffer).to have_received(:flush).with(timeout: 1.5)
+      ensure
+        client._close
+      end
+    end
+
+    it "does not flush when flush is false (the default) and returns nil" do
+      stub_request(:post, "#{base_url}/api/v1/events").to_return(
+        status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        buffer = client.events.instance_variable_get(:@buffer)
+        allow(buffer).to receive(:flush).and_call_original
+        result = client.events.record(
+          event_type: "user.created", resource_type: "user", resource_id: "u-1"
+        )
+        expect(result).to be_nil
+        # record itself must not flush; only _close's teardown drain does.
+        expect(buffer).not_to have_received(:flush)
+      ensure
+        client._close
+      end
+    end
+  end
+
   describe "#events.get" do
     it "round-trips a single event" do
       event_id = "11111111-2222-3333-4444-555555555555"
@@ -611,6 +670,44 @@ RSpec.describe Smplkit::Audit::AuditClient do
     it "passes the reserved smplkit bucket through unchanged" do
       expect(Smplkit::Audit.join_environments(%w[smplkit production]))
         .to eq("smplkit,production")
+    end
+  end
+
+  describe "standalone construction" do
+    # Explicit api_key + base_domain + scheme are ctor args, which take
+    # precedence over ~/.smplkit / env vars in the resolver, so these assertions
+    # are hermetic regardless of the ambient config file (verified under an
+    # empty HOME for CI parity).
+    it "derives the audit base URL from base_domain/scheme when base_url is omitted" do
+      client = described_class.new(api_key: api_key, base_domain: "example.test", scheme: "http")
+      begin
+        config = client.events.instance_variable_get(:@api).api_client.config
+        expect(config.scheme).to eq("http")
+        expect(config.host).to eq("audit.example.test")
+      ensure
+        client._close
+      end
+    end
+
+    it "applies debug to the generated configuration" do
+      client = described_class.new(api_key: api_key, base_domain: "example.test", debug: true)
+      begin
+        config = client.events.instance_variable_get(:@api).api_client.config
+        expect(config.debugging).to be(true)
+      ensure
+        client._close
+      end
+    end
+
+    it "is reachable through the top-level Smplkit::AuditClient alias" do
+      expect(Smplkit::AuditClient).to be(described_class)
+      client = Smplkit::AuditClient.new(api_key: api_key, base_domain: "example.test")
+      begin
+        config = client.events.instance_variable_get(:@api).api_client.config
+        expect(config.host).to eq("audit.example.test")
+      ensure
+        client._close
+      end
     end
   end
 end

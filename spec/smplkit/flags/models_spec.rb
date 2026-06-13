@@ -55,14 +55,37 @@ RSpec.describe Smplkit::Flags::Flag do
   end
 
   describe "#add_value / #remove_value / #clear_values" do
-    it "manages values" do
-      flag.add_value(Smplkit::FlagValue.new(name: "Red", value: "red"))
-      flag.add_value(Smplkit::FlagValue.new(name: "Blue", value: "blue"))
-      expect(flag.values.map(&:name)).to eq(%w[Red Blue])
-      flag.remove_value("Red")
-      expect(flag.values.map(&:name)).to eq(["Blue"])
+    it "builds a FlagValue from (name, value) and appends it" do
+      flag.add_value("Red", "red")
+      flag.add_value("Blue", "blue")
+      values = flag.values
+      expect(values).to all(be_a(Smplkit::FlagValue))
+      expect(values.map(&:name)).to eq(%w[Red Blue])
+      expect(values.map(&:value)).to eq(%w[red blue])
+    end
+
+    it "removes the entry matching by value, not by name" do
+      flag.add_value("Red", "red")
+      flag.add_value("Blue", "blue")
+      flag.remove_value("red")
+      expect(flag.values.map(&:value)).to eq(["blue"])
+    end
+
+    it "is a no-op when removing from an unconstrained flag" do
+      expect(flag.values).to be_nil
+      expect(flag.remove_value("red")).to be(flag)
+      expect(flag.values).to be_nil
+    end
+
+    it "clears all constrained values" do
+      flag.add_value("Red", "red")
       flag.clear_values
       expect(flag.values).to eq([])
+    end
+
+    it "returns self for chaining" do
+      expect(flag.add_value("Red", "red")).to be(flag)
+      expect(flag.remove_value("red")).to be(flag)
     end
   end
 
