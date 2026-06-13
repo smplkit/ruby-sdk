@@ -258,7 +258,8 @@ module Smplkit
       def remove_value(value)
         return self unless @values
 
-        @values = @values.reject { |v| v.value == value }
+        idx = @values.find_index { |v| v.value == value }
+        @values.delete_at(idx) if idx
         self
       end
 

@@ -71,6 +71,22 @@ RSpec.describe Smplkit::Flags::Flag do
       expect(flag.values.map(&:value)).to eq(["blue"])
     end
 
+    it "removes only the first of several entries with the same value" do
+      flag.add_value("Red", "red")
+      flag.add_value("Crimson", "red")
+      flag.add_value("Blue", "blue")
+      flag.remove_value("red")
+      # Only the first "red" entry is removed; the later duplicate survives.
+      expect(flag.values.map(&:name)).to eq(%w[Crimson Blue])
+      expect(flag.values.map(&:value)).to eq(%w[red blue])
+    end
+
+    it "is a no-op when no entry matches the value" do
+      flag.add_value("Red", "red")
+      flag.remove_value("green")
+      expect(flag.values.map(&:value)).to eq(["red"])
+    end
+
     it "is a no-op when removing from an unconstrained flag" do
       expect(flag.values).to be_nil
       expect(flag.remove_value("red")).to be(flag)
