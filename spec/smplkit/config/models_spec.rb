@@ -23,11 +23,19 @@ RSpec.describe Smplkit::Config::Config do
     expect(config.environments["staging"].values["api.host"]).to eq("stg.example.com")
   end
 
-  it "remove_item drops the item" do
+  it "remove drops the item" do
     config.set_string("a", "1")
     config.set_string("b", "2")
-    config.remove_item("a")
+    config.remove("a")
     expect(config.items.map(&:name)).to eq(["b"])
+  end
+
+  it "set adds (and replaces) a ConfigItem, and sets a raw env override" do
+    config.set(Smplkit::Config::ConfigItem.new(name: "a", value: "1", type: Smplkit::Config::ItemType::STRING))
+    expect(config.items.first.value).to eq("1")
+    config.set(Smplkit::Config::ConfigItem.new(name: "a", value: "2", type: Smplkit::Config::ItemType::STRING),
+               environment: "staging")
+    expect(config.environments["staging"].values["a"]).to eq("2")
   end
 
   it "set_number, set_boolean and set_json add typed items" do
@@ -42,15 +50,15 @@ RSpec.describe Smplkit::Config::Config do
     )
   end
 
-  it "remove_item with environment drops only the per-environment override" do
+  it "remove with environment drops only the per-environment override" do
     config.set_string("a", "stg-a", environment: "staging")
     config.set_string("b", "stg-b", environment: "staging")
-    config.remove_item("a", environment: "staging")
+    config.remove("a", environment: "staging")
     expect(config.environments["staging"].values).to eq("b" => "stg-b")
   end
 
-  it "remove_item with an unknown environment is a no-op" do
-    expect { config.remove_item("a", environment: "nope") }.not_to raise_error
+  it "remove with an unknown environment is a no-op" do
+    expect { config.remove("a", environment: "nope") }.not_to raise_error
   end
 
   it "raises on save without a client" do

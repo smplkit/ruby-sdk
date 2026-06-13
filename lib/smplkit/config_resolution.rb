@@ -4,6 +4,8 @@ require_relative "errors"
 
 module Smplkit
   # SDK configuration resolution: defaults -> file -> env vars -> constructor args.
+  #
+  # @api private
   module ConfigResolution
     CONFIG_KEYS = {
       "api_key" => "SMPLKIT_API_KEY",
@@ -33,7 +35,7 @@ module Smplkit
       keyword_init: true
     )
 
-    ResolvedManagementConfig = Struct.new(
+    ResolvedClientConfig = Struct.new(
       :api_key, :base_domain, :scheme, :debug, :extra_headers,
       keyword_init: true
     )
@@ -157,8 +159,8 @@ module Smplkit
       )
     end
 
-    def resolve_management_config(profile: nil, api_key: nil, base_domain: nil,
-                                  scheme: nil, debug: nil, home_dir: nil)
+    def resolve_client_config(profile: nil, api_key: nil, base_domain: nil,
+                              scheme: nil, debug: nil, home_dir: nil)
       resolved = {
         "api_key" => nil,
         "base_domain" => "smplkit.com",
@@ -191,7 +193,7 @@ module Smplkit
 
       missing_required(resolved, "api_key", active_profile)
 
-      ResolvedManagementConfig.new(
+      ResolvedClientConfig.new(
         api_key: resolved["api_key"].to_s,
         base_domain: resolved["base_domain"].to_s,
         scheme: resolved["scheme"].to_s,

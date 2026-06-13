@@ -21,6 +21,8 @@ module Smplkit
     #
     # Accepts both pre-built +LoggerEnvironment+ instances and the wire-shaped
     # +{env_id => {"level" => "ERROR"}}+ dicts.
+    #
+    # @api private
     def self.convert_environments(value)
       return {} if value.nil? || value.empty?
 
@@ -29,6 +31,7 @@ module Smplkit
       end
     end
 
+    # @api private
     def self.build_logger_environment(env_data)
       return env_data if env_data.is_a?(LoggerEnvironment)
       return LoggerEnvironment.new unless env_data.is_a?(Hash)
@@ -45,6 +48,8 @@ module Smplkit
 
     # Convert a typed environments dict to the wire-shaped dict for sending.
     # Entries with +level=nil+ are skipped (no override to send).
+    #
+    # @api private
     def self.environments_to_wire(environments)
       environments.each_with_object({}) do |(env_id, env), out|
         out[env_id] = { "level" => env.level.to_s } unless env.level.nil?
@@ -85,6 +90,9 @@ module Smplkit
         @updated_at = updated_at
       end
 
+      # Whether the SDK applies server-driven level changes to this logger.
+      #
+      # @return [Boolean] +true+ when smplkit controls this logger's level.
       def managed? = !!@managed
 
       # Read-only view of per-environment level overrides. Mutate via
@@ -125,6 +133,10 @@ module Smplkit
         @environments = {}
       end
 
+      # Persist this logger to the server (create or update).
+      #
+      # @return [self] this logger, refreshed from the server response.
+      # @raise [RuntimeError] If the logger was constructed without a client.
       def save
         raise "SmplLogger was constructed without a client; cannot save" if @client.nil?
 
@@ -134,6 +146,11 @@ module Smplkit
       end
       alias save! save
 
+      # Delete this logger from the server.
+      #
+      # @return [void]
+      # @raise [RuntimeError] If the logger was constructed without a client.
+      # @raise [Smplkit::NotFoundError] If the logger no longer exists.
       def delete
         raise "SmplLogger was constructed without a client; cannot delete" if @client.nil?
 
@@ -141,6 +158,7 @@ module Smplkit
       end
       alias delete! delete
 
+      # @api private
       def _apply(other)
         @id = other.id
         @name = other.name
@@ -160,11 +178,11 @@ module Smplkit
     # A log group resource — a hierarchical bag of loggers with a shared
     # configured level.
     class SmplLogGroup
-      attr_accessor :id, :key, :name, :level, :description, :parent_id, :environments,
+      attr_accessor :id, :key, :name, :level, :description, :group,
                     :created_at, :updated_at
 
       def initialize(client = nil, key:, id: nil, name: nil, level: nil,
-                     description: nil, parent_id: nil, environments: nil,
+                     description: nil, group: nil, environments: nil,
                      created_at: nil, updated_at: nil)
         @client = client
         @id = id
@@ -172,12 +190,54 @@ module Smplkit
         @name = name
         @level = level
         @description = description
-        @parent_id = parent_id
-        @environments = environments || {}
+        @group = group
+        @environments = Logging.convert_environments(environments)
         @created_at = created_at
         @updated_at = updated_at
       end
 
+      # Read-only view of per-environment level overrides. Mutate via
+      # +set_level+ / +clear_level+ (with +environment: "..."+).
+      def environments
+        @environments.dup
+      end
+
+      # Set the log level.
+      #
+      # With +environment: nil+ (the default), sets the base log level used when
+      # no environment-specific override applies. With +environment: "..."+,
+      # sets the per-environment override. Changes are local until +save+.
+      def set_level(level, environment: nil)
+        if environment.nil?
+          @level = level
+        else
+          @environments[environment] = LoggerEnvironment.new(level: level)
+        end
+      end
+
+      # Remove a log level.
+      #
+      # With +environment: nil+ (the default), removes the base log level (the
+      # group then inherits from its parent group / ancestor / system default).
+      # With +environment: "..."+, removes the per-environment override only.
+      # Changes are local until +save+.
+      def clear_level(environment: nil)
+        if environment.nil?
+          @level = nil
+        else
+          @environments.delete(environment)
+        end
+      end
+
+      # Remove all per-environment level overrides.
+      def clear_all_environment_levels
+        @environments = {}
+      end
+
+      # Persist this group to the server (create or update).
+      #
+      # @return [self] this group, refreshed from the server response.
+      # @raise [RuntimeError] If the group was constructed without a client.
       def save
         raise "SmplLogGroup was constructed without a client; cannot save" if @client.nil?
 
@@ -192,6 +252,11 @@ module Smplkit
       end
       alias save! save
 
+      # Delete this group from the server.
+      #
+      # @return [void]
+      # @raise [RuntimeError] If the group was constructed without a client.
+      # @raise [Smplkit::NotFoundError] If the group no longer exists.
       def delete
         raise "SmplLogGroup was constructed without a client; cannot delete" if @client.nil?
 
@@ -199,13 +264,14 @@ module Smplkit
       end
       alias delete! delete
 
+      # @api private
       def _apply(other)
         @id = other.id
         @key = other.key
         @name = other.name
         @level = other.level
         @description = other.description
-        @parent_id = other.parent_id
+        @group = other.group
         @environments = other.environments
         @created_at = other.created_at
         @updated_at = other.updated_at

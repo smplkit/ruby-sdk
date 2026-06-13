@@ -2,6 +2,9 @@
 
 module Smplkit
   module Logging
+    # Resource-to-model conversion helpers for the logging wrapper.
+    #
+    # @api private
     module Helpers
       module_function
 
@@ -33,7 +36,7 @@ module Smplkit
           name: attrs["name"],
           level: attrs["level"] && LogLevel.coerce(attrs["level"]),
           description: attrs["description"],
-          parent_id: attrs["parent_id"],
+          group: attrs["parent_id"],
           environments: attrs["environments"] || {},
           created_at: attrs["created_at"],
           updated_at: attrs["updated_at"]

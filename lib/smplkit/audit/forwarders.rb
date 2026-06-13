@@ -34,8 +34,9 @@ module Smplkit
       # @param name [String] Display name. Defaults to +id+ when not supplied.
       # @param forwarder_type [String] One of {Smplkit::Audit::ForwarderType::VALUES}.
       # @param configuration [Smplkit::Audit::HttpConfiguration] Destination
-      #   request configuration. Headers carry credentials and are encrypted at
-      #   rest server-side; reads return them redacted.
+      #   request configuration. Header values often carry credentials and are
+      #   returned in plaintext on reads, so a get-mutate-put round-trip
+      #   preserves them without re-entering secrets.
       # @param environments [Hash{String => Smplkit::Audit::ForwarderEnvironment, Hash}, nil]
       #   Per-environment overrides keyed by environment key (e.g.
       #   +"production"+). A forwarder delivers in an environment only when that
@@ -85,12 +86,19 @@ module Smplkit
 
       # List forwarders for the authenticated account.
       #
-      # Offset paginated per ADR-014: pass +page_number+ (1-based) and
-      # +page_size+ (default 1000, max 1000). Pass +meta_total: true+ to populate
-      # +total+ and +total_pages+ in the returned +pagination+ block (costs an
-      # extra COUNT query server-side).
+      # Offset paginated: pass +page_number+ (1-based) and +page_size+
+      # (default 1000, max 1000).
       #
-      # @return [ForwarderListPage]
+      # @param forwarder_type [String, nil] Restrict the listing to forwarders of
+      #   this {Smplkit::Audit::ForwarderType}. Omit to list every type.
+      # @param page_number [Integer, nil] 1-based page index. Omit for the first
+      #   page.
+      # @param page_size [Integer, nil] Maximum number of forwarders to return in
+      #   this page (default 1000, max 1000).
+      # @param meta_total [Boolean, nil] When +true+, populate +total+ and
+      #   +total_pages+ in the returned page's +pagination+ block (costs an extra
+      #   count server-side). Omit to skip it.
+      # @return [ForwarderListPage] A page of the matching forwarders.
       def list(forwarder_type: nil, page_number: nil, page_size: nil, meta_total: nil)
         opts = {}
         opts[:filter_forwarder_type] = ForwarderType.coerce(forwarder_type) if forwarder_type
@@ -104,16 +112,19 @@ module Smplkit
       end
 
       # Fetch a single forwarder by id. The returned instance is bound to this
-      # client, so +forwarder.save+ and +forwarder.delete+ work.
+      # client, so +forwarder.save+ and +forwarder.delete+ work. Header values
+      # come back in plaintext, so mutating the returned forwarder and calling
+      # +save+ preserves them without re-entering secrets.
       #
-      # @param forwarder_id [String]
-      # @return [Smplkit::Audit::Forwarder]
+      # @param forwarder_id [String] The forwarder's id (key).
+      # @return [Smplkit::Audit::Forwarder] The matching forwarder, bound to this client.
+      # @raise [Smplkit::NotFoundError] If no live forwarder with that id exists.
       def get(forwarder_id)
         resp = Audit.call_api { @api.get_forwarder(forwarder_id) }
         Forwarder.from_resource(resp.data, client: self)
       end
 
-      # Soft-delete a forwarder.
+      # Delete a forwarder.
       #
       # @param forwarder_id [String]
       # @return [nil]
@@ -136,9 +147,9 @@ module Smplkit
       # @api private — Full-replace PUT for an existing forwarder. Called by
       #   {Smplkit::Audit::Forwarder#save} on instances with +created_at+.
       #
-      # Header values must be re-supplied as plaintext; the GET path redacts
-      # them, so a PUT body containing +"<redacted>"+ would persist that literal.
-      # Track real header values client-side and round-trip them.
+      # Header values come back in plaintext on the GET path, so a fetched
+      # forwarder round-trips through this full-replace PUT with its header
+      # values intact — no need to re-enter secrets.
       def _update_forwarder(forwarder)
         raise ArgumentError, "cannot update a Forwarder with no id" if forwarder.id.nil?
 
@@ -183,8 +194,8 @@ module Smplkit
       end
 
       def build_attrs(forwarder)
-        # The base ``enabled`` is server-pinned false (ADR-055); we don't send
-        # it. Enablement travels entirely through ``environments``.
+        # The base +enabled+ is server-pinned false; we don't send it.
+        # Enablement travels entirely through +environments+.
         SmplkitGeneratedClient::Audit::Forwarder.new(
           name: forwarder.name,
           description: forwarder.description,

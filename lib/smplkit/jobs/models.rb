@@ -1,15 +1,14 @@
 # frozen_string_literal: true
 
 module Smplkit
-  # Smpl Jobs surface — exposed through +mgmt.jobs.*+.
+  # Smpl Jobs surface — exposed through +client.jobs.*+.
   #
   # Unlike Config/Flags/Logging, Jobs has no live "phone-home" agent — no
-  # environment registration, no WebSocket — so its entire surface lives on
-  # the management client rather than a runtime client. A {Job} is an active
-  # record: build it with +mgmt.jobs.new(...)+, set fields, and call {Job#save}
-  # (create when new, full-replace update when it already exists) or
-  # {Job#delete}. Runs are read-only views; run actions live on
-  # +mgmt.jobs.runs+.
+  # environment registration, no WebSocket — so its entire surface lives on a
+  # single client. A {Job} is an active record: build it with
+  # +client.jobs.new(...)+, set fields, and call {Job#save} (create when new,
+  # full-replace update when it already exists) or {Job#delete}. Runs are
+  # read-only views; run actions live on +client.jobs.runs+.
   module Jobs
     # Wrap a generated-jobs-API call and translate +ApiError+ into the
     # +Smplkit::Error+ hierarchy. Connection-level failures (no response
@@ -29,7 +28,7 @@ module Smplkit
       raise
     end
 
-    # HTTP verb a job uses when it fires (ADR-049).
+    # HTTP verb a job uses when it fires.
     #
     # Mirrors the jobs spec's method enum so a job's
     # +configuration.method+ field is constrained to a known value instead
@@ -64,8 +63,8 @@ module Smplkit
     # @!attribute [rw] name
     #   @return [String] Header name (e.g. +"Authorization"+, +"Content-Type"+).
     # @!attribute [rw] value
-    #   @return [String] Header value, plaintext on writes. The jobs service
-    #     encrypts values at rest; reads return them redacted.
+    #   @return [String] Header value. Returned in plaintext on reads, so a
+    #     get-mutate-put round-trip preserves it without re-entering secrets.
     HttpHeader = Struct.new(:name, :value, keyword_init: true)
 
     # The HTTP request a job performs when it fires (the +http+ configuration).
@@ -79,7 +78,8 @@ module Smplkit
     #   @return [String] Destination URL the job requests on each run.
     # @!attribute [rw] headers
     #   @return [Array<HttpHeader>] Headers attached to every request. Values
-    #     are redacted on reads.
+    #     often carry credentials and are returned in plaintext on reads, so a
+    #     get-mutate-put round-trip preserves them without re-entering secrets.
     # @!attribute [rw] body
     #   @return [String, nil] Request body sent on each run. +nil+ (the default)
     #     sends an empty body, suitable for a connectivity ping. Sent verbatim —
@@ -118,6 +118,11 @@ module Smplkit
         )
       end
 
+      # @api private — Convert an {HttpConfig} (or a Hash with the same keys)
+      #   into the generated wire model the jobs service expects.
+      #
+      # @param src [HttpConfig, Hash] The HTTP configuration to serialize.
+      # @return [SmplkitGeneratedClient::Jobs::JobHttpConfiguration] The wire model.
       def self.to_wire(src)
         h = src.is_a?(Hash) ? new(**src) : src
         SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(
@@ -139,6 +144,13 @@ module Smplkit
         )
       end
 
+      # @api private — Build an {HttpConfig} from the generated wire model
+      #   returned by the jobs service. Header values arrive in plaintext, so a
+      #   round-trip back through {to_wire} preserves them.
+      #
+      # @param src [SmplkitGeneratedClient::Jobs::JobHttpConfiguration, nil] The
+      #   wire model, or +nil+ for an empty configuration.
+      # @return [HttpConfig] The wrapper-side configuration.
       def self.from_wire(src)
         return new if src.nil?
 
@@ -166,11 +178,11 @@ module Smplkit
 
     # A scheduled unit of work: an HTTP request run on a schedule.
     #
-    # Active-record style: instantiate via +mgmt.jobs.new(...)+, mutate fields
+    # Active-record style: instantiate via +client.jobs.new(...)+, mutate fields
     # directly, and call {#save} to persist or {#delete} to remove. Header
-    # values in +configuration.headers+ are returned redacted on reads —
-    # re-supply the real values before calling {#save}; the SDK does not cache
-    # them client-side.
+    # values in +configuration.headers+ are returned in plaintext on reads, so
+    # fetching a job, mutating it, and calling {#save} preserves its header
+    # values without re-entering secrets.
     class Job
       # @return [String] Caller-supplied unique identifier for the job (the
       #   resource +id+). Unique within the account and immutable; the service
@@ -214,7 +226,8 @@ module Smplkit
       # @return [String, nil] ISO-8601 timestamp of the most recent mutation.
       attr_accessor :updated_at
 
-      # @return [String, nil] Soft-delete timestamp. +nil+ for live jobs.
+      # @return [String, nil] Timestamp when the job was deleted; +nil+ for live
+      #   jobs.
       attr_accessor :deleted_at
 
       # @return [Integer, nil] Monotonic version counter, bumped on every
@@ -258,7 +271,7 @@ module Smplkit
       end
       alias save! save
 
-      # Soft-delete this job on the server.
+      # Delete this job on the server.
       #
       # @return [nil]
       def delete
@@ -285,6 +298,12 @@ module Smplkit
         @version = other.version
       end
 
+      # @api private — Build a {Job} from a JSON:API resource returned by the
+      #   jobs service, binding it to +client+ so {#save} and {#delete} work.
+      #
+      # @param resource [Object] The JSON:API resource (id + attributes).
+      # @param client [JobsClient, nil] Client to bind the job to.
+      # @return [Job] The hydrated job.
       def self.from_resource(resource, client: nil)
         a = resource.attributes
         new(
@@ -310,7 +329,7 @@ module Smplkit
     #
     # Runs are created and mutated by the jobs service, not by clients; clients
     # influence runs only through the +run+ / +cancel+ / +rerun+ actions on
-    # +mgmt.jobs+.
+    # +client.jobs+.
     #
     # @!attribute [rw] id
     #   @return [String] Server-assigned UUID for this run.
@@ -353,6 +372,11 @@ module Smplkit
       :total_duration_ms, :failure_reason, :error, :request, :result, :created_at,
       keyword_init: true
     ) do
+      # @api private — Build a {Run} from a JSON:API resource returned by the
+      #   jobs service.
+      #
+      # @param resource [Object] The JSON:API resource (id + attributes).
+      # @return [Run] The hydrated run.
       def self.from_resource(resource)
         a = resource.attributes
         new(
@@ -393,6 +417,11 @@ module Smplkit
       :period, :runs_used, :runs_included, :active_jobs, :active_jobs_limit,
       keyword_init: true
     ) do
+      # @api private — Build a {Usage} snapshot from a JSON:API resource
+      #   returned by the jobs service.
+      #
+      # @param resource [Object] The JSON:API resource (attributes).
+      # @return [Usage] The usage snapshot.
       def self.from_resource(resource)
         a = resource.attributes
         new(

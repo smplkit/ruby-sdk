@@ -23,14 +23,17 @@ module Smplkit
         @api = api
       end
 
-      # List runs for the authenticated account, newest first. Cursor paginated
-      # (ADR-014): pass +page_size+ and the +after+ cursor from the prior page.
-      # Pass +job+ to scope to a single job's history.
+      # List past runs, most recent first. Cursor paginated: pass +page_size+
+      # and the +after+ cursor from the prior page. Pass +job+ to scope to a
+      # single job's history.
       #
-      # @param job [String, nil] Filter to a single job's run history, by job id.
-      # @param page_size [Integer, nil] Items per page (cursor pagination).
-      # @param after [String, nil] Opaque cursor token from a prior page.
-      # @return [Array<Smplkit::Jobs::Run>]
+      # @param job [String, nil] Return only runs of the job with this id.
+      #   +nil+ lists runs across all jobs in the account.
+      # @param page_size [Integer, nil] Maximum number of runs to return in this
+      #   page. +nil+ uses the server default.
+      # @param after [String, nil] Opaque cursor from a previous page; returns
+      #   the runs that follow it. +nil+ starts from the first page.
+      # @return [Array<Smplkit::Jobs::Run>] The runs in this page.
       def list(job: nil, page_size: nil, after: nil)
         opts = {}
         opts[:filter_job] = job unless job.nil?
@@ -41,28 +44,30 @@ module Smplkit
         (resp.data || []).map { |r| Run.from_resource(r) }
       end
 
-      # Fetch a single run by id.
+      # Fetch a single run by its id.
       #
-      # @param run_id [String]
-      # @return [Smplkit::Jobs::Run]
+      # @param run_id [String] Identifier of the run to fetch.
+      # @return [Smplkit::Jobs::Run] The matching run.
+      # @raise [Smplkit::NotFoundError] when no run with this id exists.
       def get(run_id)
         resp = Jobs.call_api { @api.get_run(run_id) }
         Run.from_resource(resp.data)
       end
 
-      # Cancel a pending run.
+      # Cancel a run that has not finished yet.
       #
-      # @param run_id [String]
-      # @return [Smplkit::Jobs::Run]
+      # @param run_id [String] Identifier of the run to cancel.
+      # @return [Smplkit::Jobs::Run] The updated run reflecting the cancellation.
       def cancel(run_id)
         resp = Jobs.call_api { @api.cancel_run(run_id) }
         Run.from_resource(resp.data)
       end
 
-      # Re-run a prior run, spawning a new +RERUN+ run.
+      # Start a new run that repeats a previous one.
       #
-      # @param run_id [String]
-      # @return [Smplkit::Jobs::Run]
+      # @param run_id [String] Identifier of the run to repeat.
+      # @return [Smplkit::Jobs::Run] The new run, with +rerun_of+ set to the
+      #   source +run_id+.
       def rerun(run_id)
         resp = Jobs.call_api { @api.rerun_run(run_id) }
         Run.from_resource(resp.data)
@@ -88,13 +93,13 @@ module Smplkit
     # exactly like the top-level clients do. Smpl Jobs is JSON:API, so the
     # transport carries the +application/vnd.api+json+ Accept header.
     def self.jobs_transport(api_key:, profile:, base_domain:, scheme:, debug:, extra_headers:)
-      cfg = ConfigResolution.resolve_management_config(
+      cfg = ConfigResolution.resolve_client_config(
         profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
       )
       merged = {}
       merged.merge!(cfg.extra_headers || {})
       merged.merge!(extra_headers || {})
-      tcfg = ConfigResolution::ResolvedManagementConfig.new(
+      tcfg = ConfigResolution::ResolvedClientConfig.new(
         api_key: cfg.api_key, base_domain: cfg.base_domain, scheme: cfg.scheme,
         debug: cfg.debug, extra_headers: merged
       )
@@ -111,6 +116,17 @@ module Smplkit
       # @return [RunsClient] Run history and run actions (+client.jobs.runs+).
       attr_reader :runs
 
+      # @param api_key [String, nil] API key. When omitted, resolved from
+      #   +SMPLKIT_API_KEY+ or +~/.smplkit+.
+      # @param profile [String, nil] Named +~/.smplkit+ profile section.
+      # @param base_domain [String, nil] Base domain for API requests
+      #   (default +"smplkit.com"+).
+      # @param scheme [String, nil] URL scheme (default +"https"+).
+      # @param debug [Boolean, nil] Enable SDK debug logging.
+      # @param extra_headers [Hash, nil] Extra headers attached to every request.
+      # @param auth_client [Object, nil] Internal — a pre-built transport
+      #   supplied by a top-level client so the jobs surface shares one
+      #   connection pool. Not for direct use.
       def initialize(api_key = nil, profile: nil, base_domain: nil, scheme: nil,
                      debug: nil, extra_headers: nil, auth_client: nil)
         auth = auth_client || Jobs.jobs_transport(
@@ -194,19 +210,24 @@ module Smplkit
         Job.from_resource(resp.data, client: self)
       end
 
-      # Soft-delete a job.
+      # Delete a job by its id.
       #
-      # @param id [String]
+      # @param id [String] Identifier of the job to delete.
       # @return [nil]
       def delete(id)
         Jobs.call_api { @api.delete_job(id) }
         nil
       end
 
-      # Trigger one immediate +MANUAL+ run of the job.
+      # Trigger one immediate, manual run of a job, ignoring its schedule.
       #
-      # @param id [String]
-      # @return [Smplkit::Jobs::Run]
+      # This starts an ad-hoc run right now in addition to any scheduled runs;
+      # it does not alter the job's schedule. To read or act on existing runs,
+      # use +client.jobs.runs+.
+      #
+      # @param id [String] Identifier of the job to run.
+      # @return [Smplkit::Jobs::Run] The run that was started, with +trigger+
+      #   set to +MANUAL+.
       def run(id)
         resp = Jobs.call_api { @api.run_job_now(id) }
         Run.from_resource(resp.data)
@@ -233,9 +254,9 @@ module Smplkit
       # @api private — Full-replace PUT for an existing job. Called by
       #   {Smplkit::Jobs::Job#save} on instances with +created_at+.
       #
-      # Header values must be re-supplied as plaintext; the GET path redacts
-      # them, so a PUT body containing the redacted placeholder would persist
-      # that literal. Track real header values client-side and round-trip them.
+      # Header values come back in plaintext on the GET path, so a fetched job
+      # round-trips through this full-replace PUT with its header values intact
+      # — no need to re-enter secrets.
       def _update_job(job)
         raise ArgumentError, "cannot update a Job with no id" if job.id.nil?
 

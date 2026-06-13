@@ -80,7 +80,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
 
   let(:base_url) { "https://logging.smplkit.test" }
   let(:tcfg) do
-    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end

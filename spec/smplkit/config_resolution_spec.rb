@@ -121,23 +121,23 @@ RSpec.describe Smplkit::ConfigResolution do
     end
   end
 
-  describe ".resolve_management_config" do
+  describe ".resolve_client_config" do
     it "requires only api_key" do
-      cfg = described_class.resolve_management_config(api_key: "k", home_dir: @home_dir)
+      cfg = described_class.resolve_client_config(api_key: "k", home_dir: @home_dir)
       expect(cfg.api_key).to eq("k")
       expect(cfg.base_domain).to eq("smplkit.com")
     end
 
     it "errors without api_key" do
       expect do
-        described_class.resolve_management_config(home_dir: @home_dir)
+        described_class.resolve_client_config(home_dir: @home_dir)
       end.to raise_error(Smplkit::Error, /api_key/)
     end
 
     it "reads from env" do
       ENV["SMPLKIT_API_KEY"] = "envkey"
       ENV["SMPLKIT_DEBUG"] = "yes"
-      cfg = described_class.resolve_management_config(home_dir: @home_dir)
+      cfg = described_class.resolve_client_config(home_dir: @home_dir)
       expect(cfg.api_key).to eq("envkey")
       expect(cfg.debug).to be(true)
     end
@@ -150,7 +150,7 @@ RSpec.describe Smplkit::ConfigResolution do
         scheme = http
         debug = true
       INI
-      cfg = described_class.resolve_management_config(home_dir: @home_dir)
+      cfg = described_class.resolve_client_config(home_dir: @home_dir)
       expect(cfg.api_key).to eq("filekey")
       expect(cfg.base_domain).to eq("files.example")
       expect(cfg.scheme).to eq("http")

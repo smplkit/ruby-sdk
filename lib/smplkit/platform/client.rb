@@ -26,6 +26,8 @@
 module Smplkit
   module Platform
     # Resolve the two-arg or composite-id form to +[type, key]+.
+    #
+    # @api private
     def self.split_context_id(id_or_type, key)
       return [id_or_type, key] unless key.nil?
 
@@ -42,17 +44,19 @@ module Smplkit
     #
     # +base_url+/+api_key+ are used directly when supplied (the path the
     # top-level client takes after it has already resolved them); otherwise the
-    # management config resolver fills in whatever is missing (+~/.smplkit+ /
-    # env vars / defaults).
+    # config resolver fills in whatever is missing (+~/.smplkit+ / env vars /
+    # defaults).
+    #
+    # @api private
     def self.app_transport(api_key:, base_url:, profile:, base_domain:, scheme:, debug:, extra_headers:)
-      cfg = ConfigResolution.resolve_management_config(
+      cfg = ConfigResolution.resolve_client_config(
         profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
       )
       resolved_key = api_key.nil? ? cfg.api_key : api_key
       merged = {}
       merged.merge!(cfg.extra_headers || {})
       merged.merge!(extra_headers || {})
-      tcfg = ConfigResolution::ResolvedManagementConfig.new(
+      tcfg = ConfigResolution::ResolvedClientConfig.new(
         api_key: resolved_key, base_domain: cfg.base_domain, scheme: cfg.scheme,
         debug: cfg.debug, extra_headers: merged
       )
@@ -69,11 +73,28 @@ module Smplkit
         @api = SmplkitGeneratedClient::App::EnvironmentsApi.new(app_http)
       end
 
-      # Return an unsaved +Environment+. Call +.save+ to persist.
+      # Build an unsaved +Environment+; call +.save+ to persist it.
+      #
+      # @param id [String] Stable, human-readable identifier for the
+      #   environment (for example +"production"+).
+      # @param name [String] Display name shown in the Console.
+      # @param color [Color, String, nil] Accent color for the environment, as
+      #   a +Color+ or a CSS hex string. Defaults to no color.
+      # @param classification [String] Whether the environment participates in
+      #   the standard environment ordering. Defaults to
+      #   +EnvironmentClassification::STANDARD+.
+      # @return [Environment] An unsaved environment bound to this client.
       def new(id, name:, color: nil, classification: EnvironmentClassification::STANDARD)
         Environment.new(self, id: id, name: name, color: color, classification: classification)
       end
 
+      # List environments in the account.
+      #
+      # @param page_number [Integer, nil] 1-based page to fetch. Defaults to
+      #   the first page.
+      # @param page_size [Integer, nil] Maximum number of environments per
+      #   page. Defaults to the server's page size.
+      # @return [Array<Environment>] The environments on the requested page.
       def list(page_number: nil, page_size: nil)
         opts = {}
         opts[:page_number] = page_number unless page_number.nil?
@@ -82,21 +103,32 @@ module Smplkit
         (response.data || []).map { |r| from_resource(ApiSupport::ResourceShim.from_model(r)) }
       end
 
+      # Fetch a single environment by id.
+      #
+      # @param id [String] Identifier of the environment to fetch.
+      # @return [Environment] The matching environment.
+      # @raise [Smplkit::NotFoundError] If no environment with that id exists.
       def get(id)
         response = ApiSupport::ErrorMapping.call { @api.get_environment(id) }
         from_resource(ApiSupport::ResourceShim.from_model(response.data))
       end
 
+      # Delete an environment by id.
+      #
+      # @param id [String] Identifier of the environment to delete.
+      # @return [void]
       def delete(id)
         ApiSupport::ErrorMapping.call { @api.delete_environment(id) }
         nil
       end
 
+      # @api private
       def _create(env)
         response = ApiSupport::ErrorMapping.call { @api.create_environment(body_for(env)) }
         from_resource(ApiSupport::ResourceShim.from_model(response.data))
       end
 
+      # @api private
       def _update(env)
         raise "cannot update an Environment with no id" if env.id.nil?
 
@@ -143,11 +175,22 @@ module Smplkit
         @api = SmplkitGeneratedClient::App::ServicesApi.new(app_http)
       end
 
-      # Return an unsaved +Service+. Call +.save+ to persist.
+      # Build an unsaved +Service+; call +.save+ to persist it.
+      #
+      # @param id [String] Stable, human-readable identifier for the service.
+      # @param name [String] Display name shown in the Console.
+      # @return [Service] An unsaved service bound to this client.
       def new(id, name:)
         Service.new(self, id: id, name: name)
       end
 
+      # List services in the account.
+      #
+      # @param page_number [Integer, nil] 1-based page to fetch. Defaults to
+      #   the first page.
+      # @param page_size [Integer, nil] Maximum number of services per page.
+      #   Defaults to the server's page size.
+      # @return [Array<Service>] The services on the requested page.
       def list(page_number: nil, page_size: nil)
         opts = {}
         opts[:page_number] = page_number unless page_number.nil?
@@ -156,21 +199,32 @@ module Smplkit
         (response.data || []).map { |r| from_resource(ApiSupport::ResourceShim.from_model(r)) }
       end
 
+      # Fetch a single service by id.
+      #
+      # @param id [String] Identifier of the service to fetch.
+      # @return [Service] The matching service.
+      # @raise [Smplkit::NotFoundError] If no service with that id exists.
       def get(id)
         response = ApiSupport::ErrorMapping.call { @api.get_service(id) }
         from_resource(ApiSupport::ResourceShim.from_model(response.data))
       end
 
+      # Delete a service by id.
+      #
+      # @param id [String] Identifier of the service to delete.
+      # @return [void]
       def delete(id)
         ApiSupport::ErrorMapping.call { @api.delete_service(id) }
         nil
       end
 
+      # @api private
       def _create(svc)
         response = ApiSupport::ErrorMapping.call { @api.create_service(create_body_for(svc)) }
         from_resource(ApiSupport::ResourceShim.from_model(response.data))
       end
 
+      # @api private
       def _update(svc)
         raise "cannot update a Service with no id" if svc.id.nil?
 
@@ -220,10 +274,27 @@ module Smplkit
         @api = SmplkitGeneratedClient::App::ContextTypesApi.new(app_http)
       end
 
+      # Build an unsaved +ContextType+; call +.save+ to persist it.
+      #
+      # @param id [String] Stable, human-readable identifier for the context
+      #   type (for example +"user"+).
+      # @param name [String, nil] Display name shown in the Console. Defaults
+      #   to +id+ when omitted.
+      # @param attributes [Hash, nil] Known-attribute slots, keyed by attribute
+      #   name, with a metadata dict per slot. Defaults to no declared
+      #   attributes.
+      # @return [ContextType] An unsaved context type bound to this client.
       def new(id, name: nil, attributes: nil)
         ContextType.new(self, id: id, name: name || id, attributes: attributes || {})
       end
 
+      # List context types in the account.
+      #
+      # @param page_number [Integer, nil] 1-based page to fetch. Defaults to
+      #   the first page.
+      # @param page_size [Integer, nil] Maximum number of context types per
+      #   page. Defaults to the server's page size.
+      # @return [Array<ContextType>] The context types on the requested page.
       def list(page_number: nil, page_size: nil)
         opts = {}
         opts[:page_number] = page_number unless page_number.nil?
@@ -232,21 +303,32 @@ module Smplkit
         (response.data || []).map { |r| from_resource(ApiSupport::ResourceShim.from_model(r)) }
       end
 
+      # Fetch a single context type by id.
+      #
+      # @param id [String] Identifier of the context type to fetch.
+      # @return [ContextType] The matching context type.
+      # @raise [Smplkit::NotFoundError] If no context type with that id exists.
       def get(id)
         response = ApiSupport::ErrorMapping.call { @api.get_context_type(id) }
         from_resource(ApiSupport::ResourceShim.from_model(response.data))
       end
 
+      # Delete a context type by id.
+      #
+      # @param id [String] Identifier of the context type to delete.
+      # @return [void]
       def delete(id)
         ApiSupport::ErrorMapping.call { @api.delete_context_type(id) }
         nil
       end
 
+      # @api private
       def _create(ct)
         response = ApiSupport::ErrorMapping.call { @api.create_context_type(body_for(ct)) }
         from_resource(ApiSupport::ResourceShim.from_model(response.data))
       end
 
+      # @api private
       def _update(ct)
         raise "cannot update a ContextType with no id" if ct.id.nil?
 
@@ -289,7 +371,18 @@ module Smplkit
         @buffer = buffer
       end
 
-      # Buffer contexts for registration; optionally flush immediately.
+      # Buffer one or more contexts for registration.
+      #
+      # Buffered contexts are sent in batches: a background flush kicks in once
+      # enough have accumulated, and any remainder is sent on the next explicit
+      # flush. Pass +flush: true+ to send everything buffered right away.
+      #
+      # @param items [Context, Array<Context>] A single context or a list of
+      #   contexts to register.
+      # @param flush [Boolean] When +true+, send all buffered contexts
+      #   immediately rather than waiting for the batch threshold. Defaults to
+      #   +false+.
+      # @return [void]
       def register(items, flush: false)
         batch = items.is_a?(Array) ? items : [items]
         @buffer.observe(batch)
@@ -303,6 +396,8 @@ module Smplkit
       end
 
       # Send any pending observations to the server.
+      #
+      # @return [void]
       def flush
         batch = @buffer.drain
         return if batch.empty?
@@ -312,11 +407,21 @@ module Smplkit
       end
 
       # Number of observations queued and awaiting flush.
+      #
+      # @return [Integer] The count of observations pending flush.
       def pending_count
         @buffer.pending_count
       end
 
       # List all contexts of a given type.
+      #
+      # @param type [String] Context type to list (for example +"user"+).
+      # @param page_number [Integer, nil] 1-based page to fetch. Defaults to
+      #   the first page.
+      # @param page_size [Integer, nil] Maximum number of contexts per page.
+      #   Defaults to the server's page size.
+      # @return [Array<Context>] The contexts of the given type on the
+      #   requested page.
       def list(type, page_number: nil, page_size: nil)
         opts = { filter_context_type: type }
         opts[:page_number] = page_number unless page_number.nil?
@@ -325,18 +430,38 @@ module Smplkit
         (response.data || []).map { |r| context_from_resource(ApiSupport::ResourceShim.from_model(r)) }
       end
 
+      # Fetch a single context, identified by composite id or by type and key.
+      #
+      # @param id_or_type [String] Either the composite context id +"type:key"+
+      #   (when +key+ is omitted) or just the context type (when +key+ is
+      #   supplied).
+      # @param key [String, nil] The context key. Provide it to use the
+      #   two-argument form; omit it when +id_or_type+ already carries the
+      #   composite id.
+      # @return [Context] The matching context.
+      # @raise [Smplkit::NotFoundError] If no context with that id exists.
       def get(id_or_type, key = nil)
         ctx_type, ctx_key = Platform.split_context_id(id_or_type, key)
         response = ApiSupport::ErrorMapping.call { @api.get_context("#{ctx_type}:#{ctx_key}") }
         context_from_resource(ApiSupport::ResourceShim.from_model(response.data))
       end
 
+      # Delete a single context, identified by composite id or by type and key.
+      #
+      # @param id_or_type [String] Either the composite context id +"type:key"+
+      #   (when +key+ is omitted) or just the context type (when +key+ is
+      #   supplied).
+      # @param key [String, nil] The context key. Provide it to use the
+      #   two-argument form; omit it when +id_or_type+ already carries the
+      #   composite id.
+      # @return [void]
       def delete(id_or_type, key = nil)
         ctx_type, ctx_key = Platform.split_context_id(id_or_type, key)
         ApiSupport::ErrorMapping.call { @api.delete_context("#{ctx_type}:#{ctx_key}") }
         nil
       end
 
+      # @api private
       def _save_context(ctx)
         body = ctx_to_resource(ctx)
         response = ApiSupport::ErrorMapping.call { @api.update_context(ctx.id, body) }

@@ -18,9 +18,11 @@ module Smplkit
   #     # ...
   #   end
   #
-  # All parameters are optional. When omitted, the SDK resolves them from
-  # environment variables (+SMPLKIT_*+) or the +~/.smplkit+ configuration file.
-  # See ADR-021 for the full resolution algorithm.
+  # All parameters are optional. When omitted, the SDK resolves each one in
+  # precedence order, lowest to highest: built-in defaults, then the
+  # +~/.smplkit+ configuration file, then +SMPLKIT_*+ environment variables,
+  # then the explicit constructor arguments (a value supplied at a higher
+  # level overrides the lower ones).
   #
   # +Smplkit::Client+ is thread-safe by construction. Background work runs on
   # internal SDK-owned threads; public methods block the calling thread and
@@ -33,7 +35,11 @@ module Smplkit
 
     attr_reader :platform, :account, :config, :flags, :logging, :audit, :jobs
 
-    # Construct, yield to the block, and close on exit.
+    # Construct a client, yield it to the block, and close it on exit.
+    #
+    # @param kwargs [Hash] The same keyword arguments as {#initialize}.
+    # @yieldparam client [Client] The constructed client.
+    # @return [Object] The block's return value.
     def self.open(**kwargs)
       client = new(**kwargs)
       begin
@@ -43,6 +49,16 @@ module Smplkit
       end
     end
 
+    # @param api_key [String, nil] API key for authenticating with the smplkit platform.
+    # @param environment [String, nil] The environment to connect to (e.g. +"production"+).
+    # @param service [String, nil] Service name (e.g. +"user-service"+).
+    # @param profile [String, nil] Named profile section to read from +~/.smplkit+.
+    # @param base_domain [String, nil] Base domain for API requests (default +"smplkit.com"+).
+    # @param scheme [String, nil] URL scheme (default +"https"+).
+    # @param debug [Boolean, nil] Enable debug logging in the SDK.
+    # @param telemetry [Boolean, nil] Enable anonymous usage telemetry (default +true+).
+    # @param extra_headers [Hash{String => String}, nil] Extra HTTP headers attached to
+    #   every request the client sends.
     def initialize(api_key: nil, environment: nil, service: nil, profile: nil,
                    base_domain: nil, scheme: nil, debug: nil, telemetry: nil,
                    extra_headers: nil)
@@ -144,6 +160,12 @@ module Smplkit
     # connected here — call +client.logging.install+ separately if you want it
     # (it installs adapters and hooks into your application's logger, which
     # should be opt-in).
+    #
+    # @param timeout [Float] Maximum seconds to wait for the live-updates
+    #   WebSocket handshake before giving up. Defaults to +10.0+.
+    # @return [void]
+    # @raise [Smplkit::TimeoutError] If the WebSocket fails to connect within
+    #   +timeout+ seconds.
     def wait_until_ready(timeout: 10.0)
       @flags._ensure_connected
       @config._ensure_connected
@@ -165,8 +187,8 @@ module Smplkit
     # every +flag.get+ (and other context-sensitive evaluations) inside that
     # request automatically picks it up.
     #
-    # Each unique +(type, key)+ is also queued for bulk registration on the
-    # management API (deduplicated; flushed in the background).
+    # Each unique +(type, key)+ is also registered with the platform
+    # (deduplicated via an LRU; sent in the background).
     #
     # Two usage shapes:
     #
@@ -178,6 +200,14 @@ module Smplkit
     #     # ...
     #   end
     #   # original context restored here
+    #
+    # @param contexts [Array<Smplkit::Context>] The contexts to make active for
+    #   the current thread (e.g. the request's user and account). An empty array
+    #   clears any registration step but still returns a scope.
+    # @yield When a block is given, the contexts are active only for its
+    #   duration and the previous context is restored on exit.
+    # @return [Object, Smplkit::ContextScope] The block's return value when a
+    #   block is given; otherwise a scope you can ignore for fire-and-forget use.
     def set_context(contexts, &block)
       _ensure_started
       @platform.contexts.register(contexts) if contexts && !contexts.empty?
@@ -191,6 +221,8 @@ module Smplkit
     end
 
     # Release all resources held by this client.
+    #
+    # @return [void]
     def close
       Smplkit.debug("lifecycle", "Client.close called")
       @closed = true

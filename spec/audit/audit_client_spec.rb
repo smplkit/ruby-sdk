@@ -22,6 +22,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
           actor_type: "API_KEY",
           actor_id: nil,
           actor_label: "",
+          category: "auth",
           snapshot: nil,
           data: {},
           idempotency_key: "k",
@@ -174,7 +175,8 @@ RSpec.describe Smplkit::Audit::AuditClient do
           resource_id: "u-1",
           actor_type: "EXTERNAL_SERVICE",
           actor_id: "not-a-uuid:billing-bot",
-          actor_label: "Billing Bot"
+          actor_label: "Billing Bot",
+          category: "billing"
         )
         client.events.flush(timeout: 2.0)
         deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
@@ -186,6 +188,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
         expect(attrs["actor_type"]).to eq("EXTERNAL_SERVICE")
         expect(attrs["actor_id"]).to eq("not-a-uuid:billing-bot")
         expect(attrs["actor_label"]).to eq("Billing Bot")
+        expect(attrs["category"]).to eq("billing")
       ensure
         client._close
       end
@@ -241,6 +244,7 @@ RSpec.describe Smplkit::Audit::AuditClient do
         expect(ev.event_type).to eq("user.created")
         expect(ev.actor_type).to eq("API_KEY")
         expect(ev.actor_id).to be_nil
+        expect(ev.category).to eq("auth")
         expect(ev.environment).to eq("production")
       ensure
         client._close

@@ -126,4 +126,47 @@ RSpec.describe Smplkit::Logging::SmplLogGroup do
     expect(client).to receive(:delete).with("app")
     bound.delete
   end
+
+  it "set_level with no environment sets the base level; clear_level removes it" do
+    group.set_level(Smplkit::LogLevel::WARN)
+    expect(group.level).to eq(Smplkit::LogLevel::WARN)
+    group.clear_level
+    expect(group.level).to be_nil
+  end
+
+  it "set_level/clear_level with an environment manages per-env overrides" do
+    group.set_level(Smplkit::LogLevel::ERROR, environment: "production")
+    expect(group.environments["production"].level).to eq(Smplkit::LogLevel::ERROR)
+    group.clear_level(environment: "production")
+    expect(group.environments).not_to have_key("production")
+  end
+
+  it "environments returns a copy that does not mutate internal state" do
+    group.set_level(Smplkit::LogLevel::ERROR, environment: "production")
+    group.environments.delete("production")
+    expect(group.environments).to have_key("production")
+  end
+
+  it "clear_all_environment_levels drops every override" do
+    group.set_level(Smplkit::LogLevel::ERROR, environment: "production")
+    group.set_level(Smplkit::LogLevel::DEBUG, environment: "staging")
+    group.clear_all_environment_levels
+    expect(group.environments).to eq({})
+  end
+
+  it "parses wire-shaped environments at construction" do
+    built = described_class.new(key: "app",
+                                environments: { "production" => { "level" => "ERROR" } })
+    expect(built.environments["production"].level).to eq(Smplkit::LogLevel::ERROR)
+  end
+
+  it "_apply copies per-environment overrides from the server response" do
+    client = double("log_groups_client")
+    server = described_class.new(key: "app", created_at: "x")
+    server.set_level(Smplkit::LogLevel::ERROR, environment: "production")
+    allow(client).to receive(:_update_log_group).and_return(server)
+    bound = described_class.new(client, key: "app", created_at: "x")
+    bound.save
+    expect(bound.environments["production"].level).to eq(Smplkit::LogLevel::ERROR)
+  end
 end

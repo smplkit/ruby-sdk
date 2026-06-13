@@ -9,9 +9,11 @@ module Smplkit
     #
     # +base_url+/+api_key+ are used directly when both are supplied (the path
     # the top-level client takes after it has already resolved them); otherwise
-    # the management config resolver fills in whatever is missing.
+    # the config resolver fills in whatever is missing.
+    #
+    # @api private
     def self.resolve_account_target(api_key:, base_url:, profile:, base_domain:, scheme:, debug:, extra_headers:)
-      cfg = ConfigResolution.resolve_management_config(
+      cfg = ConfigResolution.resolve_client_config(
         profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
       )
       resolved_key = api_key.nil? ? cfg.api_key : api_key
@@ -37,12 +39,17 @@ module Smplkit
         }.merge(extra_headers || {})
       end
 
+      # Fetch the authenticated account's current settings.
+      #
+      # @return [Smplkit::Account::AccountSettings] An active record. Mutate its
+      #   fields and call +save+ to persist the changes.
       def get
         resp = connection.get(SETTINGS_PATH)
         Errors.raise_for_status(resp.status, resp.body.to_s)
         AccountSettings.new(self, data: parse_body(resp.body))
       end
 
+      # @api private
       def _save(data)
         resp = connection.put(SETTINGS_PATH) { |req| req.body = JSON.generate(data) }
         Errors.raise_for_status(resp.status, resp.body.to_s)

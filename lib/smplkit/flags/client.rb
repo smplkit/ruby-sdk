@@ -8,7 +8,7 @@ require "digest"
 # Smpl Flags has two surfaces on a single client, mirroring how the config,
 # audit, and jobs clients expose their full surface from one class:
 #
-# * *Management surface* — pure CRUD, no live connection: +new_boolean_flag+ /
+# * *CRUD surface* — pure CRUD, no live connection: +new_boolean_flag+ /
 #   +new_string_flag+ / +new_number_flag+ / +new_json_flag+ constructors, +get+
 #   / +list+ / +delete+ CRUD, and the flag-declaration discovery buffer
 #   (+register+ / +flush+ / +flush_sync+ / +pending_count+). The client owns the
@@ -33,6 +33,14 @@ require "digest"
 module Smplkit
   module Flags
     # Describes a flag definition change. Frozen — fields are set at construction.
+    #
+    # @!attribute [r] id
+    #   @return [String] id of the flag whose definition changed.
+    # @!attribute [r] source
+    #   @return [String] origin of the change (e.g. +"websocket"+ for a live
+    #     update or +"manual"+ for a refresh).
+    # @!attribute [r] deleted
+    #   @return [Boolean] whether the change was a deletion of the flag.
     class FlagChangeEvent
       attr_reader :id, :source, :deleted
 
@@ -54,6 +62,8 @@ module Smplkit
     end
 
     # Thread-safe LRU resolution cache with hit/miss stats.
+    #
+    # @api private
     class ResolutionCache
       DEFAULT_MAX_SIZE = 10_000
 
@@ -96,18 +106,29 @@ module Smplkit
     end
 
     # Evaluation statistics for the flags runtime.
+    #
+    # @!attribute [r] cache_hits
+    #   @return [Integer] number of flag evaluations served from the local cache.
+    # @!attribute [r] cache_misses
+    #   @return [Integer] number of flag evaluations that missed the cache and
+    #     were evaluated from the flag definitions.
     FlagStats = Struct.new(:cache_hits, :cache_misses, keyword_init: true)
 
     # Convert a list of Context objects to the nested evaluation dict.
+    #
+    # @api private
     def self.contexts_to_eval_dict(contexts)
       contexts.to_h { |ctx| [ctx.type, ctx.to_eval_hash] }
     end
 
     # Compute a stable hash for a context evaluation dict.
+    #
+    # @api private
     def self.hash_context(eval_dict)
       Digest::MD5.hexdigest(JSON.generate(deep_sort(eval_dict)))
     end
 
+    # @api private
     def self.deep_sort(value)
       case value
       when Hash
@@ -127,15 +148,17 @@ module Smplkit
     # defaults). The app transport backs the standalone contexts client
     # (evaluation-context registration); the app base URL is returned so a
     # standalone client can open its own WebSocket against the event gateway.
+    #
+    # @api private
     def self.flags_transport(api_key:, base_url:, profile:, base_domain:, scheme:, debug:, extra_headers:)
-      cfg = ConfigResolution.resolve_management_config(
+      cfg = ConfigResolution.resolve_client_config(
         profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
       )
       resolved_key = api_key.nil? ? cfg.api_key : api_key
       merged = {}
       merged.merge!(cfg.extra_headers || {})
       merged.merge!(extra_headers || {})
-      tcfg = ConfigResolution::ResolvedManagementConfig.new(
+      tcfg = ConfigResolution::ResolvedClientConfig.new(
         api_key: resolved_key, base_domain: cfg.base_domain, scheme: cfg.scheme,
         debug: cfg.debug, extra_headers: merged
       )
@@ -156,7 +179,7 @@ module Smplkit
     #   beta = flags.boolean_flag("beta", default: false)
     #   beta.get # => ...
     #
-    # The management surface (+new_*+ / +get+ / +list+ / +delete+ and discovery)
+    # The CRUD surface (+new_*+ / +get+ / +list+ / +delete+ and discovery)
     # is pure CRUD. The live surface (+boolean_flag+ / +string_flag+ /
     # +number_flag+ / +json_flag+ / +refresh+ / +stats+ / +on_change+) connects
     # lazily on first use — the first call flushes discovery, fetches all flag
@@ -208,6 +231,14 @@ module Smplkit
       # ----------------------------------------------------------------
 
       # Return a new unsaved boolean +BooleanFlag+. Call +save+ to persist.
+      #
+      # @param id [String] stable flag identifier, unique per account.
+      # @param default [Boolean] value served when no environment override or
+      #   rule applies.
+      # @param name [String, nil] human-readable display name; defaults to a
+      #   title-cased form of +id+.
+      # @param description [String, nil] optional free-text description of the flag.
+      # @return [BooleanFlag] an unsaved flag; call +save+ to persist it.
       def new_boolean_flag(id, default:, name: nil, description: nil)
         BooleanFlag.new(
           self, id: id, name: name || Smplkit::Helpers.key_to_display_name(id),
@@ -218,6 +249,17 @@ module Smplkit
       end
 
       # Return a new unsaved string +StringFlag+. Call +save+ to persist.
+      #
+      # @param id [String] stable flag identifier, unique per account.
+      # @param default [String] value served when no environment override or
+      #   rule applies.
+      # @param name [String, nil] human-readable display name; defaults to a
+      #   title-cased form of +id+.
+      # @param description [String, nil] optional free-text description of the flag.
+      # @param values [Array<FlagValue>, nil] optional list of allowed values
+      #   constraining what the flag may serve; when omitted the flag is
+      #   unconstrained.
+      # @return [StringFlag] an unsaved flag; call +save+ to persist it.
       def new_string_flag(id, default:, name: nil, description: nil, values: nil)
         StringFlag.new(
           self, id: id, name: name || Smplkit::Helpers.key_to_display_name(id),
@@ -226,6 +268,17 @@ module Smplkit
       end
 
       # Return a new unsaved numeric +NumberFlag+. Call +save+ to persist.
+      #
+      # @param id [String] stable flag identifier, unique per account.
+      # @param default [Numeric] value served when no environment override or
+      #   rule applies.
+      # @param name [String, nil] human-readable display name; defaults to a
+      #   title-cased form of +id+.
+      # @param description [String, nil] optional free-text description of the flag.
+      # @param values [Array<FlagValue>, nil] optional list of allowed values
+      #   constraining what the flag may serve; when omitted the flag is
+      #   unconstrained.
+      # @return [NumberFlag] an unsaved flag; call +save+ to persist it.
       def new_number_flag(id, default:, name: nil, description: nil, values: nil)
         NumberFlag.new(
           self, id: id, name: name || Smplkit::Helpers.key_to_display_name(id),
@@ -234,6 +287,17 @@ module Smplkit
       end
 
       # Return a new unsaved JSON +JsonFlag+. Call +save+ to persist.
+      #
+      # @param id [String] stable flag identifier, unique per account.
+      # @param default [Hash] value served when no environment override or
+      #   rule applies.
+      # @param name [String, nil] human-readable display name; defaults to a
+      #   title-cased form of +id+.
+      # @param description [String, nil] optional free-text description of the flag.
+      # @param values [Array<FlagValue>, nil] optional list of allowed values
+      #   constraining what the flag may serve; when omitted the flag is
+      #   unconstrained.
+      # @return [JsonFlag] an unsaved flag; call +save+ to persist it.
       def new_json_flag(id, default:, name: nil, description: nil, values: nil)
         JsonFlag.new(
           self, id: id, name: name || Smplkit::Helpers.key_to_display_name(id),
@@ -242,12 +306,22 @@ module Smplkit
       end
 
       # Fetch the editable +Flag+ resource by id.
+      #
+      # @param id [String] identifier of the flag to fetch.
+      # @return [Flag] the flag, ready to mutate and +save+.
+      # @raise [Smplkit::NotFoundError] no flag with that id exists for the account.
       def get(id)
         response = ApiSupport::ErrorMapping.call { @api.get_flag(id) }
         model_from_resource(ApiSupport::ResourceShim.from_model(response.data))
       end
 
       # List flags for the authenticated account.
+      #
+      # @param page_number [Integer, nil] 1-based page index to fetch; when
+      #   omitted the server default applies.
+      # @param page_size [Integer, nil] number of flags per page; when omitted
+      #   the server default applies.
+      # @return [Array<Flag>] the flags on the requested page.
       def list(page_number: nil, page_size: nil)
         opts = {}
         opts[:page_number] = page_number unless page_number.nil?
@@ -257,6 +331,10 @@ module Smplkit
       end
 
       # Delete a flag by id.
+      #
+      # @param id [String] identifier of the flag to delete.
+      # @return [void]
+      # @raise [Smplkit::NotFoundError] no flag with that id exists for the account.
       def delete(id)
         ApiSupport::ErrorMapping.call { @api.delete_flag(id) }
         nil
@@ -277,6 +355,14 @@ module Smplkit
       # ----------------------------------------------------------------
 
       # Buffer flag declarations for bulk-discovery upload; optionally flush now.
+      #
+      # @param items [FlagDeclaration, Array<FlagDeclaration>] a single
+      #   declaration or an array of them to queue.
+      # @param flush [Boolean] when true, send the buffered declarations
+      #   immediately via +flush+ before returning. When false (the default),
+      #   they stay buffered and are sent on the next flush — automatic once the
+      #   buffer reaches its batch size, or on the first live call.
+      # @return [void]
       def register(items, flush: false)
         batch = items.is_a?(Array) ? items : [items]
         batch.each { |d| @buffer.add(d) }
@@ -295,6 +381,8 @@ module Smplkit
       # against an unhealthy +flags+ service is automatically retried by the
       # next +flush+ call (periodic background flush, install retry, or final
       # flush on close).
+      #
+      # @return [void]
       def flush
         batch = @buffer.peek
         return if batch.empty?
@@ -305,11 +393,15 @@ module Smplkit
       end
 
       # Synchronous flush — alias of +flush+ for the periodic-flush path.
+      #
+      # @return [void]
       def flush_sync
         flush
       end
 
       # Number of pending flag declarations awaiting flush.
+      #
+      # @return [Integer] number of pending flag declarations awaiting flush.
       def pending_count
         @buffer.pending_count
       end
@@ -319,6 +411,11 @@ module Smplkit
       # ----------------------------------------------------------------
 
       # Declare a boolean flag handle for live evaluation. Connects lazily on first use.
+      #
+      # @param id [String] identifier of the flag to evaluate.
+      # @param default [Boolean] value returned by +handle.get+ when the flag is
+      #   unknown or no environment override or rule applies.
+      # @return [BooleanFlag] a handle whose +get+ evaluates against the live cache.
       def boolean_flag(id, default:)
         ensure_connected
         handle = BooleanFlag.new(self, id: id, name: id, type: "BOOLEAN", default: default)
@@ -328,6 +425,11 @@ module Smplkit
       end
 
       # Declare a string flag handle for live evaluation. Connects lazily on first use.
+      #
+      # @param id [String] identifier of the flag to evaluate.
+      # @param default [String] value returned by +handle.get+ when the flag is
+      #   unknown or no environment override or rule applies.
+      # @return [StringFlag] a handle whose +get+ evaluates against the live cache.
       def string_flag(id, default:)
         ensure_connected
         handle = StringFlag.new(self, id: id, name: id, type: "STRING", default: default)
@@ -337,6 +439,11 @@ module Smplkit
       end
 
       # Declare a numeric flag handle for live evaluation. Connects lazily on first use.
+      #
+      # @param id [String] identifier of the flag to evaluate.
+      # @param default [Numeric] value returned by +handle.get+ when the flag is
+      #   unknown or no environment override or rule applies.
+      # @return [NumberFlag] a handle whose +get+ evaluates against the live cache.
       def number_flag(id, default:)
         ensure_connected
         handle = NumberFlag.new(self, id: id, name: id, type: "NUMERIC", default: default)
@@ -346,6 +453,11 @@ module Smplkit
       end
 
       # Declare a JSON flag handle for live evaluation. Connects lazily on first use.
+      #
+      # @param id [String] identifier of the flag to evaluate.
+      # @param default [Hash] value returned by +handle.get+ when the flag is
+      #   unknown or no environment override or rule applies.
+      # @return [JsonFlag] a handle whose +get+ evaluates against the live cache.
       def json_flag(id, default:)
         ensure_connected
         handle = JsonFlag.new(self, id: id, name: id, type: "JSON", default: default)
@@ -361,12 +473,16 @@ module Smplkit
       # Re-fetch all flag definitions and clear cache.
       #
       # Connects lazily on first use — no explicit install step.
+      #
+      # @return [void]
       def refresh
         ensure_connected
         do_refresh("manual")
       end
 
       # Return evaluation statistics. Connects lazily on first use.
+      #
+      # @return [FlagStats] the evaluation statistics.
       def stats
         ensure_connected
         FlagStats.new(cache_hits: @cache.cache_hits, cache_misses: @cache.cache_misses)
@@ -378,6 +494,11 @@ module Smplkit
       #   client.flags.on_change("checkout-v2") { |e| ... } # flag-scoped
       #
       # Connects lazily on first use — no explicit install step.
+      #
+      # @param flag_id [String, nil] optional flag id scoping the listener to
+      #   that flag; when +nil+ a global listener is registered.
+      # @yield [FlagChangeEvent] the listener block, invoked on each change.
+      # @return [Proc] the registered listener block.
       def on_change(flag_id = nil, &block)
         ensure_connected
         raise ArgumentError, "on_change requires a block" unless block
@@ -395,6 +516,8 @@ module Smplkit
       # Tears down the owned WebSocket (standalone install). A wired client
       # borrows the parent's transport, WebSocket, and contexts client and
       # closes none of them.
+      #
+      # @return [void]
       def close
         if @owns_ws && @ws_manager
           @ws_manager.stop
@@ -408,6 +531,9 @@ module Smplkit
       alias _close close
 
       # Construct, yield to the block, and close on exit.
+      #
+      # @yield [FlagsClient] the constructed client.
+      # @return [Object] the block's return value; closes the client on exit.
       def self.open(**kwargs)
         client = new(**kwargs)
         begin
@@ -652,9 +778,9 @@ module Smplkit
 
       # Evaluate a flag definition against the given context.
       #
-      # Follows ADR-022 §2.6 semantics:
-      #   1. Look up the environment. If missing, return flag-level default.
-      #   2. If disabled, return env default or flag default.
+      # Evaluation steps:
+      #   1. Look up the environment. If missing, return the flag-level default.
+      #   2. If disabled, return the env default or flag default.
       #   3. Iterate rules; first match wins.
       #   4. No match -> env default or flag default.
       def evaluate_flag(flag_def, environment, eval_dict)
@@ -743,6 +869,8 @@ module Smplkit
     # correct — the Java SDK followed the same pattern. Operators supported:
     # +==+, +!=+, +<+, +<=+, +>+, +>=+, +in+, +var+, +and+, +or+, +!+, +if+,
     # +missing+, +none+.
+    #
+    # @api private
     module JsonLogicEvaluator
       module_function
 

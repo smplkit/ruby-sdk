@@ -12,7 +12,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
     )
   end
   let(:resolved) do
-    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end
@@ -264,7 +264,7 @@ RSpec.describe Smplkit::Jobs::RunsClient do
     )
   end
   let(:resolved) do
-    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end
@@ -510,7 +510,7 @@ end
 
 RSpec.describe "Smplkit::Jobs::JobsClient standalone construction" do
   let(:tcfg) do
-    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end

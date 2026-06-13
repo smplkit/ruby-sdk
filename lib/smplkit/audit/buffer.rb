@@ -3,13 +3,15 @@
 module Smplkit
   module Audit
     # Bounded in-memory queue + worker thread for fire-and-forget audit
-    # emits (ADR-047 §2.6).
+    # emits.
     #
     # +#enqueue+ returns immediately. The worker drains on either a
     # periodic tick or once depth crosses the high-water mark, retries
     # transient failures with exponential backoff, drops permanent 4xx
     # (other than 429), and evicts the oldest item under sustained
     # back-pressure.
+    #
+    # @api private
     class EventBuffer
       MAX_BUFFER_SIZE = 1000
       WATERMARK = 50

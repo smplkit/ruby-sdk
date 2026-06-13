@@ -4,12 +4,12 @@ require "set"
 
 module Smplkit
   module Logging
-    # Client-side level resolution per ADR-034 §3.1.
+    # Client-side level resolution.
     #
     # The server stores raw configuration and returns it as-is; the SDK is
-    # responsible for walking the inheritance chain. Mirrors the Python
-    # SDK's +smplkit.logging._resolution+ verbatim — both implementations
-    # MUST resolve identically for any given (loggers, groups, env) input.
+    # responsible for walking the inheritance chain.
+    #
+    # @api private
     module Resolution
       FALLBACK_LEVEL = "INFO"
 

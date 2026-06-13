@@ -12,6 +12,8 @@ module Smplkit
   # connect lazily on first call) and shared by the top-level client.
   #
   # There is no audit transport here — +client.audit+ owns its own.
+  #
+  # @api private
   module Transport
     SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
 
@@ -23,7 +25,7 @@ module Smplkit
     # transports need; this drops the runtime-only fields (environment,
     # service, telemetry).
     def to_transport_config(cfg, extra_headers = nil)
-      ConfigResolution::ResolvedManagementConfig.new(
+      ConfigResolution::ResolvedClientConfig.new(
         api_key: cfg.api_key,
         base_domain: cfg.base_domain,
         scheme: cfg.scheme,
@@ -38,6 +40,8 @@ module Smplkit
     # first call. +app_url+ is carried alongside so the account settings client
     # and the WebSocket can reach the app service. +close+ tears down the
     # underlying Faraday connection pools.
+    #
+    # @api private
     ServiceTransports = Struct.new(
       :app_url, :api_key, :app_http, :config_http, :flags_http, :logging_http, :jobs_http,
       keyword_init: true

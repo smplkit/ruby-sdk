@@ -19,7 +19,7 @@ module Smplkit
   # +Async+ reactor and the underlying +async-websocket+ I/O. Public
   # methods are thread-safe and non-blocking.
   #
-  # Gateway protocol (mirrors the Python reference in +smplkit._ws+):
+  # Gateway protocol:
   #
   #   - Connect to +wss://app.<base_domain>/api/ws/v1/events?api_key={key}+
   #   - Receive +{"type": "connected"}+ on success

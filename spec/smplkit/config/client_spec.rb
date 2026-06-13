@@ -252,7 +252,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
 
   let(:base_url) { "https://config.smplkit.test" }
   let(:tcfg) do
-    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end
@@ -851,6 +851,39 @@ RSpec.describe Smplkit::Config::ConfigClient do
       stub_get("billing", nil, status: 404)
       ws.dispatch("config_changed", { "id" => "billing" })
       expect(config.get_value("billing", "max_seats")).to eq(5)
+    end
+
+    it "config_changed fetches an uncached parent so the child keeps inherited values" do
+      # Initial connect sees only the child; its parent "base" was created via
+      # discovery after connect and never broadcast its own event, so it is
+      # absent from the raw store. Without transitive ancestor-fetch the child
+      # would re-resolve missing "region".
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }, parent: "base"))
+      config._ensure_connected
+      expect { config.get_value("billing", "region") }.to raise_error(KeyError)
+
+      stub_get("billing", cfg_resource("billing", items: { "max_seats" => 5 }, parent: "base"))
+      stub_get("base", cfg_resource("base", items: { "region" => "us-east" }))
+      ws.dispatch("config_changed", { "id" => "billing" })
+
+      expect(config.get_value("billing", "region")).to eq("us-east")
+      expect(config.get_value("billing", "max_seats")).to eq(5)
+    end
+
+    it "config_changed walks a multi-level ancestor chain and guards already-cached parents" do
+      # child -> mid -> root. root is already cached from the initial connect;
+      # mid is uncached and must be fetched, and the walk must not re-fetch the
+      # already-present root.
+      stub_list(cfg_resource("root", items: { "region" => "us-east" }))
+      config._ensure_connected
+
+      stub_get("child", cfg_resource("child", items: { "max_seats" => 9 }, parent: "mid"))
+      stub_get("mid", cfg_resource("mid", items: { "tier" => "pro" }, parent: "root"))
+      ws.dispatch("config_changed", { "id" => "child" })
+
+      expect(config.get_value("child", "max_seats")).to eq(9)
+      expect(config.get_value("child", "tier")).to eq("pro")
+      expect(config.get_value("child", "region")).to eq("us-east")
     end
 
     it "config_deleted removes the config from the cache" do

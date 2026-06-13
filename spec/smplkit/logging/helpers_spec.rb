@@ -57,7 +57,7 @@ RSpec.describe Smplkit::Logging::Helpers do
       expect(group).to be_a(Smplkit::Logging::SmplLogGroup)
       expect(group.key).to eq("app")
       expect(group.level).to eq(Smplkit::LogLevel::INFO)
-      expect(group.environments["staging"]).to eq("level" => "DEBUG")
+      expect(group.environments["staging"].level).to eq(Smplkit::LogLevel::DEBUG)
     end
 
     it "falls back to resource id when attributes.key missing" do

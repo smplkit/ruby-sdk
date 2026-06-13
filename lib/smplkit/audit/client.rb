@@ -4,12 +4,22 @@ module Smplkit
   module Audit
     # The Smpl Audit client — accessed via +client.audit+.
     #
-    # One client exposes the full surface — there is no runtime/management
-    # split for audit. Owns event recording and read-side queries:
-    # fire-and-forget +#events.record+, plus the audit-log +list+ / +get+ and
-    # the distinct-value listings (+resource_types+, +event_types+,
-    # +categories+) that back the Activity tab filter dropdowns, plus SIEM
-    # forwarder CRUD on +#forwarders+. ADR-047 §2.7.
+    # One client exposes the full surface — event recording and reads,
+    # distinct-value discovery, and SIEM forwarder CRUD. Owns fire-and-forget
+    # +#events.record+, plus the audit-log +list+ / +get+ and the distinct-value
+    # listings (+resource_types+, +event_types+, +categories+), plus SIEM
+    # forwarder CRUD on +#forwarders+.
+    #
+    # @param api_key [String] API key used to authenticate every request.
+    # @param base_url [String] Full audit-service base URL.
+    # @param environment [String, nil] Deployment environment to scope recording
+    #   and reads to. Optional — forwarder CRUD and discovery are
+    #   environment-agnostic, and reads accept an explicit +environments: [...]+
+    #   filter.
+    # @param timeout [Float] Per-request timeout, in seconds. Defaults to +10.0+.
+    # @param extra_headers [Hash{String => String}, nil] Extra headers attached
+    #   to every request. SDK-owned headers (authorization, content-type,
+    #   user-agent) cannot be overridden.
     class AuditClient
       attr_reader :events, :resource_types, :event_types, :categories, :forwarders
 

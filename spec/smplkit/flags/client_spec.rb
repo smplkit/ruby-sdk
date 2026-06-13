@@ -19,7 +19,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
 
   let(:flags_host) { "https://flags.smplkit.test" }
   let(:tcfg) do
-    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end
@@ -184,6 +184,45 @@ RSpec.describe Smplkit::Flags::FlagsClient do
       handle = flags.boolean_flag("checkout-v2", default: false)
       # No context at all -> no rule match -> env/flag default.
       expect(handle.get).to be(false)
+    end
+  end
+
+  describe "typed get returns the evaluated value only when it matches the flag type" do
+    # The resolved value can disagree with the declared type (e.g. a flag
+    # retyped server-side, or a JSON-Logic rule serving a mismatched literal);
+    # each typed handle type-checks the evaluated value and falls back to its
+    # own default rather than coercing.
+    def typed(klass, type, default)
+      client = double("flags_client")
+      [client, klass.new(client, name: "f", type: type, default: default, id: "f")]
+    end
+
+    it "BooleanFlag#get returns a boolean, else the default" do
+      client, handle = typed(Smplkit::Flags::BooleanFlag, "BOOLEAN", false)
+      allow(client).to receive(:_evaluate_handle).and_return(true, "not-a-bool")
+      expect(handle.get).to be(true)
+      expect(handle.get).to be(false)
+    end
+
+    it "StringFlag#get returns a String, else the default" do
+      client, handle = typed(Smplkit::Flags::StringFlag, "STRING", "fallback")
+      allow(client).to receive(:_evaluate_handle).and_return("served", 42)
+      expect(handle.get).to eq("served")
+      expect(handle.get).to eq("fallback")
+    end
+
+    it "NumberFlag#get returns a Numeric, else the default" do
+      client, handle = typed(Smplkit::Flags::NumberFlag, "NUMERIC", 7)
+      allow(client).to receive(:_evaluate_handle).and_return(3.5, "nope")
+      expect(handle.get).to eq(3.5)
+      expect(handle.get).to eq(7)
+    end
+
+    it "JsonFlag#get returns a Hash, else the default" do
+      client, handle = typed(Smplkit::Flags::JsonFlag, "JSON", { "d" => 1 })
+      allow(client).to receive(:_evaluate_handle).and_return({ "served" => true }, [1, 2])
+      expect(handle.get).to eq({ "served" => true })
+      expect(handle.get).to eq({ "d" => 1 })
     end
   end
 

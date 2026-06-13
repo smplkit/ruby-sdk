@@ -5,7 +5,7 @@
 # Smpl Logging has two surfaces on a single client, mirroring how the config,
 # flags, audit, and jobs clients expose their full surface from one class:
 #
-# * *Management surface* — works immediately, no +install+ required. Two
+# * *CRUD surface* — works immediately, no +install+ required. Two
 #   sub-clients (the audit pattern):
 #
 #   * +client.logging.loggers+ — logger CRUD + discovery: +new+ / +list+ / +get+
@@ -47,15 +47,17 @@ module Smplkit
     # defaults). The app transport is needed for the WebSocket gateway, which
     # lives on the app service (like flags); the app base URL is returned so a
     # standalone client can open its own WebSocket against the event gateway.
+    #
+    # @api private
     def self.logging_transport(api_key:, base_url:, profile:, base_domain:, scheme:, debug:, extra_headers:)
-      cfg = ConfigResolution.resolve_management_config(
+      cfg = ConfigResolution.resolve_client_config(
         profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
       )
       resolved_key = api_key.nil? ? cfg.api_key : api_key
       merged = {}
       merged.merge!(cfg.extra_headers || {})
       merged.merge!(extra_headers || {})
-      tcfg = ConfigResolution::ResolvedManagementConfig.new(
+      tcfg = ConfigResolution::ResolvedClientConfig.new(
         api_key: resolved_key, base_domain: cfg.base_domain, scheme: cfg.scheme,
         debug: cfg.debug, extra_headers: merged
       )
@@ -66,6 +68,8 @@ module Smplkit
     end
 
     # Discover and load the SDK's built-in logging adapters.
+    #
+    # @api private
     def self.auto_load_adapters
       adapters = [Adapters::StdlibLoggerAdapter.new]
 
@@ -80,10 +84,20 @@ module Smplkit
       adapters
     end
 
-    LoggerChangeEvent = Struct.new(:name, :level, :source, keyword_init: true) do
+    # Fired once per managed logger whose effective level the SDK just applied.
+    #
+    # @!attribute [rw] id
+    #   @return [String] The affected logger's normalized id.
+    # @!attribute [rw] level
+    #   @return [String] The newly-applied effective smplkit level string (e.g.
+    #     +"INFO"+, +"DEBUG"+) — the same value the resolution algorithm returns.
+    # @!attribute [rw] source
+    #   @return [String] Short string identifying the trigger — typically
+    #     +"websocket"+ or +"manual"+ (a +refresh+ call).
+    LoggerChangeEvent = Struct.new(:id, :level, :source, keyword_init: true) do
       def ==(other)
         other.is_a?(LoggerChangeEvent) &&
-          name == other.name && level == other.level && source == other.source
+          id == other.id && level == other.level && source == other.source
       end
     end
 
@@ -98,7 +112,17 @@ module Smplkit
         @buffer = buffer
       end
 
-      # Buffer logger sources for registration; optionally flush immediately.
+      # Queue one or more logger sources for registration with the server.
+      #
+      # Sources are buffered locally and sent in a batch. The batch is sent
+      # automatically once enough sources accumulate; pass +flush: true+ to send
+      # the current batch right away instead of waiting.
+      #
+      # @param items [LoggerSource, Array<LoggerSource>] A single logger source,
+      #   or an array of them, to queue.
+      # @param flush [Boolean] When +true+, send the buffered sources immediately
+      #   rather than waiting for the batch to fill.
+      # @return [void]
       def register(items, flush: false)
         batch = items.is_a?(Array) ? items : [items]
         batch.each do |src|
@@ -118,6 +142,8 @@ module Smplkit
       end
 
       # Drain the buffer and POST pending logger sources to the bulk endpoint.
+      #
+      # @return [void]
       def flush
         batch = @buffer.drain
         return if batch.empty?
@@ -133,21 +159,38 @@ module Smplkit
       end
 
       # Synchronous flush — alias of +flush+ for the periodic-flush path.
+      #
+      # @return [void]
       def flush_sync
         flush
       end
 
       # Number of sources queued and awaiting flush.
+      #
+      # @return [Integer] count of buffered sources not yet sent.
       def pending_count
         @buffer.pending_count
       end
 
-      # Return a new unsaved +SmplLogger+. Call +SmplLogger#save+ to persist.
+      # Build a new unsaved logger. The returned +SmplLogger+ is local only;
+      # call its +SmplLogger#save+ to persist it.
+      #
+      # @param id [String] Identifier for the logger (its normalized name).
+      # @param managed [Boolean] When +true+ (the default), smplkit controls
+      #   this logger's level at runtime. Set +false+ to register the logger for
+      #   visibility without taking over its level.
+      # @return [SmplLogger] An unsaved logger bound to this client.
       def new(id, managed: true)
         SmplLogger.new(self, id: id, name: id, resolved_level: nil, managed: managed)
       end
 
       # List loggers for the authenticated account.
+      #
+      # @param page_number [Integer, nil] 1-based page index to fetch. When
+      #   omitted, the server returns the first page.
+      # @param page_size [Integer, nil] Maximum number of loggers per page. When
+      #   omitted, the server applies its default page size.
+      # @return [Array<SmplLogger>] The loggers on the requested page.
       def list(page_number: nil, page_size: nil)
         opts = {}
         opts[:page_number] = page_number unless page_number.nil?
@@ -156,18 +199,27 @@ module Smplkit
         (response.data || []).map { |r| Helpers.logger_resource_to_model(self, ApiSupport::ResourceShim.from_model(r)) }
       end
 
-      # Fetch the editable +SmplLogger+ resource by id.
+      # Fetch a single logger by id.
+      #
+      # @param id [String] Identifier of the logger to fetch.
+      # @return [SmplLogger] The editable logger resource.
+      # @raise [Smplkit::NotFoundError] If no logger with that id exists.
       def get(id)
         response = ApiSupport::ErrorMapping.call { @api.get_logger(id) }
         Helpers.logger_resource_to_model(self, ApiSupport::ResourceShim.from_model(response.data))
       end
 
       # Delete a logger by id.
+      #
+      # @param id [String] Identifier of the logger to delete.
+      # @return [void]
+      # @raise [Smplkit::NotFoundError] If no logger with that id exists.
       def delete(id)
         ApiSupport::ErrorMapping.call { @api.delete_logger(id) }
         nil
       end
 
+      # @api private
       def _update_logger(logger)
         response = ApiSupport::ErrorMapping.call { @api.update_logger(logger.id || logger.name, logger_body(logger)) }
         Helpers.logger_resource_to_model(self, ApiSupport::ResourceShim.from_model(response.data))
@@ -175,6 +227,8 @@ module Smplkit
 
       # Runtime entry — walks every page and returns an id-keyed Hash of
       # resolution-cache entries (+level+, +group+, +managed+, +environments+).
+      #
+      # @api private
       def list_logger_entries
         rows = ApiSupport::PaginatedFetch.collect { |opts| @api.list_loggers(opts) }
         rows.to_h { |r| logger_entry_from_resource(ApiSupport::ResourceShim.from_model(r)) }
@@ -182,6 +236,8 @@ module Smplkit
 
       # Fetch one logger as a resolution-cache entry. Used by the +logger_changed+
       # WS handler.
+      #
+      # @api private
       def get_logger_entry(id)
         response = ApiSupport::ErrorMapping.call { @api.get_logger(id) }
         logger_entry_from_resource(ApiSupport::ResourceShim.from_model(response.data))
@@ -236,14 +292,28 @@ module Smplkit
         @api = SmplkitGeneratedClient::Logging::LogGroupsApi.new(http_client)
       end
 
-      # Return a new unsaved +SmplLogGroup+. Call +SmplLogGroup#save+ to persist.
+      # Build a new unsaved log group. The returned +SmplLogGroup+ is local
+      # only; call its +SmplLogGroup#save+ to persist it.
+      #
+      # @param id [String] Identifier for the log group.
+      # @param name [String, nil] Human-readable display name. Defaults to a
+      #   title-cased version of +id+ when omitted.
+      # @param group [String, nil] Identifier of the parent log group, when
+      #   nesting groups. +nil+ for a top-level group.
+      # @return [SmplLogGroup] An unsaved log group bound to this client.
       def new(id, name: nil, group: nil)
         SmplLogGroup.new(
-          self, key: id, name: name.nil? ? Smplkit::Helpers.key_to_display_name(id) : name, parent_id: group
+          self, key: id, name: name.nil? ? Smplkit::Helpers.key_to_display_name(id) : name, group: group
         )
       end
 
       # List log groups for the authenticated account.
+      #
+      # @param page_number [Integer, nil] 1-based page index to fetch. When
+      #   omitted, the server returns the first page.
+      # @param page_size [Integer, nil] Maximum number of log groups per page.
+      #   When omitted, the server applies its default page size.
+      # @return [Array<SmplLogGroup>] The log groups on the requested page.
       def list(page_number: nil, page_size: nil)
         opts = {}
         opts[:page_number] = page_number unless page_number.nil?
@@ -254,23 +324,33 @@ module Smplkit
         end
       end
 
-      # Fetch the editable +SmplLogGroup+ resource by id.
+      # Fetch a single log group by id.
+      #
+      # @param id [String] Identifier of the log group to fetch.
+      # @return [SmplLogGroup] The editable log group resource.
+      # @raise [Smplkit::NotFoundError] If no log group with that id exists.
       def get(id)
         response = ApiSupport::ErrorMapping.call { @api.get_log_group(id) }
         Helpers.log_group_resource_to_model(self, ApiSupport::ResourceShim.from_model(response.data))
       end
 
       # Delete a log group by id.
+      #
+      # @param id [String] Identifier of the log group to delete.
+      # @return [void]
+      # @raise [Smplkit::NotFoundError] If no log group with that id exists.
       def delete(id)
         ApiSupport::ErrorMapping.call { @api.delete_log_group(id) }
         nil
       end
 
+      # @api private
       def _create_log_group(group)
         response = ApiSupport::ErrorMapping.call { @api.create_log_group(log_group_body(group)) }
         Helpers.log_group_resource_to_model(self, ApiSupport::ResourceShim.from_model(response.data))
       end
 
+      # @api private
       def _update_log_group(group)
         response = ApiSupport::ErrorMapping.call { @api.update_log_group(group.key, log_group_body(group)) }
         Helpers.log_group_resource_to_model(self, ApiSupport::ResourceShim.from_model(response.data))
@@ -280,11 +360,17 @@ module Smplkit
       # resolution-cache entries (+level+, +group+, +environments+). The +group+
       # key carries the *parent group id* so the resolution algorithm can walk
       # the chain with the same key shape it uses for loggers.
+      #
+      # @api private
       def list_group_entries
         rows = ApiSupport::PaginatedFetch.collect { |opts| @api.list_log_groups(opts) }
         rows.to_h { |r| group_entry_from_resource(ApiSupport::ResourceShim.from_model(r)) }
       end
 
+      # Fetch one log group as a resolution-cache entry. Used by the
+      # +group_changed+ WS handler.
+      #
+      # @api private
       def get_group_entry(key)
         response = ApiSupport::ErrorMapping.call { @api.get_log_group(key) }
         group_entry_from_resource(ApiSupport::ResourceShim.from_model(response.data))
@@ -305,7 +391,7 @@ module Smplkit
       end
 
       def log_group_body(group)
-        # LogGroup server schema: name, level, parent_id (no description).
+        # LogGroup server schema: name, level, parent_id, environments (no description).
         SmplkitGeneratedClient::Logging::LogGroupResponse.new(
           data: SmplkitGeneratedClient::Logging::LogGroupResource.new(
             type: "log_group",
@@ -313,7 +399,8 @@ module Smplkit
             attributes: SmplkitGeneratedClient::Logging::LogGroup.new(
               name: group.name,
               level: group.level&.to_s,
-              parent_id: group.parent_id
+              parent_id: group.group,
+              environments: Logging.environments_to_wire(group.environments)
             )
           )
         )
@@ -329,7 +416,7 @@ module Smplkit
     #   logging.loggers.new("sqlalchemy.engine").save
     #   logging.install
     #
-    # The management surface (+loggers+ / +log_groups+ sub-clients) works
+    # The CRUD surface (+loggers+ / +log_groups+ sub-clients) works
     # immediately. +register_adapter+ is a pre-install configuration call. The
     # live surface (+install+ / +on_change+ / +refresh+) requires +install+
     # first; calling +on_change+ / +refresh+ earlier raises +NotInstalledError+.
@@ -392,6 +479,10 @@ module Smplkit
         self
       end
 
+      # Registered logging adapters.
+      #
+      # @return [Array<Adapters::Base>] a copy of the adapters this client uses
+      #   to discover loggers and apply levels.
       def adapters
         @adapters.dup
       end
@@ -510,9 +601,27 @@ module Smplkit
         end
         @connected = false
       end
+
+      # Release resources held by this client.
+      #
+      # @api private
+      # @return [void]
       alias _close close
 
-      # Construct, yield to the block, and close on exit.
+      # Construct a +LoggingClient+, yield it to the block, and close it on exit.
+      #
+      # Mirrors Ruby's +File.open+ block form: the client is closed
+      # automatically when the block returns or raises, so a standalone client's
+      # owned transports and WebSocket are always torn down.
+      #
+      #   Smplkit::LoggingClient.open(environment: "production") do |logging|
+      #     logging.loggers.new("sqlalchemy.engine").save
+      #     logging.install
+      #   end
+      #
+      # @param kwargs [Hash] keyword arguments forwarded to +new+.
+      # @yieldparam client [LoggingClient] the constructed client.
+      # @return [Object] the block's return value.
       def self.open(**kwargs)
         client = new(**kwargs)
         begin
@@ -679,7 +788,7 @@ module Smplkit
       # Both the key-scoped listeners registered for +logger_id+ and every global
       # listener receive the same payload.
       def fire_for_logger(logger_id, level, source)
-        event = LoggerChangeEvent.new(name: logger_id, level: level, source: source)
+        event = LoggerChangeEvent.new(id: logger_id, level: level, source: source)
         (@global_listeners + @key_listeners[logger_id]).each do |cb|
           cb.call(event)
         rescue StandardError => e

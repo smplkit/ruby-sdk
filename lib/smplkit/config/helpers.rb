@@ -2,10 +2,19 @@
 
 module Smplkit
   module Config
+    # Internal conversion and resolution helpers shared by the config client.
+    #
+    # @api private
     module Helpers
       module_function
 
       # Translate a JSON:API resource Hash into a Config domain model.
+      #
+      # @api private
+      # @param client [ConfigClient, nil] The owning client, or +nil+ for a
+      #   detached model.
+      # @param resource [Hash{String => Object}] The JSON:API resource Hash.
+      # @return [Config] The constructed config domain model.
       def config_from_json(client, resource)
         attrs = resource["attributes"] || {}
         items = (attrs["items"] || {}).map do |name, item|
@@ -22,8 +31,8 @@ module Smplkit
         end
 
         environments = (attrs["environments"] || {}).each_with_object({}) do |(env, env_data), out|
-          # Per ADR-024 §2.4 env_data is already the flat override map
-          # +{key: rawValue}+ — the old +{values: {...}}+ envelope is gone.
+          # env_data is already the flat override map +{key: rawValue}+ — the
+          # old +{values: {...}}+ envelope is gone.
           env_values = env_data.is_a?(Hash) ? env_data : {}
           out[env] = ConfigEnvironment.new(values: env_values)
         end
@@ -44,6 +53,12 @@ module Smplkit
 
       # Deep-merge two Hashes, with +override+ winning. Mirrors the Python
       # +deep_merge+ helper used by the resolver.
+      #
+      # @api private
+      # @param base [Hash{String => Object}] The base Hash.
+      # @param override [Hash{String => Object}] The Hash whose values win on
+      #   conflict.
+      # @return [Hash{String => Object}] A new merged Hash.
       def deep_merge(base, override)
         result = base.dup
         override.each do |key, value|
@@ -57,6 +72,10 @@ module Smplkit
       end
 
       # Unwrap typed items +{ key => { value, type, desc } }+ to +{ key => raw }+.
+      #
+      # @api private
+      # @param items [Hash{String => Object}] Typed items keyed by item key.
+      # @return [Hash{String => Object}] The items as +{ key => raw_value }+.
       def unwrap_items(items)
         items.each_with_object({}) do |(k, v), out|
           out[k] = v.is_a?(Hash) && v.key?("value") ? v["value"] : v
@@ -66,6 +85,13 @@ module Smplkit
       # Build the parent chain (child-first, root-last) for a +Config+,
       # walking +parent_id+ pointers across the +by_id+ map. Mirrors the
       # Python SDK's client-side chain construction.
+      #
+      # @api private
+      # @param target [Config] The config to build the chain for.
+      # @param by_id [Hash{String => Config}] Pre-fetched configs keyed by id,
+      #   used to look up parents without extra network calls.
+      # @return [Array<Hash{String => Object}>] Chain entries from child to
+      #   root.
       def build_chain(target, by_id)
         chain = []
         current = target
@@ -84,14 +110,19 @@ module Smplkit
 
       # Build a single chain entry (the +id+/+items+/+environments+ Hash
       # shape used by +resolve_chain+) from a +Config+ domain model.
+      #
+      # @api private
+      # @param config [Config] The config to convert.
+      # @return [Hash{String => Object}] An +id+/+items+/+environments+ chain
+      #   entry.
       def config_to_chain_entry(config)
         items_hash = config.items.to_h do |item|
           [item.name,
            { "value" => item.value, "type" => item.type, "description" => item.description }.compact]
         end
         environments = config.environments.each_with_object({}) do |(env_key, env_obj), out|
-          # Per ADR-024 §2.4 env entries are flat +{key: rawValue}+ maps —
-          # no +values+ envelope, no per-key type wrapper.
+          # Env entries are flat +{key: rawValue}+ maps — no +values+
+          # envelope, no per-key type wrapper.
           out[env_key] = env_obj.values
         end
         { "id" => config.id, "items" => items_hash, "environments" => environments }
@@ -101,13 +132,20 @@ module Smplkit
       #
       # Walks from root (last element) to child (first element), accumulating
       # values via deep merge so child configs override parent configs.
+      #
+      # @api private
+      # @param chain [Array<Hash{String => Object}>] Chain entries from child
+      #   to root.
+      # @param environment [String, nil] The environment whose overrides to
+      #   apply, or +nil+ for base values only.
+      # @return [Hash{String => Object}] The resolved +{key => value}+ map.
       def resolve_chain(chain, environment)
         accumulated = {}
         chain.reverse_each do |config_data|
           raw_items = config_data["items"] || config_data["values"] || {}
           base_values = unwrap_items(raw_items)
-          # Per ADR-024 §2.4 env entries are flat +{key: rawValue}+ maps —
-          # the resolver reads the env entry directly as the override map.
+          # Env entries are flat +{key: rawValue}+ maps — the resolver reads
+          # the env entry directly as the override map.
           env_data = (config_data["environments"] || {})[environment] || {}
           env_values = env_data.is_a?(Hash) ? env_data : {}
           config_resolved = deep_merge(base_values, env_values)

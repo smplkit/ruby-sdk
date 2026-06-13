@@ -6,7 +6,7 @@ RSpec.describe Smplkit::Platform::ContextsClient do
   subject(:platform) { Smplkit::Platform::PlatformClient.new(app_transport: app_http, context_buffer: buffer) }
 
   let(:tcfg) do
-    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end

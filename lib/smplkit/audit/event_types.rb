@@ -7,22 +7,38 @@ module Smplkit
     #
     # Without +filter_resource_type+, returns one row per distinct
     # event type — an event type recorded with multiple resource_types appears
-    # once. With the filter, returns the event types seen with that
-    # specific resource_type, powering the cascading-filter behavior
-    # on the Activity tab.
+    # once. With the filter, returns the event types seen with that specific
+    # resource_type, which supports building a cascading resource-type-then-
+    # event-type filter.
     #
-    # ADR-047 §2.5. Sorted alphabetically; offset pagination
-    # (+page_number+ / +page_size+) per ADR-014.
+    # Sorted alphabetically; offset paginated.
     class EventTypes
       def initialize(api)
         @api = api
       end
 
-      # +environments+ is an optional array of environment keys (and/or the
-      # reserved +"smplkit"+ control-plane bucket) used to scope the read;
-      # the values are comma-joined into +filter[environment]+. Omitting it
-      # (or passing an empty array) leaves the filter unset — identical to
-      # the prior behavior on the wire.
+      # List the distinct +event_type+ slugs seen in the account.
+      #
+      # +environments+ scopes the listing to a set of environments: pass an
+      # array of environment keys and/or the reserved +"smplkit"+ control-plane
+      # bucket; the values are comma-joined into +filter[environment]+. Omitting
+      # it (or passing an empty array) leaves the filter off entirely.
+      #
+      # @param filter_resource_type [String, nil] Restrict the listing to
+      #   event_types seen with this +resource_type+. Omit to list every distinct
+      #   event_type.
+      # @param page_number [Integer, nil] 1-based page index. Omit for the first
+      #   page.
+      # @param page_size [Integer, nil] Maximum number of slugs to return in this
+      #   page.
+      # @param meta_total [Boolean, nil] When +true+, populate +total+ and
+      #   +total_pages+ in the returned page's +pagination+ block (costs an extra
+      #   count server-side). Omit to skip it.
+      # @param environments [Array<String>, nil] Environment keys and/or the
+      #   reserved +"smplkit"+ control-plane bucket to scope the listing to. Omit
+      #   to leave the filter off entirely.
+      # @return [Smplkit::Audit::EventTypeListPage] A page of the matching
+      #   event-type slugs.
       def list(filter_resource_type: nil, page_number: nil, page_size: nil, meta_total: nil, environments: nil)
         opts = {}
         opts[:filter_resource_type] = filter_resource_type if filter_resource_type

@@ -63,7 +63,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
 
   let(:base_url) { "https://logging.smplkit.test" }
   let(:tcfg) do
-    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end
@@ -439,7 +439,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       logging.install
 
       events = []
-      logging.on_change { |e| events << [e.name, e.level, e.source] }
+      logging.on_change { |e| events << [e.id, e.level, e.source] }
       adapter.applied.clear
       # Re-stub the list with a moved level.
       stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
@@ -459,8 +459,8 @@ RSpec.describe Smplkit::Logging::LoggingClient do
 
       seen = []
       other = []
-      logging.on_change("my.logger") { |e| seen << e.name }
-      logging.on_change("other.logger") { |e| other << e.name }
+      logging.on_change("my.logger") { |e| seen << e.id }
+      logging.on_change("other.logger") { |e| other << e.id }
       stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
       logging.refresh
       expect(seen).to eq(["my.logger"])
@@ -476,7 +476,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       logging.install
 
       events = []
-      logging.on_change { |e| events << e.name }
+      logging.on_change { |e| events << e.id }
       stub_loggers_list(logger_resource("my.logger", level: "WARN"))
       logging.refresh
       expect(events).to be_empty
@@ -492,7 +492,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
 
       seen = []
       logging.on_change { raise "boom" }
-      logging.on_change { |e| seen << e.name }
+      logging.on_change { |e| seen << e.id }
       stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
       expect { logging.refresh }.not_to raise_error
       expect(seen).to eq(["my.logger"])
@@ -534,7 +534,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     it "logger_changed re-resolves + applies + fires on a delta" do
       adapter = install_with_logger(level: "WARN")
       events = []
-      logging.on_change { |e| events << [e.name, e.level, e.source] }
+      logging.on_change { |e| events << [e.id, e.level, e.source] }
       stub_logger_get("my.logger", logger_resource("my.logger", level: "ERROR"))
       ws.dispatch("logger_changed", { "id" => "my.logger" })
       expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::ERROR]])
@@ -544,7 +544,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     it "logger_changed fires nothing when the effective level is unchanged" do
       adapter = install_with_logger(level: "WARN")
       events = []
-      logging.on_change { |e| events << e.name }
+      logging.on_change { |e| events << e.id }
       stub_logger_get("my.logger", logger_resource("my.logger", level: "WARN"))
       ws.dispatch("logger_changed", { "id" => "my.logger" })
       expect(events).to be_empty
@@ -554,7 +554,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     it "logger_changed swallows a fetch failure and leaves the cache intact" do
       adapter = install_with_logger(level: "WARN")
       events = []
-      logging.on_change { |e| events << e.name }
+      logging.on_change { |e| events << e.id }
       stub_request(:get, "#{base_url}/api/v1/loggers/my.logger").to_return(status: 500, body: "boom")
       expect { ws.dispatch("logger_changed", { "id" => "my.logger" }) }.not_to raise_error
       expect(events).to be_empty
@@ -583,7 +583,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       adapter.applied.clear
 
       events = []
-      logging.on_change { |e| events << [e.name, e.level] }
+      logging.on_change { |e| events << [e.id, e.level] }
       ws.dispatch("logger_deleted", { "id" => "com.acme" })
       # com.acme.x resolved to WARN via ancestry; after deletion falls back to INFO.
       expect(adapter.applied).to eq([["com.acme.x", Smplkit::LogLevel::INFO]])
@@ -601,7 +601,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       adapter.applied.clear
 
       events = []
-      logging.on_change { |e| events << [e.name, e.level] }
+      logging.on_change { |e| events << [e.id, e.level] }
       stub_group_get("g1", group_resource("g1", level: "FATAL"))
       ws.dispatch("group_changed", { "id" => "g1" })
       expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::FATAL]])
@@ -632,7 +632,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       adapter.applied.clear
 
       events = []
-      logging.on_change { |e| events << [e.name, e.level] }
+      logging.on_change { |e| events << [e.id, e.level] }
       ws.dispatch("group_deleted", { "id" => "g1" })
       # my.logger resolved to WARN via g1; after deletion falls back to INFO.
       expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::INFO]])
@@ -649,7 +649,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       adapter.applied.clear
 
       events = []
-      logging.on_change { |e| events << [e.name, e.level] }
+      logging.on_change { |e| events << [e.id, e.level] }
       stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
       stub_groups_list
       ws.dispatch("loggers_changed", {})
@@ -678,9 +678,9 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       global_a = []
       global_b = []
       key_db = []
-      logging.on_change { |e| global_a << e.name }
-      logging.on_change { |e| global_b << e.name }
-      logging.on_change("app.db") { |e| key_db << e.name }
+      logging.on_change { |e| global_a << e.id }
+      logging.on_change { |e| global_b << e.id }
+      logging.on_change("app.db") { |e| key_db << e.id }
 
       stub_group_get("app", group_resource("app", level: "ERROR"))
       ws.dispatch("group_changed", { "id" => "app" })
@@ -916,13 +916,13 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       expect(group).to be_a(Smplkit::Logging::SmplLogGroup)
       expect(group.key).to eq("payment_services")
       expect(group.name).to eq("Payment Services")
-      expect(group.parent_id).to be_nil
+      expect(group.group).to be_nil
     end
 
     it "new honours an explicit name and parent group" do
       group = logging.log_groups.new("child", name: "Child Group", group: "parent")
       expect(group.name).to eq("Child Group")
-      expect(group.parent_id).to eq("parent")
+      expect(group.group).to eq("parent")
     end
 
     it "list maps every returned resource to a SmplLogGroup" do
@@ -967,9 +967,11 @@ RSpec.describe Smplkit::Logging::LoggingClient do
              end
       group = logging.log_groups.new("g1", name: "Group One")
       group.level = Smplkit::LogLevel::WARN
+      group.set_level(Smplkit::LogLevel::DEBUG, environment: "staging")
       group.save
       expect(post).to have_been_requested
       expect(captured["data"]["attributes"]["name"]).to eq("Group One")
+      expect(captured["data"]["attributes"]["environments"]).to eq("staging" => { "level" => "DEBUG" })
       expect(group.created_at).not_to be_nil
     end
 
@@ -1031,11 +1033,11 @@ RSpec.describe Smplkit::Logging::LoggingClient do
   end
 
   describe "Smplkit::Logging::LoggerChangeEvent" do
-    it "exposes name / level / source and compares structurally" do
-      a = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: "WARN", source: "ws")
-      b = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: "WARN", source: "ws")
-      c = Smplkit::Logging::LoggerChangeEvent.new(name: "x", level: "ERROR", source: "ws")
-      expect(a.name).to eq("x")
+    it "exposes id / level / source and compares structurally" do
+      a = Smplkit::Logging::LoggerChangeEvent.new(id: "x", level: "WARN", source: "ws")
+      b = Smplkit::Logging::LoggerChangeEvent.new(id: "x", level: "WARN", source: "ws")
+      c = Smplkit::Logging::LoggerChangeEvent.new(id: "x", level: "ERROR", source: "ws")
+      expect(a.id).to eq("x")
       expect(a.level).to eq("WARN")
       expect(a.source).to eq("ws")
       expect(a).to eq(b)

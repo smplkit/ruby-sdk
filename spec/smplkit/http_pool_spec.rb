@@ -31,7 +31,7 @@ RSpec.describe Smplkit::HttpPool do
 
   describe "wiring through Transport.build_api_client" do
     let(:resolved) do
-      Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+      Smplkit::ConfigResolution::ResolvedClientConfig.new(
         api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
       )
     end

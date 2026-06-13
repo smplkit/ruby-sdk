@@ -2,9 +2,11 @@
 
 module Smplkit
   module Logging
-    # Logger name normalization per ADR-034 §5.
+    # Logger name normalization.
     #
     # Replace +/+ with +.+, replace +:+ with +.+, lowercase everything.
+    #
+    # @api private
     module Normalize
       module_function
 

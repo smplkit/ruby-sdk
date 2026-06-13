@@ -31,6 +31,12 @@ module Smplkit
     class Color
       attr_reader :hex
 
+      # Build a +Color+ from a CSS hex string.
+      #
+      # @param hex [String] A CSS hex string like +"#RGB"+, +"#RRGGBB"+, or
+      #   +"#RRGGBBAA"+. Normalized to lowercase.
+      # @raise [TypeError] If +hex+ is not a String.
+      # @raise [ArgumentError] If +hex+ is not a valid CSS hex string.
       def initialize(hex)
         raise TypeError, "Color hex must be a String, got #{hex.class}: #{hex.inspect}" unless hex.is_a?(String)
         unless HEX_RE.match?(hex)
@@ -42,6 +48,14 @@ module Smplkit
         freeze
       end
 
+      # Construct a +Color+ from 0-255 RGB components.
+      #
+      # @param red [Integer] Red component, an integer in the range 0-255.
+      # @param green [Integer] Green component, an integer in the range 0-255.
+      # @param blue [Integer] Blue component, an integer in the range 0-255.
+      # @return [Color] A color with the equivalent hex value.
+      # @raise [TypeError] If any component is not an integer.
+      # @raise [ArgumentError] If any component is outside the range 0-255.
       def self.rgb(red, green, blue)
         [%w[red green blue], [red, green, blue]].transpose.each do |name, val|
           unless val.is_a?(Integer) && !val.is_a?(TrueClass) && !val.is_a?(FalseClass)

@@ -8,6 +8,8 @@ module Smplkit
     # failures route through {Smplkit::Errors.raise_for_status}, which
     # emits +PaymentRequiredError+ / +NotFoundError+ / +ConflictError+
     # / +ValidationError+ / +Error+ depending on the JSON:API body.
+    #
+    # @api private
     def self.call_api
       yield
     rescue SmplkitGeneratedClient::Audit::ApiError => e
@@ -24,6 +26,8 @@ module Smplkit
     # URL. Returns nil for non-string input or when the link carries
     # no cursor parameter; trims trailing query params at the next
     # ampersand so they don't leak into the token.
+    #
+    # @api private
     def self.next_cursor(link)
       return nil unless link.is_a?(String)
 
@@ -39,6 +43,8 @@ module Smplkit
     # Returns a hash with +:page+/+:size+ (and +:total+/+:total_pages+ when
     # the request opted into +meta[total]=true+). Always returns a hash so
     # callers don't have to nil-check before reading individual keys.
+    #
+    # @api private
     def self.extract_pagination(meta)
       pagination = meta&.pagination
       return {} if pagination.nil?
@@ -56,14 +62,16 @@ module Smplkit
     # The audit read endpoints (events list, the resource_type / event_type /
     # category discovery lists) accept an optional comma-separated
     # +filter[environment]+ of real environment keys and/or the reserved
-    # +"smplkit"+ control-plane bucket (ADR-055). The wrapper takes an
-    # array of keys for an ergonomic surface and joins it here.
+    # +"smplkit"+ control-plane bucket. The wrapper takes an array of keys for
+    # an ergonomic surface and joins it here.
     #
     # +nil+ or an empty array (or one whose entries are all blank) returns
     # +nil+ so the caller omits the query param entirely and behaves exactly
     # as before — existing callers are byte-for-byte unchanged on the wire.
     # +"smplkit"+ is passed through like any other key; it carries no special
     # handling in the SDK.
+    #
+    # @api private
     def self.join_environments(environments)
       return nil if environments.nil?
 
@@ -71,12 +79,12 @@ module Smplkit
       values.empty? ? nil : values.join(",")
     end
 
-    # Supported SIEM forwarder destination types (ADR-047 §2.12).
+    # Supported SIEM forwarder destination types.
     #
     # Members are declared in alphabetical order. Customers pass these
-    # constants — or the equivalent string — to the management
-    # +forwarders+ surface; the wrapper validates membership via {coerce}
-    # before round-tripping to the wire.
+    # constants — or the equivalent string — to the forwarders surface
+    # (+client.audit.forwarders+); the wrapper validates membership via
+    # {coerce} before round-tripping to the wire.
     module ForwarderType
       DATADOG = "datadog"
       ELASTIC = "elastic"
@@ -104,7 +112,7 @@ module Smplkit
       end
     end
 
-    # HTTP verb used by a forwarder's outbound delivery (ADR-047 §2.12).
+    # HTTP verb used by a forwarder's outbound delivery.
     #
     # Mirrors the audit spec's +HttpConfigurationMethod+ enum so the
     # +HttpConfiguration#method+ field is constrained to a known value
@@ -135,11 +143,10 @@ module Smplkit
       end
     end
 
-    # Engine that evaluates a forwarder's +transform+ template
-    # (ADR-047 §2.12). Only +JSONATA+ is supported today; the enum
-    # exists so the field is typed instead of accepting any string,
-    # and so additional engines can be added without breaking the
-    # public surface.
+    # Engine that evaluates a forwarder's +transform+ template.
+    # Only +JSONATA+ is supported today; the enum exists so the field is
+    # typed instead of accepting any string, and so additional engines
+    # can be added without breaking the public surface.
     module TransformType
       JSONATA = "JSONATA"
 
@@ -161,7 +168,7 @@ module Smplkit
       end
     end
 
-    # A single audit event as returned by the audit service (ADR-047 §2.3.1).
+    # A single audit event as returned by the audit service.
     #
     # @!attribute [rw] id
     #   @return [String] Server-assigned UUID for this event.
@@ -181,6 +188,11 @@ module Smplkit
     #   @return [String, nil] Customer-supplied free-form actor identifier — +nil+ when not provided.
     # @!attribute [rw] actor_label
     #   @return [String, nil] Customer-supplied display label for the actor — typically a name or email.
+    # @!attribute [rw] category
+    #   @return [String, nil] Free-form bucket label for the event — e.g.
+    #     +"auth"+, +"billing"+, +"config-change"+. Stored exactly as supplied;
+    #     drives the audit log's category filter and the +categories+ discovery
+    #     listing ({Smplkit::Audit::AuditClient#categories}). +nil+ when not supplied.
     # @!attribute [rw] data
     #   @return [Hash{String => Object}] Free-form per-event payload defined by the customer.
     # @!attribute [rw] idempotency_key
@@ -196,7 +208,7 @@ module Smplkit
     AuditEvent = Struct.new(
       :id, :event_type, :resource_type, :resource_id,
       :occurred_at, :created_at,
-      :actor_type, :actor_id, :actor_label,
+      :actor_type, :actor_id, :actor_label, :category,
       :data, :idempotency_key, :do_not_forward, :environment,
       keyword_init: true
     ) do
@@ -212,6 +224,7 @@ module Smplkit
           actor_type: attrs.actor_type,
           actor_id: attrs.actor_id,
           actor_label: attrs.actor_label,
+          category: attrs.category,
           data: Smplkit::Helpers.deep_stringify_keys(attrs.data || {}),
           idempotency_key: attrs.idempotency_key,
           do_not_forward: attrs.do_not_forward || false,
@@ -223,9 +236,9 @@ module Smplkit
     # A distinct +resource_type+ slug seen for the account.
     #
     # The +id+ and +resource_type+ are the same value — JSON:API surfaces
-    # the customer-facing key as the resource id (ADR-014). The duplication
-    # keeps SDK consumers from having to dig into the id field when
-    # filtering UI controls; pick whichever name reads better in context.
+    # the customer-facing key as the resource id. The duplication keeps SDK
+    # consumers from having to dig into the id field when filtering UI
+    # controls; pick whichever name reads better in context.
     #
     # @!attribute [rw] id
     #   @return [String] JSON:API resource id (same as +resource_type+).
@@ -272,8 +285,8 @@ module Smplkit
     #
     # Same shape as {ResourceType}/{EventType} — +id+ and +category+ are the
     # same value (JSON:API surfaces the customer-facing key as the resource
-    # id, ADR-014). +created_at+ is the earliest sighting of this category
-    # for the account.
+    # id). +created_at+ is the earliest sighting of this category for the
+    # account.
     #
     # @!attribute [rw] id
     #   @return [String] JSON:API resource id (same as +category+).
@@ -297,8 +310,8 @@ module Smplkit
     # @!attribute [rw] name
     #   @return [String] Header name (e.g. +"Authorization"+, +"DD-API-KEY"+).
     # @!attribute [rw] value
-    #   @return [String] Header value, plaintext on writes. The audit service
-    #     encrypts values at rest; reads return them as +"<redacted>"+.
+    #   @return [String] Header value. Returned in plaintext on reads, so a
+    #     get-mutate-put round-trip preserves it without re-entering secrets.
     HttpHeader = Struct.new(:name, :value, keyword_init: true)
 
     # Forwarder destination HTTP request shape.
@@ -309,8 +322,9 @@ module Smplkit
     #   @return [String] Destination URL the audit service sends each event to.
     # @!attribute [rw] headers
     #   @return [Array<HttpHeader>] Headers attached to every outbound request.
-    #     Values carry credentials and are encrypted at rest server-side; reads
-    #     return them redacted.
+    #     Values often carry credentials and are returned in plaintext on
+    #     reads, so a get-mutate-put round-trip preserves them without
+    #     re-entering secrets.
     # @!attribute [rw] success_status
     #   @return [String] Status the destination must return for delivery to count
     #     as success — an exact code (+"200"+, +"204"+) or a class (+"2xx"+, +"4xx"+).
@@ -401,8 +415,8 @@ module Smplkit
     #     configuration that fully replaces the forwarder's base
     #     {Forwarder#configuration} for this environment. +nil+ (the default)
     #     inherits the base configuration. As with the base configuration,
-    #     header values are plaintext on writes and returned redacted on reads —
-    #     re-supply real values before {Forwarder#save}.
+    #     header values are returned in plaintext on reads, so a get-mutate-put
+    #     round-trip preserves them without re-entering secrets.
     ForwarderEnvironment = Struct.new(:enabled, :configuration, keyword_init: true) do
       def initialize(enabled: false, configuration: nil)
         super
@@ -424,10 +438,9 @@ module Smplkit
     # Active-record style: instantiate via
     # +client.audit.forwarders.new(...)+, mutate fields directly,
     # and call {#save} to persist or {#delete} to remove. Header values in
-    # +configuration.headers+ are returned redacted on reads — the GET path
-    # on the audit API replaces every header value with +"<redacted>"+.
-    # Re-supply real values before calling {#save}; the SDK does not cache
-    # them client-side.
+    # +configuration.headers+ are returned in plaintext on reads, so fetching
+    # a forwarder, mutating it, and calling {#save} preserves its header
+    # values without re-entering secrets.
     class Forwarder
       # @return [String, nil] Caller-supplied unique identifier (key) for this
       #   forwarder. Unique within an account; immutable for the lifetime of
@@ -494,7 +507,7 @@ module Smplkit
       # @return [String, nil] ISO-8601 timestamp of the most recent mutation.
       attr_accessor :updated_at
 
-      # @return [String, nil] Soft-delete timestamp. +nil+ for live forwarders.
+      # @return [String, nil] Deletion timestamp; +nil+ for live forwarders.
       attr_accessor :deleted_at
 
       # @return [Integer, nil] Monotonic version counter, bumped on every server-side write.
@@ -548,7 +561,7 @@ module Smplkit
       end
       alias save! save
 
-      # Soft-delete this forwarder on the server.
+      # Delete this forwarder on the server.
       #
       # @return [nil]
       def delete
@@ -593,6 +606,8 @@ module Smplkit
       # The per-environment mutators reach through here so an existing
       # override's other field is preserved when only one of +enabled+ /
       # +configuration+ is being set.
+      #
+      # @api private
       def _environment_override(environment)
         @environments[environment] ||= ForwarderEnvironment.new
       end

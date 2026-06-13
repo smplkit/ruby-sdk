@@ -5,7 +5,7 @@
 # Smpl Config has two surfaces on a single client, mirroring how the audit and
 # jobs clients expose their full surface from one class:
 #
-# * *Management surface* — pure CRUD, no live connection: +new+ / +get+ /
+# * *CRUD surface* — pure CRUD, no live connection: +new+ / +get+ /
 #   +list+ / +delete+ and the discovery buffer (+register_config+ /
 #   +register_config_item+ / +flush+ / +pending_count+). The client owns the
 #   discovery buffer directly.
@@ -29,6 +29,8 @@ module Smplkit
   module Config
     # Module-level helpers for the config client. Extracted so they can be
     # unit-tested without spinning up the full client.
+    #
+    # @api private
     module Discovery
       module_function
 
@@ -36,6 +38,10 @@ module Smplkit
       # Hash/Struct target and when supplying a default to +get_value(id, key,
       # default)+. +true+/+false+ are checked first because Ruby's
       # +Numeric+/+Integer+ tests would not accidentally claim them.
+      #
+      # @api private
+      # @param value [Object] The runtime value whose item type to infer.
+      # @return [String] One of +"BOOLEAN"+, +"NUMBER"+, or +"STRING"+.
       def value_to_item_type(value)
         case value
         when true, false then "BOOLEAN"
@@ -47,6 +53,12 @@ module Smplkit
       # Walk a bound target, returning +[key, type, value, description]+ tuples
       # flattened to dot-notation. Nested Hashes / Structs are descended into;
       # everything else is treated as an opaque leaf.
+      #
+      # @api private
+      # @param target [Hash, Struct] The bound target to walk.
+      # @param prefix [String] Dot-notation prefix accumulated during recursion.
+      # @return [Array<Array(String, String, Object, String, nil)>] One
+      #   +[key, type, value, description]+ tuple per leaf.
       def iter_items(target, prefix: "")
         if target.is_a?(Hash)
           iter_hash_items(target, prefix: prefix)
@@ -57,6 +69,14 @@ module Smplkit
         end
       end
 
+      # Walk a Hash leaf-by-leaf, flattening nested Hashes / Structs to
+      # dot-notation.
+      #
+      # @api private
+      # @param hash [Hash] The Hash to walk.
+      # @param prefix [String] Dot-notation prefix accumulated during recursion.
+      # @return [Array<Array(String, String, Object, String, nil)>] One
+      #   +[key, type, value, description]+ tuple per leaf.
       def iter_hash_items(hash, prefix: "")
         out = []
         hash.each do |raw_key, value|
@@ -70,6 +90,14 @@ module Smplkit
         out
       end
 
+      # Walk a Struct member-by-member, flattening nested Hashes / Structs to
+      # dot-notation.
+      #
+      # @api private
+      # @param struct [Struct] The Struct to walk.
+      # @param prefix [String] Dot-notation prefix accumulated during recursion.
+      # @return [Array<Array(String, String, Object, String, nil)>] One
+      #   +[key, type, value, description]+ tuple per leaf.
       def iter_struct_items(struct, prefix: "")
         out = []
         struct.members.each do |member|
@@ -89,6 +117,12 @@ module Smplkit
       # +Hash#[]=+ or +Struct#[]=+. Bails silently if any intermediate is
       # missing or not a supported container — the server may have items that
       # don't line up with what the bound target declared.
+      #
+      # @api private
+      # @param target [Hash, Struct] The bound target to mutate in place.
+      # @param dotted_key [String] The dot-notation path to the leaf to set.
+      # @param value [Object] The value to assign at the leaf.
+      # @return [void]
       def apply_change_to_target(target, dotted_key, value)
         parts = dotted_key.split(".")
         current = walk_to_leaf_parent(target, parts[0..-2])
@@ -102,6 +136,14 @@ module Smplkit
         end
       end
 
+      # Walk a dotted key path to the leaf's parent container.
+      #
+      # @api private
+      # @param target [Hash, Struct] The root container to walk from.
+      # @param parts [Array<String>] Path segments leading to (but excluding)
+      #   the leaf.
+      # @return [Hash, Struct, nil] The leaf's parent container, or +nil+ when
+      #   any intermediate is missing or not a supported container.
       def walk_to_leaf_parent(target, parts)
         current = target
         parts.each do |part|
@@ -122,6 +164,14 @@ module Smplkit
         current
       end
 
+      # Assign a value to a Struct member, ignoring members the Struct does not
+      # declare.
+      #
+      # @api private
+      # @param struct [Struct] The Struct to mutate.
+      # @param name [String] The member name to assign.
+      # @param value [Object] The value to assign.
+      # @return [void]
       def assign_struct_member(struct, name, value)
         sym = name.to_sym
         return unless struct.members.include?(sym)
@@ -179,27 +229,60 @@ module Smplkit
 
       attr_reader :config_id
 
+      # @return [Array<String>] The current resolved item keys.
       def keys = current_values.keys
+
+      # @return [Array<Object>] The current resolved values.
       def values = current_values.values
+
+      # @yieldparam key [String] Each resolved item key.
+      # @yieldparam value [Object] Each resolved value.
+      # @return [Enumerator, void] An enumerator when no block is given.
       def each_pair(&) = current_values.each_pair(&)
       alias each each_pair
+
+      # @return [Array<Array(String, Object)>] The current resolved items as
+      #   +[key, value]+ pairs.
       def items = current_values.to_a
+
+      # @return [Hash{String => Object}] A copy of the current resolved values.
       def to_h = current_values.dup
+
+      # @return [Integer] The number of resolved items.
       def size = current_values.size
       alias length size
+
+      # @param key [String, Symbol] The item key to test for.
+      # @return [Boolean] +true+ when +key+ is present in the resolved values.
       def key?(key) = current_values.key?(key.to_s)
       alias include? key?
       alias has_key? key?
 
+      # @param key [String, Symbol] The item key to read.
+      # @return [Object, nil] The current resolved value for +key+, or +nil+
+      #   when absent.
       def [](key)
         current_values[key.to_s]
       end
 
+      # Return the current resolved value for +key+, or a fallback.
+      #
+      # @param key [String, Symbol] The config item key to read.
+      # @param default [Object] Value returned when +key+ is not present.
+      # @return [Object] The current resolved value for +key+, or +default+ if
+      #   the key is absent.
       def get(key, default = nil)
         values = current_values
         values.key?(key.to_s) ? values[key.to_s] : default
       end
 
+      # Register a change listener scoped to this config.
+      #
+      # @param item_key [String, Symbol, nil] When given, fires only when this
+      #   item key changes; otherwise fires on any change to this config.
+      # @yieldparam event [ConfigChangeEvent] The change that fired the
+      #   listener.
+      # @return [Proc] The registered block, unchanged.
       def on_change(item_key = nil, &)
         if item_key.nil?
           @client.on_change(@config_id, &)
@@ -233,6 +316,13 @@ module Smplkit
     end
 
     # Normalize a +parent+ argument to a config id string.
+    #
+    # @api private
+    # @param parent [String, Config, nil] A config id, a saved +Config+ whose
+    #   id is used, or +nil+.
+    # @return [String, nil] The resolved config id, or +nil+ when +parent+ is
+    #   +nil+.
+    # @raise [ArgumentError] If +parent+ is an unsaved +Config+ (no id yet).
     def self.resolve_parent_id(parent)
       return parent if parent.nil? || parent.is_a?(String)
       if parent.id.nil? || parent.id == ""
@@ -245,19 +335,32 @@ module Smplkit
     # Build a standalone config transport and resolve the app base URL.
     #
     # +base_url+/+api_key+ are used directly when supplied (the path a top-level
-    # client takes after it has already resolved them); otherwise the
-    # management config resolver fills in whatever is missing (+~/.smplkit+ /
-    # env vars / defaults). The app base URL is returned alongside so a
-    # standalone client can open its own WebSocket against the event gateway.
+    # client takes after it has already resolved them); otherwise the config
+    # resolver fills in whatever is missing (+~/.smplkit+ / env vars /
+    # defaults). The app base URL is returned alongside so a standalone client
+    # can open its own WebSocket against the event gateway.
+    #
+    # @api private
+    # @param api_key [String, nil] API key, or +nil+ to resolve it.
+    # @param base_url [String, nil] Full config-service base URL, or +nil+ to
+    #   resolve it from +base_domain+/+scheme+.
+    # @param profile [String, nil] Named +~/.smplkit+ profile section.
+    # @param base_domain [String, nil] Base domain for API requests.
+    # @param scheme [String, nil] URL scheme.
+    # @param debug [Boolean, nil] Enable SDK debug logging.
+    # @param extra_headers [Hash{String => String}, nil] Headers attached to
+    #   every request.
+    # @return [Array(Object, String, String)] The transport, the app base URL,
+    #   and the resolved API key.
     def self.config_transport(api_key:, base_url:, profile:, base_domain:, scheme:, debug:, extra_headers:)
-      cfg = ConfigResolution.resolve_management_config(
+      cfg = ConfigResolution.resolve_client_config(
         profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
       )
       resolved_key = api_key.nil? ? cfg.api_key : api_key
       merged = {}
       merged.merge!(cfg.extra_headers || {})
       merged.merge!(extra_headers || {})
-      tcfg = ConfigResolution::ResolvedManagementConfig.new(
+      tcfg = ConfigResolution::ResolvedClientConfig.new(
         api_key: resolved_key, base_domain: cfg.base_domain, scheme: cfg.scheme,
         debug: cfg.debug, extra_headers: merged
       )
@@ -278,7 +381,7 @@ module Smplkit
     #   proxy = config.subscribe("billing")
     #   puts proxy["max_seats"]
     #
-    # The management surface (+new+ / +get+ / +list+ / +delete+ and discovery)
+    # The CRUD surface (+new+ / +get+ / +list+ / +delete+ and discovery)
     # is pure CRUD. The live surface (+subscribe+ / +get_value+ / +bind+ /
     # +on_change+ / +refresh+) connects lazily on first use — the first call
     # flushes discovery, fetches and resolves all configs into the local cache,
@@ -290,6 +393,26 @@ module Smplkit
       MISSING = Object.new.freeze
       private_constant :MISSING
 
+      # @param api_key [String, nil] API key. When omitted, resolved from
+      #   +SMPLKIT_API_KEY+ or +~/.smplkit+.
+      # @param environment [String, nil] Deployment environment used to resolve
+      #   runtime config values and to scope discovery declarations.
+      # @param base_url [String, nil] Full config-service base URL. Usually
+      #   resolved from +base_domain+/+scheme+; supplied directly by the
+      #   top-level clients which have already computed it.
+      # @param profile [String, nil] Named +~/.smplkit+ profile section.
+      # @param base_domain [String, nil] Base domain for API requests (default
+      #   +"smplkit.com"+).
+      # @param scheme [String, nil] URL scheme (default +"https"+).
+      # @param debug [Boolean, nil] Enable SDK debug logging.
+      # @param extra_headers [Hash{String => String}, nil] Extra headers
+      #   attached to every request.
+      # @param parent [Smplkit::Client, nil] Internal — the owning client. Not
+      #   for direct use.
+      # @param transport [Object, nil] Internal — a pre-built config transport
+      #   supplied by a top-level client so the config surface shares one
+      #   connection pool. Not for direct use.
+      # @param metrics [Object, nil] Internal — the parent's metrics reporter.
       def initialize(api_key = nil, environment: nil, base_url: nil, profile: nil,
                      base_domain: nil, scheme: nil, debug: nil, extra_headers: nil,
                      parent: nil, transport: nil, metrics: nil)
@@ -338,6 +461,16 @@ module Smplkit
       # +parent+ accepts either a config id (string) or an existing +Config+
       # instance — passing the instance lets you skip naming the id explicitly
       # when you already have the parent in scope.
+      #
+      # @param id [String] The config identifier (slug) the resource will be
+      #   saved under.
+      # @param name [String, nil] Display name. Defaults to a title-cased form
+      #   of +id+.
+      # @param description [String, nil] Optional human-readable description.
+      # @param parent [String, Config, nil] Optional parent config to inherit
+      #   values from, as a config id or an existing +Config+ instance.
+      # @return [Config] A new, unsaved +Config+. Nothing is sent to the server
+      #   until you call +Config#save+.
       def new(id, name: nil, description: nil, parent: nil)
         Config.new(
           self,
@@ -350,13 +483,22 @@ module Smplkit
 
       # Fetch the editable +Config+ resource by id.
       #
-      # Raises +NotFoundError+ if no config with that id exists.
+      # @param id [String] The config identifier (slug) to fetch.
+      # @return [Config] The editable +Config+ resource.
+      # @raise [Smplkit::NotFoundError] If no config with that id exists.
       def get(id)
         response = ApiSupport::ErrorMapping.call { @api.get_config(id) }
         Helpers.config_from_json(self, ApiSupport::ResourceShim.from_model(response.data))
       end
 
       # List configs for the authenticated account.
+      #
+      # @param page_number [Integer, nil] 1-based page to fetch. When omitted,
+      #   the server's default first page is returned.
+      # @param page_size [Integer, nil] Number of configs per page. When
+      #   omitted, the server's default page size is used.
+      # @return [Array<Config>] The configs on the requested page, or an empty
+      #   array if there are none.
       def list(page_number: nil, page_size: nil)
         opts = {}
         opts[:page_number] = page_number unless page_number.nil?
@@ -366,6 +508,9 @@ module Smplkit
       end
 
       # Delete a config by id.
+      #
+      # @param id [String] The config identifier (slug) to delete.
+      # @return [void]
       def delete(id)
         ApiSupport::ErrorMapping.call { @api.delete_config(id) }
         nil
@@ -386,6 +531,20 @@ module Smplkit
       # ----------------------------------------------------------------
 
       # Queue a configuration declaration for bulk-discovery upload.
+      #
+      # The declaration is buffered and sent in the background; it surfaces the
+      # config in the smplkit console even if no values are set yet.
+      #
+      # @param config_id [String] The config identifier (slug) being declared.
+      # @param service [String, nil] Name of the service declaring the config,
+      #   or +nil+.
+      # @param environment [String, nil] Environment the declaration is scoped
+      #   to, or +nil+.
+      # @param parent [String, nil] Optional parent config id this config
+      #   inherits from.
+      # @param name [String, nil] Optional display name for the config.
+      # @param description [String, nil] Optional human-readable description.
+      # @return [void]
       def register_config(config_id, service:, environment:, parent: nil, name: nil, description: nil)
         @buffer.declare(config_id, service: service, environment: environment,
                                    parent: parent, name: name, description: description)
@@ -393,17 +552,30 @@ module Smplkit
       end
 
       # Queue a config item declaration. +register_config+ must run first.
+      #
+      # The declaration is buffered and sent in the background, surfacing the
+      # item (with its type and default) in the smplkit console.
+      #
+      # @param config_id [String] The config identifier (slug) the item belongs
+      #   to.
+      # @param item_key [String] Key of the item within the config.
+      # @param item_type [String] Item value type — one of +"STRING"+,
+      #   +"NUMBER"+, +"BOOLEAN"+, or +"JSON"+.
+      # @param default [Object] The in-code default value for the item.
+      # @param description [String, nil] Optional human-readable description.
+      # @return [void]
       def register_config_item(config_id, item_key, item_type, default, description = nil)
         @buffer.add_item(config_id, item_key, item_type, default, description)
         trigger_background_flush_if_needed
       end
 
-      # POST pending declarations to +/api/v1/configs/bulk+.
+      # Send any queued config and item declarations to the server.
       #
-      # Per ADR-024 §2.9, bulk registration always lands rows as
-      # +managed=false+ and is plan-limit-exempt — failures here never
-      # propagate to customer code. Drained entries are not requeued; the SDK
-      # will re-observe on the next process start.
+      # Discovery is best-effort — failures here never propagate to your code.
+      # Drained entries are not requeued; the SDK re-observes them on the next
+      # process start.
+      #
+      # @return [void]
       def flush
         batch = @buffer.drain
         return if batch.empty?
@@ -412,12 +584,14 @@ module Smplkit
         begin
           ApiSupport::ErrorMapping.call { @api.bulk_register_configs(body) }
         rescue StandardError => e
-          # Fire-and-forget per ADR-024 §2.9.
+          # Fire-and-forget — discovery failures never propagate to caller code.
           Smplkit.debug("registration", "config bulk register failed: #{e.class}: #{e.message}")
         end
       end
 
       # Number of pending config declarations awaiting flush.
+      #
+      # @return [Integer] The count of buffered declarations not yet flushed.
       def pending_count
         @buffer.pending_count
       end
@@ -452,6 +626,17 @@ module Smplkit
       # originally-bound object; the new +config+ argument is ignored.
       #
       # Connects lazily on first use — no explicit install step.
+      #
+      # @param id [String] The config id to register under.
+      # @param config [Hash, Struct] A populated Hash or Struct. Both supply
+      #   the schema (via the keys or Struct members) and the in-code defaults.
+      # @param parent [Hash, Struct, nil] Optional parent — any object
+      #   previously returned from a +#bind+ call. Activates parent-chain
+      #   inheritance for keys the caller omitted.
+      # @return [Hash, Struct] The same +config+ object, registered and live.
+      # @raise [TypeError] If +config+ is neither a Hash nor a Struct.
+      # @raise [ArgumentError] If +parent+ is provided but was not previously
+      #   bound via +#bind+.
       def bind(id, config, parent: nil)
         ensure_connected
         unless config.is_a?(Hash) || config.is_a?(Struct)
@@ -476,8 +661,12 @@ module Smplkit
       # registers the config declaration for code-first observability so the
       # reference appears in the smplkit console.
       #
-      # Connects lazily on first use — no explicit install step. Raises
-      # +NotFoundError+ if the config is unknown.
+      # Connects lazily on first use — no explicit install step.
+      #
+      # @param id [String] The config identifier (slug) to subscribe to.
+      # @return [LiveConfigProxy] A live proxy whose reads always see the
+      #   current resolved values.
+      # @raise [Smplkit::NotFoundError] If the config is unknown.
       def subscribe(id)
         ensure_connected
         observe_config_declaration(id, parent: nil, name: nil, description: nil)
@@ -506,6 +695,19 @@ module Smplkit
       # For a live dict-like view use +#subscribe+; for typed access via a
       # Struct schema use +#bind+. Connects lazily on first use — no explicit
       # install step.
+      #
+      # @param id [String] The config identifier (slug) to read from.
+      # @param key [String] The item key within the config.
+      # @param default [Object] Value returned when the config or key is
+      #   missing. When omitted, a missing config or key raises instead of
+      #   returning a fallback. Supplying a default also registers the config
+      #   (if new) and the key — with its type inferred and +default+ as its
+      #   value — so the reference appears in the smplkit console.
+      # @return [Object] The resolved value. When +default+ is supplied and the
+      #   config or key is missing, returns +default+ instead.
+      # @raise [Smplkit::NotFoundError] If the config is unknown and no
+      #   +default+ was supplied.
+      # @raise [KeyError] If the key is absent and no +default+ was supplied.
       def get_value(id, key, default = MISSING)
         ensure_connected
         key = key.to_s
@@ -541,6 +743,14 @@ module Smplkit
       #   client.config.on_change("id", item_key: "key") { |event| ... }   # item-scoped
       #
       # Connects lazily on first use — no explicit install step.
+      #
+      # @param config_id [String, nil] When given, restrict the listener to
+      #   changes of this config. Omit for a global listener.
+      # @param item_key [String, nil] When +config_id+ is given, restrict the
+      #   listener to changes of this single item key.
+      # @yieldparam event [ConfigChangeEvent] The change that fired the
+      #   listener.
+      # @return [Proc] The registered block, unchanged.
       def on_change(config_id = nil, item_key: nil, &block)
         ensure_connected
         raise ArgumentError, "on_change requires a block" unless block
@@ -553,6 +763,9 @@ module Smplkit
       # listeners for anything that differs from the previous state.
       #
       # Connects lazily on first use — no explicit install step.
+      #
+      # @return [void]
+      # @raise [Smplkit::ConnectionError] If the fetch fails.
       def refresh
         ensure_connected
         do_refresh("manual")
@@ -564,6 +777,8 @@ module Smplkit
       # live use) and the owned HTTP transport (standalone construction). A
       # wired client borrows the parent's transport and WebSocket and closes
       # neither.
+      #
+      # @return [void]
       def close
         if @owns_ws && @ws_manager
           @ws_manager.stop
@@ -575,6 +790,11 @@ module Smplkit
       alias _close close
 
       # Construct, yield to the block, and close on exit.
+      #
+      # @param kwargs [Hash] Keyword arguments forwarded to +#initialize+.
+      # @yieldparam client [ConfigClient] The constructed client, closed when
+      #   the block returns.
+      # @return [Object] The value returned by the block.
       def self.open(**kwargs)
         client = new(**kwargs)
         begin
@@ -888,21 +1108,53 @@ module Smplkit
         fire_change_listeners(old_cache, new_cache, source: source)
       end
 
+      # Pull any referenced-but-uncached parent (and ancestors) into +store+.
+      #
+      # A config_changed event fetches only the changed config. If that config
+      # inherits from a parent that isn't already in the store — e.g. a parent
+      # created via discovery after the initial connect that never broadcast
+      # its own event — the chain walk in +rebuild_from_store+ would stop at
+      # the gap and the child would re-resolve missing its inherited values.
+      # Walk every config's parent pointers and fetch each absent ancestor so
+      # the inheritance chain resolves fully.
+      def ensure_ancestors_cached(store)
+        pending = store.values.filter_map { |cfg| parent_pointer(cfg) }
+        until pending.empty?
+          parent_id = pending.pop
+          next if store.key?(parent_id)
+
+          parent = fetch_config(parent_id)
+          next if parent.nil?
+
+          store[parent_id] = parent
+          grandparent = parent_pointer(parent)
+          pending << grandparent unless grandparent.nil?
+        end
+      end
+
+      # The parent config id a +Config+ points at, or +nil+ for a root —
+      # treating an empty-string parent the same as none, matching the
+      # break condition in +Helpers.build_chain+.
+      def parent_pointer(config)
+        pid = config.parent_id
+        pid unless pid.nil? || pid == ""
+      end
+
       def handle_config_changed(data)
         key = data["id"] || data["key"]
         return handle_configs_changed(data) unless key
 
-        new_store = @lock.synchronize { @raw_config_store.dup }
         begin
+          new_store = @lock.synchronize { @raw_config_store.dup }
           cfg = fetch_config(key)
-        rescue StandardError => e
-          Smplkit.debug("config", "failed to fetch config #{key.inspect} after WS event: #{e.class}: #{e.message}")
-          return
-        end
-        return if cfg.nil?
+          return if cfg.nil?
 
-        new_store[key] = cfg
-        rebuild_from_store(new_store, source: "websocket")
+          new_store[key] = cfg
+          ensure_ancestors_cached(new_store)
+          rebuild_from_store(new_store, source: "websocket")
+        rescue StandardError => e
+          Smplkit.debug("config", "config_changed handler failed for #{key.inspect}: #{e.class}: #{e.message}")
+        end
       end
 
       def handle_config_deleted(data)
@@ -954,8 +1206,8 @@ module Smplkit
       def config_envs_to_wire(environments)
         return nil if environments.empty?
 
-        # Per ADR-024 §2.4 the wire shape for env overrides is a flat
-        # +{env: {key: rawValue}}+ map — no envelope, no per-key type wrapper.
+        # The wire shape for env overrides is a flat +{env: {key: rawValue}}+
+        # map — no envelope, no per-key type wrapper.
         environments.each_with_object({}) do |(env_key, env_obj), out|
           out[env_key] = env_obj.values
         end
@@ -991,4 +1243,5 @@ module Smplkit
   end
 
   ConfigClient = Config::ConfigClient
+  ConfigChangeEvent = Config::ConfigChangeEvent
 end

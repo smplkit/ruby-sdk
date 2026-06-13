@@ -2,6 +2,8 @@
 
 module Smplkit
   # Ruby-internal adapters bridging the generated client layer to the wrapper.
+  #
+  # @api private
   module ApiSupport
     # Default page[size] the runtime asks for when walking a list endpoint to
     # completion. The platform caps page[size] at 1000; using the same value
@@ -14,6 +16,8 @@ module Smplkit
     # status-coded failures route through +Errors.raise_for_status+ which emits
     # +NotFoundError+ / +ConflictError+ / +ValidationError+ / +Error+ depending
     # on the JSON:API body.
+    #
+    # @api private
     module ErrorMapping
       module_function
 
@@ -44,6 +48,8 @@ module Smplkit
     # server returns fewer rows than requested — the platform's standard
     # last-page signal across every offset-paginated list endpoint. Returns the
     # concatenated +response.data+ rows.
+    #
+    # @api private
     module PaginatedFetch
       module_function
 
@@ -65,6 +71,8 @@ module Smplkit
 
     # Deep-stringify Hash keys so resources returned by generated +to_hash+
     # (symbol-keyed) match what the wrapper helpers expect (string-keyed).
+    #
+    # @api private
     module ResourceShim
       module_function
 

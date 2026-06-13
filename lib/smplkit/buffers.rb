@@ -15,17 +15,26 @@ require "set"
 module Smplkit
   # When the deduplication LRU exceeds this size, the oldest entry is
   # evicted. The next observation of an evicted entry will re-flush.
+  #
+  # @api private
   CONTEXT_REGISTRATION_LRU_SIZE = 10_000
 
   # Pending-queue size that triggers an immediate background flush from
   # inside +register+.  The periodic timer on +Client+ covers the tail
   # case for low-traffic services.
+  #
+  # @api private
   CONTEXT_BATCH_FLUSH_SIZE = 100
+  # @api private
   FLAG_BATCH_FLUSH_SIZE = 50
+  # @api private
   LOGGER_BATCH_FLUSH_SIZE = 50
+  # @api private
   CONFIG_BATCH_FLUSH_SIZE = 50
 
   # Thread-safe batch buffer for context registration.
+  #
+  # @api private
   class ContextRegistrationBuffer
     def initialize
       @seen = {}
@@ -66,6 +75,8 @@ module Smplkit
   # Use +peek+ + +commit(ids)+ for the send path so a failed POST leaves
   # declarations queued for the next attempt; the legacy +drain+ is
   # unconditional and used only by tests.
+  #
+  # @api private
   class FlagRegistrationBuffer
     def initialize
       @seen = {}
@@ -131,6 +142,8 @@ module Smplkit
   # the customer's code declares new items via typed getters after a flush, a
   # fresh pending entry is created using the stored metadata so the server can
   # route the delta to the right source row.
+  #
+  # @api private
   class ConfigRegistrationBuffer
     def initialize
       @pending = {}    # config_id -> { id:, items: {}, ...meta }
@@ -200,6 +213,8 @@ module Smplkit
   end
 
   # Thread-safe batch buffer for logger discovery.
+  #
+  # @api private
   class LoggerRegistrationBuffer
     def initialize
       @seen = {}

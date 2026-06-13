@@ -67,8 +67,8 @@ module Smplkit
       @attributes = stringify_keys(new_attrs || {})
     end
 
-    # Internal: associate a management client with this context so save/delete
-    # can route through it.
+    # @api private — associate a client with this context so save/delete can
+    #   route through it.
     def _bind_client(client)
       @client = client
       self

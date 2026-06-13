@@ -4,7 +4,7 @@ require "spec_helper"
 
 RSpec.describe Smplkit::Transport do
   let(:resolved) do
-    Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
       api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
     )
   end
@@ -16,7 +16,7 @@ RSpec.describe Smplkit::Transport do
         environment: "prod", service: "svc", debug: true, telemetry: false
       )
       cfg = described_class.to_transport_config(runtime)
-      expect(cfg).to be_a(Smplkit::ConfigResolution::ResolvedManagementConfig)
+      expect(cfg).to be_a(Smplkit::ConfigResolution::ResolvedClientConfig)
       expect(cfg.api_key).to eq("k")
       expect(cfg.base_domain).to eq("smplkit.test")
       expect(cfg.scheme).to eq("https")
@@ -106,7 +106,7 @@ RSpec.describe Smplkit::Transport do
     end
 
     it "applies caller extra_headers but skips SDK-owned headers" do
-      cfg = Smplkit::ConfigResolution::ResolvedManagementConfig.new(
+      cfg = Smplkit::ConfigResolution::ResolvedClientConfig.new(
         api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false,
         extra_headers: {
           "X-Pass" => "yes",

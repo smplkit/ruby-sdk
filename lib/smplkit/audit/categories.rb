@@ -5,21 +5,32 @@ module Smplkit
     # +client.audit.categories.list+ — distinct +category+ values seen for
     # the account.
     #
-    # Backed by a maintain-by-write side table populated whenever an event
-    # is recorded with a non-null +category+ (ADR-047 §2.5), so the response
-    # time is independent of how many years of events the account has
-    # accumulated. Sorted alphabetically; offset pagination (+page_number+ /
-    # +page_size+) per ADR-014.
+    # Response time is independent of how many years of events the account has
+    # accumulated. Sorted alphabetically; offset paginated.
     class Categories
       def initialize(api)
         @api = api
       end
 
-      # +environments+ is an optional array of environment keys (and/or the
-      # reserved +"smplkit"+ control-plane bucket) used to scope the read;
-      # the values are comma-joined into +filter[environment]+. Omitting it
-      # (or passing an empty array) leaves the filter unset — identical to
-      # the prior behavior on the wire.
+      # List the distinct +category+ values seen in the account.
+      #
+      # +environments+ scopes the listing to a set of environments: pass an
+      # array of environment keys and/or the reserved +"smplkit"+ control-plane
+      # bucket; the values are comma-joined into +filter[environment]+. Omitting
+      # it (or passing an empty array) leaves the filter off entirely.
+      #
+      # @param page_number [Integer, nil] 1-based page index. Omit for the first
+      #   page.
+      # @param page_size [Integer, nil] Maximum number of categories to return in
+      #   this page.
+      # @param meta_total [Boolean, nil] When +true+, populate +total+ and
+      #   +total_pages+ in the returned page's +pagination+ block (costs an extra
+      #   count server-side). Omit to skip it.
+      # @param environments [Array<String>, nil] Environment keys and/or the
+      #   reserved +"smplkit"+ control-plane bucket to scope the listing to. Omit
+      #   to leave the filter off entirely.
+      # @return [Smplkit::Audit::CategoryListPage] A page of the matching
+      #   category values.
       def list(page_number: nil, page_size: nil, meta_total: nil, environments: nil)
         opts = {}
         opts[:page_number] = page_number if page_number

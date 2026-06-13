@@ -6,9 +6,9 @@ module Smplkit
   # A single error object from the server's JSON:API +errors+ array.
   #
   # +code+ is the application-specific machine-readable error code (e.g.
-  # +environment_unmanaged+); per JSON:API §7 and ADR-014, smplkit sets
-  # this on every error so callers can branch without string-matching
-  # the human +detail+. +meta+ carries additional structured context
+  # +environment_unmanaged+); smplkit sets this on every error so callers
+  # can branch without string-matching the human +detail+. +meta+ carries
+  # additional structured context
   # (e.g. <tt>{"environment" => "staging"}</tt>).
   class ApiErrorDetail
     attr_reader :status, :code, :title, :detail, :source, :meta
@@ -62,6 +62,7 @@ module Smplkit
       end
     end
 
+    # @api private — Build a human-readable message from a list of error details.
     def self.derive_message(errors)
       return "An API error occurred" if errors.nil? || errors.empty?
 
@@ -92,6 +93,8 @@ module Smplkit
   # this.
   class NotInstalledError < Error; end
 
+  # @api private — Internal helpers that parse JSON:API error bodies and map
+  #   HTTP status codes onto the error classes above.
   module Errors
     module_function
 

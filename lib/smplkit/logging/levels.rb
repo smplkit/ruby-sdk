@@ -6,7 +6,7 @@ require_relative "../log_level"
 module Smplkit
   module Logging
     # Bidirectional mapping between Ruby stdlib +Logger+ levels and smplkit
-    # canonical levels (per ADR-046 §2.3).
+    # canonical levels.
     #
     # Stdlib +Logger+ has DEBUG/INFO/WARN/ERROR/FATAL/UNKNOWN — no TRACE. The
     # +stdlib-logger+ adapter maps smplkit TRACE to stdlib DEBUG when
@@ -14,6 +14,8 @@ module Smplkit
     # discovering — there is no way to distinguish smplkit-TRACE-mapped-to-
     # DEBUG from genuine DEBUG, which is consistent with how the Python
     # +stdlib-logging+ adapter handles the same gap.
+    #
+    # @api private
     module Levels
       STDLIB_TO_SMPL = {
         ::Logger::DEBUG => LogLevel::DEBUG,

@@ -99,11 +99,21 @@ module Smplkit
       end
 
       # Read-only view of constrained values. +nil+ means unconstrained.
+      #
+      # Mutate via +add_value+ / +remove_value+ / +clear_values+.
+      #
+      # @return [Array<FlagValue>, nil] the constrained values, or +nil+ when
+      #   the flag is unconstrained.
       def values
         @values&.dup
       end
 
       # Read-only view of per-environment configuration.
+      #
+      # Mutate via +add_rule+ / +enable_rules+ / +disable_rules+ /
+      # +set_default+ (with +environment:+) / +clear_rules+.
+      #
+      # @return [Hash{String => FlagEnvironment}] the per-environment configuration.
       def environments
         @environments.dup
       end
@@ -111,8 +121,10 @@ module Smplkit
       # Persist this flag to the server.
       #
       # Creates a new flag if unsaved, or updates the existing one. Requires a
-      # management client (i.e. the flag was constructed via +mgmt.flags.new_*+
-      # or returned from +mgmt.flags.get/list+).
+      # client (i.e. the flag was constructed via +client.flags.new_*+ or
+      # returned from +client.flags.get+ / +client.flags.list+).
+      #
+      # @return [self] this flag, with server-assigned fields applied.
       def save
         raise "Flag was constructed without a client; cannot save" if @client.nil?
 
@@ -127,6 +139,10 @@ module Smplkit
       end
       alias save! save
 
+      # Delete this flag from the server.
+      #
+      # @return [void]
+      # @raise [Smplkit::NotFoundError] no flag with this id exists for the account.
       def delete
         raise "Flag was constructed without a client or id; cannot delete" if @client.nil? || @id.nil?
 
@@ -138,6 +154,12 @@ module Smplkit
       #
       # The +built_rule+ Hash must include an +"environment"+ key.
       # Call +save+ to persist.
+      #
+      # @param built_rule [Hash] the Hash produced by
+      #   +Smplkit::Rule.new(..., environment: ...).when(...).serve(...)+; must
+      #   include an +"environment"+ key naming the target environment.
+      # @return [self] this flag, so calls can be chained.
+      # @raise [ArgumentError] the +built_rule+ Hash has no +"environment"+ key.
       def add_rule(built_rule)
         env_key = built_rule["environment"]
         if env_key.nil?
@@ -156,16 +178,37 @@ module Smplkit
         self
       end
 
+      # Enable rule evaluation. Call +save+ to persist.
+      #
+      # @param environment [String, nil] name of the environment to enable; when
+      #   +nil+ (the default), enables rules in every environment configured on
+      #   this flag.
+      # @return [self] this flag, so calls can be chained.
       def enable_rules(environment: nil)
         scoped(environment) { |k| @environments[k] = (@environments[k] || FlagEnvironment.new).with(enabled: true) }
         self
       end
 
+      # Disable rule evaluation (kill switch). Call +save+ to persist.
+      #
+      # When disabled, +get+ skips rules and returns the env-specific default
+      # (or the flag's base default).
+      #
+      # @param environment [String, nil] name of the environment to disable; when
+      #   +nil+ (the default), disables rules in every environment configured on
+      #   this flag.
+      # @return [self] this flag, so calls can be chained.
       def disable_rules(environment: nil)
         scoped(environment) { |k| @environments[k] = (@environments[k] || FlagEnvironment.new).with(enabled: false) }
         self
       end
 
+      # Remove rules. Call +save+ to persist.
+      #
+      # @param environment [String, nil] name of the environment whose rules to
+      #   remove; when +nil+ (the default), removes rules from every environment
+      #   configured on this flag.
+      # @return [self] this flag, so calls can be chained.
       def clear_rules(environment: nil)
         scoped(environment) do |k|
           @environments[k] = (@environments[k] || FlagEnvironment.new).with(rules: [].freeze)
@@ -173,22 +216,44 @@ module Smplkit
         self
       end
 
+      # Set the flag's per-environment default served value. Call +save+ to persist.
+      #
+      # @param value [Object] the default value to serve when no rule matches.
+      # @param environment [String] name of the environment whose default to set.
+      # @return [self] this flag, so calls can be chained.
       def set_default(value, environment:)
         @environments[environment] = (@environments[environment] || FlagEnvironment.new).with(default: value)
         self
       end
 
+      # Clear the per-environment default override on +environment+.
+      #
+      # After clearing, the environment falls back to the flag's base default
+      # when no rule matches. Call +save+ to persist.
+      #
+      # @param environment [String] name of the environment whose default
+      #   override to clear.
+      # @return [self] this flag, so calls can be chained.
       def clear_default(environment:)
         @environments[environment] = (@environments[environment] || FlagEnvironment.new).with(default: nil)
         self
       end
 
+      # Append a constrained value to the flag's values list. Call +save+ to persist.
+      #
+      # @param flag_value [FlagValue] the value entry to allow the flag to serve.
+      # @return [self] this flag, so calls can be chained.
       def add_value(flag_value)
         @values ||= []
         @values << flag_value
         self
       end
 
+      # Remove the first values entry whose +name+ matches.
+      #
+      # @param name [String] the value-entry name to remove; the first match is
+      #   removed and others are left in place.
+      # @return [self] this flag, so calls can be chained.
       def remove_value(name)
         return self unless @values
 
@@ -196,6 +261,9 @@ module Smplkit
         self
       end
 
+      # Clear the constrained values list (unconstrained). Call +save+ to persist.
+      #
+      # @return [self] this flag, so calls can be chained.
       def clear_values
         @values = []
         self
@@ -225,28 +293,62 @@ module Smplkit
     end
 
     class BooleanFlag < Flag
+      # Evaluate this flag and return its current boolean value.
+      #
+      # @param context [Array<Smplkit::Context>, nil] optional entities to
+      #   evaluate targeting rules against; when omitted the ambient request
+      #   context (if any) is used.
+      # @return [Boolean] the evaluated boolean value, or this flag's default
+      #   when no environment override or rule applies (or the evaluated value
+      #   is not a boolean).
       def get(context: nil)
-        raw = @client._evaluate_handle(@id, @default, context)
-        !!raw
+        value = @client._evaluate_handle(@id, @default, context)
+        [true, false].include?(value) ? value : @default
       end
     end
 
     class StringFlag < Flag
+      # Evaluate this flag and return its current string value.
+      #
+      # @param context [Array<Smplkit::Context>, nil] optional entities to
+      #   evaluate targeting rules against; when omitted the ambient request
+      #   context (if any) is used.
+      # @return [String] the evaluated string value, or this flag's default
+      #   when no environment override or rule applies (or the evaluated value
+      #   is not a String).
       def get(context: nil)
-        raw = @client._evaluate_handle(@id, @default, context)
-        raw.to_s
+        value = @client._evaluate_handle(@id, @default, context)
+        value.is_a?(String) ? value : @default
       end
     end
 
     class NumberFlag < Flag
+      # Evaluate this flag and return its current numeric value.
+      #
+      # @param context [Array<Smplkit::Context>, nil] optional entities to
+      #   evaluate targeting rules against; when omitted the ambient request
+      #   context (if any) is used.
+      # @return [Numeric] the evaluated numeric value, or this flag's default
+      #   when no environment override or rule applies (or the evaluated value
+      #   is not a Numeric).
       def get(context: nil)
-        @client._evaluate_handle(@id, @default, context)
+        value = @client._evaluate_handle(@id, @default, context)
+        value.is_a?(Numeric) ? value : @default
       end
     end
 
     class JsonFlag < Flag
+      # Evaluate this flag and return its current JSON value.
+      #
+      # @param context [Array<Smplkit::Context>, nil] optional entities to
+      #   evaluate targeting rules against; when omitted the ambient request
+      #   context (if any) is used.
+      # @return [Hash] the evaluated JSON object, or this flag's default when no
+      #   environment override or rule applies (or the evaluated value is not a
+      #   Hash).
       def get(context: nil)
-        @client._evaluate_handle(@id, @default, context)
+        value = @client._evaluate_handle(@id, @default, context)
+        value.is_a?(Hash) ? value : @default
       end
     end
   end
