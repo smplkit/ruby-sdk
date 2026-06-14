@@ -22,11 +22,15 @@ module SmplkitGeneratedClient::App
     # Map of limit key to the cap that applies on this plan. `-1` indicates an unlimited cap.
     attr_accessor :limits
 
+    # For metered products only: map of metered limit key to the per-unit overage price in micro-USD ($0.000001) charged for each unit beyond the plan's included allotment. A rate of `0` means the plan stops at its allotment with no overage. Omitted for products that are not metered.
+    attr_accessor :overage_rates
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'price_monthly_cents' => :'price_monthly_cents',
-        :'limits' => :'limits'
+        :'limits' => :'limits',
+        :'overage_rates' => :'overage_rates'
       }
     end
 
@@ -44,13 +48,15 @@ module SmplkitGeneratedClient::App
     def self.openapi_types
       {
         :'price_monthly_cents' => :'Integer',
-        :'limits' => :'Hash<String, Integer>'
+        :'limits' => :'Hash<String, Integer>',
+        :'overage_rates' => :'Hash<String, Integer>'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'overage_rates'
       ])
     end
 
@@ -82,6 +88,12 @@ module SmplkitGeneratedClient::App
         end
       else
         self.limits = nil
+      end
+
+      if attributes.key?(:'overage_rates')
+        if (value = attributes[:'overage_rates']).is_a?(Hash)
+          self.overage_rates = value
+        end
       end
     end
 
@@ -136,7 +148,8 @@ module SmplkitGeneratedClient::App
       return true if self.equal?(o)
       self.class == o.class &&
           price_monthly_cents == o.price_monthly_cents &&
-          limits == o.limits
+          limits == o.limits &&
+          overage_rates == o.overage_rates
     end
 
     # @see the `==` method
@@ -148,7 +161,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [price_monthly_cents, limits].hash
+      [price_monthly_cents, limits, overage_rates].hash
     end
 
     # Builds the object from hash
