@@ -10,6 +10,7 @@
 | **features** | **Array&lt;String&gt;** | Bullet-list feature highlights for the product. | [optional] |
 | **coming_soon** | **Boolean** | When &#x60;true&#x60;, the product is listed but not yet available for subscription. | [optional][default to false] |
 | **limits** | [**Hash&lt;String, LimitDefinition&gt;**](LimitDefinition.md) | Map of limit key to limit definition for this product. |  |
+| **metered_limits** | **Array&lt;String&gt;** | Limit keys on this product that are metered: each includes a monthly allotment in the plan price and bills per unit beyond it at the plan&#39;s &#x60;overage_rates&#x60; rate, rather than capping hard. Empty for products with no metered limits. | [optional] |
 | **plans** | [**Hash&lt;String, PlanDefinition&gt;**](PlanDefinition.md) | Map of plan key to plan definition for this product. |  |
 
 ## Example
@@ -24,6 +25,7 @@ instance = SmplkitGeneratedClient::App::Product.new(
   features: null,
   coming_soon: null,
   limits: null,
+  metered_limits: null,
   plans: null
 )
 ```

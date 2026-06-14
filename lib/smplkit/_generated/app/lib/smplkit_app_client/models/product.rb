@@ -34,6 +34,9 @@ module SmplkitGeneratedClient::App
     # Map of limit key to limit definition for this product.
     attr_accessor :limits
 
+    # Limit keys on this product that are metered: each includes a monthly allotment in the plan price and bills per unit beyond it at the plan's `overage_rates` rate, rather than capping hard. Empty for products with no metered limits.
+    attr_accessor :metered_limits
+
     # Map of plan key to plan definition for this product.
     attr_accessor :plans
 
@@ -46,6 +49,7 @@ module SmplkitGeneratedClient::App
         :'features' => :'features',
         :'coming_soon' => :'coming_soon',
         :'limits' => :'limits',
+        :'metered_limits' => :'metered_limits',
         :'plans' => :'plans'
       }
     end
@@ -69,6 +73,7 @@ module SmplkitGeneratedClient::App
         :'features' => :'Array<String>',
         :'coming_soon' => :'Boolean',
         :'limits' => :'Hash<String, LimitDefinition>',
+        :'metered_limits' => :'Array<String>',
         :'plans' => :'Hash<String, PlanDefinition>'
       }
     end
@@ -130,6 +135,12 @@ module SmplkitGeneratedClient::App
         end
       else
         self.limits = nil
+      end
+
+      if attributes.key?(:'metered_limits')
+        if (value = attributes[:'metered_limits']).is_a?(Array)
+          self.metered_limits = value
+        end
       end
 
       if attributes.key?(:'plans')
@@ -227,6 +238,7 @@ module SmplkitGeneratedClient::App
           features == o.features &&
           coming_soon == o.coming_soon &&
           limits == o.limits &&
+          metered_limits == o.metered_limits &&
           plans == o.plans
     end
 
@@ -239,7 +251,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [display_name, description, tagline, features, coming_soon, limits, plans].hash
+      [display_name, description, tagline, features, coming_soon, limits, metered_limits, plans].hash
     end
 
     # Builds the object from hash
