@@ -28,9 +28,6 @@ module SmplkitGeneratedClient::App
     # Bullet-list feature highlights for the product.
     attr_accessor :features
 
-    # When `true`, the product is listed but not yet available for subscription.
-    attr_accessor :coming_soon
-
     # Map of limit key to limit definition for this product.
     attr_accessor :limits
 
@@ -47,7 +44,6 @@ module SmplkitGeneratedClient::App
         :'description' => :'description',
         :'tagline' => :'tagline',
         :'features' => :'features',
-        :'coming_soon' => :'coming_soon',
         :'limits' => :'limits',
         :'metered_limits' => :'metered_limits',
         :'plans' => :'plans'
@@ -71,7 +67,6 @@ module SmplkitGeneratedClient::App
         :'description' => :'String',
         :'tagline' => :'String',
         :'features' => :'Array<String>',
-        :'coming_soon' => :'Boolean',
         :'limits' => :'Hash<String, LimitDefinition>',
         :'metered_limits' => :'Array<String>',
         :'plans' => :'Hash<String, PlanDefinition>'
@@ -121,12 +116,6 @@ module SmplkitGeneratedClient::App
         if (value = attributes[:'features']).is_a?(Array)
           self.features = value
         end
-      end
-
-      if attributes.key?(:'coming_soon')
-        self.coming_soon = attributes[:'coming_soon']
-      else
-        self.coming_soon = false
       end
 
       if attributes.key?(:'limits')
@@ -236,7 +225,6 @@ module SmplkitGeneratedClient::App
           description == o.description &&
           tagline == o.tagline &&
           features == o.features &&
-          coming_soon == o.coming_soon &&
           limits == o.limits &&
           metered_limits == o.metered_limits &&
           plans == o.plans
@@ -251,7 +239,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [display_name, description, tagline, features, coming_soon, limits, metered_limits, plans].hash
+      [display_name, description, tagline, features, limits, metered_limits, plans].hash
     end
 
     # Builds the object from hash

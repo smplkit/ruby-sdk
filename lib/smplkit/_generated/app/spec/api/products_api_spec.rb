@@ -34,7 +34,7 @@ describe 'ProductsApi' do
 
   # unit tests for list_products
   # List Products
-  # Return all flag-enabled products with their plans, limits, and marketing content.  Default sort is &#x60;display_name&#x60; ascending.
+  # Return all products with their plans, limits, and marketing content.  Default sort is &#x60;display_name&#x60; ascending.
   # @param [Hash] opts the optional parameters
   # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;display_name&#x60;. Allowed values: &#x60;display_name&#x60;, &#x60;-display_name&#x60;, &#x60;id&#x60;, &#x60;-id&#x60;.
   # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error.
