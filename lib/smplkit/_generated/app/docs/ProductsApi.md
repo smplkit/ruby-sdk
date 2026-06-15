@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost*
 
 List Products
 
-Return all flag-enabled products with their plans, limits, and marketing content.  Default sort is `display_name` ascending.
+Return all products with their plans, limits, and marketing content.  Default sort is `display_name` ascending.
 
 ### Examples
 
