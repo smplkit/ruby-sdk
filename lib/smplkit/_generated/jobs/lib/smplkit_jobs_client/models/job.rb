@@ -130,6 +130,7 @@ module SmplkitGeneratedClient::Jobs
       Set.new([
         :'description',
         :'next_run_at',
+        :'recurring',
         :'created_at',
         :'updated_at',
         :'deleted_at',
@@ -199,8 +200,6 @@ module SmplkitGeneratedClient::Jobs
 
       if attributes.key?(:'recurring')
         self.recurring = attributes[:'recurring']
-      else
-        self.recurring = false
       end
 
       if attributes.key?(:'created_at')

@@ -12,7 +12,7 @@
 | **configuration** | [**JobHttpConfiguration**](JobHttpConfiguration.md) | The HTTP request to perform, including method, url, headers, body, and timeout. |  |
 | **concurrency_policy** | **String** | How overlapping runs are handled. &#x60;ALLOW&#x60; (the only value today) permits them. | [optional][default to &#39;ALLOW&#39;] |
 | **next_run_at** | **Time** | The next scheduled fire time. &#x60;null&#x60; once a one-off job has fired. | [optional][readonly] |
-| **recurring** | **Boolean** | Whether the job runs on a repeating schedule. &#x60;true&#x60; for a cron schedule; &#x60;false&#x60; for a one-off datetime or &#x60;now&#x60; schedule, which runs a single time. Derived from &#x60;schedule&#x60;. | [optional][readonly][default to false] |
+| **recurring** | **Boolean** | Whether the job runs on a repeating schedule. &#x60;true&#x60; for a cron schedule; &#x60;false&#x60; for a one-off datetime or &#x60;now&#x60; schedule, which runs a single time. Derived from &#x60;schedule&#x60;. | [optional][readonly] |
 | **created_at** | **Time** | When the job was created. | [optional][readonly] |
 | **updated_at** | **Time** | When the job was last modified. | [optional][readonly] |
 | **deleted_at** | **Time** | When the job was deleted. &#x60;null&#x60; for active jobs. | [optional][readonly] |
