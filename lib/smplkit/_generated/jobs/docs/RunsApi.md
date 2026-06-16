@@ -154,7 +154,7 @@ end
 
 List Runs
 
-List runs for this account, newest first (cursor paginated).  Use `filter[job]={id}` for a single job's run history.
+List runs for this account (cursor paginated).  Default sort is `-created_at` (newest first). Sort by `created_at`, `started_at`, `finished_at`, `scheduled_for`, `status`, `job`, or `total_duration_ms`, ascending or descending (prefix `-` for descending). Keep the same `sort` value across paginated requests so the cursor stays consistent. Runs that have not reached the relevant lifecycle point (`started_at`, `finished_at`, `scheduled_for`, `total_duration_ms` unset) sort to the end regardless of direction.  Filters compose with AND:  - `filter[job]={id}` — a single job's run history. - `filter[status]` — one state or a comma-separated list (any-of). - `filter[created_at]` / `filter[started_at]` / `filter[finished_at]` /   `filter[scheduled_for]` — half-open `[start,end)` date ranges (see each   parameter for the interval syntax).
 
 ### Examples
 
@@ -170,8 +170,14 @@ end
 api_instance = SmplkitGeneratedClient::Jobs::RunsApi.new
 opts = {
   filter_job: 'filter_job_example', # String | 
+  filter_status: 'filter_status_example', # String | Restrict to runs in the given lifecycle state. One of `PENDING`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELED`, or a comma-separated list of them to match any (e.g. `SUCCEEDED,FAILED`).
+  filter_created_at: 'filter_created_at_example', # String | Restrict to runs whose `created_at` falls in a half-open `[start,end)` interval. Bounds are ISO-8601 timestamps; `*` leaves a bound open. The leading bracket is `[` (inclusive) or `(` (exclusive) and the trailing bracket is `]` (inclusive) or `)` (exclusive). Example: `[2026-06-01T00:00:00Z,2026-06-08T00:00:00Z)` selects the first week of June; `[2026-06-01T00:00:00Z,*)` is everything from then onward.
+  filter_started_at: 'filter_started_at_example', # String | Restrict to runs whose `started_at` falls in a half-open `[start,end)` interval. Bounds are ISO-8601 timestamps; `*` leaves a bound open. The leading bracket is `[` (inclusive) or `(` (exclusive) and the trailing bracket is `]` (inclusive) or `)` (exclusive). Example: `[2026-06-01T00:00:00Z,2026-06-08T00:00:00Z)` selects the first week of June; `[2026-06-01T00:00:00Z,*)` is everything from then onward.
+  filter_finished_at: 'filter_finished_at_example', # String | Restrict to runs whose `finished_at` falls in a half-open `[start,end)` interval. Bounds are ISO-8601 timestamps; `*` leaves a bound open. The leading bracket is `[` (inclusive) or `(` (exclusive) and the trailing bracket is `]` (inclusive) or `)` (exclusive). Example: `[2026-06-01T00:00:00Z,2026-06-08T00:00:00Z)` selects the first week of June; `[2026-06-01T00:00:00Z,*)` is everything from then onward.
+  filter_scheduled_for: 'filter_scheduled_for_example', # String | Restrict to runs whose `scheduled_for` falls in a half-open `[start,end)` interval. Bounds are ISO-8601 timestamps; `*` leaves a bound open. The leading bracket is `[` (inclusive) or `(` (exclusive) and the trailing bracket is `]` (inclusive) or `)` (exclusive). Example: `[2026-06-01T00:00:00Z,2026-06-08T00:00:00Z)` selects the first week of June; `[2026-06-01T00:00:00Z,*)` is everything from then onward.
   page_size: 56, # Integer | Number of runs per page. Optional; defaults to `50` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
-  page_after: 'page_after_example' # String | 
+  page_after: 'page_after_example', # String | 
+  sort: 'created_at' # String | Field to sort by. Prefix with `-` for descending order. Default: `-created_at`. Allowed values: `created_at`, `-created_at`, `finished_at`, `-finished_at`, `job`, `-job`, `scheduled_for`, `-scheduled_for`, `started_at`, `-started_at`, `status`, `-status`, `total_duration_ms`, `-total_duration_ms`.
 }
 
 begin
@@ -206,8 +212,14 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **filter_job** | **String** |  | [optional] |
+| **filter_status** | **String** | Restrict to runs in the given lifecycle state. One of &#x60;PENDING&#x60;, &#x60;RUNNING&#x60;, &#x60;SUCCEEDED&#x60;, &#x60;FAILED&#x60;, &#x60;CANCELED&#x60;, or a comma-separated list of them to match any (e.g. &#x60;SUCCEEDED,FAILED&#x60;). | [optional] |
+| **filter_created_at** | **String** | Restrict to runs whose &#x60;created_at&#x60; falls in a half-open &#x60;[start,end)&#x60; interval. Bounds are ISO-8601 timestamps; &#x60;*&#x60; leaves a bound open. The leading bracket is &#x60;[&#x60; (inclusive) or &#x60;(&#x60; (exclusive) and the trailing bracket is &#x60;]&#x60; (inclusive) or &#x60;)&#x60; (exclusive). Example: &#x60;[2026-06-01T00:00:00Z,2026-06-08T00:00:00Z)&#x60; selects the first week of June; &#x60;[2026-06-01T00:00:00Z,*)&#x60; is everything from then onward. | [optional] |
+| **filter_started_at** | **String** | Restrict to runs whose &#x60;started_at&#x60; falls in a half-open &#x60;[start,end)&#x60; interval. Bounds are ISO-8601 timestamps; &#x60;*&#x60; leaves a bound open. The leading bracket is &#x60;[&#x60; (inclusive) or &#x60;(&#x60; (exclusive) and the trailing bracket is &#x60;]&#x60; (inclusive) or &#x60;)&#x60; (exclusive). Example: &#x60;[2026-06-01T00:00:00Z,2026-06-08T00:00:00Z)&#x60; selects the first week of June; &#x60;[2026-06-01T00:00:00Z,*)&#x60; is everything from then onward. | [optional] |
+| **filter_finished_at** | **String** | Restrict to runs whose &#x60;finished_at&#x60; falls in a half-open &#x60;[start,end)&#x60; interval. Bounds are ISO-8601 timestamps; &#x60;*&#x60; leaves a bound open. The leading bracket is &#x60;[&#x60; (inclusive) or &#x60;(&#x60; (exclusive) and the trailing bracket is &#x60;]&#x60; (inclusive) or &#x60;)&#x60; (exclusive). Example: &#x60;[2026-06-01T00:00:00Z,2026-06-08T00:00:00Z)&#x60; selects the first week of June; &#x60;[2026-06-01T00:00:00Z,*)&#x60; is everything from then onward. | [optional] |
+| **filter_scheduled_for** | **String** | Restrict to runs whose &#x60;scheduled_for&#x60; falls in a half-open &#x60;[start,end)&#x60; interval. Bounds are ISO-8601 timestamps; &#x60;*&#x60; leaves a bound open. The leading bracket is &#x60;[&#x60; (inclusive) or &#x60;(&#x60; (exclusive) and the trailing bracket is &#x60;]&#x60; (inclusive) or &#x60;)&#x60; (exclusive). Example: &#x60;[2026-06-01T00:00:00Z,2026-06-08T00:00:00Z)&#x60; selects the first week of June; &#x60;[2026-06-01T00:00:00Z,*)&#x60; is everything from then onward. | [optional] |
 | **page_size** | **Integer** | Number of runs per page. Optional; defaults to &#x60;50&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional] |
 | **page_after** | **String** |  | [optional] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;-created_at&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;finished_at&#x60;, &#x60;-finished_at&#x60;, &#x60;job&#x60;, &#x60;-job&#x60;, &#x60;scheduled_for&#x60;, &#x60;-scheduled_for&#x60;, &#x60;started_at&#x60;, &#x60;-started_at&#x60;, &#x60;status&#x60;, &#x60;-status&#x60;, &#x60;total_duration_ms&#x60;, &#x60;-total_duration_ms&#x60;. | [optional][default to &#39;-created_at&#39;] |
 
 ### Return type
 

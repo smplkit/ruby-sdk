@@ -212,10 +212,12 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Jobs
-    # List this account's jobs, newest first.
+    # List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, `updated_at`, `next_run_at`, or `enabled`, ascending or descending (prefix `-` for descending). Filter with `filter[enabled]`, `filter[recurring]`, and `filter[name]` (case-insensitive substring match on the name); filters compose with AND.
     # @param [Hash] opts the optional parameters
     # @option opts [Boolean] :filter_enabled 
     # @option opts [Boolean] :filter_recurring 
+    # @option opts [String] :filter_name Case-insensitive substring match on the job &#x60;name&#x60; (matches when the name contains the given text).
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;enabled&#x60;, &#x60;-enabled&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;next_run_at&#x60;, &#x60;-next_run_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'name')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
     # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
@@ -226,10 +228,12 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Jobs
-    # List this account&#39;s jobs, newest first.
+    # List this account&#39;s jobs.  Default sort is &#x60;name&#x60; ascending. Sort by &#x60;name&#x60;, &#x60;created_at&#x60;, &#x60;updated_at&#x60;, &#x60;next_run_at&#x60;, or &#x60;enabled&#x60;, ascending or descending (prefix &#x60;-&#x60; for descending). Filter with &#x60;filter[enabled]&#x60;, &#x60;filter[recurring]&#x60;, and &#x60;filter[name]&#x60; (case-insensitive substring match on the name); filters compose with AND.
     # @param [Hash] opts the optional parameters
     # @option opts [Boolean] :filter_enabled 
     # @option opts [Boolean] :filter_recurring 
+    # @option opts [String] :filter_name Case-insensitive substring match on the job &#x60;name&#x60; (matches when the name contains the given text).
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;enabled&#x60;, &#x60;-enabled&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;next_run_at&#x60;, &#x60;-next_run_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'name')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
     # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
@@ -238,6 +242,10 @@ module SmplkitGeneratedClient::Jobs
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: JobsApi.list_jobs ...'
       end
+      allowable_values = ["created_at", "-created_at", "enabled", "-enabled", "name", "-name", "next_run_at", "-next_run_at", "updated_at", "-updated_at"]
+      if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
+        fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
+      end
       # resource path
       local_var_path = '/api/v1/jobs'
 
@@ -245,6 +253,8 @@ module SmplkitGeneratedClient::Jobs
       query_params = opts[:query_params] || {}
       query_params[:'filter[enabled]'] = opts[:'filter_enabled'] if !opts[:'filter_enabled'].nil?
       query_params[:'filter[recurring]'] = opts[:'filter_recurring'] if !opts[:'filter_recurring'].nil?
+      query_params[:'filter[name]'] = opts[:'filter_name'] if !opts[:'filter_name'].nil?
+      query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
       query_params[:'page[number]'] = opts[:'page_number'] if !opts[:'page_number'].nil?
       query_params[:'page[size]'] = opts[:'page_size'] if !opts[:'page_size'].nil?
       query_params[:'meta[total]'] = opts[:'meta_total'] if !opts[:'meta_total'].nil?
