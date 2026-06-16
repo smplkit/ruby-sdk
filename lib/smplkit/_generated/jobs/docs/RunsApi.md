@@ -170,7 +170,7 @@ end
 api_instance = SmplkitGeneratedClient::Jobs::RunsApi.new
 opts = {
   filter_job: 'filter_job_example', # String | 
-  page_size: 56, # Integer | 
+  page_size: 56, # Integer | Number of runs per page. Optional; defaults to `50` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
   page_after: 'page_after_example' # String | 
 }
 
@@ -206,7 +206,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **filter_job** | **String** |  | [optional] |
-| **page_size** | **Integer** |  | [optional] |
+| **page_size** | **Integer** | Number of runs per page. Optional; defaults to &#x60;50&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional] |
 | **page_after** | **String** |  | [optional] |
 
 ### Return type
