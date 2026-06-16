@@ -40,6 +40,9 @@ module SmplkitGeneratedClient::Jobs
     # The next scheduled fire time. `null` once a one-off job has fired.
     attr_accessor :next_run_at
 
+    # Whether the job runs on a repeating schedule. `true` for a cron schedule; `false` for a one-off datetime or `now` schedule, which runs a single time. Derived from `schedule`.
+    attr_accessor :recurring
+
     # When the job was created.
     attr_accessor :created_at
 
@@ -85,6 +88,7 @@ module SmplkitGeneratedClient::Jobs
         :'configuration' => :'configuration',
         :'concurrency_policy' => :'concurrency_policy',
         :'next_run_at' => :'next_run_at',
+        :'recurring' => :'recurring',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at',
         :'deleted_at' => :'deleted_at',
@@ -113,6 +117,7 @@ module SmplkitGeneratedClient::Jobs
         :'configuration' => :'JobHttpConfiguration',
         :'concurrency_policy' => :'String',
         :'next_run_at' => :'Time',
+        :'recurring' => :'Boolean',
         :'created_at' => :'Time',
         :'updated_at' => :'Time',
         :'deleted_at' => :'Time',
@@ -190,6 +195,12 @@ module SmplkitGeneratedClient::Jobs
 
       if attributes.key?(:'next_run_at')
         self.next_run_at = attributes[:'next_run_at']
+      end
+
+      if attributes.key?(:'recurring')
+        self.recurring = attributes[:'recurring']
+      else
+        self.recurring = false
       end
 
       if attributes.key?(:'created_at')
@@ -339,6 +350,7 @@ module SmplkitGeneratedClient::Jobs
           configuration == o.configuration &&
           concurrency_policy == o.concurrency_policy &&
           next_run_at == o.next_run_at &&
+          recurring == o.recurring &&
           created_at == o.created_at &&
           updated_at == o.updated_at &&
           deleted_at == o.deleted_at &&
@@ -354,7 +366,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, description, enabled, type, schedule, configuration, concurrency_policy, next_run_at, created_at, updated_at, deleted_at, version].hash
+      [name, description, enabled, type, schedule, configuration, concurrency_policy, next_run_at, recurring, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash
