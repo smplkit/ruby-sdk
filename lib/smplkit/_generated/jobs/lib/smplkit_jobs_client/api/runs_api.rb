@@ -149,7 +149,7 @@ module SmplkitGeneratedClient::Jobs
     # List runs for this account, newest first (cursor paginated).  Use `filter[job]={id}` for a single job's run history.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_job 
-    # @option opts [Integer] :page_size 
+    # @option opts [Integer] :page_size Number of runs per page. Optional; defaults to &#x60;50&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error.
     # @option opts [String] :page_after 
     # @return [RunListResponse]
     def list_runs(opts = {})
@@ -161,7 +161,7 @@ module SmplkitGeneratedClient::Jobs
     # List runs for this account, newest first (cursor paginated).  Use &#x60;filter[job]&#x3D;{id}&#x60; for a single job&#39;s run history.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_job 
-    # @option opts [Integer] :page_size 
+    # @option opts [Integer] :page_size Number of runs per page. Optional; defaults to &#x60;50&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error.
     # @option opts [String] :page_after 
     # @return [Array<(RunListResponse, Integer, Hash)>] RunListResponse data, response status code and response headers
     def list_runs_with_http_info(opts = {})
