@@ -11,6 +11,7 @@ docs/HttpHeader.md
 docs/Job.md
 docs/JobCreateRequest.md
 docs/JobCreateResource.md
+docs/JobEnvironment.md
 docs/JobHttpConfiguration.md
 docs/JobListResponse.md
 docs/JobRequest.md
@@ -43,6 +44,7 @@ lib/smplkit_jobs_client/models/http_header.rb
 lib/smplkit_jobs_client/models/job.rb
 lib/smplkit_jobs_client/models/job_create_request.rb
 lib/smplkit_jobs_client/models/job_create_resource.rb
+lib/smplkit_jobs_client/models/job_environment.rb
 lib/smplkit_jobs_client/models/job_http_configuration.rb
 lib/smplkit_jobs_client/models/job_list_response.rb
 lib/smplkit_jobs_client/models/job_request.rb
@@ -67,6 +69,7 @@ spec/api/usage_api_spec.rb
 spec/models/http_header_spec.rb
 spec/models/job_create_request_spec.rb
 spec/models/job_create_resource_spec.rb
+spec/models/job_environment_spec.rb
 spec/models/job_http_configuration_spec.rb
 spec/models/job_list_response_spec.rb
 spec/models/job_request_spec.rb

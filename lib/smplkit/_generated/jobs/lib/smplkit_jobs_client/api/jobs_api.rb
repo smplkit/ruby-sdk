@@ -20,9 +20,10 @@ module SmplkitGeneratedClient::Jobs
       @api_client = api_client
     end
     # Create Job
-    # Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. An enabled job begins scheduling immediately.
+    # Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. A recurring job supplies `environments` to choose where it runs and begins scheduling immediately in each enabled environment. A one-off job is created in the environment named by the `X-Smplkit-Environment` header (implied when the credential is scoped to a single environment).
     # @param job_create_request [JobCreateRequest] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :x_smplkit_environment The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map.
     # @return [JobResponse]
     def create_job(job_create_request, opts = {})
       data, _status_code, _headers = create_job_with_http_info(job_create_request, opts)
@@ -30,9 +31,10 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Create Job
-    # Create a job for this account.  The caller supplies the job&#39;s id as &#x60;data.id&#x60;. Ids are unique within an account and immutable. An enabled job begins scheduling immediately.
+    # Create a job for this account.  The caller supplies the job&#39;s id as &#x60;data.id&#x60;. Ids are unique within an account and immutable. A recurring job supplies &#x60;environments&#x60; to choose where it runs and begins scheduling immediately in each enabled environment. A one-off job is created in the environment named by the &#x60;X-Smplkit-Environment&#x60; header (implied when the credential is scoped to a single environment).
     # @param job_create_request [JobCreateRequest] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :x_smplkit_environment The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map.
     # @return [Array<(JobResponse, Integer, Hash)>] JobResponse data, response status code and response headers
     def create_job_with_http_info(job_create_request, opts = {})
       if @api_client.config.debugging
@@ -57,6 +59,7 @@ module SmplkitGeneratedClient::Jobs
       if !content_type.nil?
           header_params['Content-Type'] = content_type
       end
+      header_params[:'X-Smplkit-Environment'] = opts[:'x_smplkit_environment'] if !opts[:'x_smplkit_environment'].nil?
 
       # form parameters
       form_params = opts[:form_params] || {}
@@ -212,7 +215,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Jobs
-    # List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, `updated_at`, `next_run_at`, or `enabled`, ascending or descending (prefix `-` for descending). Filter with `filter[enabled]`, `filter[recurring]`, and `filter[name]` (case-insensitive substring match on the name); filters compose with AND.
+    # List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, `updated_at`, `next_run_at`, or `enabled`, ascending or descending (prefix `-` for descending). Filter with `filter[enabled]` (enabled in at least one environment), `filter[recurring]`, and `filter[name]` (case-insensitive substring match on the name); filters compose with AND. A scoped caller sees each job's `environments` map narrowed to the environments it may access.
     # @param [Hash] opts the optional parameters
     # @option opts [Boolean] :filter_enabled 
     # @option opts [Boolean] :filter_recurring 
@@ -228,7 +231,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Jobs
-    # List this account&#39;s jobs.  Default sort is &#x60;name&#x60; ascending. Sort by &#x60;name&#x60;, &#x60;created_at&#x60;, &#x60;updated_at&#x60;, &#x60;next_run_at&#x60;, or &#x60;enabled&#x60;, ascending or descending (prefix &#x60;-&#x60; for descending). Filter with &#x60;filter[enabled]&#x60;, &#x60;filter[recurring]&#x60;, and &#x60;filter[name]&#x60; (case-insensitive substring match on the name); filters compose with AND.
+    # List this account&#39;s jobs.  Default sort is &#x60;name&#x60; ascending. Sort by &#x60;name&#x60;, &#x60;created_at&#x60;, &#x60;updated_at&#x60;, &#x60;next_run_at&#x60;, or &#x60;enabled&#x60;, ascending or descending (prefix &#x60;-&#x60; for descending). Filter with &#x60;filter[enabled]&#x60; (enabled in at least one environment), &#x60;filter[recurring]&#x60;, and &#x60;filter[name]&#x60; (case-insensitive substring match on the name); filters compose with AND. A scoped caller sees each job&#39;s &#x60;environments&#x60; map narrowed to the environments it may access.
     # @param [Hash] opts the optional parameters
     # @option opts [Boolean] :filter_enabled 
     # @option opts [Boolean] :filter_recurring 
@@ -294,9 +297,10 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Run Job Now
-    # Trigger one immediate run of the job (a `MANUAL` run).  The job's schedule and enabled state are untouched. The run is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason `QUOTA_EXCEEDED` rather than being rejected here.
+    # Trigger one immediate run of the job (a `MANUAL` run).  The job's schedule and enabled state are untouched. The run executes in the environment named by the `X-Smplkit-Environment` header; when the job is enabled in exactly one environment that environment is used, and a single-environment credential implies it. The run executes the job's effective configuration for that environment. It is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason `QUOTA_EXCEEDED` rather than being rejected here.
     # @param job_id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :x_smplkit_environment The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map.
     # @return [RunResponse]
     def run_job_now(job_id, opts = {})
       data, _status_code, _headers = run_job_now_with_http_info(job_id, opts)
@@ -304,9 +308,10 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Run Job Now
-    # Trigger one immediate run of the job (a &#x60;MANUAL&#x60; run).  The job&#39;s schedule and enabled state are untouched. The run is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason &#x60;QUOTA_EXCEEDED&#x60; rather than being rejected here.
+    # Trigger one immediate run of the job (a &#x60;MANUAL&#x60; run).  The job&#39;s schedule and enabled state are untouched. The run executes in the environment named by the &#x60;X-Smplkit-Environment&#x60; header; when the job is enabled in exactly one environment that environment is used, and a single-environment credential implies it. The run executes the job&#39;s effective configuration for that environment. It is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason &#x60;QUOTA_EXCEEDED&#x60; rather than being rejected here.
     # @param job_id [String] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :x_smplkit_environment The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map.
     # @return [Array<(RunResponse, Integer, Hash)>] RunResponse data, response status code and response headers
     def run_job_now_with_http_info(job_id, opts = {})
       if @api_client.config.debugging
@@ -326,6 +331,7 @@ module SmplkitGeneratedClient::Jobs
       header_params = opts[:header_params] || {}
       # HTTP header 'Accept' (if needed)
       header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
+      header_params[:'X-Smplkit-Environment'] = opts[:'x_smplkit_environment'] if !opts[:'x_smplkit_environment'].nil?
 
       # form parameters
       form_params = opts[:form_params] || {}
@@ -357,10 +363,11 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Update Job
-    # Replace an existing job. Every writable field is overwritten.  Enabling a paused job is a `PUT` with `enabled: true`; pausing is `enabled: false`. Editing the schedule recomputes the next fire time.
+    # Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the `environments` map (a recurring job), or by recreating a one-off job in the desired environment. Editing the schedule recomputes the next fire time; changing only which environments are enabled preserves the existing cadence.
     # @param job_id [String] 
     # @param job_request [JobRequest] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :x_smplkit_environment The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map.
     # @return [JobResponse]
     def update_job(job_id, job_request, opts = {})
       data, _status_code, _headers = update_job_with_http_info(job_id, job_request, opts)
@@ -368,10 +375,11 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Update Job
-    # Replace an existing job. Every writable field is overwritten.  Enabling a paused job is a &#x60;PUT&#x60; with &#x60;enabled: true&#x60;; pausing is &#x60;enabled: false&#x60;. Editing the schedule recomputes the next fire time.
+    # Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the &#x60;environments&#x60; map (a recurring job), or by recreating a one-off job in the desired environment. Editing the schedule recomputes the next fire time; changing only which environments are enabled preserves the existing cadence.
     # @param job_id [String] 
     # @param job_request [JobRequest] 
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :x_smplkit_environment The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map.
     # @return [Array<(JobResponse, Integer, Hash)>] JobResponse data, response status code and response headers
     def update_job_with_http_info(job_id, job_request, opts = {})
       if @api_client.config.debugging
@@ -400,6 +408,7 @@ module SmplkitGeneratedClient::Jobs
       if !content_type.nil?
           header_params['Content-Type'] = content_type
       end
+      header_params[:'X-Smplkit-Environment'] = opts[:'x_smplkit_environment'] if !opts[:'x_smplkit_environment'].nil?
 
       # form parameters
       form_params = opts[:form_params] || {}

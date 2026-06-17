@@ -69,10 +69,13 @@ end
 
 api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
 job_create_request = SmplkitGeneratedClient::Jobs::JobCreateRequest.new({data: SmplkitGeneratedClient::Jobs::JobCreateResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Jobs::Job.new({name: 'name_example', schedule: 'schedule_example', configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new({url: 'url_example'})})})}) # JobCreateRequest | 
+opts = {
+  x_smplkit_environment: 'x_smplkit_environment_example' # String | The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its `environments` map.
+}
 
 begin
   #Create Job
-  result = api_instance.create_job(job_create_request)
+  result = api_instance.create_job(job_create_request, opts)
   p result
 rescue SmplkitGeneratedClient::Jobs::ApiError => e
   puts "Exception when calling JobsApi->create_job: #{e}"
@@ -105,6 +108,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Jobs::Job](docs/Job.md)
  - [SmplkitGeneratedClient::Jobs::JobCreateRequest](docs/JobCreateRequest.md)
  - [SmplkitGeneratedClient::Jobs::JobCreateResource](docs/JobCreateResource.md)
+ - [SmplkitGeneratedClient::Jobs::JobEnvironment](docs/JobEnvironment.md)
  - [SmplkitGeneratedClient::Jobs::JobHttpConfiguration](docs/JobHttpConfiguration.md)
  - [SmplkitGeneratedClient::Jobs::JobListResponse](docs/JobListResponse.md)
  - [SmplkitGeneratedClient::Jobs::JobRequest](docs/JobRequest.md)
