@@ -4,7 +4,16 @@
 
 require "smplkit"
 
-DEMO_CONFIG_IDS = %w[showcase-user-service showcase-common].freeze
+# Complete, dependency-ordered list of every config the config showcases
+# create. Children are listed before the shared "showcase-common" parent so
+# cleanup never trips the "config referenced as parent" conflict — even when a
+# prior run crashed mid-way and left a sibling showcase's child orphaned.
+DEMO_CONFIG_IDS = %w[
+  showcase-billing
+  showcase-user-service
+  showcase-database
+  showcase-common
+].freeze
 
 def setup_management_showcase(client)
   cleanup_management_showcase(client)
