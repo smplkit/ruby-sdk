@@ -18,7 +18,7 @@ All URIs are relative to *http://localhost*
 
 Create Job
 
-Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. An enabled job begins scheduling immediately.
+Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. A recurring job supplies `environments` to choose where it runs and begins scheduling immediately in each enabled environment. A one-off job is created in the environment named by the `X-Smplkit-Environment` header (implied when the credential is scoped to a single environment).
 
 ### Examples
 
@@ -224,7 +224,7 @@ end
 
 List Jobs
 
-List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, `updated_at`, `next_run_at`, or `enabled`, ascending or descending (prefix `-` for descending). Filter with `filter[enabled]`, `filter[recurring]`, and `filter[name]` (case-insensitive substring match on the name); filters compose with AND.
+List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, `updated_at`, `next_run_at`, or `enabled`, ascending or descending (prefix `-` for descending). Filter with `filter[enabled]` (enabled in at least one environment), `filter[recurring]`, and `filter[name]` (case-insensitive substring match on the name); filters compose with AND. A scoped caller sees each job's `environments` map narrowed to the environments it may access.
 
 ### Examples
 
@@ -307,7 +307,7 @@ end
 
 Run Job Now
 
-Trigger one immediate run of the job (a `MANUAL` run).  The job's schedule and enabled state are untouched. The run is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason `QUOTA_EXCEEDED` rather than being rejected here.
+Trigger one immediate run of the job (a `MANUAL` run).  The job's schedule and enabled state are untouched. The run executes in the environment named by the `X-Smplkit-Environment` header; when the job is enabled in exactly one environment that environment is used, and a single-environment credential implies it. The run executes the job's effective configuration for that environment. It is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason `QUOTA_EXCEEDED` rather than being rejected here.
 
 ### Examples
 
@@ -376,7 +376,7 @@ end
 
 Update Job
 
-Replace an existing job. Every writable field is overwritten.  Enabling a paused job is a `PUT` with `enabled: true`; pausing is `enabled: false`. Editing the schedule recomputes the next fire time.
+Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the `environments` map (a recurring job), or by recreating a one-off job in the desired environment. Editing the schedule recomputes the next fire time; changing only which environments are enabled preserves the existing cadence.
 
 ### Examples
 

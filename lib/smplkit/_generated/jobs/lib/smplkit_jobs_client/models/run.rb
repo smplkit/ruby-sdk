@@ -22,6 +22,9 @@ module SmplkitGeneratedClient::Jobs
     # The job's version at the time the run executed.
     attr_accessor :job_version
 
+    # The environment this run executed in. A scheduled run inherits the firing job-environment; a manual run is created in the environment you name with the `X-Smplkit-Environment` header; a rerun copies its source run's environment.
+    attr_accessor :environment
+
     # Why the run exists: `SCHEDULE`, `MANUAL` (Run now), or `RERUN`.
     attr_accessor :trigger
 
@@ -91,6 +94,7 @@ module SmplkitGeneratedClient::Jobs
       {
         :'job' => :'job',
         :'job_version' => :'job_version',
+        :'environment' => :'environment',
         :'trigger' => :'trigger',
         :'rerun_of' => :'rerun_of',
         :'scheduled_for' => :'scheduled_for',
@@ -123,6 +127,7 @@ module SmplkitGeneratedClient::Jobs
       {
         :'job' => :'String',
         :'job_version' => :'Integer',
+        :'environment' => :'String',
         :'trigger' => :'String',
         :'rerun_of' => :'String',
         :'scheduled_for' => :'Time',
@@ -183,6 +188,12 @@ module SmplkitGeneratedClient::Jobs
 
       if attributes.key?(:'job_version')
         self.job_version = attributes[:'job_version']
+      end
+
+      if attributes.key?(:'environment')
+        self.environment = attributes[:'environment']
+      else
+        self.environment = nil
       end
 
       if attributes.key?(:'trigger')
@@ -259,6 +270,10 @@ module SmplkitGeneratedClient::Jobs
         invalid_properties.push('invalid value for "job", job cannot be nil.')
       end
 
+      if @environment.nil?
+        invalid_properties.push('invalid value for "environment", environment cannot be nil.')
+      end
+
       if @trigger.nil?
         invalid_properties.push('invalid value for "trigger", trigger cannot be nil.')
       end
@@ -275,6 +290,7 @@ module SmplkitGeneratedClient::Jobs
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @job.nil?
+      return false if @environment.nil?
       return false if @trigger.nil?
       trigger_validator = EnumAttributeValidator.new('String', ["SCHEDULE", "MANUAL", "RERUN"])
       return false unless trigger_validator.valid?(@trigger)
@@ -294,6 +310,16 @@ module SmplkitGeneratedClient::Jobs
       end
 
       @job = job
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] environment Value to be assigned
+    def environment=(environment)
+      if environment.nil?
+        fail ArgumentError, 'environment cannot be nil'
+      end
+
+      @environment = environment
     end
 
     # Custom attribute writer method checking allowed values (enum).
@@ -333,6 +359,7 @@ module SmplkitGeneratedClient::Jobs
       self.class == o.class &&
           job == o.job &&
           job_version == o.job_version &&
+          environment == o.environment &&
           trigger == o.trigger &&
           rerun_of == o.rerun_of &&
           scheduled_for == o.scheduled_for &&
@@ -358,7 +385,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [job, job_version, trigger, rerun_of, scheduled_for, status, started_at, finished_at, pending_duration_ms, run_duration_ms, total_duration_ms, failure_reason, error, request, result, created_at].hash
+      [job, job_version, environment, trigger, rerun_of, scheduled_for, status, started_at, finished_at, pending_duration_ms, run_duration_ms, total_duration_ms, failure_reason, error, request, result, created_at].hash
     end
 
     # Builds the object from hash

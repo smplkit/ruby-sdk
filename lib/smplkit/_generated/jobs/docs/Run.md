@@ -6,6 +6,7 @@
 | ---- | ---- | ----------- | ----- |
 | **job** | **String** | The id of the job this run belongs to. |  |
 | **job_version** | **Integer** | The job&#39;s version at the time the run executed. | [optional] |
+| **environment** | **String** | The environment this run executed in. A scheduled run inherits the firing job-environment; a manual run is created in the environment you name with the &#x60;X-Smplkit-Environment&#x60; header; a rerun copies its source run&#39;s environment. |  |
 | **trigger** | **String** | Why the run exists: &#x60;SCHEDULE&#x60;, &#x60;MANUAL&#x60; (Run now), or &#x60;RERUN&#x60;. |  |
 | **rerun_of** | **String** | The source run&#39;s id; set only when &#x60;trigger&#x60; is &#x60;RERUN&#x60;. | [optional] |
 | **scheduled_for** | **Time** | The intended fire time for a scheduled run; &#x60;null&#x60; for manual / rerun runs. | [optional] |
@@ -29,6 +30,7 @@ require 'smplkit_jobs_client'
 instance = SmplkitGeneratedClient::Jobs::Run.new(
   job: null,
   job_version: null,
+  environment: null,
   trigger: null,
   rerun_of: null,
   scheduled_for: null,

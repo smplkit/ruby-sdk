@@ -105,6 +105,7 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Jobs::Job](docs/Job.md)
  - [SmplkitGeneratedClient::Jobs::JobCreateRequest](docs/JobCreateRequest.md)
  - [SmplkitGeneratedClient::Jobs::JobCreateResource](docs/JobCreateResource.md)
+ - [SmplkitGeneratedClient::Jobs::JobEnvironment](docs/JobEnvironment.md)
  - [SmplkitGeneratedClient::Jobs::JobHttpConfiguration](docs/JobHttpConfiguration.md)
  - [SmplkitGeneratedClient::Jobs::JobListResponse](docs/JobListResponse.md)
  - [SmplkitGeneratedClient::Jobs::JobRequest](docs/JobRequest.md)
