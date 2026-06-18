@@ -184,7 +184,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
   end
 
   describe "#list" do
-    it "forwards filter[enabled] and offset params to the generated client" do
+    it "forwards filter[enabled], filter[recurring], filter[name] and offset params to the generated client" do
       captured_uri = nil
       stub_request(:get, %r{#{base_url}/api/v1/jobs\b})
         .with do |req|
@@ -195,8 +195,10 @@ RSpec.describe Smplkit::Jobs::JobsClient do
                    body: { data: [job_resource(id: "a"), job_resource(id: "b")],
                            meta: { pagination: { page: 2, size: 10 } } }.to_json,
                    headers: json_api)
-      result = jobs.list(enabled: false, page_number: 2, page_size: 10)
+      result = jobs.list(enabled: false, recurring: true, name: "health", page_number: 2, page_size: 10)
       expect(captured_uri).to include("filter%5Benabled%5D=false")
+      expect(captured_uri).to include("filter%5Brecurring%5D=true")
+      expect(captured_uri).to include("filter%5Bname%5D=health")
       expect(captured_uri).to include("page%5Bnumber%5D=2")
       expect(captured_uri).to include("page%5Bsize%5D=10")
       expect(result.length).to eq(2)
