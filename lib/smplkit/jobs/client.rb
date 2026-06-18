@@ -10,17 +10,28 @@
 #
 #   client.jobs.{new,get,list,delete,run,usage}
 #   client.jobs.runs.{list,get,cancel,rerun}
-#   Job#{save,delete}
+#   Job#{save,delete,trigger,list_runs}
+#   Run#{rerun,cancel}
 #
-# The shared model classes (+Job+, +Run+, +Usage+, +HttpConfig+) live in
-# +lib/smplkit/jobs/models.rb+.
+# A job is enabled per environment: a recurring (cron) job may be enabled in
+# several environments at once, a one-off (+now+ / future datetime) job is born
+# in exactly one. A client-level +environment+ default supplies the one-off
+# birth environment on create, the run-now environment, and the +runs.list+
+# +filter[environment]+ scope.
+#
+# The shared model classes (+Job+, +JobEnvironment+, +Run+, +Usage+,
+# +HttpConfig+) live in +lib/smplkit/jobs/models.rb+.
 module Smplkit
   module Jobs
     # +client.jobs.runs.*+ — read-only run history plus the cancel / rerun run
     # actions.
     class RunsClient
-      def initialize(api)
+      # @param api [SmplkitGeneratedClient::Jobs::RunsApi] The generated runs API.
+      # @param environment [String, nil] Default environment scoping +#list+'s
+      #   +filter[environment]+ when no explicit +environments+ are passed.
+      def initialize(api, environment: nil)
         @api = api
+        @environment = environment
       end
 
       # List past runs, most recent first. Cursor paginated: pass +page_size+
@@ -29,19 +40,25 @@ module Smplkit
       #
       # @param job [String, nil] Return only runs of the job with this id.
       #   +nil+ lists runs across all jobs in the account.
+      # @param environments [Array<String>, nil] Restrict to runs stamped with
+      #   any of these environment keys. +nil+ falls back to the client's
+      #   configured environment (if any), otherwise covers every environment you
+      #   can access.
       # @param page_size [Integer, nil] Maximum number of runs to return in this
       #   page. +nil+ uses the server default.
       # @param after [String, nil] Opaque cursor from a previous page; returns
       #   the runs that follow it. +nil+ starts from the first page.
       # @return [Array<Smplkit::Jobs::Run>] The runs in this page.
-      def list(job: nil, page_size: nil, after: nil)
+      def list(job: nil, environments: nil, page_size: nil, after: nil)
         opts = {}
         opts[:filter_job] = job unless job.nil?
+        filter_environment = Jobs.resolve_environment_filter(environments, @environment)
+        opts[:filter_environment] = filter_environment unless filter_environment.nil?
         opts[:page_size] = page_size unless page_size.nil?
         opts[:page_after] = after unless after.nil?
 
         resp = Jobs.call_api { @api.list_runs(opts) }
-        (resp.data || []).map { |r| Run.from_resource(r) }
+        (resp.data || []).map { |r| Run.from_resource(r, runs: self) }
       end
 
       # Fetch a single run by its id.
@@ -51,7 +68,7 @@ module Smplkit
       # @raise [Smplkit::NotFoundError] when no run with this id exists.
       def get(run_id)
         resp = Jobs.call_api { @api.get_run(run_id) }
-        Run.from_resource(resp.data)
+        Run.from_resource(resp.data, runs: self)
       end
 
       # Cancel a run that has not finished yet.
@@ -60,7 +77,7 @@ module Smplkit
       # @return [Smplkit::Jobs::Run] The updated run reflecting the cancellation.
       def cancel(run_id)
         resp = Jobs.call_api { @api.cancel_run(run_id) }
-        Run.from_resource(resp.data)
+        Run.from_resource(resp.data, runs: self)
       end
 
       # Start a new run that repeats a previous one.
@@ -70,7 +87,7 @@ module Smplkit
       #   source +run_id+.
       def rerun(run_id)
         resp = Jobs.call_api { @api.rerun_run(run_id) }
-        Run.from_resource(resp.data)
+        Run.from_resource(resp.data, runs: self)
       end
     end
 
@@ -83,15 +100,17 @@ module Smplkit
     #
     #   client.jobs.{new,get,list,delete,run,usage}
     #   client.jobs.runs.{list,get,cancel,rerun}
-    #   Job#{save,delete}
+    #   Job#{save,delete,trigger,list_runs}
+    #   Run#{rerun,cancel}
     #
     # Build a standalone Smpl Jobs transport from resolved config.
     #
     # Reuses the config resolver (jobs is account-global and never
-    # environment-scoped) so a standalone jobs client resolves
-    # credentials/base-domain from +~/.smplkit+ / env vars / constructor args
-    # exactly like the top-level clients do. Smpl Jobs is JSON:API, so the
-    # transport carries the +application/vnd.api+json+ Accept header.
+    # environment-scoped at the transport layer) so a standalone jobs client
+    # resolves credentials/base-domain from +~/.smplkit+ / env vars /
+    # constructor args exactly like the top-level clients do. Smpl Jobs is
+    # JSON:API, so the transport carries the +application/vnd.api+json+ Accept
+    # header.
     def self.jobs_transport(api_key:, profile:, base_domain:, scheme:, debug:, extra_headers:)
       cfg = ConfigResolution.resolve_client_config(
         profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
@@ -124,17 +143,23 @@ module Smplkit
       # @param scheme [String, nil] URL scheme (default +"https"+).
       # @param debug [Boolean, nil] Enable SDK debug logging.
       # @param extra_headers [Hash, nil] Extra headers attached to every request.
+      # @param environment [String, nil] Default environment for
+      #   environment-scoped operations — the environment a one-off job created
+      #   through this client is born in, the default a manual run executes in,
+      #   and the default scope for +runs.list+. +nil+ leaves these unset (the
+      #   credential's permitted environment is implied where unambiguous).
       # @param auth_client [Object, nil] Internal — a pre-built transport
       #   supplied by a top-level client so the jobs surface shares one
       #   connection pool. Not for direct use.
       def initialize(api_key = nil, profile: nil, base_domain: nil, scheme: nil,
-                     debug: nil, extra_headers: nil, auth_client: nil)
+                     debug: nil, extra_headers: nil, environment: nil, auth_client: nil)
         auth = auth_client || Jobs.jobs_transport(
           api_key: api_key, profile: profile, base_domain: base_domain,
           scheme: scheme, debug: debug, extra_headers: extra_headers
         )
+        @environment = environment
         @api = SmplkitGeneratedClient::Jobs::JobsApi.new(auth)
-        @runs = RunsClient.new(SmplkitGeneratedClient::Jobs::RunsApi.new(auth))
+        @runs = RunsClient.new(SmplkitGeneratedClient::Jobs::RunsApi.new(auth), environment: environment)
         @usage_api = SmplkitGeneratedClient::Jobs::UsageApi.new(auth)
       end
 
@@ -162,16 +187,25 @@ module Smplkit
       #   live job already uses this id.
       # @param name [String] Human-readable name for the job.
       # @param schedule [String] An ISO-8601 datetime, a 5-field UTC cron
-      #   expression, or the literal +"now"+.
-      # @param configuration [Smplkit::Jobs::HttpConfig] The HTTP request the
-      #   job performs.
+      #   expression, or the literal +"now"+. The schedule is environment-agnostic.
+      # @param configuration [Smplkit::Jobs::HttpConfig] The base HTTP request
+      #   the job performs.
       # @param description [String, nil] Optional free-text description.
-      # @param enabled [Boolean] Whether the job schedules runs. Defaults +true+.
+      # @param environments [Hash{String => Smplkit::Jobs::JobEnvironment, Hash}, nil]
+      #   Per-environment overrides for a recurring job, keyed by environment key
+      #   — each a {Smplkit::Jobs::JobEnvironment}, or a plain hash
+      #   (+{ enabled: true }+, optionally with a +:configuration+
+      #   {Smplkit::Jobs::HttpConfig} override). A recurring job fires only in
+      #   environments enabled here. Ignored for a one-off job, which is born in
+      #   +environment+ below.
       # @param concurrency_policy [String] How overlapping runs are handled.
       #   Defaults to +"ALLOW"+.
+      # @param environment [String, nil] For a one-off job (+"now"+ / datetime
+      #   schedule), the environment it is born in. Defaults to the client's
+      #   configured environment. Ignored for a recurring job.
       # @return [Smplkit::Jobs::Job]
       def new(id, name:, schedule:, configuration:, description: nil,
-              enabled: true, concurrency_policy: "ALLOW")
+              environments: nil, concurrency_policy: "ALLOW", environment: nil)
         Job.new(
           self,
           id: id,
@@ -179,14 +213,16 @@ module Smplkit
           schedule: schedule,
           configuration: configuration,
           description: description,
-          enabled: enabled,
-          concurrency_policy: concurrency_policy
+          environments: Jobs.normalize_environments(environments),
+          concurrency_policy: concurrency_policy,
+          birth_environment: environment.nil? ? @environment : environment
         )
       end
 
       # List jobs for the authenticated account.
       #
-      # @param enabled [Boolean, nil] Filter to jobs matching this enabled state.
+      # @param enabled [Boolean, nil] Filter to jobs matching this enabled state
+      #   (the server-derived roll-up across environments).
       # @param page_number [Integer, nil] 1-based page number to return.
       # @param page_size [Integer, nil] Items per page.
       # @return [Array<Smplkit::Jobs::Job>]
@@ -226,11 +262,16 @@ module Smplkit
       # use +client.jobs.runs+.
       #
       # @param id [String] Identifier of the job to run.
+      # @param environment [String, nil] Environment the manual run executes in.
+      #   Defaults to the client's configured environment; when the job is
+      #   enabled in exactly one environment that environment is used, and a
+      #   single-environment credential implies it.
       # @return [Smplkit::Jobs::Run] The run that was started, with +trigger+
       #   set to +MANUAL+.
-      def run(id)
-        resp = Jobs.call_api { @api.run_job_now(id) }
-        Run.from_resource(resp.data)
+      def run(id, environment: nil)
+        env = environment.nil? ? @environment : environment
+        resp = Jobs.call_api { @api.run_job_now(id, x_smplkit_environment: env) }
+        Run.from_resource(resp.data, runs: @runs)
       end
 
       # Current-period usage counters for the account.
@@ -243,16 +284,19 @@ module Smplkit
 
       # @api private — POST a new job. Called by {Smplkit::Jobs::Job#save} on
       #   unsaved instances. The jobs service requires a caller-supplied
-      #   +data.id+ on create and 409s on conflict.
+      #   +data.id+ on create and 409s on conflict. A one-off job's birth
+      #   environment travels as the +X-Smplkit-Environment+ header.
       def _create_job(job)
         raise ArgumentError, "Job.id is required on create (caller-supplied key)" if job.id.nil? || job.id.empty?
 
-        resp = Jobs.call_api { @api.create_job(build_create_body(job)) }
+        resp = Jobs.call_api { @api.create_job(build_create_body(job), x_smplkit_environment: job.birth_environment) }
         Job.from_resource(resp.data, client: self)
       end
 
       # @api private — Full-replace PUT for an existing job. Called by
-      #   {Smplkit::Jobs::Job#save} on instances with +created_at+.
+      #   {Smplkit::Jobs::Job#save} on instances with +created_at+. The client's
+      #   configured environment (if any) travels as the +X-Smplkit-Environment+
+      #   header.
       #
       # Header values come back in plaintext on the GET path, so a fetched job
       # round-trips through this full-replace PUT with its header values intact
@@ -260,22 +304,40 @@ module Smplkit
       def _update_job(job)
         raise ArgumentError, "cannot update a Job with no id" if job.id.nil?
 
-        resp = Jobs.call_api { @api.update_job(job.id, build_body(job)) }
+        resp = Jobs.call_api { @api.update_job(job.id, build_body(job), x_smplkit_environment: @environment) }
         Job.from_resource(resp.data, client: self)
       end
 
       private
 
+      # Convert the wrapper +environments+ map to the generated model hash.
+      #
+      # Each entry's +enabled+ is always written; a per-environment
+      # +configuration+ override is sent as a full {HttpConfig} payload only when
+      # present (omit to inherit the base configuration).
+      def environments_to_wire(environments)
+        (environments || {}).each_with_object({}) do |(env_key, env), out|
+          attrs = { enabled: env.enabled }
+          attrs[:configuration] = HttpConfig.to_wire(env.configuration) unless env.configuration.nil?
+          out[env_key.to_s] = SmplkitGeneratedClient::Jobs::JobEnvironment.new(attrs)
+        end
+      end
+
       def build_attrs(job)
-        SmplkitGeneratedClient::Jobs::Job.new(
+        # The base +enabled+ is a read-only, server-derived roll-up; we never
+        # send it. Enablement travels entirely through +environments+, which is
+        # included only when non-empty.
+        attrs = {
           name: job.name,
           description: job.description,
-          enabled: job.enabled,
           type: job.type,
           schedule: job.schedule,
           configuration: HttpConfig.to_wire(job.configuration),
           concurrency_policy: job.concurrency_policy
-        )
+        }
+        environments = job.environments
+        attrs[:environments] = environments_to_wire(environments) unless environments.nil? || environments.empty?
+        SmplkitGeneratedClient::Jobs::Job.new(attrs)
       end
 
       def build_create_body(job)

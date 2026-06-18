@@ -21,34 +21,53 @@ RSpec.describe Smplkit::Jobs::JobsClient do
   let(:run_id) { "8f2b1c4a-0000-4a1b-9c3d-1e2f3a4b5c6d" }
   let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
 
-  def job_resource(id: "nightly-cache-warm", enabled: true, version: 1, created: true)
+  def env_header(headers)
+    pair = headers&.find { |k, _| k.casecmp?("X-Smplkit-Environment") }
+    pair&.last
+  end
+
+  def env_block(production_enabled: true)
     {
-      id: id,
-      type: "job",
-      attributes: {
-        name: "Nightly cache warm", description: "does a thing", enabled: enabled,
-        type: "http", schedule: "0 2 * * *",
+      production: { enabled: production_enabled },
+      development: {
+        enabled: false,
         configuration: {
-          method: "POST", url: "https://api.example.com/cache/warm",
-          headers: [{ name: "Authorization", value: "<redacted>" }],
-          body: "{\"scope\": \"all\"}", success_status: "2xx", timeout: 30,
+          method: "POST", url: "https://development.example.com/cache/warm",
+          headers: [], body: "{}", success_status: "2xx", timeout: 30,
           tls_verify: true, ca_cert: nil
-        },
-        concurrency_policy: "ALLOW", next_run_at: "2026-06-06T02:00:00Z",
-        created_at: created ? "2026-06-04T00:00:00Z" : nil,
-        updated_at: created ? "2026-06-04T00:00:00Z" : nil,
-        deleted_at: nil, version: version
+        }
       }
     }
   end
 
+  def job_resource(id: "nightly-cache-warm", enabled: true, version: 1, created: true,
+                   environments: nil, recurring: nil)
+    attributes = {
+      name: "Nightly cache warm", description: "does a thing", enabled: enabled,
+      recurring: recurring, type: "http", schedule: "0 2 * * *",
+      configuration: {
+        method: "POST", url: "https://api.example.com/cache/warm",
+        headers: [{ name: "Authorization", value: "<redacted>" }],
+        body: "{\"scope\": \"all\"}", success_status: "2xx", timeout: 30,
+        tls_verify: true, ca_cert: nil
+      },
+      concurrency_policy: "ALLOW", next_run_at: "2026-06-06T02:00:00Z",
+      created_at: created ? "2026-06-04T00:00:00Z" : nil,
+      updated_at: created ? "2026-06-04T00:00:00Z" : nil,
+      deleted_at: nil, version: version
+    }
+    attributes[:environments] = environments unless environments.nil?
+    { id: id, type: "job", attributes: attributes }
+  end
+
   def run_resource(id: "8f2b1c4a-0000-4a1b-9c3d-1e2f3a4b5c6d", status: "SUCCEEDED",
-                   trigger: "SCHEDULE", rerun_of: nil)
+                   trigger: "SCHEDULE", rerun_of: nil, environment: "production")
     {
       id: id,
       type: "run",
       attributes: {
-        job: "nightly-cache-warm", job_version: 1, trigger: trigger, rerun_of: rerun_of,
+        job: "nightly-cache-warm", job_version: 1, environment: environment,
+        trigger: trigger, rerun_of: rerun_of,
         scheduled_for: "2026-06-05T00:00:00Z", status: status,
         started_at: "2026-06-05T00:00:00Z", finished_at: "2026-06-05T00:00:01Z",
         pending_duration_ms: 100, run_duration_ms: 300, total_duration_ms: 400,
@@ -99,10 +118,42 @@ RSpec.describe Smplkit::Jobs::JobsClient do
         true
       end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
       jobs.new(job_id, name: "Nightly cache warm", schedule: "0 2 * * *",
-                       configuration: http_config, enabled: false).save
+                       configuration: http_config).save
       expect(captured).to include("\"id\":\"#{job_id}\"")
       expect(captured).to include("\"body\":\"{\\\"scope\\\": \\\"all\\\"}\"")
       expect(captured).to include("\"timeout\":30")
+    end
+
+    it "sends the environments map (per-env enabled + config) and never writes base enabled" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
+      jobs.new(job_id, name: "n", schedule: "0 * * * *", configuration: http_config,
+                       environments: {
+                         "production" => Smplkit::Jobs::JobEnvironment.new(enabled: true),
+                         "staging" => Smplkit::Jobs::JobEnvironment.new(enabled: true, configuration: http_config)
+                       }).save
+      attrs = captured["data"]["attributes"]
+      expect(attrs).not_to have_key("enabled")
+      expect(attrs["environments"]["production"]).to eq({ "enabled" => true })
+      expect(attrs["environments"]["staging"]["enabled"]).to be(true)
+      expect(attrs["environments"]["staging"]["configuration"]["url"]).to eq("https://api.example.com/cache/warm")
+    end
+
+    it "creates a one-off job with the birth-environment header and omits an empty environments map" do
+      body = nil
+      headers = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
+        body = JSON.parse(req.body)
+        headers = req.headers
+        true
+      end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
+      jobs.new("one-off", name: "One", schedule: "now", configuration: http_config,
+                          environment: "development").save
+      expect(body["data"]["attributes"]).not_to have_key("environments")
+      expect(env_header(headers)).to eq("development")
     end
 
     it "raises ArgumentError when save() is called on a job without an id" do
@@ -177,12 +228,11 @@ RSpec.describe Smplkit::Jobs::JobsClient do
         status: 200, body: { data: job_resource }.to_json, headers: json_api
       )
       put_stub = stub_request(:put, "#{base_url}/api/v1/jobs/#{job_id}").to_return(
-        status: 200, body: { data: job_resource(version: 2, enabled: true) }.to_json, headers: json_api
+        status: 200, body: { data: job_resource(version: 2) }.to_json, headers: json_api
       )
       job = jobs.get(job_id)
       job.name = "Nightly cache warm (v2)"
-      job.schedule = "30 2 * * *"
-      job.enabled = true
+      job.set_schedule("30 2 * * *")
       job.save
       expect(put_stub).to have_been_requested
       expect(job.version).to eq(2)
@@ -225,17 +275,73 @@ RSpec.describe Smplkit::Jobs::JobsClient do
     end
   end
 
+  describe "environment header on writes" do
+    it "sends the client's configured environment on update" do
+      client = described_class.new(auth_client: api_client, environment: "production")
+      stub_request(:get, "#{base_url}/api/v1/jobs/#{job_id}").to_return(
+        status: 200, body: { data: job_resource }.to_json, headers: json_api
+      )
+      captured = nil
+      stub_request(:put, "#{base_url}/api/v1/jobs/#{job_id}").with do |req|
+        captured = req.headers
+        true
+      end.to_return(status: 200, body: { data: job_resource(version: 2) }.to_json, headers: json_api)
+      job = client.get(job_id)
+      job.name = "renamed"
+      job.save
+      expect(env_header(captured)).to eq("production")
+    end
+
+    it "omits the environment header on update when the client has no environment" do
+      stub_request(:get, "#{base_url}/api/v1/jobs/#{job_id}").to_return(
+        status: 200, body: { data: job_resource }.to_json, headers: json_api
+      )
+      captured = nil
+      stub_request(:put, "#{base_url}/api/v1/jobs/#{job_id}").with do |req|
+        captured = req.headers
+        true
+      end.to_return(status: 200, body: { data: job_resource(version: 2) }.to_json, headers: json_api)
+      job = jobs.get(job_id)
+      job.save
+      expect(env_header(captured)).to be_nil
+    end
+  end
+
   describe "#run" do
-    it "triggers a MANUAL run and returns the Run" do
+    it "triggers a MANUAL run and returns the Run with its environment" do
       stub_request(:post, "#{base_url}/api/v1/jobs/#{job_id}/actions/run").to_return(
         status: 200, body: { data: run_resource(trigger: "MANUAL") }.to_json, headers: json_api
       )
       run = jobs.run(job_id)
       expect(run.trigger).to eq("MANUAL")
       expect(run.job).to eq("nightly-cache-warm")
+      expect(run.environment).to eq("production")
       expect(run.total_duration_ms).to eq(400)
       expect(run.request["url"]).to eq("https://api.example.com/cache/warm")
       expect(run.result["status"]).to eq(200)
+    end
+
+    it "sends an explicit environment as the X-Smplkit-Environment header" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs/#{job_id}/actions/run").with do |req|
+        captured = req.headers
+        true
+      end.to_return(status: 200, body: { data: run_resource(trigger: "MANUAL") }.to_json, headers: json_api)
+      jobs.run(job_id, environment: "development")
+      expect(env_header(captured)).to eq("development")
+    end
+
+    it "falls back to the client's configured environment, else omits the header" do
+      with_default = described_class.new(auth_client: api_client, environment: "production")
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs/#{job_id}/actions/run").with do |req|
+        captured = req.headers
+        true
+      end.to_return(status: 200, body: { data: run_resource(trigger: "MANUAL") }.to_json, headers: json_api)
+      with_default.run(job_id)
+      expect(env_header(captured)).to eq("production")
+      jobs.run(job_id)
+      expect(env_header(captured)).to be_nil
     end
   end
 
@@ -250,6 +356,65 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       expect(usage.runs_included).to eq(3000)
       expect(usage.active_jobs).to eq(2)
       expect(usage.active_jobs_limit).to eq(10)
+    end
+  end
+
+  describe "active-record Job#trigger / #list_runs" do
+    let(:bound_job) do
+      stub_request(:get, "#{base_url}/api/v1/jobs/#{job_id}").to_return(
+        status: 200, body: { data: job_resource }.to_json, headers: json_api
+      )
+      jobs.get(job_id)
+    end
+
+    it "trigger sends the environment header and returns a re-runnable Run" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs/#{job_id}/actions/run").with do |req|
+        captured = req.headers
+        true
+      end.to_return(status: 200, body: { data: run_resource(trigger: "MANUAL") }.to_json, headers: json_api)
+      rerun_stub = stub_request(:post, "#{base_url}/api/v1/runs/#{run_id}/actions/rerun").to_return(
+        status: 200, body: { data: run_resource(trigger: "RERUN", rerun_of: run_id) }.to_json, headers: json_api
+      )
+      run = bound_job.trigger(environment: "production")
+      expect(run.trigger).to eq("MANUAL")
+      expect(env_header(captured)).to eq("production")
+      expect(run.rerun.trigger).to eq("RERUN")
+      expect(rerun_stub).to have_been_requested
+    end
+
+    it "list_runs scopes filter[environment] to the single environment, else omits it" do
+      captured = nil
+      stub_request(:get, %r{#{base_url}/api/v1/runs\b}).with do |req|
+        captured = req.uri.query_values
+        true
+      end.to_return(status: 200, body: { data: [run_resource], meta: { page_size: 50 } }.to_json, headers: json_api)
+      runs = bound_job.list_runs(environment: "production")
+      expect(runs.length).to eq(1)
+      expect(captured["filter[environment]"]).to eq("production")
+      expect(captured["filter[job]"]).to eq(job_id)
+      bound_job.list_runs
+      expect(captured.key?("filter[environment]")).to be(false)
+    end
+
+    it "raises when the Job has no client" do
+      detached = Smplkit::Jobs::Job.new(id: "x", name: "x", schedule: "now", configuration: http_config)
+      expect { detached.trigger }.to raise_error(/cannot trigger/)
+      expect { detached.list_runs }.to raise_error(/cannot list runs/)
+    end
+  end
+
+  describe "standalone construction" do
+    it "resolves its own transport when no auth_client is given" do
+      client = described_class.new("k", base_domain: "smplkit.test", scheme: "https")
+      expect(client).to be_a(described_class)
+      expect(client.close).to be_nil
+    end
+
+    it "open yields the client and closes it" do
+      yielded = nil
+      described_class.open(auth_client: api_client) { |j| yielded = j }
+      expect(yielded).to be_a(described_class)
     end
   end
 end
@@ -273,14 +438,16 @@ RSpec.describe Smplkit::Jobs::RunsClient do
   let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
 
   def run_resource(id: "8f2b1c4a-0000-4a1b-9c3d-1e2f3a4b5c6d", status: "SUCCEEDED",
-                   trigger: "SCHEDULE", rerun_of: nil)
+                   trigger: "SCHEDULE", rerun_of: nil, environment: "production", sparse: false)
     {
       id: id, type: "run",
       attributes: {
-        job: "nightly-cache-warm", job_version: 1, trigger: trigger, rerun_of: rerun_of,
+        job: "nightly-cache-warm", job_version: 1, environment: environment,
+        trigger: trigger, rerun_of: rerun_of,
         scheduled_for: "2026-06-05T00:00:00Z", status: status,
         started_at: nil, finished_at: nil, pending_duration_ms: nil, run_duration_ms: nil,
-        total_duration_ms: nil, failure_reason: nil, error: nil, request: nil, result: nil,
+        total_duration_ms: nil, failure_reason: nil, error: nil,
+        request: sparse ? nil : { method: "POST" }, result: sparse ? nil : { status: 200 },
         created_at: "2026-06-05T00:00:00Z"
       }
     }
@@ -288,21 +455,44 @@ RSpec.describe Smplkit::Jobs::RunsClient do
 
   describe "#list" do
     it "scopes by job and forwards cursor params" do
-      captured_uri = nil
+      captured = nil
       stub_request(:get, %r{#{base_url}/api/v1/runs\b})
         .with do |req|
-          captured_uri = req.uri.to_s
+          captured = req.uri.query_values
           true
         end
         .to_return(status: 200,
                    body: { data: [run_resource], meta: { page_size: 2 } }.to_json,
                    headers: json_api)
       result = runs.list(job: "nightly-cache-warm", page_size: 2, after: "cur")
-      expect(captured_uri).to include("filter%5Bjob%5D=nightly-cache-warm")
-      expect(captured_uri).to include("page%5Bsize%5D=2")
-      expect(captured_uri).to include("page%5Bafter%5D=cur")
+      expect(captured["filter[job]"]).to eq("nightly-cache-warm")
+      expect(captured["page[size]"]).to eq("2")
+      expect(captured["page[after]"]).to eq("cur")
+      expect(captured.key?("filter[environment]")).to be(false)
       expect(result.length).to eq(1)
       expect(result.first.id).to eq(run_id)
+      expect(result.first.environment).to eq("production")
+    end
+
+    it "joins an explicit environments list into filter[environment]" do
+      captured = nil
+      stub_request(:get, %r{#{base_url}/api/v1/runs\b}).with do |req|
+        captured = req.uri.query_values
+        true
+      end.to_return(status: 200, body: { data: [run_resource], meta: { page_size: 50 } }.to_json, headers: json_api)
+      runs.list(environments: %w[production development])
+      expect(captured["filter[environment]"]).to eq("production,development")
+    end
+
+    it "falls back to the client's configured environment when no list is given" do
+      scoped = Smplkit::Jobs::JobsClient.new(auth_client: api_client, environment: "production").runs
+      captured = nil
+      stub_request(:get, %r{#{base_url}/api/v1/runs\b}).with do |req|
+        captured = req.uri.query_values
+        true
+      end.to_return(status: 200, body: { data: [run_resource], meta: { page_size: 50 } }.to_json, headers: json_api)
+      scoped.list
+      expect(captured["filter[environment]"]).to eq("production")
     end
 
     it "returns an empty list when data is empty" do
@@ -314,7 +504,8 @@ RSpec.describe Smplkit::Jobs::RunsClient do
 
     it "leaves request and result nil when the run carries neither" do
       stub_request(:get, %r{#{base_url}/api/v1/runs\b}).to_return(
-        status: 200, body: { data: [run_resource], meta: { page_size: 50 } }.to_json, headers: json_api
+        status: 200, body: { data: [run_resource(sparse: true)], meta: { page_size: 50 } }.to_json,
+        headers: json_api
       )
       run = runs.list.first
       expect(run.request).to be_nil
@@ -349,6 +540,183 @@ RSpec.describe Smplkit::Jobs::RunsClient do
       rerun = runs.rerun(run_id)
       expect(rerun.trigger).to eq("RERUN")
       expect(rerun.rerun_of).to eq(run_id)
+    end
+  end
+
+  describe "Run active-record actions" do
+    it "rerun and cancel act through the bound runs client" do
+      stub_request(:get, "#{base_url}/api/v1/runs/#{run_id}").to_return(
+        status: 200, body: { data: run_resource }.to_json, headers: json_api
+      )
+      stub_request(:post, "#{base_url}/api/v1/runs/#{run_id}/actions/rerun").to_return(
+        status: 200, body: { data: run_resource(trigger: "RERUN", rerun_of: run_id) }.to_json, headers: json_api
+      )
+      stub_request(:post, "#{base_url}/api/v1/runs/#{run_id}/actions/cancel").to_return(
+        status: 200, body: { data: run_resource(status: "CANCELED") }.to_json, headers: json_api
+      )
+      run = runs.get(run_id)
+      expect(run.rerun.trigger).to eq("RERUN")
+      expect(run.cancel.status).to eq("CANCELED")
+    end
+
+    it "raises when the Run has no bound runs client" do
+      detached = Smplkit::Jobs::Run.from_resource(run_resource_struct)
+      expect { detached.rerun }.to raise_error(/cannot rerun/)
+      expect { detached.cancel }.to raise_error(/cannot cancel/)
+    end
+
+    # A generated RunResource carrying the minimal attributes, used to build a
+    # Run with no runs backref.
+    def run_resource_struct
+      SmplkitGeneratedClient::Jobs::RunResource.new(
+        id: run_id, type: "run",
+        attributes: SmplkitGeneratedClient::Jobs::Run.new(
+          job: "nightly-cache-warm", environment: "production", trigger: "MANUAL", status: "SUCCEEDED"
+        )
+      )
+    end
+  end
+end
+
+RSpec.describe Smplkit::Jobs::Job do
+  let(:base) { Smplkit::Jobs::HttpConfig.new(url: "https://base.example.com") }
+  let(:job) { described_class.new(id: "x", name: "X", schedule: "0 * * * *", configuration: base) }
+
+  describe "#set_enabled / #is_enabled" do
+    it "creates and updates a per-environment override and reads it back" do
+      expect(job.is_enabled).to be(false) # roll-up default (no envs)
+      job.set_enabled(true, environment: "production")
+      expect(job.environments["production"].enabled).to be(true)
+      job.set_enabled(false, environment: "production") # existing-entry branch
+      expect(job.is_enabled(environment: "production")).to be(false)
+      expect(job.is_enabled(environment: "staging")).to be(false) # env absent from map
+    end
+
+    it "is_enabled with no argument returns the server roll-up" do
+      job.enabled = true
+      expect(job.is_enabled).to be(true)
+    end
+  end
+
+  describe "#set_configuration / #get_configuration" do
+    it "sets and resolves base and per-environment configuration" do
+      expect(job.get_configuration).to be(base) # base
+      expect(job.get_configuration(environment: "production")).to be(base) # no override -> base
+      override = Smplkit::Jobs::HttpConfig.new(url: "https://prod.example.com")
+      job.set_configuration(override, environment: "production")
+      expect(job.get_configuration(environment: "production")).to be(override) # override wins
+      job.set_enabled(true, environment: "staging") # entry with no configuration
+      expect(job.get_configuration(environment: "staging")).to be(base) # falls back to base
+    end
+
+    it "set_configuration with no environment replaces the base configuration" do
+      new_cfg = Smplkit::Jobs::HttpConfig.new(url: "https://new.example.com")
+      job.set_configuration(new_cfg)
+      expect(job.configuration).to be(new_cfg)
+    end
+  end
+
+  describe "#set_schedule" do
+    it "replaces the environment-agnostic schedule" do
+      job.set_schedule("30 2 * * *")
+      expect(job.schedule).to eq("30 2 * * *")
+    end
+  end
+
+  describe ".from_resource" do
+    it "defaults enabled to the roll-up (false), type, and concurrency_policy when the wire omits them" do
+      resource = SmplkitGeneratedClient::Jobs::JobResource.new(
+        id: "j", type: "job",
+        attributes: SmplkitGeneratedClient::Jobs::Job.new(
+          name: "n", schedule: "now",
+          configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://x"),
+          enabled: nil, type: nil, concurrency_policy: nil
+        )
+      )
+      parsed = described_class.from_resource(resource)
+      expect(parsed.enabled).to be(false)
+      expect(parsed.environments).to eq({})
+      expect(parsed.type).to eq("http")
+      expect(parsed.concurrency_policy).to eq("ALLOW")
+    end
+
+    it "exposes save! and delete! aliases" do
+      expect(described_class.instance_method(:save!)).to eq(described_class.instance_method(:save))
+      expect(described_class.instance_method(:delete!)).to eq(described_class.instance_method(:delete))
+    end
+  end
+end
+
+RSpec.describe Smplkit::Jobs::JobEnvironment do
+  describe ".from_wire" do
+    it "returns a disabled, override-free environment for nil" do
+      env = described_class.from_wire(nil)
+      expect(env.enabled).to be(false)
+      expect(env.configuration).to be_nil
+    end
+
+    it "coerces a nil enabled to false and leaves configuration nil when absent" do
+      wire = SmplkitGeneratedClient::Jobs::JobEnvironment.new(enabled: nil)
+      env = described_class.from_wire(wire)
+      expect(env.enabled).to be(false)
+      expect(env.configuration).to be_nil
+    end
+
+    it "parses a per-environment configuration override into an HttpConfig" do
+      wire = SmplkitGeneratedClient::Jobs::JobEnvironment.new(
+        enabled: true,
+        configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://e.com")
+      )
+      env = described_class.from_wire(wire)
+      expect(env.enabled).to be(true)
+      expect(env.configuration).to be_a(Smplkit::Jobs::HttpConfig)
+      expect(env.configuration.url).to eq("https://e.com")
+    end
+  end
+end
+
+RSpec.describe "Smplkit::Jobs environment helpers" do
+  let(:cfg) { Smplkit::Jobs::HttpConfig.new(url: "https://api.example.com") }
+
+  describe ".join_environments" do
+    it "returns nil for nil, an empty array, and an all-blank array" do
+      expect(Smplkit::Jobs.join_environments(nil)).to be_nil
+      expect(Smplkit::Jobs.join_environments([])).to be_nil
+      expect(Smplkit::Jobs.join_environments([" ", ""])).to be_nil
+    end
+
+    it "comma-joins a non-empty list" do
+      expect(Smplkit::Jobs.join_environments(%w[production staging])).to eq("production,staging")
+    end
+  end
+
+  describe ".resolve_environment_filter" do
+    it "prefers an explicit list, then the client default, then nil" do
+      expect(Smplkit::Jobs.resolve_environment_filter(%w[a b], "production")).to eq("a,b")
+      expect(Smplkit::Jobs.resolve_environment_filter(nil, "production")).to eq("production")
+      expect(Smplkit::Jobs.resolve_environment_filter(nil, nil)).to be_nil
+    end
+  end
+
+  describe ".normalize_environments" do
+    it "returns an empty hash for nil and empty input" do
+      expect(Smplkit::Jobs.normalize_environments(nil)).to eq({})
+      expect(Smplkit::Jobs.normalize_environments({})).to eq({})
+    end
+
+    it "passes JobEnvironment instances through and coerces hash forms" do
+      out = Smplkit::Jobs.normalize_environments(
+        "production" => Smplkit::Jobs::JobEnvironment.new(enabled: true),
+        "staging" => { enabled: true, configuration: cfg },
+        "dev" => { enabled: false, configuration: { url: "https://dev.example.com" } },
+        "qa" => { "enabled" => true }
+      )
+      expect(out["production"].enabled).to be(true)
+      expect(out["staging"].configuration).to be(cfg)
+      expect(out["dev"].configuration).to be_a(Smplkit::Jobs::HttpConfig)
+      expect(out["dev"].configuration.url).to eq("https://dev.example.com")
+      expect(out["qa"].enabled).to be(true)
+      expect(out["qa"].configuration).to be_nil
     end
   end
 end
@@ -460,27 +828,55 @@ RSpec.describe Smplkit::Jobs::HttpConfig do
   end
 end
 
-RSpec.describe Smplkit::Jobs::Job do
-  let(:http_config) { Smplkit::Jobs::HttpConfig.new(url: "https://x") }
+RSpec.describe "Smplkit::Jobs::Job environments parsing" do
+  subject(:jobs) { Smplkit::Jobs::JobsClient.new(auth_client: api_client) }
 
-  it "defaults enabled, type, and concurrency_policy when the wire omits them" do
-    resource = SmplkitGeneratedClient::Jobs::JobResource.new(
-      id: "j", type: "job",
-      attributes: SmplkitGeneratedClient::Jobs::Job.new(
-        name: "n", schedule: "now",
-        configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://x"),
-        enabled: nil, type: nil, concurrency_policy: nil
-      )
+  let(:api_client) do
+    Smplkit::Transport.build_api_client(
+      SmplkitGeneratedClient::Jobs, "jobs", resolved, accept: "application/vnd.api+json"
     )
-    job = described_class.from_resource(resource)
-    expect(job.enabled).to be(true)
-    expect(job.type).to eq("http")
-    expect(job.concurrency_policy).to eq("ALLOW")
+  end
+  let(:resolved) do
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
+      api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
+    )
+  end
+  let(:base_url) { "https://jobs.smplkit.test" }
+  let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
+
+  def job_with_environments
+    {
+      id: "j", type: "job",
+      attributes: {
+        name: "n", description: nil, enabled: true, recurring: true, type: "http",
+        schedule: "0 * * * *",
+        configuration: { method: "POST", url: "https://api.example.com/hook", headers: [],
+                         body: nil, success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil },
+        environments: {
+          production: { enabled: true },
+          staging: {
+            enabled: false,
+            configuration: { method: "POST", url: "https://staging.example.com/hook", headers: [],
+                             body: nil, success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil }
+          }
+        },
+        concurrency_policy: "ALLOW", next_run_at: nil, created_at: "2026-06-04T00:00:00Z",
+        updated_at: "2026-06-04T00:00:00Z", deleted_at: nil, version: 1
+      }
+    }
   end
 
-  it "exposes save! and delete! aliases" do
-    expect(described_class.instance_method(:save!)).to eq(described_class.instance_method(:save))
-    expect(described_class.instance_method(:delete!)).to eq(described_class.instance_method(:delete))
+  it "parses the environments map, recurring flag, and roll-up on read" do
+    stub_request(:get, "#{base_url}/api/v1/jobs/j").to_return(
+      status: 200, body: { data: job_with_environments }.to_json, headers: json_api
+    )
+    job = jobs.get("j")
+    expect(job.enabled).to be(true) # derived roll-up
+    expect(job.recurring).to be(true)
+    expect(job.is_enabled(environment: "production")).to be(true)
+    expect(job.environments["production"].configuration).to be_nil # inherits base
+    expect(job.is_enabled(environment: "staging")).to be(false)
+    expect(job.get_configuration(environment: "staging").url).to eq("https://staging.example.com/hook")
   end
 end
 
@@ -505,26 +901,5 @@ RSpec.describe "Smplkit::Jobs.call_api" do
     err = SmplkitGeneratedClient::Jobs::ApiError.new(code: 200, response_body: "")
     expect { Smplkit::Jobs.call_api { raise err } }
       .to raise_error(SmplkitGeneratedClient::Jobs::ApiError)
-  end
-end
-
-RSpec.describe "Smplkit::Jobs::JobsClient standalone construction" do
-  let(:tcfg) do
-    Smplkit::ConfigResolution::ResolvedClientConfig.new(
-      api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
-    )
-  end
-  let(:api_client) { Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Jobs, "jobs", tcfg) }
-
-  it "resolves its own transport when no auth_client is given" do
-    client = Smplkit::Jobs::JobsClient.new("k", base_domain: "smplkit.test", scheme: "https")
-    expect(client).to be_a(Smplkit::Jobs::JobsClient)
-    expect(client.close).to be_nil
-  end
-
-  it "open yields the client and closes it" do
-    yielded = nil
-    Smplkit::Jobs::JobsClient.open(auth_client: api_client) { |j| yielded = j }
-    expect(yielded).to be_a(Smplkit::Jobs::JobsClient)
   end
 end

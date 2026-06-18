@@ -12,92 +12,126 @@
 #
 #   bundle exec ruby examples/jobs_showcase.rb
 
-require "securerandom"
 require "smplkit"
+require_relative "setup/jobs_setup"
+
+RECURRING_JOB_ID = "showcase-recurring"
+ONEOFF_JOB_ID = "showcase-oneoff"
 
 # Jobs has no runtime/management split — one client. Here we use the standalone
 # +Smplkit::JobsClient+; the same surface is also reachable as +client.jobs+ on
 # a +Smplkit::Client+.
 Smplkit::JobsClient.open do |jobs|
-  job_id = "showcase-mgmt-#{SecureRandom.hex(4)}"
-
+  setup_showcase(jobs)
   begin
-    # create a job
+    # create a recurring job, enabled in production with a development override
     job = jobs.new(
-      job_id,
+      RECURRING_JOB_ID,
       name: "Nightly cache warm",
       description: "Warms the product cache every night at 02:00 UTC.",
-      schedule: "0 2 * * *", # 5-field cron, UTC
-      enabled: false,
+      schedule: "0 2 * * *",
       configuration: Smplkit::Jobs::HttpConfig.new(
         method: "POST",
-        url: "https://api.example.com/cache/warm",
+        url: "https://httpbin.org/post",
         headers: [{ name: "Authorization", value: "Bearer s3cr3t" }],
         body: '{"scope": "all"}',
         timeout: 30
       )
     )
+    job.set_configuration(
+      Smplkit::Jobs::HttpConfig.new(
+        method: "POST",
+        url: "https://development.example.com/cache/warm",
+        headers: [{ name: "Authorization", value: "Bearer development-s3cr3t" }],
+        body: '{"scope": "all"}'
+      ),
+      environment: "development"
+    )
+    job.set_enabled(false, environment: "development")
+    job.set_enabled(true, environment: "production")
     job.save
     raise unless job.version == 1
+    raise unless job.is_enabled(environment: "development") == false
+    raise unless job.is_enabled(environment: "production") == true
 
-    puts "Created job #{job.id.inspect} (v#{job.version})"
+    puts "Created recurring job #{job.id.inspect} (v#{job.version})"
 
     # get a job
-    fetched = jobs.get(job_id)
-    raise unless fetched.configuration.url == "https://api.example.com/cache/warm"
+    fetched = jobs.get(RECURRING_JOB_ID)
+    raise unless fetched.is_enabled(environment: "development") == false
+    raise unless fetched.is_enabled(environment: "production") == true
 
-    puts "Fetched job #{job_id.inspect}"
+    development_url = fetched.get_configuration(environment: "development").url
+    raise unless development_url == "https://development.example.com/cache/warm"
+
+    puts "Fetched job #{RECURRING_JOB_ID.inspect}"
 
     # list jobs
-    listing = jobs.list(enabled: false)
-    raise unless listing.any? { |j| j.id == job_id }
+    listing = jobs.list
+    raise unless listing.any? { |j| j.id == RECURRING_JOB_ID }
 
-    puts "Found job #{job_id.inspect} and in the listing"
+    puts "Found job #{RECURRING_JOB_ID.inspect} in the listing"
 
-    # update a job
+    # update a job (the schedule is environment-agnostic)
     job.name = "Nightly cache warm (v2)"
-    job.schedule = "30 2 * * *"
-    job.enabled = true
+    job.set_schedule("30 2 * * *")
+    job.set_enabled(true, environment: "development")
     job.save
-    raise unless job.version == 2 && job.enabled == true
+    raise unless job.version == 2 && job.is_enabled(environment: "development") == true
 
-    puts "Updated job to v#{job.version}: schedule=#{job.schedule.inspect}"
+    puts "Updated job to v#{job.version}: now enabled in production and development"
 
-    # trigger an immediate run (a MANUAL run)
-    run = jobs.run(job_id)
-    raise unless run.trigger == "MANUAL" && run.job == job_id
+    # trigger an immediate run
+    run = job.trigger(environment: "production")
+    raise unless run.trigger == "MANUAL" && run.environment == "production"
 
-    puts "Triggered run #{run.id} (trigger=#{run.trigger}, status=#{run.status})"
+    puts "Triggered run #{run.id} (trigger=#{run.trigger}, env=#{run.environment})"
 
-    # read run history for this job, and fetch a single run
-    runs = jobs.runs.list(job: job_id)
+    # get this job's runs
+    runs = job.list_runs(environment: "production")
     raise unless runs.any? { |r| r.id == run.id }
 
-    got = jobs.runs.get(run.id)
-    raise unless got.id == run.id
+    puts "Listed #{runs.length} production run(s)"
 
-    puts "Listed #{runs.length} run(s); fetched run #{got.id} (status=#{got.status})"
+    # get a run
+    run = jobs.runs.get(run.id)
+    raise unless run.environment == "production"
 
-    # re-run from a prior run, then cancel it while it's still pending
-    rerun = jobs.runs.rerun(run.id)
-    raise unless rerun.trigger == "RERUN" && rerun.rerun_of == run.id
+    puts "Fetched run #{run.id} (env=#{run.environment})"
 
-    canceled = jobs.runs.cancel(rerun.id)
-    raise unless canceled.status == "CANCELED"
+    # re-run a prior run (inherits its environment)
+    rerun = run.rerun
+    raise unless rerun.trigger == "RERUN" && rerun.environment == run.environment
 
-    puts "Re-ran (#{rerun.id}) then canceled it -> #{canceled.status}"
+    puts "Re-ran #{run.id} -> #{rerun.id} (env=#{rerun.environment})"
+
+    # cancel a run (best-effort: a finished run can no longer be canceled)
+    begin
+      canceled = rerun.cancel
+      puts "Canceled run #{canceled.id} -> #{canceled.status}"
+    rescue Smplkit::ConflictError
+      puts "Run #{rerun.id} already finished before it could be canceled"
+    end
+
+    # create a one-off job, born in a single environment
+    oneoff = jobs.new(
+      ONEOFF_JOB_ID,
+      name: "One-shot reindex",
+      schedule: "now",
+      configuration: Smplkit::Jobs::HttpConfig.new(method: "POST", url: "https://httpbin.org/post"),
+      environment: "development"
+    )
+    oneoff.save
+    raise unless oneoff.version == 1 && oneoff.is_enabled(environment: "development") == true
+
+    puts "Created one-off job #{oneoff.id.inspect} born in development"
 
     # delete a job
     job.delete
-    raise unless jobs.list.none? { |j| j.id == job_id }
+    raise unless jobs.list.none? { |j| j.id == RECURRING_JOB_ID }
 
-    puts "Deleted job #{job_id.inspect} — jobs showcase complete."
+    puts "Deleted job #{RECURRING_JOB_ID.inspect} — jobs showcase complete."
   ensure
-    # tear-down: never leave the showcase job behind, even on failure
-    begin
-      jobs.delete(job_id)
-    rescue Smplkit::NotFoundError
-      nil
-    end
+    cleanup_showcase(jobs)
   end
 end
