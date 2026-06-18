@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Jobs
-  # A scheduled unit of work: an HTTP request run on a schedule.  The job is the definition; each time it fires the service records a run capturing the request, response, timing, and outcome.
+  # A scheduled unit of work: an HTTP request run on a schedule.  The job is the definition; each time it fires the service records a run capturing the request, response, timing, and outcome. A job is enabled per environment: set `environments[<env>].enabled` to schedule runs there. A recurring (cron) job may be enabled in several environments at once and fires once per enabled environment; a one-off (`now` or future datetime) job runs a single time in the environment it was created in.
   class Job < ApiModelBase
     # Human-readable name for the job.
     attr_accessor :name
@@ -22,7 +22,7 @@ module SmplkitGeneratedClient::Jobs
     # Free-text description for the job.
     attr_accessor :description
 
-    # Whether the job is scheduling runs. Set to `false` to pause without deleting.
+    # Whether the job is enabled in at least one environment. Read-only roll-up of `environments[*].enabled`; set enablement per environment via `environments`.
     attr_accessor :enabled
 
     # Job type. Only `http` is supported today.
@@ -33,6 +33,9 @@ module SmplkitGeneratedClient::Jobs
 
     # The HTTP request to perform, including method, url, headers, body, and timeout.
     attr_accessor :configuration
+
+    # Per-environment overrides keyed by environment key (e.g. `production`, `staging`). Each entry sets `enabled` (whether the job schedules runs in that environment) and an optional `configuration` override (omit to inherit the base `configuration`). A job with no entry for an environment is disabled there. For a recurring job, supply this map to choose where it runs. For a one-off job, the environment it is created in is recorded here automatically — name it with the `X-Smplkit-Environment` header. Every referenced environment must exist for the account.
+    attr_accessor :environments
 
     # How overlapping runs are handled. `ALLOW` (the only value today) permits them.
     attr_accessor :concurrency_policy
@@ -86,6 +89,7 @@ module SmplkitGeneratedClient::Jobs
         :'type' => :'type',
         :'schedule' => :'schedule',
         :'configuration' => :'configuration',
+        :'environments' => :'environments',
         :'concurrency_policy' => :'concurrency_policy',
         :'next_run_at' => :'next_run_at',
         :'recurring' => :'recurring',
@@ -115,6 +119,7 @@ module SmplkitGeneratedClient::Jobs
         :'type' => :'String',
         :'schedule' => :'String',
         :'configuration' => :'JobHttpConfiguration',
+        :'environments' => :'Hash<String, JobEnvironment>',
         :'concurrency_policy' => :'String',
         :'next_run_at' => :'Time',
         :'recurring' => :'Boolean',
@@ -129,6 +134,7 @@ module SmplkitGeneratedClient::Jobs
     def self.openapi_nullable
       Set.new([
         :'description',
+        :'enabled',
         :'next_run_at',
         :'recurring',
         :'created_at',
@@ -166,8 +172,6 @@ module SmplkitGeneratedClient::Jobs
 
       if attributes.key?(:'enabled')
         self.enabled = attributes[:'enabled']
-      else
-        self.enabled = true
       end
 
       if attributes.key?(:'type')
@@ -186,6 +190,12 @@ module SmplkitGeneratedClient::Jobs
         self.configuration = attributes[:'configuration']
       else
         self.configuration = nil
+      end
+
+      if attributes.key?(:'environments')
+        if (value = attributes[:'environments']).is_a?(Hash)
+          self.environments = value
+        end
       end
 
       if attributes.key?(:'concurrency_policy')
@@ -347,6 +357,7 @@ module SmplkitGeneratedClient::Jobs
           type == o.type &&
           schedule == o.schedule &&
           configuration == o.configuration &&
+          environments == o.environments &&
           concurrency_policy == o.concurrency_policy &&
           next_run_at == o.next_run_at &&
           recurring == o.recurring &&
@@ -365,7 +376,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, description, enabled, type, schedule, configuration, concurrency_policy, next_run_at, recurring, created_at, updated_at, deleted_at, version].hash
+      [name, description, enabled, type, schedule, configuration, environments, concurrency_policy, next_run_at, recurring, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash

@@ -99,6 +99,13 @@ Naming/VariableNumber:
 Naming/PredicateMethod:
   Enabled: false
 
+# Mirror the Python SDK's canonical method names (ADR-046 reference rule) —
+# e.g. +is_enabled+ — rather than rewrite them to a +?+ predicate. Consistent
+# with the Naming/AccessorMethodName / Naming/PredicateMethod disables above,
+# which keep +set_enabled+ / +get_configuration+ as-is.
+Naming/PredicatePrefix:
+  Enabled: false
+
 Style/SingleLineMethods:
   Enabled: false
 
