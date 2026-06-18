@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Jobs
-  # A scheduled unit of work: an HTTP request run on a schedule.  The job is the definition; each time it fires the service records a run capturing the request, response, timing, and outcome. A job runs per environment: set `environments[<env>].enabled` to schedule runs there, and optionally give that environment its own `schedule` or `configuration`. A recurring (cron) job may be enabled in several environments at once and fires once per enabled environment, each on its own next-fire schedule; a one-off (`now` or future datetime) job runs a single time in the environment it was created in.
+  # A unit of work: an HTTP request, run on a schedule or triggered on demand.  The job is the definition; each time it fires the service records a run capturing the request, response, timing, and outcome. A job runs per environment: set `environments[<env>].enabled` to enable it there, and optionally give that environment its own `schedule` or `configuration`.  A job's `kind` follows from its `schedule`: a **recurring** (cron) job may be enabled in several environments at once and fires once per enabled environment, each on its own next-fire schedule; a **manual** job (no schedule) is permanent and never auto-fires — it runs only when triggered; a **one-off** (`now` or a future datetime) job runs a single time in the environment it was created in and is then spent.
   class Job < ApiModelBase
     # Human-readable name for the job.
     attr_accessor :name
@@ -25,20 +25,20 @@ module SmplkitGeneratedClient::Jobs
     # Job type. Only `http` is supported today.
     attr_accessor :type
 
-    # The base schedule every environment inherits unless it overrides it. One of: an ISO-8601 datetime (a one-off run at that instant), a 5-field cron expression evaluated in **UTC** (recurring), or the literal `now` (run once, as soon as possible). A datetime or `now` job disables itself after it fires.
+    # The base schedule every environment inherits unless it overrides it, and the field that determines the job's `kind`. Omit it (or send `null`) to create a permanent **manual** job that never auto-fires and runs only when triggered. Provide a 5-field cron expression evaluated in **UTC** for a **recurring** job, an ISO-8601 datetime for a **one-off** run at that instant, or the literal `now` for a one-off run as soon as possible. A datetime or `now` job disables itself after it fires.
     attr_accessor :schedule
 
     # The HTTP request to perform, including method, url, headers, body, and timeout.
     attr_accessor :configuration
 
-    # Per-environment overrides keyed by environment key (e.g. `production`, `staging`). Each entry sets `enabled` (whether the job schedules runs in that environment), an optional `schedule` override (a cron expression for recurring jobs; omit to inherit the base `schedule`), and an optional `configuration` override (omit to inherit the base `configuration`); it also reports the read-only `next_run_at` for that environment. A job with no entry for an environment is disabled there. For a recurring job, supply this map to choose where and how it runs. For a one-off job, the environment it is created in is recorded here automatically — name it with the `X-Smplkit-Environment` header. Every referenced environment must exist for the account.
+    # Per-environment overrides keyed by environment key (e.g. `production`, `staging`). Each entry sets `enabled` (whether the job is enabled — scheduled, for a recurring job, or triggerable, for a manual job — in that environment), an optional `schedule` override (a cron expression for recurring jobs; omit to inherit the base `schedule`), and an optional `configuration` override (omit to inherit the base `configuration`); it also reports the read-only `next_run_at` for that environment. A job with no entry for an environment is disabled there. For a recurring or manual job, supply this map to choose where it runs. For a one-off job, the environment it is created in is recorded here automatically — name it with the `X-Smplkit-Environment` header. Every referenced environment must exist for the account.
     attr_accessor :environments
 
     # How overlapping runs are handled. `ALLOW` (the only value today) permits them.
     attr_accessor :concurrency_policy
 
-    # Whether the job runs on a repeating schedule. `true` for a cron schedule; `false` for a one-off datetime or `now` schedule, which runs a single time. Derived from the base `schedule`.
-    attr_accessor :recurring
+    # How the job runs, derived from its base `schedule`: `recurring` for a cron schedule (fires on a repeating cadence), `manual` for no schedule (never auto-fires; runs only when triggered), or `one_off` for a `now` or datetime schedule (runs a single time, then is spent).
+    attr_accessor :kind
 
     # When the job was created.
     attr_accessor :created_at
@@ -84,7 +84,7 @@ module SmplkitGeneratedClient::Jobs
         :'configuration' => :'configuration',
         :'environments' => :'environments',
         :'concurrency_policy' => :'concurrency_policy',
-        :'recurring' => :'recurring',
+        :'kind' => :'kind',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at',
         :'deleted_at' => :'deleted_at',
@@ -112,7 +112,7 @@ module SmplkitGeneratedClient::Jobs
         :'configuration' => :'JobHttpConfiguration',
         :'environments' => :'Hash<String, JobEnvironment>',
         :'concurrency_policy' => :'String',
-        :'recurring' => :'Boolean',
+        :'kind' => :'String',
         :'created_at' => :'Time',
         :'updated_at' => :'Time',
         :'deleted_at' => :'Time',
@@ -124,7 +124,8 @@ module SmplkitGeneratedClient::Jobs
     def self.openapi_nullable
       Set.new([
         :'description',
-        :'recurring',
+        :'schedule',
+        :'kind',
         :'created_at',
         :'updated_at',
         :'deleted_at',
@@ -166,8 +167,6 @@ module SmplkitGeneratedClient::Jobs
 
       if attributes.key?(:'schedule')
         self.schedule = attributes[:'schedule']
-      else
-        self.schedule = nil
       end
 
       if attributes.key?(:'configuration')
@@ -188,8 +187,8 @@ module SmplkitGeneratedClient::Jobs
         self.concurrency_policy = 'ALLOW'
       end
 
-      if attributes.key?(:'recurring')
-        self.recurring = attributes[:'recurring']
+      if attributes.key?(:'kind')
+        self.kind = attributes[:'kind']
       end
 
       if attributes.key?(:'created_at')
@@ -230,10 +229,6 @@ module SmplkitGeneratedClient::Jobs
         invalid_properties.push('invalid value for "description", the character length must be smaller than or equal to 2000.')
       end
 
-      if @schedule.nil?
-        invalid_properties.push('invalid value for "schedule", schedule cannot be nil.')
-      end
-
       if @configuration.nil?
         invalid_properties.push('invalid value for "configuration", configuration cannot be nil.')
       end
@@ -251,10 +246,11 @@ module SmplkitGeneratedClient::Jobs
       return false if !@description.nil? && @description.to_s.length > 2000
       type_validator = EnumAttributeValidator.new('String', ["http"])
       return false unless type_validator.valid?(@type)
-      return false if @schedule.nil?
       return false if @configuration.nil?
       concurrency_policy_validator = EnumAttributeValidator.new('String', ["ALLOW"])
       return false unless concurrency_policy_validator.valid?(@concurrency_policy)
+      kind_validator = EnumAttributeValidator.new('String', ["recurring", "manual", "one_off"])
+      return false unless kind_validator.valid?(@kind)
       true
     end
 
@@ -297,16 +293,6 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] schedule Value to be assigned
-    def schedule=(schedule)
-      if schedule.nil?
-        fail ArgumentError, 'schedule cannot be nil'
-      end
-
-      @schedule = schedule
-    end
-
-    # Custom attribute writer method with validation
     # @param [Object] configuration Value to be assigned
     def configuration=(configuration)
       if configuration.nil?
@@ -326,6 +312,16 @@ module SmplkitGeneratedClient::Jobs
       @concurrency_policy = concurrency_policy
     end
 
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] kind Object to be assigned
+    def kind=(kind)
+      validator = EnumAttributeValidator.new('String', ["recurring", "manual", "one_off"])
+      unless validator.valid?(kind)
+        fail ArgumentError, "invalid value for \"kind\", must be one of #{validator.allowable_values}."
+      end
+      @kind = kind
+    end
+
     # Checks equality by comparing each attribute.
     # @param [Object] Object to be compared
     def ==(o)
@@ -338,7 +334,7 @@ module SmplkitGeneratedClient::Jobs
           configuration == o.configuration &&
           environments == o.environments &&
           concurrency_policy == o.concurrency_policy &&
-          recurring == o.recurring &&
+          kind == o.kind &&
           created_at == o.created_at &&
           updated_at == o.updated_at &&
           deleted_at == o.deleted_at &&
@@ -354,7 +350,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, description, type, schedule, configuration, environments, concurrency_policy, recurring, created_at, updated_at, deleted_at, version].hash
+      [name, description, type, schedule, configuration, environments, concurrency_policy, kind, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash
