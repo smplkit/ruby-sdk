@@ -39,12 +39,6 @@ describe SmplkitGeneratedClient::Jobs::Job do
     end
   end
 
-  describe 'test attribute "enabled"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
   describe 'test attribute "type"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
@@ -80,12 +74,6 @@ describe SmplkitGeneratedClient::Jobs::Job do
       # validator.allowable_values.each do |value|
       #   expect { instance.concurrency_policy = value }.not_to raise_error
       # end
-    end
-  end
-
-  describe 'test attribute "next_run_at"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
   end
 

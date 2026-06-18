@@ -13,8 +13,9 @@ module Smplkit
   #
   # A job is enabled per environment: a recurring (cron) job may run in several
   # environments at once, a one-off (+now+ / future datetime) job runs a single
-  # time in the environment it was created in. Base +enabled+ is a read-only,
-  # server-derived roll-up (+true+ when enabled in at least one environment).
+  # time in the environment it was created in. Base {Job#enabled} is a derived
+  # roll-up (+true+ when enabled in at least one environment), computed from the
+  # per-environment {Job#environments} map.
   module Jobs
     # Wrap a generated-jobs-API call and translate +ApiError+ into the
     # +Smplkit::Error+ hierarchy. Connection-level failures (no response
@@ -73,10 +74,10 @@ module Smplkit
     # Coerce a caller's +environments+ map to {JobEnvironment} instances.
     #
     # Accepts either {JobEnvironment} values or plain hashes
-    # (+{ enabled: true, configuration: HttpConfig.new(...) }+) so callers can
-    # use the lightweight hash form without importing the model. A dict-form
-    # +configuration+ override is coerced to an {HttpConfig} so it serializes on
-    # save.
+    # (+{ enabled: true, schedule: "0 3 * * *", configuration: HttpConfig.new(...) }+)
+    # so callers can use the lightweight hash form without importing the model. A
+    # dict-form +configuration+ override is coerced to an {HttpConfig} so it
+    # serializes on save; an optional +schedule+ cron override passes through.
     #
     # @api private
     def self.normalize_environments(environments)
@@ -90,6 +91,7 @@ module Smplkit
                               cfg = HttpConfig.new(**cfg) if cfg.is_a?(Hash)
                               JobEnvironment.new(
                                 enabled: value[:enabled] || value["enabled"] || false,
+                                schedule: value[:schedule] || value["schedule"],
                                 configuration: cfg
                               )
                             end
@@ -244,7 +246,7 @@ module Smplkit
     end
     # rubocop:enable Lint/StructNewOverride
 
-    # Per-environment enablement and optional configuration override for a job.
+    # Per-environment enablement, schedule, and configuration override for a job.
     #
     # A recurring job fires in a given environment only when that environment
     # has an entry in {Job#environments} with +enabled: true+; an environment
@@ -253,14 +255,24 @@ module Smplkit
     # @!attribute [rw] enabled
     #   @return [Boolean] Whether the job fires in this environment. Defaults to
     #     +false+.
+    # @!attribute [rw] schedule
+    #   @return [String, nil] Optional per-environment cron schedule override
+    #     that varies the cadence in this environment. +nil+ (the default)
+    #     inherits the job's base {Job#schedule}. When present, it must be a
+    #     5-field UTC cron expression and is only meaningful on a recurring job —
+    #     it cannot turn a one-off job recurring or vice-versa.
     # @!attribute [rw] configuration
     #   @return [HttpConfig, nil] Optional per-environment request configuration
     #     that fully replaces the job's base {Job#configuration} for this
     #     environment. +nil+ (the default) inherits the base configuration. As
     #     with the base configuration, header values are returned in plaintext on
     #     reads, so a get-mutate-put round-trip preserves them.
-    JobEnvironment = Struct.new(:enabled, :configuration, keyword_init: true) do
-      def initialize(enabled: false, configuration: nil)
+    # @!attribute [rw] next_run_at
+    #   @return [String, nil] Read-only. The next scheduled fire time in this
+    #     environment. +nil+ when the environment is not enabled, or once a
+    #     one-off run has fired. Never written back on save.
+    JobEnvironment = Struct.new(:enabled, :schedule, :configuration, :next_run_at, keyword_init: true) do
+      def initialize(enabled: false, schedule: nil, configuration: nil, next_run_at: nil)
         super
       end
 
@@ -275,7 +287,9 @@ module Smplkit
         cfg = src.configuration
         new(
           enabled: src.enabled.nil? ? false : src.enabled,
-          configuration: cfg.nil? ? nil : HttpConfig.from_wire(cfg)
+          schedule: src.schedule,
+          configuration: cfg.nil? ? nil : HttpConfig.from_wire(cfg),
+          next_run_at: src.next_run_at
         )
       end
     end
@@ -289,9 +303,10 @@ module Smplkit
     # values without re-entering secrets.
     #
     # Enablement is per environment, set via {#set_enabled} (and read via
-    # {#is_enabled}); base {#enabled} is a read-only roll-up. The schedule is
-    # environment-agnostic — one cron / datetime / +now+ shared across every
-    # environment the job runs in.
+    # {#is_enabled}); base {#enabled} is a derived roll-up over {#environments}.
+    # The base schedule is environment-agnostic — one cron / datetime / +now+
+    # shared across every environment the job runs in — while each environment
+    # may carry its own cron {#set_schedule} override.
     class Job
       # @return [String] Caller-supplied unique identifier for the job (the
       #   resource +id+). Unique within the account and immutable; the service
@@ -304,11 +319,13 @@ module Smplkit
       # @return [String, nil] Free-text description. +nil+ when unset.
       attr_accessor :description
 
-      # @return [Boolean] Read-only, server-derived roll-up: +true+ when the job
-      #   is enabled in at least one environment. Set enablement per environment
-      #   via {#set_enabled} / {#environments}; mutating this field directly has
-      #   no effect on the server (it is never written).
-      attr_accessor :enabled
+      # @return [Boolean] Derived roll-up: +true+ when the job is enabled in at
+      #   least one environment. Computed from {#environments} rather than read
+      #   from the wire — the API no longer carries a top-level +enabled+. Set
+      #   enablement per environment via {#set_enabled} / {#environments}.
+      def enabled
+        (@environments || {}).each_value.any?(&:enabled)
+      end
 
       # @return [Hash{String => JobEnvironment}] Per-environment overrides keyed
       #   by environment key (e.g. +"production"+). The writable surface for
@@ -341,10 +358,6 @@ module Smplkit
       #   value) permits them.
       attr_accessor :concurrency_policy
 
-      # @return [String, nil] The next scheduled fire time. +nil+ once a one-off
-      #   job has fired.
-      attr_accessor :next_run_at
-
       # @return [String, nil] ISO-8601 timestamp of first persist. +nil+ for an
       #   unsaved instance.
       attr_accessor :created_at
@@ -366,23 +379,21 @@ module Smplkit
       attr_accessor :birth_environment
 
       def initialize(client = nil, id:, name:, schedule:, configuration:,
-                     description: nil, environments: nil, enabled: false,
+                     description: nil, environments: nil,
                      recurring: nil, type: "http", concurrency_policy: "ALLOW",
-                     birth_environment: nil, next_run_at: nil, created_at: nil,
+                     birth_environment: nil, created_at: nil,
                      updated_at: nil, deleted_at: nil, version: nil)
         @client = client
         @id = id
         @name = name
         @description = description
         @environments = environments || {}
-        @enabled = enabled
         @recurring = recurring
         @type = type
         @schedule = schedule
         @configuration = configuration
         @concurrency_policy = concurrency_policy
         @birth_environment = birth_environment
-        @next_run_at = next_run_at
         @created_at = created_at
         @updated_at = updated_at
         @deleted_at = deleted_at
@@ -394,8 +405,8 @@ module Smplkit
       # Upsert behavior is driven by {#created_at}: a job with no +created_at+
       # is created (POST); otherwise it's full-replace updated (PUT). After the
       # call, every field is refreshed from the server response (including
-      # newly-assigned +created_at+, +version+, +next_run_at+, and the derived
-      # +enabled+ roll-up).
+      # newly-assigned +created_at+, +version+, and per-environment +next_run_at+
+      # inside {#environments}).
       #
       # @return [self]
       def save
@@ -440,7 +451,7 @@ module Smplkit
       #   roll-up across every environment.
       # @return [Boolean]
       def is_enabled(environment: nil)
-        return @enabled if environment.nil?
+        return enabled if environment.nil?
 
         override = @environments[environment]
         return false if override.nil?
@@ -485,17 +496,30 @@ module Smplkit
         @configuration
       end
 
-      # Set the job's schedule.
+      # Set the job's schedule — base (+environment+ omitted) or per-environment.
       #
-      # The schedule is environment-agnostic — a job has a single cron /
-      # datetime / +"now"+ schedule shared across every environment it runs in
-      # (each enabled environment fires on the same cadence). There is no
-      # per-environment schedule, so this setter takes no +environment+.
+      # With +environment+ omitted (the default), sets the base {#schedule} —
+      # an ISO-8601 datetime, a 5-field UTC cron expression, or the literal
+      # +"now"+ — which every environment inherits unless it overrides it.
+      #
+      # With +environment+ given, sets that environment's per-environment cron
+      # +schedule+ override on {#environments}, creating the override entry if it
+      # doesn't exist yet (preserving any already-set +enabled+ / +configuration+
+      # on it). A per-environment override is a cron expression only and varies
+      # the cadence within that environment; it cannot turn a one-off job
+      # recurring or vice-versa. Call {#save} to persist.
       #
       # @param schedule [String] An ISO-8601 datetime, a 5-field UTC cron
-      #   expression, or the literal +"now"+.
-      def set_schedule(schedule)
-        @schedule = schedule
+      #   expression, or the literal +"now"+ (base); a 5-field UTC cron
+      #   expression (per-environment).
+      # @param environment [String, nil] An environment key for a per-environment
+      #   override, or +nil+ to set the base schedule.
+      def set_schedule(schedule, environment: nil)
+        if environment.nil?
+          @schedule = schedule
+        else
+          _environment_override(environment).schedule = schedule
+        end
       end
 
       # Trigger one immediate, manual run of this job (a +MANUAL+ run).
@@ -547,14 +571,12 @@ module Smplkit
         @id = other.id
         @name = other.name
         @description = other.description
-        @enabled = other.enabled
         @environments = other.environments
         @recurring = other.recurring
         @type = other.type
         @schedule = other.schedule
         @configuration = other.configuration
         @concurrency_policy = other.concurrency_policy
-        @next_run_at = other.next_run_at
         @created_at = other.created_at
         @updated_at = other.updated_at
         @deleted_at = other.deleted_at
@@ -577,16 +599,14 @@ module Smplkit
           id: resource.id,
           name: a.name,
           description: a.description,
-          # The base +enabled+ is a server-derived roll-up; round-trip whatever
-          # the server returned without assuming a default of true.
-          enabled: a.enabled.nil? ? false : a.enabled,
+          # The base +enabled+ roll-up is derived from +environments+, not read
+          # from the wire — the API no longer carries a top-level +enabled+.
           environments: environments,
           recurring: a.recurring,
           type: a.type || "http",
           schedule: a.schedule,
           configuration: HttpConfig.from_wire(a.configuration),
           concurrency_policy: a.concurrency_policy || "ALLOW",
-          next_run_at: a.next_run_at,
           created_at: a.created_at,
           updated_at: a.updated_at,
           deleted_at: a.deleted_at,

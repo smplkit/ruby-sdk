@@ -215,12 +215,11 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Jobs
-    # List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, `updated_at`, `next_run_at`, or `enabled`, ascending or descending (prefix `-` for descending). Filter with `filter[enabled]` (enabled in at least one environment), `filter[recurring]`, and `filter[name]` (case-insensitive substring match on the name); filters compose with AND. A scoped caller sees each job's `environments` map narrowed to the environments it may access.
+    # List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, or `updated_at`, ascending or descending (prefix `-` for descending). Filter with `filter[recurring]` and `filter[name]` (case-insensitive substring match on the name); filters compose with AND. Each job reports its per-environment enablement and `next_run_at` inside its `environments` map; a scoped caller sees that map narrowed to the environments it may access.
     # @param [Hash] opts the optional parameters
-    # @option opts [Boolean] :filter_enabled 
     # @option opts [Boolean] :filter_recurring 
     # @option opts [String] :filter_name Case-insensitive substring match on the job &#x60;name&#x60; (matches when the name contains the given text).
-    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;enabled&#x60;, &#x60;-enabled&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;next_run_at&#x60;, &#x60;-next_run_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'name')
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'name')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
     # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
@@ -231,12 +230,11 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Jobs
-    # List this account&#39;s jobs.  Default sort is &#x60;name&#x60; ascending. Sort by &#x60;name&#x60;, &#x60;created_at&#x60;, &#x60;updated_at&#x60;, &#x60;next_run_at&#x60;, or &#x60;enabled&#x60;, ascending or descending (prefix &#x60;-&#x60; for descending). Filter with &#x60;filter[enabled]&#x60; (enabled in at least one environment), &#x60;filter[recurring]&#x60;, and &#x60;filter[name]&#x60; (case-insensitive substring match on the name); filters compose with AND. A scoped caller sees each job&#39;s &#x60;environments&#x60; map narrowed to the environments it may access.
+    # List this account&#39;s jobs.  Default sort is &#x60;name&#x60; ascending. Sort by &#x60;name&#x60;, &#x60;created_at&#x60;, or &#x60;updated_at&#x60;, ascending or descending (prefix &#x60;-&#x60; for descending). Filter with &#x60;filter[recurring]&#x60; and &#x60;filter[name]&#x60; (case-insensitive substring match on the name); filters compose with AND. Each job reports its per-environment enablement and &#x60;next_run_at&#x60; inside its &#x60;environments&#x60; map; a scoped caller sees that map narrowed to the environments it may access.
     # @param [Hash] opts the optional parameters
-    # @option opts [Boolean] :filter_enabled 
     # @option opts [Boolean] :filter_recurring 
     # @option opts [String] :filter_name Case-insensitive substring match on the job &#x60;name&#x60; (matches when the name contains the given text).
-    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;enabled&#x60;, &#x60;-enabled&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;next_run_at&#x60;, &#x60;-next_run_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'name')
+    # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'name')
     # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. (default to 1)
     # @option opts [Integer] :page_size Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. (default to 1000)
     # @option opts [Boolean] :meta_total When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. (default to false)
@@ -245,7 +243,7 @@ module SmplkitGeneratedClient::Jobs
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: JobsApi.list_jobs ...'
       end
-      allowable_values = ["created_at", "-created_at", "enabled", "-enabled", "name", "-name", "next_run_at", "-next_run_at", "updated_at", "-updated_at"]
+      allowable_values = ["created_at", "-created_at", "name", "-name", "updated_at", "-updated_at"]
       if @api_client.config.client_side_validation && opts[:'sort'] && !allowable_values.include?(opts[:'sort'])
         fail ArgumentError, "invalid value for \"sort\", must be one of #{allowable_values}"
       end
@@ -254,7 +252,6 @@ module SmplkitGeneratedClient::Jobs
 
       # query parameters
       query_params = opts[:query_params] || {}
-      query_params[:'filter[enabled]'] = opts[:'filter_enabled'] if !opts[:'filter_enabled'].nil?
       query_params[:'filter[recurring]'] = opts[:'filter_recurring'] if !opts[:'filter_recurring'].nil?
       query_params[:'filter[name]'] = opts[:'filter_name'] if !opts[:'filter_name'].nil?
       query_params[:'sort'] = opts[:'sort'] if !opts[:'sort'].nil?
@@ -363,7 +360,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Update Job
-    # Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the `environments` map (a recurring job), or by recreating a one-off job in the desired environment. Editing the schedule recomputes the next fire time; changing only which environments are enabled preserves the existing cadence.
+    # Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the `environments` map (a recurring job), or by recreating a one-off job in the desired environment. Each environment may carry its own cron `schedule` override. Editing an environment's effective schedule recomputes its next fire time; an edit that leaves an environment's schedule unchanged preserves its existing cadence.
     # @param job_id [String] 
     # @param job_request [JobRequest] 
     # @param [Hash] opts the optional parameters
@@ -375,7 +372,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Update Job
-    # Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the &#x60;environments&#x60; map (a recurring job), or by recreating a one-off job in the desired environment. Editing the schedule recomputes the next fire time; changing only which environments are enabled preserves the existing cadence.
+    # Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the &#x60;environments&#x60; map (a recurring job), or by recreating a one-off job in the desired environment. Each environment may carry its own cron &#x60;schedule&#x60; override. Editing an environment&#39;s effective schedule recomputes its next fire time; an edit that leaves an environment&#39;s schedule unchanged preserves its existing cadence.
     # @param job_id [String] 
     # @param job_request [JobRequest] 
     # @param [Hash] opts the optional parameters

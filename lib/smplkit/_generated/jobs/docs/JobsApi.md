@@ -228,7 +228,7 @@ end
 
 List Jobs
 
-List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, `updated_at`, `next_run_at`, or `enabled`, ascending or descending (prefix `-` for descending). Filter with `filter[enabled]` (enabled in at least one environment), `filter[recurring]`, and `filter[name]` (case-insensitive substring match on the name); filters compose with AND. A scoped caller sees each job's `environments` map narrowed to the environments it may access.
+List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, or `updated_at`, ascending or descending (prefix `-` for descending). Filter with `filter[recurring]` and `filter[name]` (case-insensitive substring match on the name); filters compose with AND. Each job reports its per-environment enablement and `next_run_at` inside its `environments` map; a scoped caller sees that map narrowed to the environments it may access.
 
 ### Examples
 
@@ -243,10 +243,9 @@ end
 
 api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
 opts = {
-  filter_enabled: true, # Boolean | 
   filter_recurring: true, # Boolean | 
   filter_name: 'filter_name_example', # String | Case-insensitive substring match on the job `name` (matches when the name contains the given text).
-  sort: 'created_at', # String | Field to sort by. Prefix with `-` for descending order. Default: `name`. Allowed values: `created_at`, `-created_at`, `enabled`, `-enabled`, `name`, `-name`, `next_run_at`, `-next_run_at`, `updated_at`, `-updated_at`.
+  sort: 'created_at', # String | Field to sort by. Prefix with `-` for descending order. Default: `name`. Allowed values: `created_at`, `-created_at`, `name`, `-name`, `updated_at`, `-updated_at`.
   page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
   page_size: 56, # Integer | Number of items per page. Optional; defaults to `1000` when omitted. Must be between `1` and `1000` inclusive — requests outside that range are rejected with a 400 error.
   meta_total: true # Boolean | When `true`, the response's `meta.pagination` block includes `total` (the total number of matching items across all pages) and `total_pages`. Computing these requires an extra `COUNT` query, so omit (or pass `false`) when the totals are not needed. Defaults to `false`.
@@ -283,10 +282,9 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **filter_enabled** | **Boolean** |  | [optional] |
 | **filter_recurring** | **Boolean** |  | [optional] |
 | **filter_name** | **String** | Case-insensitive substring match on the job &#x60;name&#x60; (matches when the name contains the given text). | [optional] |
-| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;enabled&#x60;, &#x60;-enabled&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;next_run_at&#x60;, &#x60;-next_run_at&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;name&#39;] |
+| **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;name&#39;] |
 | **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
 | **page_size** | **Integer** | Number of items per page. Optional; defaults to &#x60;1000&#x60; when omitted. Must be between &#x60;1&#x60; and &#x60;1000&#x60; inclusive — requests outside that range are rejected with a 400 error. | [optional][default to 1000] |
 | **meta_total** | **Boolean** | When &#x60;true&#x60;, the response&#39;s &#x60;meta.pagination&#x60; block includes &#x60;total&#x60; (the total number of matching items across all pages) and &#x60;total_pages&#x60;. Computing these requires an extra &#x60;COUNT&#x60; query, so omit (or pass &#x60;false&#x60;) when the totals are not needed. Defaults to &#x60;false&#x60;. | [optional][default to false] |
@@ -384,7 +382,7 @@ end
 
 Update Job
 
-Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the `environments` map (a recurring job), or by recreating a one-off job in the desired environment. Editing the schedule recomputes the next fire time; changing only which environments are enabled preserves the existing cadence.
+Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the `environments` map (a recurring job), or by recreating a one-off job in the desired environment. Each environment may carry its own cron `schedule` override. Editing an environment's effective schedule recomputes its next fire time; an edit that leaves an environment's schedule unchanged preserves its existing cadence.
 
 ### Examples
 
