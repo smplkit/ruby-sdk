@@ -194,10 +194,10 @@ module Smplkit
       # @param environments [Hash{String => Smplkit::Jobs::JobEnvironment, Hash}, nil]
       #   Per-environment overrides for a recurring job, keyed by environment key
       #   — each a {Smplkit::Jobs::JobEnvironment}, or a plain hash
-      #   (+{ enabled: true }+, optionally with a +:configuration+
-      #   {Smplkit::Jobs::HttpConfig} override). A recurring job fires only in
-      #   environments enabled here. Ignored for a one-off job, which is born in
-      #   +environment+ below.
+      #   (+{ enabled: true }+, optionally with a +:schedule+ cron override and/or
+      #   a +:configuration+ {Smplkit::Jobs::HttpConfig} override). A recurring
+      #   job fires only in environments enabled here. Ignored for a one-off job,
+      #   which is born in +environment+ below.
       # @param concurrency_policy [String] How overlapping runs are handled.
       #   Defaults to +"ALLOW"+.
       # @param environment [String, nil] For a one-off job (+"now"+ / datetime
@@ -221,8 +221,6 @@ module Smplkit
 
       # List jobs for the authenticated account.
       #
-      # @param enabled [Boolean, nil] Filter to jobs matching this enabled state
-      #   (the server-derived roll-up across environments).
       # @param recurring [Boolean, nil] Filter to recurring (+true+) or one-off
       #   (+false+) jobs. +nil+ lists both.
       # @param name [String, nil] Filter to jobs whose name contains this text
@@ -230,9 +228,8 @@ module Smplkit
       # @param page_number [Integer, nil] 1-based page number to return.
       # @param page_size [Integer, nil] Items per page.
       # @return [Array<Smplkit::Jobs::Job>]
-      def list(enabled: nil, recurring: nil, name: nil, page_number: nil, page_size: nil)
+      def list(recurring: nil, name: nil, page_number: nil, page_size: nil)
         opts = {}
-        opts[:filter_enabled] = enabled unless enabled.nil?
         opts[:filter_recurring] = recurring unless recurring.nil?
         opts[:filter_name] = name unless name.nil?
         opts[:page_number] = page_number unless page_number.nil?
@@ -318,12 +315,14 @@ module Smplkit
 
       # Convert the wrapper +environments+ map to the generated model hash.
       #
-      # Each entry's +enabled+ is always written; a per-environment
-      # +configuration+ override is sent as a full {HttpConfig} payload only when
-      # present (omit to inherit the base configuration).
+      # Each entry's +enabled+ is always written; a per-environment +schedule+
+      # (cron) override and +configuration+ override are each sent only when
+      # present (omit to inherit the job's base +schedule+ / +configuration+).
+      # The read-only per-environment +next_run_at+ is never written.
       def environments_to_wire(environments)
         (environments || {}).each_with_object({}) do |(env_key, env), out|
           attrs = { enabled: env.enabled }
+          attrs[:schedule] = env.schedule unless env.schedule.nil?
           attrs[:configuration] = HttpConfig.to_wire(env.configuration) unless env.configuration.nil?
           out[env_key.to_s] = SmplkitGeneratedClient::Jobs::JobEnvironment.new(attrs)
         end

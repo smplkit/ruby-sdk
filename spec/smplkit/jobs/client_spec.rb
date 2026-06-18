@@ -28,22 +28,24 @@ RSpec.describe Smplkit::Jobs::JobsClient do
 
   def env_block(production_enabled: true)
     {
-      production: { enabled: production_enabled },
+      production: { enabled: production_enabled, next_run_at: "2026-06-06T02:00:00Z" },
       development: {
         enabled: false,
+        schedule: "30 2 * * *",
         configuration: {
           method: "POST", url: "https://development.example.com/cache/warm",
           headers: [], body: "{}", success_status: "2xx", timeout: 30,
           tls_verify: true, ca_cert: nil
-        }
+        },
+        next_run_at: nil
       }
     }
   end
 
-  def job_resource(id: "nightly-cache-warm", enabled: true, version: 1, created: true,
+  def job_resource(id: "nightly-cache-warm", version: 1, created: true,
                    environments: nil, recurring: nil)
     attributes = {
-      name: "Nightly cache warm", description: "does a thing", enabled: enabled,
+      name: "Nightly cache warm", description: "does a thing",
       recurring: recurring, type: "http", schedule: "0 2 * * *",
       configuration: {
         method: "POST", url: "https://api.example.com/cache/warm",
@@ -51,7 +53,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
         body: "{\"scope\": \"all\"}", success_status: "2xx", timeout: 30,
         tls_verify: true, ca_cert: nil
       },
-      concurrency_policy: "ALLOW", next_run_at: "2026-06-06T02:00:00Z",
+      concurrency_policy: "ALLOW",
       created_at: created ? "2026-06-04T00:00:00Z" : nil,
       updated_at: created ? "2026-06-04T00:00:00Z" : nil,
       deleted_at: nil, version: version
@@ -184,7 +186,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
   end
 
   describe "#list" do
-    it "forwards filter[enabled], filter[recurring], filter[name] and offset params to the generated client" do
+    it "forwards filter[recurring], filter[name] and offset params to the generated client" do
       captured_uri = nil
       stub_request(:get, %r{#{base_url}/api/v1/jobs\b})
         .with do |req|
@@ -195,8 +197,8 @@ RSpec.describe Smplkit::Jobs::JobsClient do
                    body: { data: [job_resource(id: "a"), job_resource(id: "b")],
                            meta: { pagination: { page: 2, size: 10 } } }.to_json,
                    headers: json_api)
-      result = jobs.list(enabled: false, recurring: true, name: "health", page_number: 2, page_size: 10)
-      expect(captured_uri).to include("filter%5Benabled%5D=false")
+      result = jobs.list(recurring: true, name: "health", page_number: 2, page_size: 10)
+      expect(captured_uri).not_to include("filter%5Benabled%5D")
       expect(captured_uri).to include("filter%5Brecurring%5D=true")
       expect(captured_uri).to include("filter%5Bname%5D=health")
       expect(captured_uri).to include("page%5Bnumber%5D=2")
@@ -594,8 +596,11 @@ RSpec.describe Smplkit::Jobs::Job do
       expect(job.is_enabled(environment: "staging")).to be(false) # env absent from map
     end
 
-    it "is_enabled with no argument returns the server roll-up" do
-      job.enabled = true
+    it "is_enabled / enabled with no argument derive the roll-up from environments" do
+      expect(job.enabled).to be(false) # no environments enabled
+      expect(job.is_enabled).to be(false)
+      job.set_enabled(true, environment: "production")
+      expect(job.enabled).to be(true) # at least one environment enabled
       expect(job.is_enabled).to be(true)
     end
   end
@@ -619,24 +624,35 @@ RSpec.describe Smplkit::Jobs::Job do
   end
 
   describe "#set_schedule" do
-    it "replaces the environment-agnostic schedule" do
+    it "replaces the base schedule when no environment is given" do
       job.set_schedule("30 2 * * *")
       expect(job.schedule).to eq("30 2 * * *")
+    end
+
+    it "sets a per-environment schedule override, creating the entry and preserving enabled" do
+      job.set_enabled(true, environment: "production")
+      job.set_schedule("0 3 * * *", environment: "production") # existing-entry branch
+      job.set_schedule("0 4 * * *", environment: "staging") # new-entry branch
+      expect(job.schedule).to eq("0 * * * *") # base untouched
+      expect(job.environments["production"].schedule).to eq("0 3 * * *")
+      expect(job.environments["production"].enabled).to be(true) # preserved
+      expect(job.environments["staging"].schedule).to eq("0 4 * * *")
+      expect(job.environments["staging"].enabled).to be(false) # default on new entry
     end
   end
 
   describe ".from_resource" do
-    it "defaults enabled to the roll-up (false), type, and concurrency_policy when the wire omits them" do
+    it "derives a false enabled roll-up and defaults type / concurrency_policy when the wire omits them" do
       resource = SmplkitGeneratedClient::Jobs::JobResource.new(
         id: "j", type: "job",
         attributes: SmplkitGeneratedClient::Jobs::Job.new(
           name: "n", schedule: "now",
           configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://x"),
-          enabled: nil, type: nil, concurrency_policy: nil
+          type: nil, concurrency_policy: nil
         )
       )
       parsed = described_class.from_resource(resource)
-      expect(parsed.enabled).to be(false)
+      expect(parsed.enabled).to be(false) # no environments -> derived roll-up false
       expect(parsed.environments).to eq({})
       expect(parsed.type).to eq("http")
       expect(parsed.concurrency_policy).to eq("ALLOW")
@@ -654,25 +670,33 @@ RSpec.describe Smplkit::Jobs::JobEnvironment do
     it "returns a disabled, override-free environment for nil" do
       env = described_class.from_wire(nil)
       expect(env.enabled).to be(false)
+      expect(env.schedule).to be_nil
       expect(env.configuration).to be_nil
+      expect(env.next_run_at).to be_nil
     end
 
-    it "coerces a nil enabled to false and leaves configuration nil when absent" do
+    it "coerces a nil enabled to false and leaves schedule / configuration nil when absent" do
       wire = SmplkitGeneratedClient::Jobs::JobEnvironment.new(enabled: nil)
       env = described_class.from_wire(wire)
       expect(env.enabled).to be(false)
+      expect(env.schedule).to be_nil
       expect(env.configuration).to be_nil
+      expect(env.next_run_at).to be_nil
     end
 
-    it "parses a per-environment configuration override into an HttpConfig" do
+    it "parses the schedule override, configuration override, and read-only next_run_at" do
       wire = SmplkitGeneratedClient::Jobs::JobEnvironment.new(
         enabled: true,
-        configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://e.com")
+        schedule: "0 3 * * *",
+        configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://e.com"),
+        next_run_at: "2026-06-06T03:00:00Z"
       )
       env = described_class.from_wire(wire)
       expect(env.enabled).to be(true)
+      expect(env.schedule).to eq("0 3 * * *")
       expect(env.configuration).to be_a(Smplkit::Jobs::HttpConfig)
       expect(env.configuration.url).to eq("https://e.com")
+      expect(env.next_run_at).to eq("2026-06-06T03:00:00Z")
     end
   end
 end
@@ -708,16 +732,20 @@ RSpec.describe "Smplkit::Jobs environment helpers" do
 
     it "passes JobEnvironment instances through and coerces hash forms" do
       out = Smplkit::Jobs.normalize_environments(
-        "production" => Smplkit::Jobs::JobEnvironment.new(enabled: true),
-        "staging" => { enabled: true, configuration: cfg },
+        "production" => Smplkit::Jobs::JobEnvironment.new(enabled: true, schedule: "0 1 * * *"),
+        "staging" => { enabled: true, schedule: "0 2 * * *", configuration: cfg },
         "dev" => { enabled: false, configuration: { url: "https://dev.example.com" } },
-        "qa" => { "enabled" => true }
+        "qa" => { "enabled" => true, "schedule" => "0 3 * * *" }
       )
       expect(out["production"].enabled).to be(true)
+      expect(out["production"].schedule).to eq("0 1 * * *")
+      expect(out["staging"].schedule).to eq("0 2 * * *")
       expect(out["staging"].configuration).to be(cfg)
       expect(out["dev"].configuration).to be_a(Smplkit::Jobs::HttpConfig)
       expect(out["dev"].configuration.url).to eq("https://dev.example.com")
+      expect(out["dev"].schedule).to be_nil # absent -> nil
       expect(out["qa"].enabled).to be(true)
+      expect(out["qa"].schedule).to eq("0 3 * * *") # string-key form
       expect(out["qa"].configuration).to be_nil
     end
   end
@@ -850,35 +878,60 @@ RSpec.describe "Smplkit::Jobs::Job environments parsing" do
     {
       id: "j", type: "job",
       attributes: {
-        name: "n", description: nil, enabled: true, recurring: true, type: "http",
+        name: "n", description: nil, recurring: true, type: "http",
         schedule: "0 * * * *",
         configuration: { method: "POST", url: "https://api.example.com/hook", headers: [],
                          body: nil, success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil },
         environments: {
-          production: { enabled: true },
+          production: { enabled: true, schedule: "0 3 * * *", next_run_at: "2026-06-06T03:00:00Z" },
           staging: {
             enabled: false,
             configuration: { method: "POST", url: "https://staging.example.com/hook", headers: [],
-                             body: nil, success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil }
+                             body: nil, success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil },
+            next_run_at: nil
           }
         },
-        concurrency_policy: "ALLOW", next_run_at: nil, created_at: "2026-06-04T00:00:00Z",
+        concurrency_policy: "ALLOW", created_at: "2026-06-04T00:00:00Z",
         updated_at: "2026-06-04T00:00:00Z", deleted_at: nil, version: 1
       }
     }
   end
 
-  it "parses the environments map, recurring flag, and roll-up on read" do
+  it "parses the environments map, recurring flag, derived roll-up, and per-env schedule / next_run_at on read" do
     stub_request(:get, "#{base_url}/api/v1/jobs/j").to_return(
       status: 200, body: { data: job_with_environments }.to_json, headers: json_api
     )
     job = jobs.get("j")
-    expect(job.enabled).to be(true) # derived roll-up
+    expect(job.enabled).to be(true) # derived roll-up (production enabled)
     expect(job.recurring).to be(true)
     expect(job.is_enabled(environment: "production")).to be(true)
     expect(job.environments["production"].configuration).to be_nil # inherits base
+    expect(job.environments["production"].schedule).to eq("0 3 * * *") # per-env override
+    # next_run_at is typed Time on the generated model, so it round-trips as a
+    # parsed Time; the wrapper passes it through unchanged.
+    expect(job.environments["production"].next_run_at).to eq(Time.utc(2026, 6, 6, 3, 0, 0)) # read-only
     expect(job.is_enabled(environment: "staging")).to be(false)
+    expect(job.environments["staging"].schedule).to be_nil # inherits base schedule
+    expect(job.environments["staging"].next_run_at).to be_nil
     expect(job.get_configuration(environment: "staging").url).to eq("https://staging.example.com/hook")
+  end
+
+  it "sends a per-environment schedule override and never sends next_run_at on save" do
+    stub_request(:get, "#{base_url}/api/v1/jobs/j").to_return(
+      status: 200, body: { data: job_with_environments }.to_json, headers: json_api
+    )
+    captured = nil
+    stub_request(:put, "#{base_url}/api/v1/jobs/j").with do |req|
+      captured = JSON.parse(req.body)
+      true
+    end.to_return(status: 200, body: { data: job_with_environments }.to_json, headers: json_api)
+    job = jobs.get("j")
+    job.set_schedule("0 5 * * *", environment: "production")
+    job.save
+    prod = captured["data"]["attributes"]["environments"]["production"]
+    expect(prod["schedule"]).to eq("0 5 * * *")
+    expect(prod).not_to have_key("next_run_at") # read-only, never written
+    expect(prod["enabled"]).to be(true) # preserved across the round-trip
   end
 end
 
