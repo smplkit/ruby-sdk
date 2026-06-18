@@ -14,19 +14,27 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Jobs
-  # Per-environment override for a job's enablement and configuration.
+  # Per-environment override for a job's enablement, schedule, and configuration.
   class JobEnvironment < ApiModelBase
     # Whether the job schedules runs in this environment. A job runs in an environment only via this field; it is disabled in every environment by default.
     attr_accessor :enabled
 
+    # Per-environment schedule override. Omit to inherit the job's base `schedule`. When present, it must be a 5-field cron expression evaluated in **UTC** (e.g. `0 3 * * *`), and is only allowed on a recurring (cron) job — it varies the cadence within that environment, it cannot turn a one-off job recurring or vice-versa.
+    attr_accessor :schedule
+
     # Per-environment HTTP request override. Omit to inherit the job's base `configuration`. When present, it fully replaces the base configuration for runs in this environment.
     attr_accessor :configuration
+
+    # The next scheduled fire time in this environment. `null` when the environment is not enabled, or once a one-off run has fired.
+    attr_accessor :next_run_at
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'enabled' => :'enabled',
-        :'configuration' => :'configuration'
+        :'schedule' => :'schedule',
+        :'configuration' => :'configuration',
+        :'next_run_at' => :'next_run_at'
       }
     end
 
@@ -44,14 +52,18 @@ module SmplkitGeneratedClient::Jobs
     def self.openapi_types
       {
         :'enabled' => :'Boolean',
-        :'configuration' => :'JobHttpConfiguration'
+        :'schedule' => :'String',
+        :'configuration' => :'JobHttpConfiguration',
+        :'next_run_at' => :'Time'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'configuration'
+        :'schedule',
+        :'configuration',
+        :'next_run_at'
       ])
     end
 
@@ -77,8 +89,16 @@ module SmplkitGeneratedClient::Jobs
         self.enabled = false
       end
 
+      if attributes.key?(:'schedule')
+        self.schedule = attributes[:'schedule']
+      end
+
       if attributes.key?(:'configuration')
         self.configuration = attributes[:'configuration']
+      end
+
+      if attributes.key?(:'next_run_at')
+        self.next_run_at = attributes[:'next_run_at']
       end
     end
 
@@ -103,7 +123,9 @@ module SmplkitGeneratedClient::Jobs
       return true if self.equal?(o)
       self.class == o.class &&
           enabled == o.enabled &&
-          configuration == o.configuration
+          schedule == o.schedule &&
+          configuration == o.configuration &&
+          next_run_at == o.next_run_at
     end
 
     # @see the `==` method
@@ -115,7 +137,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [enabled, configuration].hash
+      [enabled, schedule, configuration, next_run_at].hash
     end
 
     # Builds the object from hash

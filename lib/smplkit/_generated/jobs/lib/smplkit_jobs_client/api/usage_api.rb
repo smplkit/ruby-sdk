@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Jobs
       @api_client = api_client
     end
     # Get Usage
-    # Report this account's current-period usage against its plan allotments.  `runs_used` is the number of runs metered so far this calendar month; `active_jobs` is the number of currently-enabled jobs.
+    # Report this account's current-period usage against its plan allotments.  `runs_used` is the number of runs metered so far this calendar month; `active_jobs` is the number of recurring (scheduled) jobs, which is what the plan's job limit bounds.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_period  (default to 'current')
     # @return [UsageResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Get Usage
-    # Report this account&#39;s current-period usage against its plan allotments.  &#x60;runs_used&#x60; is the number of runs metered so far this calendar month; &#x60;active_jobs&#x60; is the number of currently-enabled jobs.
+    # Report this account&#39;s current-period usage against its plan allotments.  &#x60;runs_used&#x60; is the number of runs metered so far this calendar month; &#x60;active_jobs&#x60; is the number of recurring (scheduled) jobs, which is what the plan&#39;s job limit bounds.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_period  (default to 'current')
     # @return [Array<(UsageResponse, Integer, Hash)>] UsageResponse data, response status code and response headers

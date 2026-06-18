@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Jobs
-  # A scheduled unit of work: an HTTP request run on a schedule.  The job is the definition; each time it fires the service records a run capturing the request, response, timing, and outcome. A job is enabled per environment: set `environments[<env>].enabled` to schedule runs there. A recurring (cron) job may be enabled in several environments at once and fires once per enabled environment; a one-off (`now` or future datetime) job runs a single time in the environment it was created in.
+  # A scheduled unit of work: an HTTP request run on a schedule.  The job is the definition; each time it fires the service records a run capturing the request, response, timing, and outcome. A job runs per environment: set `environments[<env>].enabled` to schedule runs there, and optionally give that environment its own `schedule` or `configuration`. A recurring (cron) job may be enabled in several environments at once and fires once per enabled environment, each on its own next-fire schedule; a one-off (`now` or future datetime) job runs a single time in the environment it was created in.
   class Job < ApiModelBase
     # Human-readable name for the job.
     attr_accessor :name
@@ -22,28 +22,22 @@ module SmplkitGeneratedClient::Jobs
     # Free-text description for the job.
     attr_accessor :description
 
-    # Whether the job is enabled in at least one environment. Read-only roll-up of `environments[*].enabled`; set enablement per environment via `environments`.
-    attr_accessor :enabled
-
     # Job type. Only `http` is supported today.
     attr_accessor :type
 
-    # When the job runs. One of: an ISO-8601 datetime (a one-off run at that instant), a 5-field cron expression evaluated in **UTC** (recurring), or the literal `now` (run once, as soon as possible). A datetime or `now` job disables itself after it fires.
+    # The base schedule every environment inherits unless it overrides it. One of: an ISO-8601 datetime (a one-off run at that instant), a 5-field cron expression evaluated in **UTC** (recurring), or the literal `now` (run once, as soon as possible). A datetime or `now` job disables itself after it fires.
     attr_accessor :schedule
 
     # The HTTP request to perform, including method, url, headers, body, and timeout.
     attr_accessor :configuration
 
-    # Per-environment overrides keyed by environment key (e.g. `production`, `staging`). Each entry sets `enabled` (whether the job schedules runs in that environment) and an optional `configuration` override (omit to inherit the base `configuration`). A job with no entry for an environment is disabled there. For a recurring job, supply this map to choose where it runs. For a one-off job, the environment it is created in is recorded here automatically — name it with the `X-Smplkit-Environment` header. Every referenced environment must exist for the account.
+    # Per-environment overrides keyed by environment key (e.g. `production`, `staging`). Each entry sets `enabled` (whether the job schedules runs in that environment), an optional `schedule` override (a cron expression for recurring jobs; omit to inherit the base `schedule`), and an optional `configuration` override (omit to inherit the base `configuration`); it also reports the read-only `next_run_at` for that environment. A job with no entry for an environment is disabled there. For a recurring job, supply this map to choose where and how it runs. For a one-off job, the environment it is created in is recorded here automatically — name it with the `X-Smplkit-Environment` header. Every referenced environment must exist for the account.
     attr_accessor :environments
 
     # How overlapping runs are handled. `ALLOW` (the only value today) permits them.
     attr_accessor :concurrency_policy
 
-    # The next scheduled fire time. `null` once a one-off job has fired.
-    attr_accessor :next_run_at
-
-    # Whether the job runs on a repeating schedule. `true` for a cron schedule; `false` for a one-off datetime or `now` schedule, which runs a single time. Derived from `schedule`.
+    # Whether the job runs on a repeating schedule. `true` for a cron schedule; `false` for a one-off datetime or `now` schedule, which runs a single time. Derived from the base `schedule`.
     attr_accessor :recurring
 
     # When the job was created.
@@ -85,13 +79,11 @@ module SmplkitGeneratedClient::Jobs
       {
         :'name' => :'name',
         :'description' => :'description',
-        :'enabled' => :'enabled',
         :'type' => :'type',
         :'schedule' => :'schedule',
         :'configuration' => :'configuration',
         :'environments' => :'environments',
         :'concurrency_policy' => :'concurrency_policy',
-        :'next_run_at' => :'next_run_at',
         :'recurring' => :'recurring',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at',
@@ -115,13 +107,11 @@ module SmplkitGeneratedClient::Jobs
       {
         :'name' => :'String',
         :'description' => :'String',
-        :'enabled' => :'Boolean',
         :'type' => :'String',
         :'schedule' => :'String',
         :'configuration' => :'JobHttpConfiguration',
         :'environments' => :'Hash<String, JobEnvironment>',
         :'concurrency_policy' => :'String',
-        :'next_run_at' => :'Time',
         :'recurring' => :'Boolean',
         :'created_at' => :'Time',
         :'updated_at' => :'Time',
@@ -134,8 +124,6 @@ module SmplkitGeneratedClient::Jobs
     def self.openapi_nullable
       Set.new([
         :'description',
-        :'enabled',
-        :'next_run_at',
         :'recurring',
         :'created_at',
         :'updated_at',
@@ -170,10 +158,6 @@ module SmplkitGeneratedClient::Jobs
         self.description = attributes[:'description']
       end
 
-      if attributes.key?(:'enabled')
-        self.enabled = attributes[:'enabled']
-      end
-
       if attributes.key?(:'type')
         self.type = attributes[:'type']
       else
@@ -202,10 +186,6 @@ module SmplkitGeneratedClient::Jobs
         self.concurrency_policy = attributes[:'concurrency_policy']
       else
         self.concurrency_policy = 'ALLOW'
-      end
-
-      if attributes.key?(:'next_run_at')
-        self.next_run_at = attributes[:'next_run_at']
       end
 
       if attributes.key?(:'recurring')
@@ -353,13 +333,11 @@ module SmplkitGeneratedClient::Jobs
       self.class == o.class &&
           name == o.name &&
           description == o.description &&
-          enabled == o.enabled &&
           type == o.type &&
           schedule == o.schedule &&
           configuration == o.configuration &&
           environments == o.environments &&
           concurrency_policy == o.concurrency_policy &&
-          next_run_at == o.next_run_at &&
           recurring == o.recurring &&
           created_at == o.created_at &&
           updated_at == o.updated_at &&
@@ -376,7 +354,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, description, enabled, type, schedule, configuration, environments, concurrency_policy, next_run_at, recurring, created_at, updated_at, deleted_at, version].hash
+      [name, description, type, schedule, configuration, environments, concurrency_policy, recurring, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash
