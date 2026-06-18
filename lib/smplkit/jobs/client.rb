@@ -223,12 +223,18 @@ module Smplkit
       #
       # @param enabled [Boolean, nil] Filter to jobs matching this enabled state
       #   (the server-derived roll-up across environments).
+      # @param recurring [Boolean, nil] Filter to recurring (+true+) or one-off
+      #   (+false+) jobs. +nil+ lists both.
+      # @param name [String, nil] Filter to jobs whose name contains this text
+      #   (case-insensitive). +nil+ lists all.
       # @param page_number [Integer, nil] 1-based page number to return.
       # @param page_size [Integer, nil] Items per page.
       # @return [Array<Smplkit::Jobs::Job>]
-      def list(enabled: nil, page_number: nil, page_size: nil)
+      def list(enabled: nil, recurring: nil, name: nil, page_number: nil, page_size: nil)
         opts = {}
         opts[:filter_enabled] = enabled unless enabled.nil?
+        opts[:filter_recurring] = recurring unless recurring.nil?
+        opts[:filter_name] = name unless name.nil?
         opts[:page_number] = page_number unless page_number.nil?
         opts[:page_size] = page_size unless page_size.nil?
 
