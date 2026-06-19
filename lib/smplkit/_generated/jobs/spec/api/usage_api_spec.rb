@@ -34,7 +34,7 @@ describe 'UsageApi' do
 
   # unit tests for get_usage
   # Get Usage
-  # Report this account&#39;s current-period usage against its plan allotments.  &#x60;runs_used&#x60; is the number of runs metered so far this calendar month; &#x60;active_jobs&#x60; is the number of recurring (scheduled) jobs, which is what the plan&#39;s job limit bounds.
+  # Report this account&#39;s current-period usage against its plan allotments.  &#x60;runs_used&#x60; is the number of runs metered so far this calendar month; &#x60;active_jobs&#x60; is the number of permanent jobs (recurring + manual), which is what the plan&#39;s job limit bounds (one-off jobs do not count).
   # @param [Hash] opts the optional parameters
   # @option opts [String] :filter_period 
   # @return [UsageResponse]

@@ -6,15 +6,17 @@ module Smplkit
   # Unlike Config/Flags/Logging, Jobs has no live "phone-home" agent — no
   # environment registration, no WebSocket — so its entire surface lives on a
   # single client. A {Job} is an active record: build it with
-  # +client.jobs.new(...)+, set fields, and call {Job#save} (create when new,
+  # +client.jobs.new_recurring_job(...)+ / +new_manual_job(...)+ /
+  # +schedule(...)+, set fields, and call {Job#save} (create when new,
   # full-replace update when it already exists) or {Job#delete}. Runs are
   # read-only views with +rerun+ / +cancel+ actions; run history lives on
   # +client.jobs.runs+.
   #
   # A job is enabled per environment: a recurring (cron) job may run in several
-  # environments at once, a one-off (+now+ / future datetime) job runs a single
-  # time in the environment it was created in. Base {Job#enabled} is a derived
-  # roll-up (+true+ when enabled in at least one environment), computed from the
+  # environments at once, a manual job (no schedule) runs only when triggered,
+  # and a one-off (+now+ / future datetime) job runs a single time in the
+  # environment it was created in. Base {Job#enabled} is a derived roll-up
+  # (+true+ when enabled in at least one environment), computed from the
   # per-environment {Job#environments} map.
   module Jobs
     # Wrap a generated-jobs-API call and translate +ApiError+ into the
@@ -96,6 +98,33 @@ module Smplkit
                               )
                             end
       end
+    end
+
+    # How a job runs, derived from its schedule (read-only).
+    #
+    # - +MANUAL+: No schedule — never auto-fires; runs only when triggered.
+    # - +ONE_OFF+: A +now+ or datetime schedule — runs a single time, then is
+    #   spent.
+    # - +RECURRING+: A cron schedule — fires on a repeating cadence.
+    module JobKind
+      MANUAL = "manual"
+      ONE_OFF = "one_off"
+      RECURRING = "recurring"
+
+      VALUES = [MANUAL, ONE_OFF, RECURRING].freeze
+    end
+
+    # What started a run (read-only).
+    #
+    # - +MANUAL+: A +run+ / +trigger+ call started it on demand.
+    # - +RERUN+: It repeats an earlier run.
+    # - +SCHEDULE+: The job's schedule fired.
+    module RunTrigger
+      MANUAL = "MANUAL"
+      RERUN = "RERUN"
+      SCHEDULE = "SCHEDULE"
+
+      VALUES = [MANUAL, RERUN, SCHEDULE].freeze
     end
 
     # HTTP verb a job uses when it fires.
@@ -248,13 +277,14 @@ module Smplkit
 
     # Per-environment enablement, schedule, and configuration override for a job.
     #
-    # A recurring job fires in a given environment only when that environment
-    # has an entry in {Job#environments} with +enabled: true+; an environment
-    # with no entry (or +enabled: false+) does not fire there.
+    # A job runs in a given environment only when that environment has an entry
+    # in {Job#environments} with +enabled: true+ (scheduled there for a
+    # recurring job, triggerable there for a manual one); an environment with no
+    # entry (or +enabled: false+) is disabled there.
     #
     # @!attribute [rw] enabled
-    #   @return [Boolean] Whether the job fires in this environment. Defaults to
-    #     +false+.
+    #   @return [Boolean] Whether the job is enabled in this environment.
+    #     Defaults to +false+.
     # @!attribute [rw] schedule
     #   @return [String, nil] Optional per-environment cron schedule override
     #     that varies the cadence in this environment. +nil+ (the default)
@@ -294,19 +324,22 @@ module Smplkit
       end
     end
 
-    # A scheduled unit of work: an HTTP request run on a schedule.
+    # A unit of work: an HTTP request, run on a schedule or triggered on demand.
     #
-    # Active-record style: instantiate via +client.jobs.new(...)+, mutate fields
-    # directly, and call {#save} to persist or {#delete} to remove. Header
-    # values in +configuration.headers+ are returned in plaintext on reads, so
-    # fetching a job, mutating it, and calling {#save} preserves its header
-    # values without re-entering secrets.
+    # Active-record style: instantiate via +client.jobs.new_recurring_job(...)+,
+    # +new_manual_job(...)+, or +schedule(...)+, mutate fields directly, and call
+    # {#save} to persist or {#delete} to remove. Header values in
+    # +configuration.headers+ are returned in plaintext on reads, so fetching a
+    # job, mutating it, and calling {#save} preserves its header values without
+    # re-entering secrets.
     #
-    # Enablement is per environment, set via {#set_enabled} (and read via
-    # {#is_enabled}); base {#enabled} is a derived roll-up over {#environments}.
-    # The base schedule is environment-agnostic — one cron / datetime / +now+
-    # shared across every environment the job runs in — while each environment
-    # may carry its own cron {#set_schedule} override.
+    # A job's {#kind} follows from its {#schedule}: a recurring (cron) job, a
+    # manual job (no schedule, runs only when triggered), or a one-off (+now+ /
+    # datetime) job that runs a single time. Enablement is per environment, set
+    # via {#set_enabled} (and read via {#is_enabled}); base {#enabled} is a
+    # derived roll-up over {#environments}. The base schedule is
+    # environment-agnostic, while each environment may carry its own cron
+    # {#set_schedule} override.
     class Job
       # @return [String] Caller-supplied unique identifier for the job (the
       #   resource +id+). Unique within the account and immutable; the service
@@ -335,19 +368,22 @@ module Smplkit
       #   Every referenced environment must exist and be managed for the account.
       attr_accessor :environments
 
-      # @return [Boolean, nil] Read-only. +true+ for a recurring (cron) schedule,
-      #   +false+ for a one-off datetime / +now+ schedule. Derived from
-      #   {#schedule} by the server.
-      attr_accessor :recurring
+      # @return [String, nil] Read-only. How the job runs, derived from its
+      #   {#schedule} by the server: one of {JobKind::RECURRING},
+      #   {JobKind::MANUAL}, or {JobKind::ONE_OFF}. +nil+ on an unsaved instance.
+      attr_accessor :kind
 
       # @return [String] Job type. Only +"http"+ is supported today.
       attr_accessor :type
 
-      # @return [String] When the job runs: an ISO-8601 datetime (a one-off
-      #   run), a 5-field cron expression evaluated in UTC (recurring), or the
-      #   literal +"now"+ (run once, as soon as possible). A datetime or +"now"+
-      #   job disables itself after it fires. The schedule is environment-agnostic
-      #   — set it with {#set_schedule}.
+      # @return [String, nil] The base schedule every environment inherits, and
+      #   the field that determines the job's {#kind}: +nil+ (omitted) for a
+      #   permanent manual job that never auto-fires; a 5-field cron expression
+      #   evaluated in UTC for a recurring job; an ISO-8601 datetime for a
+      #   one-off run at that instant; or the literal +"now"+ for a one-off run
+      #   as soon as possible. A datetime or +"now"+ job disables itself after it
+      #   fires. The schedule is environment-agnostic — set it with
+      #   {#set_schedule}.
       attr_accessor :schedule
 
       # @return [HttpConfig] The base HTTP request to perform when the job fires.
@@ -375,12 +411,13 @@ module Smplkit
 
       # @api private — For a one-off job, the environment it is born in, sent as
       #   the +X-Smplkit-Environment+ header by {JobsClient#_create_job}. Ignored
-      #   for a recurring job, whose environments come from {#environments}.
+      #   for recurring and manual jobs, whose environments come from
+      #   {#environments}.
       attr_accessor :birth_environment
 
-      def initialize(client = nil, id:, name:, schedule:, configuration:,
+      def initialize(client = nil, id:, name:, configuration:, schedule: nil,
                      description: nil, environments: nil,
-                     recurring: nil, type: "http", concurrency_policy: "ALLOW",
+                     kind: nil, type: "http", concurrency_policy: "ALLOW",
                      birth_environment: nil, created_at: nil,
                      updated_at: nil, deleted_at: nil, version: nil)
         @client = client
@@ -388,7 +425,7 @@ module Smplkit
         @name = name
         @description = description
         @environments = environments || {}
-        @recurring = recurring
+        @kind = kind
         @type = type
         @schedule = schedule
         @configuration = configuration
@@ -457,6 +494,27 @@ module Smplkit
         return false if override.nil?
 
         override.enabled
+      end
+
+      # Whether this is a recurring (cron-scheduled) job.
+      #
+      # @return [Boolean]
+      def is_recurring
+        @kind == JobKind::RECURRING
+      end
+
+      # Whether this is a manual job — no schedule; runs only when triggered.
+      #
+      # @return [Boolean]
+      def is_manual
+        @kind == JobKind::MANUAL
+      end
+
+      # Whether this is a one-off job — a single +now+ / datetime run.
+      #
+      # @return [Boolean]
+      def is_one_off
+        @kind == JobKind::ONE_OFF
       end
 
       # Set the job's configuration — base (+environment+ omitted) or
@@ -572,7 +630,7 @@ module Smplkit
         @name = other.name
         @description = other.description
         @environments = other.environments
-        @recurring = other.recurring
+        @kind = other.kind
         @type = other.type
         @schedule = other.schedule
         @configuration = other.configuration
@@ -602,7 +660,7 @@ module Smplkit
           # The base +enabled+ roll-up is derived from +environments+, not read
           # from the wire — the API no longer carries a top-level +enabled+.
           environments: environments,
-          recurring: a.recurring,
+          kind: a.kind,
           type: a.type || "http",
           schedule: a.schedule,
           configuration: HttpConfig.from_wire(a.configuration),
@@ -633,7 +691,8 @@ module Smplkit
     #     inherits the firing job-environment; a manual run uses the environment
     #     named on the run-now request; a rerun copies its source run's environment.
     # @!attribute [rw] trigger
-    #   @return [String] Why the run exists: +SCHEDULE+, +MANUAL+ (run now), or +RERUN+.
+    #   @return [String] Why the run exists — a raw string equal to one of the
+    #     {RunTrigger} constants: +SCHEDULE+, +MANUAL+ (run now), or +RERUN+.
     # @!attribute [rw] rerun_of
     #   @return [String, nil] The source run's id; set only when +trigger+ is +RERUN+.
     # @!attribute [rw] scheduled_for

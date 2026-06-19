@@ -43,10 +43,10 @@ RSpec.describe Smplkit::Jobs::JobsClient do
   end
 
   def job_resource(id: "nightly-cache-warm", version: 1, created: true,
-                   environments: nil, recurring: nil)
+                   environments: nil, kind: nil)
     attributes = {
       name: "Nightly cache warm", description: "does a thing",
-      recurring: recurring, type: "http", schedule: "0 2 * * *",
+      kind: kind, type: "http", schedule: "0 2 * * *",
       configuration: {
         method: "POST", url: "https://api.example.com/cache/warm",
         headers: [{ name: "Authorization", value: "<redacted>" }],
@@ -98,13 +98,13 @@ RSpec.describe Smplkit::Jobs::JobsClient do
     )
   end
 
-  describe "#new + Job#save" do
+  describe "#new_recurring_job + Job#save" do
     it "POSTs and refreshes the local instance with the server response" do
       stub_request(:post, "#{base_url}/api/v1/jobs").to_return(
         status: 201, body: { data: job_resource }.to_json, headers: json_api
       )
-      job = jobs.new(job_id, name: "Nightly cache warm", schedule: "0 2 * * *",
-                             configuration: http_config, description: "does a thing")
+      job = jobs.new_recurring_job(job_id, name: "Nightly cache warm", schedule: "0 2 * * *",
+                                           configuration: http_config, description: "does a thing")
       expect(job.created_at).to be_nil
       job.save
       expect(job.id).to eq(job_id)
@@ -119,8 +119,8 @@ RSpec.describe Smplkit::Jobs::JobsClient do
         captured = req.body
         true
       end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
-      jobs.new(job_id, name: "Nightly cache warm", schedule: "0 2 * * *",
-                       configuration: http_config).save
+      jobs.new_recurring_job(job_id, name: "Nightly cache warm", schedule: "0 2 * * *",
+                                     configuration: http_config).save
       expect(captured).to include("\"id\":\"#{job_id}\"")
       expect(captured).to include("\"body\":\"{\\\"scope\\\": \\\"all\\\"}\"")
       expect(captured).to include("\"timeout\":30")
@@ -132,11 +132,12 @@ RSpec.describe Smplkit::Jobs::JobsClient do
         captured = JSON.parse(req.body)
         true
       end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
-      jobs.new(job_id, name: "n", schedule: "0 * * * *", configuration: http_config,
-                       environments: {
-                         "production" => Smplkit::Jobs::JobEnvironment.new(enabled: true),
-                         "staging" => Smplkit::Jobs::JobEnvironment.new(enabled: true, configuration: http_config)
-                       }).save
+      jobs.new_recurring_job(job_id, name: "n", schedule: "0 * * * *", configuration: http_config,
+                                     environments: {
+                                       "production" => Smplkit::Jobs::JobEnvironment.new(enabled: true),
+                                       "staging" => Smplkit::Jobs::JobEnvironment.new(enabled: true,
+                                                                                      configuration: http_config)
+                                     }).save
       attrs = captured["data"]["attributes"]
       expect(attrs).not_to have_key("enabled")
       expect(attrs["environments"]["production"]).to eq({ "enabled" => true })
@@ -144,7 +145,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       expect(attrs["environments"]["staging"]["configuration"]["url"]).to eq("https://api.example.com/cache/warm")
     end
 
-    it "creates a one-off job with the birth-environment header and omits an empty environments map" do
+    it "schedules a one-off job: ISO-8601 schedule, birth-environment header, no environments map" do
       body = nil
       headers = nil
       stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
@@ -152,20 +153,39 @@ RSpec.describe Smplkit::Jobs::JobsClient do
         headers = req.headers
         true
       end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
-      jobs.new("one-off", name: "One", schedule: "now", configuration: http_config,
-                          environment: "development").save
+      when_at = Time.utc(2030, 1, 1, 12, 30)
+      jobs.schedule("one-off", name: "One", schedule: when_at, configuration: http_config,
+                               environment: "development").save
       expect(body["data"]["attributes"]).not_to have_key("environments")
+      expect(body["data"]["attributes"]["schedule"]).to eq(when_at.iso8601) # datetime -> ISO-8601
       expect(env_header(headers)).to eq("development")
     end
 
+    it "creates a manual job with no schedule: sends schedule null and reads back kind manual" do
+      body = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
+        body = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: job_resource(kind: "manual") }.to_json, headers: json_api)
+      job = jobs.new_manual_job("manual-job", name: "Manual", configuration: http_config)
+      expect(job.schedule).to be_nil # no schedule supplied
+      job.set_enabled(true, environment: "production")
+      job.save
+      expect(job.is_manual).to be(true)
+      expect(job.kind).to eq("manual")
+      attrs = body["data"]["attributes"]
+      expect(attrs).to have_key("schedule")
+      expect(attrs["schedule"]).to be_nil # null sent on the wire
+    end
+
     it "raises ArgumentError when save() is called on a job without an id" do
-      job = jobs.new("", name: "x", schedule: "now", configuration: http_config)
+      job = jobs.new_manual_job("", name: "x", configuration: http_config)
       expect { job.save }.to raise_error(ArgumentError, /id is required/)
     end
 
     it "raises Smplkit::ConnectionError when the generated layer reports no status code" do
       stub_request(:post, "#{base_url}/api/v1/jobs").to_raise(Errno::ECONNREFUSED)
-      job = jobs.new(job_id, name: "x", schedule: "now", configuration: http_config)
+      job = jobs.new_manual_job(job_id, name: "x", configuration: http_config)
       expect { job.save }.to raise_error(Smplkit::ConnectionError)
     end
 
@@ -173,7 +193,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       stub_request(:post, "#{base_url}/api/v1/jobs").to_return(
         status: 409, body: { errors: [{ status: "409" }] }.to_json, headers: json_api
       )
-      job = jobs.new(job_id, name: "x", schedule: "now", configuration: http_config)
+      job = jobs.new_manual_job(job_id, name: "x", configuration: http_config)
       expect { job.save }.to raise_error(Smplkit::ConflictError)
     end
 
@@ -186,7 +206,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
   end
 
   describe "#list" do
-    it "forwards filter[recurring], filter[name] and offset params to the generated client" do
+    it "forwards filter[kind], filter[scheduled], filter[name] and offset params to the generated client" do
       captured_uri = nil
       stub_request(:get, %r{#{base_url}/api/v1/jobs\b})
         .with do |req|
@@ -197,9 +217,11 @@ RSpec.describe Smplkit::Jobs::JobsClient do
                    body: { data: [job_resource(id: "a"), job_resource(id: "b")],
                            meta: { pagination: { page: 2, size: 10 } } }.to_json,
                    headers: json_api)
-      result = jobs.list(recurring: true, name: "health", page_number: 2, page_size: 10)
-      expect(captured_uri).not_to include("filter%5Benabled%5D")
-      expect(captured_uri).to include("filter%5Brecurring%5D=true")
+      result = jobs.list(kind: Smplkit::Jobs::JobKind::MANUAL, scheduled: true,
+                         name: "health", page_number: 2, page_size: 10)
+      expect(captured_uri).not_to include("filter%5Brecurring%5D")
+      expect(captured_uri).to include("filter%5Bkind%5D=manual")
+      expect(captured_uri).to include("filter%5Bscheduled%5D=true")
       expect(captured_uri).to include("filter%5Bname%5D=health")
       expect(captured_uri).to include("page%5Bnumber%5D=2")
       expect(captured_uri).to include("page%5Bsize%5D=10")
@@ -586,6 +608,27 @@ RSpec.describe Smplkit::Jobs::Job do
   let(:base) { Smplkit::Jobs::HttpConfig.new(url: "https://base.example.com") }
   let(:job) { described_class.new(id: "x", name: "X", schedule: "0 * * * *", configuration: base) }
 
+  describe "#is_recurring / #is_manual / #is_one_off" do
+    def job_of_kind(kind)
+      described_class.new(id: "j", name: "n", configuration: base, kind: kind)
+    end
+
+    it "each predicate is true only for its own kind" do
+      rec = job_of_kind(Smplkit::Jobs::JobKind::RECURRING)
+      expect([rec.is_recurring, rec.is_manual, rec.is_one_off]).to eq([true, false, false])
+      man = job_of_kind(Smplkit::Jobs::JobKind::MANUAL)
+      expect([man.is_recurring, man.is_manual, man.is_one_off]).to eq([false, true, false])
+      off = job_of_kind(Smplkit::Jobs::JobKind::ONE_OFF)
+      expect([off.is_recurring, off.is_manual, off.is_one_off]).to eq([false, false, true])
+    end
+
+    it "leaves every predicate false when kind is nil" do
+      nokind = described_class.new(id: "j", name: "n", configuration: base)
+      expect(nokind.kind).to be_nil
+      expect(nokind.is_recurring || nokind.is_manual || nokind.is_one_off).to be(false)
+    end
+  end
+
   describe "#set_enabled / #is_enabled" do
     it "creates and updates a per-environment override and reads it back" do
       expect(job.is_enabled).to be(false) # roll-up default (no envs)
@@ -751,6 +794,24 @@ RSpec.describe "Smplkit::Jobs environment helpers" do
   end
 end
 
+RSpec.describe Smplkit::Jobs::JobKind do
+  it "carries the wire values for each kind in VALUES" do
+    expect(described_class::RECURRING).to eq("recurring")
+    expect(described_class::MANUAL).to eq("manual")
+    expect(described_class::ONE_OFF).to eq("one_off")
+    expect(described_class::VALUES).to eq(%w[manual one_off recurring])
+  end
+end
+
+RSpec.describe Smplkit::Jobs::RunTrigger do
+  it "carries the wire values for each trigger in VALUES" do
+    expect(described_class::MANUAL).to eq("MANUAL")
+    expect(described_class::RERUN).to eq("RERUN")
+    expect(described_class::SCHEDULE).to eq("SCHEDULE")
+    expect(described_class::VALUES).to eq(%w[MANUAL RERUN SCHEDULE])
+  end
+end
+
 RSpec.describe Smplkit::Jobs::HttpMethod do
   it "lists every verb in VALUES in alphabetical order" do
     expect(described_class::VALUES).to eq(%w[DELETE GET PATCH POST PUT])
@@ -878,7 +939,7 @@ RSpec.describe "Smplkit::Jobs::Job environments parsing" do
     {
       id: "j", type: "job",
       attributes: {
-        name: "n", description: nil, recurring: true, type: "http",
+        name: "n", description: nil, kind: "recurring", type: "http",
         schedule: "0 * * * *",
         configuration: { method: "POST", url: "https://api.example.com/hook", headers: [],
                          body: nil, success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil },
@@ -897,13 +958,14 @@ RSpec.describe "Smplkit::Jobs::Job environments parsing" do
     }
   end
 
-  it "parses the environments map, recurring flag, derived roll-up, and per-env schedule / next_run_at on read" do
+  it "parses the environments map, kind, derived roll-up, and per-env schedule / next_run_at on read" do
     stub_request(:get, "#{base_url}/api/v1/jobs/j").to_return(
       status: 200, body: { data: job_with_environments }.to_json, headers: json_api
     )
     job = jobs.get("j")
     expect(job.enabled).to be(true) # derived roll-up (production enabled)
-    expect(job.recurring).to be(true)
+    expect(job.kind).to eq("recurring")
+    expect(job.is_recurring).to be(true)
     expect(job.is_enabled(environment: "production")).to be(true)
     expect(job.environments["production"].configuration).to be_nil # inherits base
     expect(job.environments["production"].schedule).to eq("0 3 * * *") # per-env override

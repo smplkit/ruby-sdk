@@ -25,10 +25,10 @@ module SmplkitGeneratedClient::Jobs
     # Runs included in the plan this period (`-1` means unlimited).
     attr_accessor :runs_included
 
-    # Number of recurring (scheduled) jobs.
+    # Number of permanent jobs (recurring and manual) counted against the plan's job limit.
     attr_accessor :active_jobs
 
-    # Maximum recurring jobs the plan allows (`-1` means unlimited).
+    # Maximum permanent jobs the plan allows (`-1` means unlimited).
     attr_accessor :active_jobs_limit
 
     # Attribute mapping from ruby-style variable name to JSON key.

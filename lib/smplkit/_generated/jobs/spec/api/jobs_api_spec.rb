@@ -34,7 +34,7 @@ describe 'JobsApi' do
 
   # unit tests for create_job
   # Create Job
-  # Create a job for this account.  The caller supplies the job&#39;s id as &#x60;data.id&#x60;. Ids are unique within an account and immutable. A recurring job supplies &#x60;environments&#x60; to choose where it runs and begins scheduling immediately in each enabled environment. A one-off job is created in the environment named by the &#x60;X-Smplkit-Environment&#x60; header (implied when the credential is scoped to a single environment).
+  # Create a job for this account.  The caller supplies the job&#39;s id as &#x60;data.id&#x60;. Ids are unique within an account and immutable. The job&#39;s kind follows from its &#x60;schedule&#x60;: omit the schedule for a permanent **manual** job (triggered on demand), give a cron expression for a **recurring** job, or a datetime / &#x60;now&#x60; for a **one-off** job. A recurring or manual job supplies &#x60;environments&#x60; to choose where it runs; a recurring job begins scheduling immediately in each enabled environment. A one-off job is created in the environment named by the &#x60;X-Smplkit-Environment&#x60; header (implied when the credential is scoped to a single environment); a &#x60;now&#x60; one-off enqueues its single run immediately.
   # @param job_create_request 
   # @param [Hash] opts the optional parameters
   # @option opts [String] :x_smplkit_environment The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map.
@@ -71,9 +71,10 @@ describe 'JobsApi' do
 
   # unit tests for list_jobs
   # List Jobs
-  # List this account&#39;s jobs.  Default sort is &#x60;name&#x60; ascending. Sort by &#x60;name&#x60;, &#x60;created_at&#x60;, or &#x60;updated_at&#x60;, ascending or descending (prefix &#x60;-&#x60; for descending). Filter with &#x60;filter[recurring]&#x60; and &#x60;filter[name]&#x60; (case-insensitive substring match on the name); filters compose with AND. Each job reports its per-environment enablement and &#x60;next_run_at&#x60; inside its &#x60;environments&#x60; map; a scoped caller sees that map narrowed to the environments it may access.
+  # List this account&#39;s jobs.  Default sort is &#x60;name&#x60; ascending. Sort by &#x60;name&#x60;, &#x60;created_at&#x60;, or &#x60;updated_at&#x60;, ascending or descending (prefix &#x60;-&#x60; for descending). By default the list omits transient one-off jobs (request &#x60;filter[kind]&#x3D;one_off&#x60; to see them). Filter with &#x60;filter[kind]&#x60; (&#x60;recurring&#x60; / &#x60;manual&#x60; / &#x60;one_off&#x60;), &#x60;filter[scheduled]&#x60; (jobs with an upcoming fire in some environment — the feed for an upcoming-runs view, which includes one-offs), and &#x60;filter[name]&#x60; (case-insensitive substring); filters compose with AND. Each job reports its per-environment enablement and &#x60;next_run_at&#x60; inside its &#x60;environments&#x60; map; a scoped caller sees that map narrowed to the environments it may access.
   # @param [Hash] opts the optional parameters
-  # @option opts [Boolean] :filter_recurring 
+  # @option opts [String] :filter_kind Restrict to a single job kind: &#x60;recurring&#x60;, &#x60;manual&#x60;, or &#x60;one_off&#x60;. By default one-off jobs are omitted (they are transient and short-lived); request &#x60;filter[kind]&#x3D;one_off&#x60; to list them.
+  # @option opts [Boolean] :filter_scheduled When &#x60;true&#x60;, list only jobs that have an upcoming fire in at least one environment (a recurring job&#39;s next occurrence, or a pending future one-off) — the feed for an upcoming-runs view; this includes one-off jobs. When &#x60;false&#x60;, list only jobs with no upcoming fire.
   # @option opts [String] :filter_name Case-insensitive substring match on the job &#x60;name&#x60; (matches when the name contains the given text).
   # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;.
   # @option opts [Integer] :page_number 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error.
@@ -88,7 +89,7 @@ describe 'JobsApi' do
 
   # unit tests for run_job_now
   # Run Job Now
-  # Trigger one immediate run of the job (a &#x60;MANUAL&#x60; run).  The job&#39;s schedule and enabled state are untouched. The run executes in the environment named by the &#x60;X-Smplkit-Environment&#x60; header; when the job is enabled in exactly one environment that environment is used, and a single-environment credential implies it. The run executes the job&#39;s effective configuration for that environment. It is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason &#x60;QUOTA_EXCEEDED&#x60; rather than being rejected here.
+  # Trigger one immediate run of the job in a specified environment (a &#x60;MANUAL&#x60; run).  This is the primary execution path for a manual job and is also usable ad hoc for a recurring job (\&quot;run now\&quot;). The job&#39;s schedule and enabled state are untouched. The run executes in the environment named by the &#x60;X-Smplkit-Environment&#x60; header; when the job is enabled in exactly one environment that environment is used, and a single-environment credential implies it. The environment must be one the job is **enabled** in (409 otherwise). The run executes the job&#39;s effective configuration for that environment. It is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason &#x60;QUOTA_EXCEEDED&#x60; rather than being rejected here.
   # @param job_id 
   # @param [Hash] opts the optional parameters
   # @option opts [String] :x_smplkit_environment The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map.
@@ -101,7 +102,7 @@ describe 'JobsApi' do
 
   # unit tests for update_job
   # Update Job
-  # Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the &#x60;environments&#x60; map (a recurring job), or by recreating a one-off job in the desired environment. Each environment may carry its own cron &#x60;schedule&#x60; override. Editing an environment&#39;s effective schedule recomputes its next fire time; an edit that leaves an environment&#39;s schedule unchanged preserves its existing cadence.
+  # Replace an existing job. Every writable field is overwritten.  The job&#39;s kind is re-derived from the new &#x60;schedule&#x60; (omit it for a manual job). Set enablement per environment via the &#x60;environments&#x60; map (a recurring or manual job), or by recreating a one-off job in the desired environment. Each environment may carry its own cron &#x60;schedule&#x60; override (recurring jobs only). Editing a recurring environment&#39;s effective schedule recomputes its next fire time; an edit that leaves it unchanged preserves the existing cadence.
   # @param job_id 
   # @param job_request 
   # @param [Hash] opts the optional parameters

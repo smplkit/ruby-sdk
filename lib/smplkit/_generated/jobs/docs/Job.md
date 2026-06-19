@@ -7,11 +7,11 @@
 | **name** | **String** | Human-readable name for the job. |  |
 | **description** | **String** | Free-text description for the job. | [optional] |
 | **type** | **String** | Job type. Only &#x60;http&#x60; is supported today. | [optional][default to &#39;http&#39;] |
-| **schedule** | **String** | The base schedule every environment inherits unless it overrides it. One of: an ISO-8601 datetime (a one-off run at that instant), a 5-field cron expression evaluated in **UTC** (recurring), or the literal &#x60;now&#x60; (run once, as soon as possible). A datetime or &#x60;now&#x60; job disables itself after it fires. |  |
+| **schedule** | **String** | The base schedule every environment inherits unless it overrides it, and the field that determines the job&#39;s &#x60;kind&#x60;. Omit it (or send &#x60;null&#x60;) to create a permanent **manual** job that never auto-fires and runs only when triggered. Provide a 5-field cron expression evaluated in **UTC** for a **recurring** job, an ISO-8601 datetime for a **one-off** run at that instant, or the literal &#x60;now&#x60; for a one-off run as soon as possible. A datetime or &#x60;now&#x60; job disables itself after it fires. | [optional] |
 | **configuration** | [**JobHttpConfiguration**](JobHttpConfiguration.md) | The HTTP request to perform, including method, url, headers, body, and timeout. |  |
-| **environments** | [**Hash&lt;String, JobEnvironment&gt;**](JobEnvironment.md) | Per-environment overrides keyed by environment key (e.g. &#x60;production&#x60;, &#x60;staging&#x60;). Each entry sets &#x60;enabled&#x60; (whether the job schedules runs in that environment), an optional &#x60;schedule&#x60; override (a cron expression for recurring jobs; omit to inherit the base &#x60;schedule&#x60;), and an optional &#x60;configuration&#x60; override (omit to inherit the base &#x60;configuration&#x60;); it also reports the read-only &#x60;next_run_at&#x60; for that environment. A job with no entry for an environment is disabled there. For a recurring job, supply this map to choose where and how it runs. For a one-off job, the environment it is created in is recorded here automatically — name it with the &#x60;X-Smplkit-Environment&#x60; header. Every referenced environment must exist for the account. | [optional] |
+| **environments** | [**Hash&lt;String, JobEnvironment&gt;**](JobEnvironment.md) | Per-environment overrides keyed by environment key (e.g. &#x60;production&#x60;, &#x60;staging&#x60;). Each entry sets &#x60;enabled&#x60; (whether the job is enabled — scheduled, for a recurring job, or triggerable, for a manual job — in that environment), an optional &#x60;schedule&#x60; override (a cron expression for recurring jobs; omit to inherit the base &#x60;schedule&#x60;), and an optional &#x60;configuration&#x60; override (omit to inherit the base &#x60;configuration&#x60;); it also reports the read-only &#x60;next_run_at&#x60; for that environment. A job with no entry for an environment is disabled there. For a recurring or manual job, supply this map to choose where it runs. For a one-off job, the environment it is created in is recorded here automatically — name it with the &#x60;X-Smplkit-Environment&#x60; header. Every referenced environment must exist for the account. | [optional] |
 | **concurrency_policy** | **String** | How overlapping runs are handled. &#x60;ALLOW&#x60; (the only value today) permits them. | [optional][default to &#39;ALLOW&#39;] |
-| **recurring** | **Boolean** | Whether the job runs on a repeating schedule. &#x60;true&#x60; for a cron schedule; &#x60;false&#x60; for a one-off datetime or &#x60;now&#x60; schedule, which runs a single time. Derived from the base &#x60;schedule&#x60;. | [optional][readonly] |
+| **kind** | **String** | How the job runs, derived from its base &#x60;schedule&#x60;: &#x60;recurring&#x60; for a cron schedule (fires on a repeating cadence), &#x60;manual&#x60; for no schedule (never auto-fires; runs only when triggered), or &#x60;one_off&#x60; for a &#x60;now&#x60; or datetime schedule (runs a single time, then is spent). | [optional][readonly] |
 | **created_at** | **Time** | When the job was created. | [optional][readonly] |
 | **updated_at** | **Time** | When the job was last modified. | [optional][readonly] |
 | **deleted_at** | **Time** | When the job was deleted. &#x60;null&#x60; for active jobs. | [optional][readonly] |
@@ -30,7 +30,7 @@ instance = SmplkitGeneratedClient::Jobs::Job.new(
   configuration: null,
   environments: null,
   concurrency_policy: null,
-  recurring: null,
+  kind: null,
   created_at: null,
   updated_at: null,
   deleted_at: null,

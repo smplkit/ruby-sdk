@@ -8,7 +8,7 @@ require "smplkit"
 # a prior run; the matching teardown in the showcase's ensure block tears the
 # showcase's jobs down even when it fails mid-way, so a failed run never leaves
 # orphans behind.
-DEMO_JOB_IDS = %w[showcase-recurring showcase-oneoff].freeze
+DEMO_JOB_IDS = %w[showcase-recurring showcase-manual showcase-oneoff].freeze
 
 def setup_showcase(jobs)
   cleanup_showcase(jobs)

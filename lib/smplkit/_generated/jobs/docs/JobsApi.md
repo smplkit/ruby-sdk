@@ -18,7 +18,7 @@ All URIs are relative to *http://localhost*
 
 Create Job
 
-Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. A recurring job supplies `environments` to choose where it runs and begins scheduling immediately in each enabled environment. A one-off job is created in the environment named by the `X-Smplkit-Environment` header (implied when the credential is scoped to a single environment).
+Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. The job's kind follows from its `schedule`: omit the schedule for a permanent **manual** job (triggered on demand), give a cron expression for a **recurring** job, or a datetime / `now` for a **one-off** job. A recurring or manual job supplies `environments` to choose where it runs; a recurring job begins scheduling immediately in each enabled environment. A one-off job is created in the environment named by the `X-Smplkit-Environment` header (implied when the credential is scoped to a single environment); a `now` one-off enqueues its single run immediately.
 
 ### Examples
 
@@ -32,7 +32,7 @@ SmplkitGeneratedClient::Jobs.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
-job_create_request = SmplkitGeneratedClient::Jobs::JobCreateRequest.new({data: SmplkitGeneratedClient::Jobs::JobCreateResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Jobs::Job.new({name: 'name_example', schedule: 'schedule_example', configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new({url: 'url_example'})})})}) # JobCreateRequest | 
+job_create_request = SmplkitGeneratedClient::Jobs::JobCreateRequest.new({data: SmplkitGeneratedClient::Jobs::JobCreateResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Jobs::Job.new({name: 'name_example', configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new({url: 'url_example'})})})}) # JobCreateRequest | 
 opts = {
   x_smplkit_environment: 'x_smplkit_environment_example' # String | The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its `environments` map.
 }
@@ -228,7 +228,7 @@ end
 
 List Jobs
 
-List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, or `updated_at`, ascending or descending (prefix `-` for descending). Filter with `filter[recurring]` and `filter[name]` (case-insensitive substring match on the name); filters compose with AND. Each job reports its per-environment enablement and `next_run_at` inside its `environments` map; a scoped caller sees that map narrowed to the environments it may access.
+List this account's jobs.  Default sort is `name` ascending. Sort by `name`, `created_at`, or `updated_at`, ascending or descending (prefix `-` for descending). By default the list omits transient one-off jobs (request `filter[kind]=one_off` to see them). Filter with `filter[kind]` (`recurring` / `manual` / `one_off`), `filter[scheduled]` (jobs with an upcoming fire in some environment — the feed for an upcoming-runs view, which includes one-offs), and `filter[name]` (case-insensitive substring); filters compose with AND. Each job reports its per-environment enablement and `next_run_at` inside its `environments` map; a scoped caller sees that map narrowed to the environments it may access.
 
 ### Examples
 
@@ -243,7 +243,8 @@ end
 
 api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
 opts = {
-  filter_recurring: true, # Boolean | 
+  filter_kind: 'filter_kind_example', # String | Restrict to a single job kind: `recurring`, `manual`, or `one_off`. By default one-off jobs are omitted (they are transient and short-lived); request `filter[kind]=one_off` to list them.
+  filter_scheduled: true, # Boolean | When `true`, list only jobs that have an upcoming fire in at least one environment (a recurring job's next occurrence, or a pending future one-off) — the feed for an upcoming-runs view; this includes one-off jobs. When `false`, list only jobs with no upcoming fire.
   filter_name: 'filter_name_example', # String | Case-insensitive substring match on the job `name` (matches when the name contains the given text).
   sort: 'created_at', # String | Field to sort by. Prefix with `-` for descending order. Default: `name`. Allowed values: `created_at`, `-created_at`, `name`, `-name`, `updated_at`, `-updated_at`.
   page_number: 56, # Integer | 1-based page number to return. Optional; defaults to `1` when omitted. Must be `>= 1` — requests with a smaller value are rejected with a 400 error.
@@ -282,7 +283,8 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **filter_recurring** | **Boolean** |  | [optional] |
+| **filter_kind** | **String** | Restrict to a single job kind: &#x60;recurring&#x60;, &#x60;manual&#x60;, or &#x60;one_off&#x60;. By default one-off jobs are omitted (they are transient and short-lived); request &#x60;filter[kind]&#x3D;one_off&#x60; to list them. | [optional] |
+| **filter_scheduled** | **Boolean** | When &#x60;true&#x60;, list only jobs that have an upcoming fire in at least one environment (a recurring job&#39;s next occurrence, or a pending future one-off) — the feed for an upcoming-runs view; this includes one-off jobs. When &#x60;false&#x60;, list only jobs with no upcoming fire. | [optional] |
 | **filter_name** | **String** | Case-insensitive substring match on the job &#x60;name&#x60; (matches when the name contains the given text). | [optional] |
 | **sort** | **String** | Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. | [optional][default to &#39;name&#39;] |
 | **page_number** | **Integer** | 1-based page number to return. Optional; defaults to &#x60;1&#x60; when omitted. Must be &#x60;&gt;&#x3D; 1&#x60; — requests with a smaller value are rejected with a 400 error. | [optional][default to 1] |
@@ -309,7 +311,7 @@ end
 
 Run Job Now
 
-Trigger one immediate run of the job (a `MANUAL` run).  The job's schedule and enabled state are untouched. The run executes in the environment named by the `X-Smplkit-Environment` header; when the job is enabled in exactly one environment that environment is used, and a single-environment credential implies it. The run executes the job's effective configuration for that environment. It is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason `QUOTA_EXCEEDED` rather than being rejected here.
+Trigger one immediate run of the job in a specified environment (a `MANUAL` run).  This is the primary execution path for a manual job and is also usable ad hoc for a recurring job (\"run now\"). The job's schedule and enabled state are untouched. The run executes in the environment named by the `X-Smplkit-Environment` header; when the job is enabled in exactly one environment that environment is used, and a single-environment credential implies it. The environment must be one the job is **enabled** in (409 otherwise). The run executes the job's effective configuration for that environment. It is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason `QUOTA_EXCEEDED` rather than being rejected here.
 
 ### Examples
 
@@ -382,7 +384,7 @@ end
 
 Update Job
 
-Replace an existing job. Every writable field is overwritten.  Set enablement per environment via the `environments` map (a recurring job), or by recreating a one-off job in the desired environment. Each environment may carry its own cron `schedule` override. Editing an environment's effective schedule recomputes its next fire time; an edit that leaves an environment's schedule unchanged preserves its existing cadence.
+Replace an existing job. Every writable field is overwritten.  The job's kind is re-derived from the new `schedule` (omit it for a manual job). Set enablement per environment via the `environments` map (a recurring or manual job), or by recreating a one-off job in the desired environment. Each environment may carry its own cron `schedule` override (recurring jobs only). Editing a recurring environment's effective schedule recomputes its next fire time; an edit that leaves it unchanged preserves the existing cadence.
 
 ### Examples
 
@@ -397,7 +399,7 @@ end
 
 api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
 job_id = 'job_id_example' # String | 
-job_request = SmplkitGeneratedClient::Jobs::JobRequest.new({data: SmplkitGeneratedClient::Jobs::JobResource.new({attributes: SmplkitGeneratedClient::Jobs::Job.new({name: 'name_example', schedule: 'schedule_example', configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new({url: 'url_example'})})})}) # JobRequest | 
+job_request = SmplkitGeneratedClient::Jobs::JobRequest.new({data: SmplkitGeneratedClient::Jobs::JobResource.new({attributes: SmplkitGeneratedClient::Jobs::Job.new({name: 'name_example', configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new({url: 'url_example'})})})}) # JobRequest | 
 opts = {
   x_smplkit_environment: 'x_smplkit_environment_example' # String | The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its `environments` map.
 }
