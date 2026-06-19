@@ -1,22 +1,25 @@
 # frozen_string_literal: true
 
+require "time"
+
 # The Smpl Jobs client — one unified +JobsClient+.
 #
-# Smpl Jobs schedules HTTP calls (cron-style +schedule+ + +http+ configuration)
-# and records their run history. Unlike Config/Flags/Logging it installs no
-# in-process machinery, so it has no runtime/management split: a single
-# +JobsClient+ exposes the full surface and is reachable as +client.jobs+ on
-# +Smplkit::Client+ or constructed directly.
+# Smpl Jobs runs HTTP calls — on a schedule or on demand — and records their
+# run history. Unlike Config/Flags/Logging it installs no in-process machinery,
+# so it has no runtime/management split: a single +JobsClient+ exposes the full
+# surface and is reachable as +client.jobs+ on +Smplkit::Client+ or constructed
+# directly.
 #
-#   client.jobs.{new,get,list,delete,run,usage}
+#   client.jobs.{new_recurring_job,new_manual_job,schedule,get,list,delete,run,usage}
 #   client.jobs.runs.{list,get,cancel,rerun}
 #   Job#{save,delete,trigger,list_runs}
 #   Run#{rerun,cancel}
 #
 # A job is enabled per environment: a recurring (cron) job may be enabled in
-# several environments at once, a one-off (+now+ / future datetime) job is born
-# in exactly one. A client-level +environment+ default supplies the one-off
-# birth environment on create, the run-now environment, and the +runs.list+
+# several environments at once, a manual job (no schedule) runs only when
+# triggered, and a one-off (+now+ / future datetime) job is born in exactly
+# one. A client-level +environment+ default supplies the one-off birth
+# environment on create, the run-now environment, and the +runs.list+
 # +filter[environment]+ scope.
 #
 # The shared model classes (+Job+, +JobEnvironment+, +Run+, +Usage+,
@@ -98,7 +101,7 @@ module Smplkit
     # one client. Defining a job, triggering a run, and reading run history are
     # all plain request/response calls here:
     #
-    #   client.jobs.{new,get,list,delete,run,usage}
+    #   client.jobs.{new_recurring_job,new_manual_job,schedule,get,list,delete,run,usage}
     #   client.jobs.runs.{list,get,cancel,rerun}
     #   Job#{save,delete,trigger,list_runs}
     #   Run#{rerun,cancel}
@@ -125,9 +128,10 @@ module Smplkit
       Transport.build_api_client(SmplkitGeneratedClient::Jobs, "jobs", tcfg, accept: "application/vnd.api+json")
     end
 
-    # The active-record entry point is {#new}: instantiate a draft, mutate
-    # fields, then call {Smplkit::Jobs::Job#save}. Run history and the cancel /
-    # rerun run actions live on {#runs}.
+    # The active-record entry points are {#new_recurring_job}, {#new_manual_job},
+    # and {#schedule}: instantiate a draft, mutate fields, then call
+    # {Smplkit::Jobs::Job#save}. Run history and the cancel / rerun run actions
+    # live on {#runs}.
     #
     # Reachable as +client.jobs+ (+Smplkit::Client+) or constructed directly —
     # +JobsClient.new+ resolves credentials from +~/.smplkit+ / env vars.
@@ -179,58 +183,113 @@ module Smplkit
         end
       end
 
-      # Construct an unsaved {Smplkit::Jobs::Job} bound to this client. Call
-      # +#save+ on the returned instance to create it.
+      # Construct an unsaved recurring {Smplkit::Jobs::Job} bound to this client.
+      # Call +#save+ on the returned instance to create it.
       #
       # @param id [String] Caller-supplied unique identifier for the job. Unique
       #   within the account and immutable; the service returns 409 if another
       #   live job already uses this id.
       # @param name [String] Human-readable name for the job.
-      # @param schedule [String] An ISO-8601 datetime, a 5-field UTC cron
-      #   expression, or the literal +"now"+. The schedule is environment-agnostic.
-      # @param configuration [Smplkit::Jobs::HttpConfig] The base HTTP request
-      #   the job performs.
+      # @param schedule [String] The base cadence — a 5-field cron expression
+      #   evaluated in UTC (e.g. +"0 2 * * *"+) — that every environment inherits
+      #   unless it sets its own override.
+      # @param configuration [Smplkit::Jobs::HttpConfig] The HTTP request the job
+      #   sends each time it fires.
       # @param description [String, nil] Optional free-text description.
       # @param environments [Hash{String => Smplkit::Jobs::JobEnvironment, Hash}, nil]
-      #   Per-environment overrides for a recurring job, keyed by environment key
-      #   — each a {Smplkit::Jobs::JobEnvironment}, or a plain hash
-      #   (+{ enabled: true }+, optionally with a +:schedule+ cron override and/or
-      #   a +:configuration+ {Smplkit::Jobs::HttpConfig} override). A recurring
-      #   job fires only in environments enabled here. Ignored for a one-off job,
-      #   which is born in +environment+ below.
+      #   Per-environment overrides keyed by environment key — each a
+      #   {Smplkit::Jobs::JobEnvironment}, or a plain hash (+{ enabled: true }+,
+      #   optionally with a +:schedule+ cron override and/or a +:configuration+
+      #   {Smplkit::Jobs::HttpConfig} override). The job is scheduled only in
+      #   environments enabled here.
       # @param concurrency_policy [String] How overlapping runs are handled.
       #   Defaults to +"ALLOW"+.
-      # @param environment [String, nil] For a one-off job (+"now"+ / datetime
-      #   schedule), the environment it is born in. Defaults to the client's
-      #   configured environment. Ignored for a recurring job.
       # @return [Smplkit::Jobs::Job]
-      def new(id, name:, schedule:, configuration:, description: nil,
-              environments: nil, concurrency_policy: "ALLOW", environment: nil)
-        Job.new(
-          self,
-          id: id,
-          name: name,
-          schedule: schedule,
-          configuration: configuration,
-          description: description,
-          environments: Jobs.normalize_environments(environments),
-          concurrency_policy: concurrency_policy,
-          birth_environment: environment.nil? ? @environment : environment
+      def new_recurring_job(id, name:, schedule:, configuration:, description: nil,
+                            environments: nil, concurrency_policy: "ALLOW")
+        _new_job(
+          id, name: name, schedule: schedule, configuration: configuration,
+              description: description, environments: environments,
+              concurrency_policy: concurrency_policy, environment: nil
+        )
+      end
+
+      # Construct an unsaved manual {Smplkit::Jobs::Job} bound to this client.
+      # Call +#save+ on the returned instance to create it.
+      #
+      # A manual job has no schedule — it never auto-fires and runs only when
+      # triggered via {#run} / {Smplkit::Jobs::Job#trigger}.
+      #
+      # @param id [String] Caller-supplied unique identifier for the job. Unique
+      #   within the account and immutable; the service returns 409 if another
+      #   live job already uses this id.
+      # @param name [String] Human-readable name for the job.
+      # @param configuration [Smplkit::Jobs::HttpConfig] The HTTP request the job
+      #   sends each time it runs.
+      # @param description [String, nil] Optional free-text description.
+      # @param environments [Hash{String => Smplkit::Jobs::JobEnvironment, Hash}, nil]
+      #   Per-environment overrides keyed by environment key — each a
+      #   {Smplkit::Jobs::JobEnvironment}, or a plain hash (+{ enabled: true }+,
+      #   optionally with a +:configuration+ {Smplkit::Jobs::HttpConfig}
+      #   override). The job is triggerable only in environments enabled here.
+      # @param concurrency_policy [String] How overlapping runs are handled.
+      #   Defaults to +"ALLOW"+.
+      # @return [Smplkit::Jobs::Job]
+      def new_manual_job(id, name:, configuration:, description: nil,
+                         environments: nil, concurrency_policy: "ALLOW")
+        _new_job(
+          id, name: name, schedule: nil, configuration: configuration,
+              description: description, environments: environments,
+              concurrency_policy: concurrency_policy, environment: nil
+        )
+      end
+
+      # Construct an unsaved one-off {Smplkit::Jobs::Job} bound to this client.
+      # Call +#save+ on the returned instance to create it.
+      #
+      # A one-off job runs a single time at +schedule+ and is then spent.
+      #
+      # @param id [String] Caller-supplied unique identifier for the job. Unique
+      #   within the account and immutable; the service returns 409 if another
+      #   live job already uses this id.
+      # @param name [String] Human-readable name for the job.
+      # @param schedule [Time] The instant the single run fires.
+      # @param configuration [Smplkit::Jobs::HttpConfig] The HTTP request the job
+      #   sends when it runs.
+      # @param description [String, nil] Optional free-text description.
+      # @param concurrency_policy [String] How overlapping runs are handled.
+      #   Defaults to +"ALLOW"+.
+      # @param environment [String, nil] The environment the job is born in.
+      #   Defaults to the client's configured environment.
+      # @return [Smplkit::Jobs::Job]
+      def schedule(id, name:, schedule:, configuration:, description: nil,
+                   concurrency_policy: "ALLOW", environment: nil)
+        _new_job(
+          id, name: name, schedule: schedule.iso8601, configuration: configuration,
+              description: description, environments: nil,
+              concurrency_policy: concurrency_policy, environment: environment
         )
       end
 
       # List jobs for the authenticated account.
       #
-      # @param recurring [Boolean, nil] Filter to recurring (+true+) or one-off
-      #   (+false+) jobs. +nil+ lists both.
+      # @param kind [String, nil] Filter to a single {Smplkit::Jobs::JobKind}
+      #   (+JobKind::RECURRING+ / +JobKind::MANUAL+ / +JobKind::ONE_OFF+). +nil+
+      #   lists recurring and manual jobs; one-off jobs are omitted unless you
+      #   pass +JobKind::ONE_OFF+.
+      # @param scheduled [Boolean, nil] Filter to jobs that have an upcoming fire
+      #   in some environment (+true+) or none (+false+) — the feed for an
+      #   upcoming-runs view, which includes one-offs. +nil+ does not filter on
+      #   scheduling.
       # @param name [String, nil] Filter to jobs whose name contains this text
       #   (case-insensitive). +nil+ lists all.
       # @param page_number [Integer, nil] 1-based page number to return.
       # @param page_size [Integer, nil] Items per page.
       # @return [Array<Smplkit::Jobs::Job>]
-      def list(recurring: nil, name: nil, page_number: nil, page_size: nil)
+      def list(kind: nil, scheduled: nil, name: nil, page_number: nil, page_size: nil)
         opts = {}
-        opts[:filter_recurring] = recurring unless recurring.nil?
+        opts[:filter_kind] = kind unless kind.nil?
+        opts[:filter_scheduled] = scheduled unless scheduled.nil?
         opts[:filter_name] = name unless name.nil?
         opts[:page_number] = page_number unless page_number.nil?
         opts[:page_size] = page_size unless page_size.nil?
@@ -268,7 +327,8 @@ module Smplkit
       # @param environment [String, nil] Environment the manual run executes in.
       #   Defaults to the client's configured environment; when the job is
       #   enabled in exactly one environment that environment is used, and a
-      #   single-environment credential implies it.
+      #   single-environment credential implies it. The job must be enabled in
+      #   the chosen environment.
       # @return [Smplkit::Jobs::Run] The run that was started, with +trigger+
       #   set to +MANUAL+.
       def run(id, environment: nil)
@@ -312,6 +372,24 @@ module Smplkit
       end
 
       private
+
+      # Build an unsaved {Smplkit::Jobs::Job} bound to this client. The three
+      # public constructors ({#new_recurring_job}, {#new_manual_job}, {#schedule})
+      # funnel through here.
+      def _new_job(id, name:, schedule:, configuration:, description:,
+                   environments:, concurrency_policy:, environment:)
+        Job.new(
+          self,
+          id: id,
+          name: name,
+          schedule: schedule,
+          configuration: configuration,
+          description: description,
+          environments: Jobs.normalize_environments(environments),
+          concurrency_policy: concurrency_policy,
+          birth_environment: environment.nil? ? @environment : environment
+        )
+      end
 
       # Convert the wrapper +environments+ map to the generated model hash.
       #
