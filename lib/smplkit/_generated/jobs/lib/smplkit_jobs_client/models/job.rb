@@ -40,6 +40,9 @@ module SmplkitGeneratedClient::Jobs
     # How overlapping runs are handled. `ALLOW` (the only value today) permits them.
     attr_accessor :concurrency_policy
 
+    # The base retry policy for failed runs — the `id` of a retry policy (or the built-in `Default`), overridable per environment. Omit (or send `null`) to use `Default`, which never retries — so a job that sets nothing behaves exactly as before retries existed.
+    attr_accessor :retry_policy
+
     # How the job runs, derived from its base `schedule`: `recurring` for a cron schedule (fires on a repeating cadence), `manual` for no schedule (never auto-fires; runs only when triggered), or `one_off` for a `now` or datetime schedule (runs a single time, then is spent).
     attr_accessor :kind
 
@@ -88,6 +91,7 @@ module SmplkitGeneratedClient::Jobs
         :'configuration' => :'configuration',
         :'environments' => :'environments',
         :'concurrency_policy' => :'concurrency_policy',
+        :'retry_policy' => :'retry_policy',
         :'kind' => :'kind',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at',
@@ -117,6 +121,7 @@ module SmplkitGeneratedClient::Jobs
         :'configuration' => :'JobHttpConfiguration',
         :'environments' => :'Hash<String, JobEnvironment>',
         :'concurrency_policy' => :'String',
+        :'retry_policy' => :'String',
         :'kind' => :'String',
         :'created_at' => :'Time',
         :'updated_at' => :'Time',
@@ -131,6 +136,7 @@ module SmplkitGeneratedClient::Jobs
         :'description',
         :'schedule',
         :'timezone',
+        :'retry_policy',
         :'kind',
         :'created_at',
         :'updated_at',
@@ -195,6 +201,10 @@ module SmplkitGeneratedClient::Jobs
         self.concurrency_policy = attributes[:'concurrency_policy']
       else
         self.concurrency_policy = 'ALLOW'
+      end
+
+      if attributes.key?(:'retry_policy')
+        self.retry_policy = attributes[:'retry_policy']
       end
 
       if attributes.key?(:'kind')
@@ -345,6 +355,7 @@ module SmplkitGeneratedClient::Jobs
           configuration == o.configuration &&
           environments == o.environments &&
           concurrency_policy == o.concurrency_policy &&
+          retry_policy == o.retry_policy &&
           kind == o.kind &&
           created_at == o.created_at &&
           updated_at == o.updated_at &&
@@ -361,7 +372,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, description, type, schedule, timezone, configuration, environments, concurrency_policy, kind, created_at, updated_at, deleted_at, version].hash
+      [name, description, type, schedule, timezone, configuration, environments, concurrency_policy, retry_policy, kind, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash

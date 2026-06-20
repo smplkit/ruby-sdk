@@ -12,6 +12,7 @@
 | **configuration** | [**JobHttpConfiguration**](JobHttpConfiguration.md) | The HTTP request to perform, including method, url, headers, body, and timeout. |  |
 | **environments** | [**Hash&lt;String, JobEnvironment&gt;**](JobEnvironment.md) | Per-environment overrides keyed by environment key (e.g. &#x60;production&#x60;, &#x60;staging&#x60;). Each entry sets &#x60;enabled&#x60; (whether the job is enabled — scheduled, for a recurring job, or triggerable, for a manual job — in that environment), an optional &#x60;schedule&#x60; override (a cron expression for recurring jobs; omit to inherit the base &#x60;schedule&#x60;), an optional &#x60;timezone&#x60; override (an IANA zone for recurring jobs; omit to inherit the base &#x60;timezone&#x60;, else UTC), and an optional &#x60;configuration&#x60; override (omit to inherit the base &#x60;configuration&#x60;); it also reports the read-only &#x60;next_run_at&#x60; for that environment. A job with no entry for an environment is disabled there. For a recurring or manual job, supply this map to choose where it runs. For a one-off job, the environment it is created in is recorded here automatically — name it with the &#x60;X-Smplkit-Environment&#x60; header. Every referenced environment must exist for the account. | [optional] |
 | **concurrency_policy** | **String** | How overlapping runs are handled. &#x60;ALLOW&#x60; (the only value today) permits them. | [optional][default to &#39;ALLOW&#39;] |
+| **retry_policy** | **String** | The base retry policy for failed runs — the &#x60;id&#x60; of a retry policy (or the built-in &#x60;Default&#x60;), overridable per environment. Omit (or send &#x60;null&#x60;) to use &#x60;Default&#x60;, which never retries — so a job that sets nothing behaves exactly as before retries existed. | [optional] |
 | **kind** | **String** | How the job runs, derived from its base &#x60;schedule&#x60;: &#x60;recurring&#x60; for a cron schedule (fires on a repeating cadence), &#x60;manual&#x60; for no schedule (never auto-fires; runs only when triggered), or &#x60;one_off&#x60; for a &#x60;now&#x60; or datetime schedule (runs a single time, then is spent). | [optional][readonly] |
 | **created_at** | **Time** | When the job was created. | [optional][readonly] |
 | **updated_at** | **Time** | When the job was last modified. | [optional][readonly] |
@@ -32,6 +33,7 @@ instance = SmplkitGeneratedClient::Jobs::Job.new(
   configuration: null,
   environments: null,
   concurrency_policy: null,
+  retry_policy: null,
   kind: null,
   created_at: null,
   updated_at: null,

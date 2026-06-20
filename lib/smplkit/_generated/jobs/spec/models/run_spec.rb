@@ -48,7 +48,7 @@ describe SmplkitGeneratedClient::Jobs::Run do
   describe 'test attribute "trigger"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["SCHEDULE", "MANUAL", "RERUN"])
+      # validator = Petstore::EnumTest::EnumAttributeValidator.new('String', ["SCHEDULE", "MANUAL", "RERUN", "RETRY"])
       # validator.allowable_values.each do |value|
       #   expect { instance.trigger = value }.not_to raise_error
       # end
@@ -56,6 +56,12 @@ describe SmplkitGeneratedClient::Jobs::Run do
   end
 
   describe 'test attribute "rerun_of"' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  describe 'test attribute "_retry"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
