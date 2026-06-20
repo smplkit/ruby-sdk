@@ -14,15 +14,41 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Jobs
-  # Cursor-pagination meta for the runs list.
-  class RunListMeta < ApiModelBase
-    # Number of runs returned per page.
-    attr_accessor :page_size
+  # Which failures a policy retries. An empty policy (both lists empty or absent) retries nothing.
+  class RetryOn < ApiModelBase
+    # Response status codes that should be retried when a run fails because the response did not match the job's success status (for example `[429, 503]` to retry on rate-limit and unavailable). Each is a 3-digit HTTP status code. Empty matches no status.
+    attr_accessor :statuses
+
+    # Failure reasons that should be retried: `TIMEOUT` (the run did not complete in time), `CONNECTION_ERROR` (the endpoint could not be reached), or `NON_SUCCESS_STATUS` (any non-success response, regardless of `statuses`). Empty matches no reason.
+    attr_accessor :reasons
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'page_size' => :'page_size'
+        :'statuses' => :'statuses',
+        :'reasons' => :'reasons'
       }
     end
 
@@ -39,7 +65,8 @@ module SmplkitGeneratedClient::Jobs
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'page_size' => :'Integer'
+        :'statuses' => :'Array<Integer>',
+        :'reasons' => :'Array<String>'
       }
     end
 
@@ -53,22 +80,28 @@ module SmplkitGeneratedClient::Jobs
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Jobs::RunListMeta` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Jobs::RetryOn` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Jobs::RunListMeta`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Jobs::RetryOn`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'page_size')
-        self.page_size = attributes[:'page_size']
-      else
-        self.page_size = nil
+      if attributes.key?(:'statuses')
+        if (value = attributes[:'statuses']).is_a?(Array)
+          self.statuses = value
+        end
+      end
+
+      if attributes.key?(:'reasons')
+        if (value = attributes[:'reasons']).is_a?(Array)
+          self.reasons = value
+        end
       end
     end
 
@@ -77,10 +110,6 @@ module SmplkitGeneratedClient::Jobs
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @page_size.nil?
-        invalid_properties.push('invalid value for "page_size", page_size cannot be nil.')
-      end
-
       invalid_properties
     end
 
@@ -88,18 +117,7 @@ module SmplkitGeneratedClient::Jobs
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @page_size.nil?
       true
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] page_size Value to be assigned
-    def page_size=(page_size)
-      if page_size.nil?
-        fail ArgumentError, 'page_size cannot be nil'
-      end
-
-      @page_size = page_size
     end
 
     # Checks equality by comparing each attribute.
@@ -107,7 +125,8 @@ module SmplkitGeneratedClient::Jobs
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          page_size == o.page_size
+          statuses == o.statuses &&
+          reasons == o.reasons
     end
 
     # @see the `==` method
@@ -119,7 +138,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [page_size].hash
+      [statuses, reasons].hash
     end
 
     # Builds the object from hash

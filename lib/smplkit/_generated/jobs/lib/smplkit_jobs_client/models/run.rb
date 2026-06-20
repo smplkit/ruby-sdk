@@ -25,11 +25,14 @@ module SmplkitGeneratedClient::Jobs
     # The environment this run executed in. A scheduled run inherits the firing job-environment; a manual run is created in the environment you name with the `X-Smplkit-Environment` header; a rerun copies its source run's environment.
     attr_accessor :environment
 
-    # Why the run exists: `SCHEDULE`, `MANUAL` (Run now), or `RERUN`.
+    # Why the run exists: `SCHEDULE`, `MANUAL` (Run now), `RERUN`, or `RETRY` (an automatic retry of a failed run).
     attr_accessor :trigger
 
     # The source run's id; set only when `trigger` is `RERUN`.
     attr_accessor :rerun_of
+
+    # Retry-chain position, present only when `trigger` is `RETRY`: the id of the original run the chain retries (`of`) and this run's `attempt` number.
+    attr_accessor :_retry
 
     # The intended fire time for a scheduled run; `null` for manual / rerun runs.
     attr_accessor :scheduled_for
@@ -97,6 +100,7 @@ module SmplkitGeneratedClient::Jobs
         :'environment' => :'environment',
         :'trigger' => :'trigger',
         :'rerun_of' => :'rerun_of',
+        :'_retry' => :'retry',
         :'scheduled_for' => :'scheduled_for',
         :'status' => :'status',
         :'started_at' => :'started_at',
@@ -130,6 +134,7 @@ module SmplkitGeneratedClient::Jobs
         :'environment' => :'String',
         :'trigger' => :'String',
         :'rerun_of' => :'String',
+        :'_retry' => :'RunRetry',
         :'scheduled_for' => :'Time',
         :'status' => :'String',
         :'started_at' => :'Time',
@@ -150,6 +155,7 @@ module SmplkitGeneratedClient::Jobs
       Set.new([
         :'job_version',
         :'rerun_of',
+        :'_retry',
         :'scheduled_for',
         :'started_at',
         :'finished_at',
@@ -204,6 +210,10 @@ module SmplkitGeneratedClient::Jobs
 
       if attributes.key?(:'rerun_of')
         self.rerun_of = attributes[:'rerun_of']
+      end
+
+      if attributes.key?(:'_retry')
+        self._retry = attributes[:'_retry']
       end
 
       if attributes.key?(:'scheduled_for')
@@ -292,7 +302,7 @@ module SmplkitGeneratedClient::Jobs
       return false if @job.nil?
       return false if @environment.nil?
       return false if @trigger.nil?
-      trigger_validator = EnumAttributeValidator.new('String', ["SCHEDULE", "MANUAL", "RERUN"])
+      trigger_validator = EnumAttributeValidator.new('String', ["SCHEDULE", "MANUAL", "RERUN", "RETRY"])
       return false unless trigger_validator.valid?(@trigger)
       return false if @status.nil?
       status_validator = EnumAttributeValidator.new('String', ["PENDING", "RUNNING", "SUCCEEDED", "FAILED", "CANCELED"])
@@ -325,7 +335,7 @@ module SmplkitGeneratedClient::Jobs
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] trigger Object to be assigned
     def trigger=(trigger)
-      validator = EnumAttributeValidator.new('String', ["SCHEDULE", "MANUAL", "RERUN"])
+      validator = EnumAttributeValidator.new('String', ["SCHEDULE", "MANUAL", "RERUN", "RETRY"])
       unless validator.valid?(trigger)
         fail ArgumentError, "invalid value for \"trigger\", must be one of #{validator.allowable_values}."
       end
@@ -362,6 +372,7 @@ module SmplkitGeneratedClient::Jobs
           environment == o.environment &&
           trigger == o.trigger &&
           rerun_of == o.rerun_of &&
+          _retry == o._retry &&
           scheduled_for == o.scheduled_for &&
           status == o.status &&
           started_at == o.started_at &&
@@ -385,7 +396,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [job, job_version, environment, trigger, rerun_of, scheduled_for, status, started_at, finished_at, pending_duration_ms, run_duration_ms, total_duration_ms, failure_reason, error, request, result, created_at].hash
+      [job, job_version, environment, trigger, rerun_of, _retry, scheduled_for, status, started_at, finished_at, pending_duration_ms, run_duration_ms, total_duration_ms, failure_reason, error, request, result, created_at].hash
     end
 
     # Builds the object from hash

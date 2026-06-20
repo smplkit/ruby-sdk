@@ -28,6 +28,9 @@ module SmplkitGeneratedClient::Jobs
     # Per-environment HTTP request override. Omit to inherit the job's base `configuration`. When present, it fully replaces the base configuration for runs in this environment.
     attr_accessor :configuration
 
+    # Per-environment retry-policy override — the `id` of a retry policy (or `Default`). Omit to inherit the job's base `retry_policy`. When present, runs in this environment retry according to this policy instead of the base.
+    attr_accessor :retry_policy
+
     # The next scheduled fire time in this environment. `null` when the environment is not enabled, or once a one-off run has fired.
     attr_accessor :next_run_at
 
@@ -38,6 +41,7 @@ module SmplkitGeneratedClient::Jobs
         :'schedule' => :'schedule',
         :'timezone' => :'timezone',
         :'configuration' => :'configuration',
+        :'retry_policy' => :'retry_policy',
         :'next_run_at' => :'next_run_at'
       }
     end
@@ -59,6 +63,7 @@ module SmplkitGeneratedClient::Jobs
         :'schedule' => :'String',
         :'timezone' => :'String',
         :'configuration' => :'JobHttpConfiguration',
+        :'retry_policy' => :'String',
         :'next_run_at' => :'Time'
       }
     end
@@ -69,6 +74,7 @@ module SmplkitGeneratedClient::Jobs
         :'schedule',
         :'timezone',
         :'configuration',
+        :'retry_policy',
         :'next_run_at'
       ])
     end
@@ -107,6 +113,10 @@ module SmplkitGeneratedClient::Jobs
         self.configuration = attributes[:'configuration']
       end
 
+      if attributes.key?(:'retry_policy')
+        self.retry_policy = attributes[:'retry_policy']
+      end
+
       if attributes.key?(:'next_run_at')
         self.next_run_at = attributes[:'next_run_at']
       end
@@ -136,6 +146,7 @@ module SmplkitGeneratedClient::Jobs
           schedule == o.schedule &&
           timezone == o.timezone &&
           configuration == o.configuration &&
+          retry_policy == o.retry_policy &&
           next_run_at == o.next_run_at
     end
 
@@ -148,7 +159,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [enabled, schedule, timezone, configuration, next_run_at].hash
+      [enabled, schedule, timezone, configuration, retry_policy, next_run_at].hash
     end
 
     # Builds the object from hash

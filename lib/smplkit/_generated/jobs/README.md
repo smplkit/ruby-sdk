@@ -95,6 +95,11 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Jobs::JobsApi* | [**list_jobs**](docs/JobsApi.md#list_jobs) | **GET** /api/v1/jobs | List Jobs
 *SmplkitGeneratedClient::Jobs::JobsApi* | [**run_job_now**](docs/JobsApi.md#run_job_now) | **POST** /api/v1/jobs/{job_id}/actions/run | Run Job Now
 *SmplkitGeneratedClient::Jobs::JobsApi* | [**update_job**](docs/JobsApi.md#update_job) | **PUT** /api/v1/jobs/{job_id} | Update Job
+*SmplkitGeneratedClient::Jobs::RetryPoliciesApi* | [**create_retry_policy**](docs/RetryPoliciesApi.md#create_retry_policy) | **POST** /api/v1/retry-policies | Create Retry Policy
+*SmplkitGeneratedClient::Jobs::RetryPoliciesApi* | [**delete_retry_policy**](docs/RetryPoliciesApi.md#delete_retry_policy) | **DELETE** /api/v1/retry-policies/{policy_id} | Delete Retry Policy
+*SmplkitGeneratedClient::Jobs::RetryPoliciesApi* | [**get_retry_policy**](docs/RetryPoliciesApi.md#get_retry_policy) | **GET** /api/v1/retry-policies/{policy_id} | Get Retry Policy
+*SmplkitGeneratedClient::Jobs::RetryPoliciesApi* | [**list_retry_policies**](docs/RetryPoliciesApi.md#list_retry_policies) | **GET** /api/v1/retry-policies | List Retry Policies
+*SmplkitGeneratedClient::Jobs::RetryPoliciesApi* | [**update_retry_policy**](docs/RetryPoliciesApi.md#update_retry_policy) | **PUT** /api/v1/retry-policies/{policy_id} | Update Retry Policy
 *SmplkitGeneratedClient::Jobs::RunsApi* | [**cancel_run**](docs/RunsApi.md#cancel_run) | **POST** /api/v1/runs/{run_id}/actions/cancel | Cancel Run
 *SmplkitGeneratedClient::Jobs::RunsApi* | [**get_run**](docs/RunsApi.md#get_run) | **GET** /api/v1/runs/{run_id} | Get Run
 *SmplkitGeneratedClient::Jobs::RunsApi* | [**list_runs**](docs/RunsApi.md#list_runs) | **GET** /api/v1/runs | List Runs
@@ -116,12 +121,21 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Jobs::JobResponse](docs/JobResponse.md)
  - [SmplkitGeneratedClient::Jobs::ListMeta](docs/ListMeta.md)
  - [SmplkitGeneratedClient::Jobs::PaginationMeta](docs/PaginationMeta.md)
+ - [SmplkitGeneratedClient::Jobs::RetryOn](docs/RetryOn.md)
+ - [SmplkitGeneratedClient::Jobs::RetryPolicy](docs/RetryPolicy.md)
+ - [SmplkitGeneratedClient::Jobs::RetryPolicyCreateRequest](docs/RetryPolicyCreateRequest.md)
+ - [SmplkitGeneratedClient::Jobs::RetryPolicyCreateResource](docs/RetryPolicyCreateResource.md)
+ - [SmplkitGeneratedClient::Jobs::RetryPolicyListResponse](docs/RetryPolicyListResponse.md)
+ - [SmplkitGeneratedClient::Jobs::RetryPolicyRequest](docs/RetryPolicyRequest.md)
+ - [SmplkitGeneratedClient::Jobs::RetryPolicyResource](docs/RetryPolicyResource.md)
+ - [SmplkitGeneratedClient::Jobs::RetryPolicyResponse](docs/RetryPolicyResponse.md)
  - [SmplkitGeneratedClient::Jobs::Run](docs/Run.md)
  - [SmplkitGeneratedClient::Jobs::RunListLinks](docs/RunListLinks.md)
  - [SmplkitGeneratedClient::Jobs::RunListMeta](docs/RunListMeta.md)
  - [SmplkitGeneratedClient::Jobs::RunListResponse](docs/RunListResponse.md)
  - [SmplkitGeneratedClient::Jobs::RunResource](docs/RunResource.md)
  - [SmplkitGeneratedClient::Jobs::RunResponse](docs/RunResponse.md)
+ - [SmplkitGeneratedClient::Jobs::RunRetry](docs/RunRetry.md)
  - [SmplkitGeneratedClient::Jobs::Usage](docs/Usage.md)
  - [SmplkitGeneratedClient::Jobs::UsageResource](docs/UsageResource.md)
  - [SmplkitGeneratedClient::Jobs::UsageResponse](docs/UsageResponse.md)
