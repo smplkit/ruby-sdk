@@ -12,8 +12,10 @@ require "time"
 #
 #   client.jobs.{new_recurring_job,new_manual_job,schedule,get,list,delete,run,usage}
 #   client.jobs.runs.{list,get,cancel,rerun}
+#   client.jobs.retry_policies.{new,list,get,delete}
 #   Job#{save,delete,trigger,list_runs}
 #   Run#{rerun,cancel}
+#   RetryPolicy#{save,delete}
 #
 # A job is enabled per environment: a recurring (cron) job may be enabled in
 # several environments at once, a manual job (no schedule) runs only when
@@ -47,16 +49,29 @@ module Smplkit
       #   any of these environment keys. +nil+ falls back to the client's
       #   configured environment (if any), otherwise covers every environment you
       #   can access.
+      # @param triggers [Array<String>, nil] Restrict to runs started by any of
+      #   these triggers (see {RunTrigger}) — e.g. +[RunTrigger::RETRY]+ for
+      #   automatic retries. Serialized as a comma-joined +filter[trigger]+
+      #   (any-of). +nil+ or empty covers every trigger.
+      # @param last_run_only [Boolean] When +true+, collapse the result to the
+      #   last completed (succeeded / failed / canceled) run per
+      #   job-and-environment; in-flight runs are excluded. The other filters
+      #   apply first, then the collapse. Defaults to +false+; the query param is
+      #   sent only when +true+.
       # @param page_size [Integer, nil] Maximum number of runs to return in this
       #   page. +nil+ uses the server default.
       # @param after [String, nil] Opaque cursor from a previous page; returns
       #   the runs that follow it. +nil+ starts from the first page.
       # @return [Array<Smplkit::Jobs::Run>] The runs in this page.
-      def list(job: nil, environments: nil, page_size: nil, after: nil)
+      def list(job: nil, environments: nil, triggers: nil, last_run_only: false, page_size: nil, after: nil)
         opts = {}
         opts[:filter_job] = job unless job.nil?
         filter_environment = Jobs.resolve_environment_filter(environments, @environment)
         opts[:filter_environment] = filter_environment unless filter_environment.nil?
+        opts[:filter_trigger] = triggers.join(",") unless triggers.nil? || triggers.empty?
+        # The generated default would emit +last_run_only=false+ on every call;
+        # send the param only when explicitly requested.
+        opts[:last_run_only] = true if last_run_only
         opts[:page_size] = page_size unless page_size.nil?
         opts[:page_after] = after unless after.nil?
 
@@ -94,6 +109,144 @@ module Smplkit
       end
     end
 
+    # +client.jobs.retry_policies.*+ — manage reusable, account-global retry
+    # policies.
+    #
+    # A {RetryPolicy} is an active record: build one with {#new}, set fields, and
+    # call +#save+; then reference it from a job's +retry_policy+ (see
+    # {JobsClient#new_recurring_job} and {Job#set_retry_policy}). Retry policies
+    # are account-global — never environment-scoped.
+    class RetryPoliciesClient
+      # @param api [SmplkitGeneratedClient::Jobs::RetryPoliciesApi] The generated
+      #   retry-policies API.
+      def initialize(api)
+        @api = api
+      end
+
+      # Construct an unsaved {RetryPolicy} bound to this client. Call +#save+ on
+      # the returned instance to create it.
+      #
+      # @param id [String] Caller-supplied unique identifier for the policy.
+      #   Unique within the account and immutable; the service returns 409 if
+      #   another live policy already uses this id.
+      # @param name [String] Human-readable name for the policy.
+      # @param max_retries [Integer] How many times a failed run is retried after
+      #   the initial attempt — +3+ means up to 4 attempts total. +0+ disables
+      #   retries. Maximum 10.
+      # @param backoff [String] How the wait between retries grows; one of
+      #   {Backoff}.
+      # @param delay_seconds [Integer] The wait before a retry, in seconds — the
+      #   constant wait for {Backoff::FIXED}, or the base that doubles each retry
+      #   for {Backoff::EXPONENTIAL}.
+      # @param max_delay_seconds [Integer, nil] Ceiling on the wait between
+      #   retries, for {Backoff::EXPONENTIAL} backoff only. +nil+ (the default)
+      #   leaves it uncapped; omit it for {Backoff::FIXED}.
+      # @param retry_on [RetryOn, nil] Which failures to retry (see {RetryOn}).
+      #   +nil+ (the default) retries nothing.
+      # @return [Smplkit::Jobs::RetryPolicy]
+      def new(id, name:, max_retries:, backoff:, delay_seconds:, max_delay_seconds: nil, retry_on: nil)
+        RetryPolicy.new(
+          self,
+          id: id, name: name, max_retries: max_retries, backoff: backoff,
+          delay_seconds: delay_seconds, max_delay_seconds: max_delay_seconds, retry_on: retry_on
+        )
+      end
+
+      # List retry policies in the account.
+      #
+      # @param name [String, nil] Return only policies whose name contains this
+      #   text (case-insensitive). +nil+ lists all.
+      # @param page_number [Integer, nil] 1-based page to return. +nil+ returns
+      #   the first page.
+      # @param page_size [Integer, nil] Maximum number of policies to return in
+      #   this page. +nil+ uses the server default.
+      # @return [Array<Smplkit::Jobs::RetryPolicy>] The policies in this page.
+      def list(name: nil, page_number: nil, page_size: nil)
+        opts = {}
+        opts[:filter_name] = name unless name.nil?
+        opts[:page_number] = page_number unless page_number.nil?
+        opts[:page_size] = page_size unless page_size.nil?
+
+        resp = Jobs.call_api { @api.list_retry_policies(opts) }
+        (resp.data || []).map { |r| RetryPolicy.from_resource(r, client: self) }
+      end
+
+      # Fetch a single retry policy by its id.
+      #
+      # @param id [String] Identifier of the policy to fetch.
+      # @return [Smplkit::Jobs::RetryPolicy] The matching policy.
+      # @raise [Smplkit::NotFoundError] when no policy with this id exists.
+      def get(id)
+        resp = Jobs.call_api { @api.get_retry_policy(id) }
+        RetryPolicy.from_resource(resp.data, client: self)
+      end
+
+      # Delete a retry policy by its id.
+      #
+      # @param id [String] Identifier of the policy to delete.
+      # @return [nil]
+      def delete(id)
+        Jobs.call_api { @api.delete_retry_policy(id) }
+        nil
+      end
+
+      # @api private — POST a new retry policy. Called by {RetryPolicy#save} on
+      #   unsaved instances. The jobs service requires a caller-supplied
+      #   +data.id+ on create and 409s on conflict.
+      def _create_retry_policy(policy)
+        if policy.id.nil? || policy.id.empty?
+          raise ArgumentError, "RetryPolicy.id is required on create (caller-supplied key)"
+        end
+
+        resp = Jobs.call_api { @api.create_retry_policy(build_create_body(policy)) }
+        RetryPolicy.from_resource(resp.data, client: self)
+      end
+
+      # @api private — Full-replace PUT for an existing retry policy. Called by
+      #   {RetryPolicy#save} on instances with +created_at+.
+      def _update_retry_policy(policy)
+        raise ArgumentError, "cannot update a RetryPolicy with no id" if policy.id.nil?
+
+        resp = Jobs.call_api { @api.update_retry_policy(policy.id, build_body(policy)) }
+        RetryPolicy.from_resource(resp.data, client: self)
+      end
+
+      private
+
+      # Build the generated attributes model shared by create and update. The
+      # +retry_on+ failure set is always sent; +max_delay_seconds+ is sent only
+      # when present (omitting it leaves the policy uncapped / is invalid for
+      # fixed backoff).
+      def build_retry_policy_attrs(policy)
+        attrs = {
+          name: policy.name,
+          max_retries: policy.max_retries,
+          backoff: policy.backoff,
+          delay_seconds: policy.delay_seconds,
+          retry_on: RetryOn.to_wire(policy.retry_on)
+        }
+        attrs[:max_delay_seconds] = policy.max_delay_seconds unless policy.max_delay_seconds.nil?
+        SmplkitGeneratedClient::Jobs::RetryPolicy.new(attrs)
+      end
+
+      def build_create_body(policy)
+        # Create uses the distinct RetryPolicyCreateRequest envelope; the jobs
+        # service requires data.id (the caller-supplied key) on create.
+        resource = SmplkitGeneratedClient::Jobs::RetryPolicyCreateResource.new(
+          id: policy.id.to_s, type: "retry_policy", attributes: build_retry_policy_attrs(policy)
+        )
+        SmplkitGeneratedClient::Jobs::RetryPolicyCreateRequest.new(data: resource)
+      end
+
+      def build_body(policy)
+        # Update path uses the generic RetryPolicyRequest envelope.
+        resource = SmplkitGeneratedClient::Jobs::RetryPolicyResource.new(
+          id: policy.id.to_s, type: "retry_policy", attributes: build_retry_policy_attrs(policy)
+        )
+        SmplkitGeneratedClient::Jobs::RetryPolicyRequest.new(data: resource)
+      end
+    end
+
     # The Smpl Jobs client — accessed via +client.jobs+.
     #
     # Unlike Config/Flags/Logging, Jobs has no live "phone-home" agent — no
@@ -103,8 +256,10 @@ module Smplkit
     #
     #   client.jobs.{new_recurring_job,new_manual_job,schedule,get,list,delete,run,usage}
     #   client.jobs.runs.{list,get,cancel,rerun}
+    #   client.jobs.retry_policies.{new,list,get,delete}
     #   Job#{save,delete,trigger,list_runs}
     #   Run#{rerun,cancel}
+    #   RetryPolicy#{save,delete}
     #
     # Build a standalone Smpl Jobs transport from resolved config.
     #
@@ -139,6 +294,10 @@ module Smplkit
       # @return [RunsClient] Run history and run actions (+client.jobs.runs+).
       attr_reader :runs
 
+      # @return [RetryPoliciesClient] Reusable retry policies
+      #   (+client.jobs.retry_policies+).
+      attr_reader :retry_policies
+
       # @param api_key [String, nil] API key. When omitted, resolved from
       #   +SMPLKIT_API_KEY+ or +~/.smplkit+.
       # @param profile [String, nil] Named +~/.smplkit+ profile section.
@@ -164,6 +323,7 @@ module Smplkit
         @environment = environment
         @api = SmplkitGeneratedClient::Jobs::JobsApi.new(auth)
         @runs = RunsClient.new(SmplkitGeneratedClient::Jobs::RunsApi.new(auth), environment: environment)
+        @retry_policies = RetryPoliciesClient.new(SmplkitGeneratedClient::Jobs::RetryPoliciesApi.new(auth))
         @usage_api = SmplkitGeneratedClient::Jobs::UsageApi.new(auth)
       end
 
@@ -191,8 +351,14 @@ module Smplkit
       #   live job already uses this id.
       # @param name [String] Human-readable name for the job.
       # @param schedule [String] The base cadence — a 5-field cron expression
-      #   evaluated in UTC (e.g. +"0 2 * * *"+) — that every environment inherits
-      #   unless it sets its own override.
+      #   evaluated in the job's +timezone+ (UTC by default), e.g. +"0 2 * * *"+ —
+      #   that every environment inherits unless it sets its own override.
+      # @param timezone [String, nil] Base IANA timezone the cron +schedule+ is
+      #   evaluated in (e.g. +"America/New_York"+), DST-aware. +nil+ (the default)
+      #   means UTC. Every environment inherits it unless it overrides it.
+      # @param retry_policy [String, nil] Base retry policy for failed runs — the
+      #   id of a {Smplkit::Jobs::RetryPolicy}, overridable per environment. +nil+
+      #   (the default) uses the built-in +"Default"+ policy, which never retries.
       # @param configuration [Smplkit::Jobs::HttpConfig] The HTTP request the job
       #   sends each time it fires.
       # @param description [String, nil] Optional free-text description.
@@ -205,11 +371,11 @@ module Smplkit
       # @param concurrency_policy [String] How overlapping runs are handled.
       #   Defaults to +"ALLOW"+.
       # @return [Smplkit::Jobs::Job]
-      def new_recurring_job(id, name:, schedule:, configuration:, description: nil,
-                            environments: nil, concurrency_policy: "ALLOW")
+      def new_recurring_job(id, name:, schedule:, configuration:, timezone: nil, retry_policy: nil,
+                            description: nil, environments: nil, concurrency_policy: "ALLOW")
         _new_job(
-          id, name: name, schedule: schedule, configuration: configuration,
-              description: description, environments: environments,
+          id, name: name, schedule: schedule, timezone: timezone, retry_policy: retry_policy,
+              configuration: configuration, description: description, environments: environments,
               concurrency_policy: concurrency_policy, environment: nil
         )
       end
@@ -234,12 +400,15 @@ module Smplkit
       #   override). The job is triggerable only in environments enabled here.
       # @param concurrency_policy [String] How overlapping runs are handled.
       #   Defaults to +"ALLOW"+.
+      # @param retry_policy [String, nil] Retry policy for failed runs — the id of
+      #   a {Smplkit::Jobs::RetryPolicy}, overridable per environment. +nil+ (the
+      #   default) uses the built-in +"Default"+ policy, which never retries.
       # @return [Smplkit::Jobs::Job]
       def new_manual_job(id, name:, configuration:, description: nil,
-                         environments: nil, concurrency_policy: "ALLOW")
+                         environments: nil, concurrency_policy: "ALLOW", retry_policy: nil)
         _new_job(
-          id, name: name, schedule: nil, configuration: configuration,
-              description: description, environments: environments,
+          id, name: name, schedule: nil, retry_policy: retry_policy,
+              configuration: configuration, description: description, environments: environments,
               concurrency_policy: concurrency_policy, environment: nil
         )
       end
@@ -259,14 +428,17 @@ module Smplkit
       # @param description [String, nil] Optional free-text description.
       # @param concurrency_policy [String] How overlapping runs are handled.
       #   Defaults to +"ALLOW"+.
+      # @param retry_policy [String, nil] Retry policy for failed runs — the id of
+      #   a {Smplkit::Jobs::RetryPolicy}. +nil+ (the default) uses the built-in
+      #   +"Default"+ policy, which never retries.
       # @param environment [String, nil] The environment the job is born in.
       #   Defaults to the client's configured environment.
       # @return [Smplkit::Jobs::Job]
       def schedule(id, name:, schedule:, configuration:, description: nil,
-                   concurrency_policy: "ALLOW", environment: nil)
+                   concurrency_policy: "ALLOW", retry_policy: nil, environment: nil)
         _new_job(
-          id, name: name, schedule: schedule.iso8601, configuration: configuration,
-              description: description, environments: nil,
+          id, name: name, schedule: schedule.iso8601, retry_policy: retry_policy,
+              configuration: configuration, description: description, environments: nil,
               concurrency_policy: concurrency_policy, environment: environment
         )
       end
@@ -377,12 +549,15 @@ module Smplkit
       # public constructors ({#new_recurring_job}, {#new_manual_job}, {#schedule})
       # funnel through here.
       def _new_job(id, name:, schedule:, configuration:, description:,
-                   environments:, concurrency_policy:, environment:)
+                   environments:, concurrency_policy:, environment:,
+                   timezone: nil, retry_policy: nil)
         Job.new(
           self,
           id: id,
           name: name,
           schedule: schedule,
+          timezone: timezone,
+          retry_policy: retry_policy,
           configuration: configuration,
           description: description,
           environments: Jobs.normalize_environments(environments),
@@ -394,15 +569,17 @@ module Smplkit
       # Convert the wrapper +environments+ map to the generated model hash.
       #
       # Each entry's +enabled+ is always written; a per-environment +schedule+
-      # (cron) override, +timezone+ override, and +configuration+ override are
-      # each sent only when present (omit to inherit the job's base +schedule+ /
-      # +timezone+ / +configuration+). The read-only per-environment
-      # +next_run_at+ is never written.
+      # (cron) override, +timezone+ override, +retry_policy+ override, and
+      # +configuration+ override are each sent only when present (omit to inherit
+      # the job's base +schedule+ / +timezone+ / +retry_policy+ /
+      # +configuration+). The read-only per-environment +next_run_at+ is never
+      # written.
       def environments_to_wire(environments)
         (environments || {}).each_with_object({}) do |(env_key, env), out|
           attrs = { enabled: env.enabled }
           attrs[:schedule] = env.schedule unless env.schedule.nil?
           attrs[:timezone] = env.timezone unless env.timezone.nil?
+          attrs[:retry_policy] = env.retry_policy unless env.retry_policy.nil?
           attrs[:configuration] = HttpConfig.to_wire(env.configuration) unless env.configuration.nil?
           out[env_key.to_s] = SmplkitGeneratedClient::Jobs::JobEnvironment.new(attrs)
         end
@@ -425,6 +602,9 @@ module Smplkit
         # explicit +null+ creates a manual job, omitting +timezone+ simply
         # inherits UTC — so it is sent only when present.)
         attrs[:timezone] = job.timezone unless job.timezone.nil?
+        # +retry_policy+ id; an unset +nil+ is omitted, leaving the server
+        # default (the built-in +Default+ policy, which never retries).
+        attrs[:retry_policy] = job.retry_policy unless job.retry_policy.nil?
         environments = job.environments
         attrs[:environments] = environments_to_wire(environments) unless environments.nil? || environments.empty?
         SmplkitGeneratedClient::Jobs::Job.new(attrs)

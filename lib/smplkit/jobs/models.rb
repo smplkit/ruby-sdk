@@ -79,8 +79,8 @@ module Smplkit
     # (+{ enabled: true, schedule: "0 3 * * *", configuration: HttpConfig.new(...) }+)
     # so callers can use the lightweight hash form without importing the model. A
     # dict-form +configuration+ override is coerced to an {HttpConfig} so it
-    # serializes on save; optional +schedule+ cron and +timezone+ overrides pass
-    # through.
+    # serializes on save; optional +schedule+ cron, +timezone+, and
+    # +retry_policy+ overrides pass through.
     #
     # @api private
     def self.normalize_environments(environments)
@@ -96,6 +96,7 @@ module Smplkit
                                 enabled: value[:enabled] || value["enabled"] || false,
                                 schedule: value[:schedule] || value["schedule"],
                                 timezone: value[:timezone] || value["timezone"],
+                                retry_policy: value[:retry_policy] || value["retry_policy"],
                                 configuration: cfg
                               )
                             end
@@ -120,13 +121,40 @@ module Smplkit
     #
     # - +MANUAL+: A +run+ / +trigger+ call started it on demand.
     # - +RERUN+: It repeats an earlier run.
+    # - +RETRY+: An automatic retry of a failed run, per the job's retry policy.
     # - +SCHEDULE+: The job's schedule fired.
     module RunTrigger
       MANUAL = "MANUAL"
       RERUN = "RERUN"
+      RETRY = "RETRY"
       SCHEDULE = "SCHEDULE"
 
-      VALUES = [MANUAL, RERUN, SCHEDULE].freeze
+      VALUES = [MANUAL, RERUN, RETRY, SCHEDULE].freeze
+    end
+
+    # How the wait between retries grows (a retry policy's backoff strategy).
+    #
+    # - +EXPONENTIAL+: Double the wait each retry — +delay_seconds+, then +2×+,
+    #   +4×+, … — capped at +max_delay_seconds+.
+    # - +FIXED+: Wait a constant +delay_seconds+ before every retry.
+    module Backoff
+      EXPONENTIAL = "exponential"
+      FIXED = "fixed"
+
+      VALUES = [EXPONENTIAL, FIXED].freeze
+    end
+
+    # A failure category a retry policy can retry on.
+    #
+    # - +CONNECTION_ERROR+: The endpoint could not be reached.
+    # - +NON_SUCCESS_STATUS+: Any non-success response, regardless of +statuses+.
+    # - +TIMEOUT+: The run did not complete in time.
+    module RetryReason
+      CONNECTION_ERROR = "CONNECTION_ERROR"
+      NON_SUCCESS_STATUS = "NON_SUCCESS_STATUS"
+      TIMEOUT = "TIMEOUT"
+
+      VALUES = [CONNECTION_ERROR, NON_SUCCESS_STATUS, TIMEOUT].freeze
     end
 
     # HTTP verb a job uses when it fires.
@@ -156,6 +184,46 @@ module Smplkit
 
         raise ArgumentError,
               "Unknown HttpMethod #{value.inspect}; expected one of #{VALUES.inspect}"
+      end
+    end
+
+    # Which failures a retry policy retries. An empty {RetryOn} (both lists
+    # empty) retries nothing.
+    #
+    # @!attribute [rw] statuses
+    #   @return [Array<Integer>] Response status codes to retry when a run fails
+    #     because the response did not match the job's success status (e.g.
+    #     +[429, 503]+ for rate-limit and unavailable). Each is a 3-digit HTTP
+    #     code. Defaults to an empty list.
+    # @!attribute [rw] reasons
+    #   @return [Array<String>] Failure categories to retry — see {RetryReason}.
+    #     Defaults to an empty list.
+    RetryOn = Struct.new(:statuses, :reasons, keyword_init: true) do
+      def initialize(statuses: nil, reasons: nil)
+        super(statuses: statuses || [], reasons: reasons || [])
+      end
+
+      # @api private — Convert a {RetryOn} into the generated wire model.
+      #   Reasons are serialized as their raw string values.
+      #
+      # @param src [RetryOn] The failure set to serialize.
+      # @return [SmplkitGeneratedClient::Jobs::RetryOn] The wire model.
+      def self.to_wire(src)
+        SmplkitGeneratedClient::Jobs::RetryOn.new(
+          statuses: Array(src.statuses),
+          reasons: Array(src.reasons).map(&:to_s)
+        )
+      end
+
+      # @api private — Build a {RetryOn} from the generated wire model. A +nil+
+      #   wire value (the field was absent) yields an empty {RetryOn}.
+      #
+      # @param src [SmplkitGeneratedClient::Jobs::RetryOn, nil] The wire model.
+      # @return [RetryOn]
+      def self.from_wire(src)
+        return new if src.nil?
+
+        new(statuses: src.statuses || [], reasons: src.reasons || [])
       end
     end
 
@@ -300,6 +368,10 @@ module Smplkit
     #     present, it must be a valid IANA zone key (e.g. +"America/New_York"+);
     #     it may be set on an environment that inherits the base schedule (it
     #     need not also override {#schedule}). Sent on writes only when present.
+    # @!attribute [rw] retry_policy
+    #   @return [String, nil] Optional per-environment retry-policy override — the
+    #     id of a {RetryPolicy} (or +"Default"+). +nil+ (the default) inherits the
+    #     job's base {Job#retry_policy}. Sent on writes only when present.
     # @!attribute [rw] configuration
     #   @return [HttpConfig, nil] Optional per-environment request configuration
     #     that fully replaces the job's base {Job#configuration} for this
@@ -310,8 +382,11 @@ module Smplkit
     #   @return [String, nil] Read-only. The next scheduled fire time in this
     #     environment. +nil+ when the environment is not enabled, or once a
     #     one-off run has fired. Never written back on save.
-    JobEnvironment = Struct.new(:enabled, :schedule, :timezone, :configuration, :next_run_at, keyword_init: true) do
-      def initialize(enabled: false, schedule: nil, timezone: nil, configuration: nil, next_run_at: nil)
+    JobEnvironment = Struct.new(
+      :enabled, :schedule, :timezone, :retry_policy, :configuration, :next_run_at, keyword_init: true
+    ) do
+      def initialize(enabled: false, schedule: nil, timezone: nil, retry_policy: nil,
+                     configuration: nil, next_run_at: nil)
         super
       end
 
@@ -328,6 +403,7 @@ module Smplkit
           enabled: src.enabled.nil? ? false : src.enabled,
           schedule: src.schedule,
           timezone: src.timezone,
+          retry_policy: src.retry_policy,
           configuration: cfg.nil? ? nil : HttpConfig.from_wire(cfg),
           next_run_at: src.next_run_at
         )
@@ -406,6 +482,13 @@ module Smplkit
       #   present.
       attr_accessor :timezone
 
+      # @return [String, nil] The base retry policy for failed runs — the id of a
+      #   {RetryPolicy}, overridable per environment via
+      #   {JobEnvironment#retry_policy}. +nil+ (the default, omitted on the wire)
+      #   uses the built-in +"Default"+ policy, which never retries. Set it with
+      #   {#set_retry_policy}; sent on writes only when present.
+      attr_accessor :retry_policy
+
       # @return [HttpConfig] The base HTTP request to perform when the job fires.
       #   Per-environment overrides live in {#environments}.
       attr_accessor :configuration
@@ -436,7 +519,7 @@ module Smplkit
       attr_accessor :birth_environment
 
       def initialize(client = nil, id:, name:, configuration:, schedule: nil,
-                     timezone: nil, description: nil, environments: nil,
+                     timezone: nil, retry_policy: nil, description: nil, environments: nil,
                      kind: nil, type: "http", concurrency_policy: "ALLOW",
                      birth_environment: nil, created_at: nil,
                      updated_at: nil, deleted_at: nil, version: nil)
@@ -449,6 +532,7 @@ module Smplkit
         @type = type
         @schedule = schedule
         @timezone = timezone
+        @retry_policy = retry_policy
         @configuration = configuration
         @concurrency_policy = concurrency_policy
         @birth_environment = birth_environment
@@ -588,17 +672,27 @@ module Smplkit
       # the cadence within that environment; it cannot turn a one-off job
       # recurring or vice-versa. Call {#save} to persist.
       #
+      # Because the timezone is an integral part of a cron cadence, a +timezone+
+      # may be supplied alongside the schedule; when given it sets the same
+      # scope's timezone too (equivalent to a follow-up {#set_timezone}). Omit it
+      # to leave the timezone untouched. For a timezone-only change, use
+      # {#set_timezone}.
+      #
       # @param schedule [String] An ISO-8601 datetime, a 5-field UTC cron
       #   expression, or the literal +"now"+ (base); a 5-field UTC cron
       #   expression (per-environment).
+      # @param timezone [String, nil] An optional IANA timezone to set on the
+      #   same scope (recurring jobs only). +nil+ (the default) leaves the
+      #   timezone untouched.
       # @param environment [String, nil] An environment key for a per-environment
       #   override, or +nil+ to set the base schedule.
-      def set_schedule(schedule, environment: nil)
+      def set_schedule(schedule, timezone: nil, environment: nil)
         if environment.nil?
           @schedule = schedule
         else
           _environment_override(environment).schedule = schedule
         end
+        set_timezone(timezone, environment: environment) unless timezone.nil?
       end
 
       # Set the IANA timezone the cron schedule is evaluated in — base
@@ -624,6 +718,31 @@ module Smplkit
         end
       end
 
+      # Set the retry policy for failed runs — base (+environment+ omitted) or
+      # per-environment.
+      #
+      # With +environment+ omitted (the default), sets the base {#retry_policy}
+      # every environment inherits unless it overrides it. With an +environment+
+      # given, sets that environment's per-environment override on
+      # {#environments}, creating the override entry if it doesn't exist yet
+      # (preserving any already-set +enabled+ / +schedule+ / +timezone+ /
+      # +configuration+ on it). Call {#save} to persist.
+      #
+      # Accepts either a {RetryPolicy} instance (its id is used) or a policy id
+      # string — pass +"Default"+ for the built-in never-retry policy.
+      #
+      # @param retry_policy [RetryPolicy, String] A {RetryPolicy} or a policy id.
+      # @param environment [String, nil] An environment key for a per-environment
+      #   override, or +nil+ to set the base retry policy.
+      def set_retry_policy(retry_policy, environment: nil)
+        policy_id = retry_policy.is_a?(RetryPolicy) ? retry_policy.id : retry_policy
+        if environment.nil?
+          @retry_policy = policy_id
+        else
+          _environment_override(environment).retry_policy = policy_id
+        end
+      end
+
       # Trigger one immediate, manual run of this job (a +MANUAL+ run).
       #
       # @param environment [String, nil] Environment the run executes in.
@@ -641,17 +760,25 @@ module Smplkit
       #
       # @param environment [String, nil] Restrict to runs stamped with this
       #   environment. +nil+ covers every environment you can access.
+      # @param triggers [Array<String>, nil] Restrict to runs started by any of
+      #   these triggers (see {RunTrigger}) — e.g. +[RunTrigger::RETRY]+ for
+      #   automatic retries. +nil+ covers every trigger.
+      # @param last_run_only [Boolean] When +true+, return only the last
+      #   completed run per environment (in-flight runs excluded). Defaults to
+      #   +false+.
       # @param page_size [Integer, nil] Maximum number of runs to return in this
       #   page.
       # @param after [String, nil] Opaque cursor from a previous page.
       # @return [Array<Smplkit::Jobs::Run>] The runs in this page.
       # @raise [RuntimeError] when this job has no bound client.
-      def list_runs(environment: nil, page_size: nil, after: nil)
+      def list_runs(environment: nil, triggers: nil, last_run_only: false, page_size: nil, after: nil)
         raise "Job was constructed without a client; cannot list runs" if @client.nil?
 
         @client.runs.list(
           job: @id,
           environments: environment.nil? ? nil : [environment],
+          triggers: triggers,
+          last_run_only: last_run_only,
           page_size: page_size,
           after: after
         )
@@ -678,6 +805,7 @@ module Smplkit
         @type = other.type
         @schedule = other.schedule
         @timezone = other.timezone
+        @retry_policy = other.retry_policy
         @configuration = other.configuration
         @concurrency_policy = other.concurrency_policy
         @created_at = other.created_at
@@ -709,6 +837,7 @@ module Smplkit
           type: a.type || "http",
           schedule: a.schedule,
           timezone: a.timezone,
+          retry_policy: a.retry_policy,
           configuration: HttpConfig.from_wire(a.configuration),
           concurrency_policy: a.concurrency_policy || "ALLOW",
           created_at: a.created_at,
@@ -718,6 +847,16 @@ module Smplkit
         )
       end
     end
+
+    # Where a +RETRY+ run sits in its retry chain (read-only).
+    #
+    # @!attribute [rw] of
+    #   @return [String] Id of the chain's original run — the first attempt that
+    #     failed and started the chain.
+    # @!attribute [rw] attempt
+    #   @return [Integer] Which retry this run is — +1+ for the first retry, +2+
+    #     for the second, and so on.
+    RunRetry = Struct.new(:of, :attempt, keyword_init: true)
 
     # A single execution of a job (read-only) with +rerun+ / +cancel+ actions.
     #
@@ -741,6 +880,9 @@ module Smplkit
     #     {RunTrigger} constants: +SCHEDULE+, +MANUAL+ (run now), or +RERUN+.
     # @!attribute [rw] rerun_of
     #   @return [String, nil] The source run's id; set only when +trigger+ is +RERUN+.
+    # @!attribute [rw] retry
+    #   @return [RunRetry, nil] Retry-chain position, populated only when
+    #     +trigger+ is +RETRY+; +nil+ otherwise.
     # @!attribute [rw] scheduled_for
     #   @return [String, nil] The intended fire time for a scheduled run; +nil+
     #     for manual / rerun runs.
@@ -767,7 +909,7 @@ module Smplkit
     # @!attribute [rw] created_at
     #   @return [String, nil] When the run was enqueued (became +PENDING+).
     Run = Struct.new(
-      :id, :job, :job_version, :environment, :trigger, :rerun_of, :scheduled_for,
+      :id, :job, :job_version, :environment, :trigger, :rerun_of, :retry, :scheduled_for,
       :status, :started_at, :finished_at, :pending_duration_ms, :run_duration_ms,
       :total_duration_ms, :failure_reason, :error, :request, :result, :created_at,
       keyword_init: true
@@ -780,6 +922,12 @@ module Smplkit
       # @return [Run] The hydrated run.
       def self.from_resource(resource, runs: nil)
         a = resource.attributes
+        # The retry-chain position is populated only on a +RETRY+ run; the
+        # generated model exposes it as +_retry+ (+retry+ is a Ruby keyword).
+        retry_chain = a._retry
+        retry_pos = if a.trigger == RunTrigger::RETRY && !retry_chain.nil?
+                      RunRetry.new(of: retry_chain.of, attempt: retry_chain.attempt)
+                    end
         new(
           id: resource.id,
           job: a.job,
@@ -787,6 +935,7 @@ module Smplkit
           environment: a.environment,
           trigger: a.trigger,
           rerun_of: a.rerun_of,
+          retry: retry_pos,
           scheduled_for: a.scheduled_for,
           status: a.status,
           started_at: a.started_at,
@@ -854,6 +1003,146 @@ module Smplkit
           runs_included: a.runs_included,
           active_jobs: a.active_jobs,
           active_jobs_limit: a.active_jobs_limit
+        )
+      end
+    end
+
+    # A named, reusable automatic-retry policy.
+    #
+    # Active-record style: instantiate via +client.jobs.retry_policies.new(...)+,
+    # mutate fields directly, and call {#save} to persist or {#delete} to remove.
+    # Reference a saved policy from a job's {Job#retry_policy} (see
+    # {JobsClient#new_recurring_job} and {Job#set_retry_policy}). Retry policies
+    # are account-global — never environment-scoped.
+    #
+    # A policy decides whether and how a failed run is retried. A job that
+    # references nothing uses the built-in +"Default"+ policy, which never
+    # retries.
+    class RetryPolicy
+      # @return [String] Caller-supplied unique identifier for the policy (the
+      #   resource +id+). Unique within the account and immutable; the service
+      #   returns 409 if another live policy already uses this id.
+      attr_accessor :id
+
+      # @return [String] Human-readable name for the policy.
+      attr_accessor :name
+
+      # @return [Integer] How many times a failed run is retried after the
+      #   initial attempt — +3+ means up to 4 attempts total. +0+ disables
+      #   retries. Maximum 10.
+      attr_accessor :max_retries
+
+      # @return [String] How the wait between retries grows; one of {Backoff}.
+      attr_accessor :backoff
+
+      # @return [Integer] The wait before a retry, in seconds — the constant wait
+      #   for {Backoff::FIXED}, or the base that doubles each retry for
+      #   {Backoff::EXPONENTIAL}.
+      attr_accessor :delay_seconds
+
+      # @return [Integer, nil] Ceiling on the wait between retries, for
+      #   {Backoff::EXPONENTIAL} backoff only. +nil+ (the default, omitted on the
+      #   wire) leaves it uncapped; omit it for {Backoff::FIXED}.
+      attr_accessor :max_delay_seconds
+
+      # @return [RetryOn] Which failures to retry; an empty {RetryOn} retries
+      #   nothing. Defaults to empty.
+      attr_accessor :retry_on
+
+      # @return [String, nil] ISO-8601 timestamp of first persist. +nil+ for an
+      #   unsaved instance.
+      attr_accessor :created_at
+
+      # @return [String, nil] ISO-8601 timestamp of the most recent mutation.
+      attr_accessor :updated_at
+
+      # @return [String, nil] Timestamp when the policy was deleted; +nil+ for
+      #   live policies.
+      attr_accessor :deleted_at
+
+      # @return [Integer, nil] Monotonic version counter, bumped on every
+      #   server-side write.
+      attr_accessor :version
+
+      def initialize(client = nil, id:, name:, max_retries:, backoff:, delay_seconds:,
+                     max_delay_seconds: nil, retry_on: nil, created_at: nil,
+                     updated_at: nil, deleted_at: nil, version: nil)
+        @client = client
+        @id = id
+        @name = name
+        @max_retries = max_retries
+        @backoff = backoff
+        @delay_seconds = delay_seconds
+        @max_delay_seconds = max_delay_seconds
+        @retry_on = retry_on || RetryOn.new
+        @created_at = created_at
+        @updated_at = updated_at
+        @deleted_at = deleted_at
+        @version = version
+      end
+
+      # Create this policy, or full-replace it if it already exists.
+      #
+      # Upsert behavior is driven by {#created_at}: a policy with no +created_at+
+      # is created (POST); otherwise it's full-replace updated (PUT). After the
+      # call, every field is refreshed from the server response.
+      #
+      # @return [self]
+      def save
+        raise "RetryPolicy was constructed without a client; cannot save" if @client.nil?
+
+        updated = @created_at.nil? ? @client._create_retry_policy(self) : @client._update_retry_policy(self)
+        _apply(updated)
+        self
+      end
+      alias save! save
+
+      # Delete this policy on the server.
+      #
+      # @return [nil]
+      def delete
+        raise "RetryPolicy was constructed without a client or id; cannot delete" if @client.nil? || @id.nil?
+
+        @client.delete(@id)
+      end
+      alias delete! delete
+
+      # @api private
+      def _apply(other)
+        @id = other.id
+        @name = other.name
+        @max_retries = other.max_retries
+        @backoff = other.backoff
+        @delay_seconds = other.delay_seconds
+        @max_delay_seconds = other.max_delay_seconds
+        @retry_on = other.retry_on
+        @created_at = other.created_at
+        @updated_at = other.updated_at
+        @deleted_at = other.deleted_at
+        @version = other.version
+      end
+
+      # @api private — Build a {RetryPolicy} from a JSON:API resource returned by
+      #   the jobs service, binding it to +client+ so {#save} and {#delete} work.
+      #
+      # @param resource [Object] The JSON:API resource (id + attributes).
+      # @param client [RetryPoliciesClient, nil] Client to bind the policy to.
+      # @return [RetryPolicy] The hydrated policy.
+      def self.from_resource(resource, client: nil)
+        a = resource.attributes
+        new(
+          client,
+          id: resource.id,
+          name: a.name,
+          max_retries: a.max_retries,
+          backoff: a.backoff,
+          delay_seconds: a.delay_seconds,
+          max_delay_seconds: a.max_delay_seconds,
+          retry_on: RetryOn.from_wire(a.retry_on),
+          created_at: a.created_at,
+          updated_at: a.updated_at,
+          deleted_at: a.deleted_at,
+          version: a.version
         )
       end
     end

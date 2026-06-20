@@ -173,6 +173,48 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       expect(captured["data"]["attributes"]).not_to have_key("timezone")
     end
 
+    it "sends the base retry_policy and a per-environment retry_policy override, omitting it where unset" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
+      job = jobs.new_recurring_job(job_id, name: "n", schedule: "0 * * * *", configuration: http_config,
+                                           timezone: "America/New_York", retry_policy: "global-retry")
+      job.set_enabled(true, environment: "development")
+      job.set_retry_policy("dev-retry", environment: "development") # per-env override
+      job.set_enabled(true, environment: "production") # no per-env retry override
+      job.save
+      attrs = captured["data"]["attributes"]
+      expect(attrs["timezone"]).to eq("America/New_York") # threaded through the constructor
+      expect(attrs["retry_policy"]).to eq("global-retry") # base on the wire
+      expect(attrs["environments"]["development"]["retry_policy"]).to eq("dev-retry")
+      expect(attrs["environments"]["production"]).not_to have_key("retry_policy") # omitted when unset
+    end
+
+    it "omits the base retry_policy from the wire when it is unset" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
+      jobs.new_recurring_job(job_id, name: "n", schedule: "0 * * * *", configuration: http_config).save
+      expect(captured["data"]["attributes"]).not_to have_key("retry_policy")
+    end
+
+    it "threads retry_policy onto manual and one-off jobs through their constructors" do
+      manual = jobs.new_manual_job("manual-job", name: "Manual", configuration: http_config,
+                                                 retry_policy: "manual-retry")
+      expect(manual.retry_policy).to eq("manual-retry")
+      oneoff = jobs.schedule("one-off", name: "One", schedule: Time.utc(2030, 1, 1),
+                                        configuration: http_config, retry_policy: "oneoff-retry")
+      expect(oneoff.retry_policy).to eq("oneoff-retry")
+    end
+
+    it "exposes a retry_policies sub-client" do
+      expect(jobs.retry_policies).to be_a(Smplkit::Jobs::RetryPoliciesClient)
+    end
+
     it "schedules a one-off job: ISO-8601 schedule, birth-environment header, no environments map" do
       body = nil
       headers = nil
@@ -451,6 +493,20 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       expect(captured.key?("filter[environment]")).to be(false)
     end
 
+    it "list_runs forwards triggers and last_run_only to the runs client" do
+      captured = nil
+      stub_request(:get, %r{#{base_url}/api/v1/runs\b}).with do |req|
+        captured = req.uri.query_values
+        true
+      end.to_return(status: 200, body: { data: [run_resource], meta: { page_size: 50 } }.to_json, headers: json_api)
+      bound_job.list_runs(environment: "production",
+                          triggers: [Smplkit::Jobs::RunTrigger::RETRY], last_run_only: true)
+      expect(captured["filter[trigger]"]).to eq("RETRY")
+      expect(captured["last_run_only"]).to eq("true")
+      expect(captured["filter[environment]"]).to eq("production")
+      expect(captured["filter[job]"]).to eq(job_id)
+    end
+
     it "raises when the Job has no client" do
       detached = Smplkit::Jobs::Job.new(id: "x", name: "x", schedule: "now", configuration: http_config)
       expect { detached.trigger }.to raise_error(/cannot trigger/)
@@ -564,6 +620,84 @@ RSpec.describe Smplkit::Jobs::RunsClient do
       run = runs.list.first
       expect(run.request).to be_nil
       expect(run.result).to be_nil
+    end
+
+    it "sends filter[trigger] (comma-joined any-of) and last_run_only when requested" do
+      captured = nil
+      stub_request(:get, %r{#{base_url}/api/v1/runs\b}).with do |req|
+        captured = req.uri.query_values
+        true
+      end.to_return(status: 200, body: { data: [run_resource], meta: { page_size: 50 } }.to_json, headers: json_api)
+      runs.list(triggers: [Smplkit::Jobs::RunTrigger::SCHEDULE, Smplkit::Jobs::RunTrigger::RETRY],
+                last_run_only: true)
+      expect(captured["filter[trigger]"]).to eq("SCHEDULE,RETRY")
+      expect(captured["last_run_only"]).to eq("true")
+    end
+
+    it "omits filter[trigger] and last_run_only on a default call" do
+      captured = nil
+      stub_request(:get, %r{#{base_url}/api/v1/runs\b}).with do |req|
+        captured = req.uri.query_values
+        true
+      end.to_return(status: 200, body: { data: [run_resource], meta: { page_size: 50 } }.to_json, headers: json_api)
+      runs.list(page_size: 1) # one param so query_values is present
+      expect(captured.key?("filter[trigger]")).to be(false)
+      expect(captured.key?("last_run_only")).to be(false)
+    end
+
+    it "omits filter[trigger] when triggers is an empty list" do
+      captured = nil
+      stub_request(:get, %r{#{base_url}/api/v1/runs\b}).with do |req|
+        captured = req.uri.query_values
+        true
+      end.to_return(status: 200, body: { data: [run_resource], meta: { page_size: 50 } }.to_json, headers: json_api)
+      runs.list(triggers: [], page_size: 1)
+      expect(captured.key?("filter[trigger]")).to be(false)
+    end
+  end
+
+  describe "retry-chain parsing" do
+    def retry_run_body(trigger:, retry_attr:)
+      {
+        id: run_id, type: "run",
+        attributes: {
+          job: "nightly-cache-warm", job_version: 1, environment: "production",
+          trigger: trigger, rerun_of: nil, retry: retry_attr,
+          scheduled_for: nil, status: "FAILED", started_at: nil, finished_at: nil,
+          pending_duration_ms: nil, run_duration_ms: nil, total_duration_ms: nil,
+          failure_reason: "NON_SUCCESS_STATUS", error: nil, request: nil, result: nil,
+          created_at: "2026-06-05T00:00:00Z"
+        }
+      }
+    end
+
+    it "parses retry into a RunRetry on a RETRY run" do
+      stub_request(:get, "#{base_url}/api/v1/runs/#{run_id}").to_return(
+        status: 200,
+        body: { data: retry_run_body(trigger: "RETRY", retry_attr: { of: "orig-run", attempt: 2 }) }.to_json,
+        headers: json_api
+      )
+      run = runs.get(run_id)
+      expect(run.retry).to be_a(Smplkit::Jobs::RunRetry)
+      expect(run.retry.of).to eq("orig-run")
+      expect(run.retry.attempt).to eq(2)
+    end
+
+    it "leaves retry nil on a non-RETRY run even when a retry block is present" do
+      stub_request(:get, "#{base_url}/api/v1/runs/#{run_id}").to_return(
+        status: 200,
+        body: { data: retry_run_body(trigger: "SCHEDULE", retry_attr: { of: "orig", attempt: 1 }) }.to_json,
+        headers: json_api
+      )
+      expect(runs.get(run_id).retry).to be_nil
+    end
+
+    it "leaves retry nil on a RETRY run that carries no retry block" do
+      stub_request(:get, "#{base_url}/api/v1/runs/#{run_id}").to_return(
+        status: 200, body: { data: retry_run_body(trigger: "RETRY", retry_attr: nil) }.to_json,
+        headers: json_api
+      )
+      expect(runs.get(run_id).retry).to be_nil
     end
   end
 
@@ -710,6 +844,47 @@ RSpec.describe Smplkit::Jobs::Job do
       expect(job.environments["staging"].schedule).to eq("0 4 * * *")
       expect(job.environments["staging"].enabled).to be(false) # default on new entry
     end
+
+    it "also sets the timezone on the same scope when a timezone is given" do
+      job.set_schedule("0 6 * * *", timezone: "America/New_York") # base
+      expect(job.schedule).to eq("0 6 * * *")
+      expect(job.timezone).to eq("America/New_York")
+      job.set_schedule("0 7 * * *", timezone: "Europe/London", environment: "production") # per-env
+      expect(job.environments["production"].schedule).to eq("0 7 * * *")
+      expect(job.environments["production"].timezone).to eq("Europe/London")
+    end
+
+    it "leaves the timezone untouched when no timezone is given" do
+      job.set_timezone("UTC")
+      job.set_schedule("0 8 * * *") # no timezone arg
+      expect(job.timezone).to eq("UTC")
+    end
+  end
+
+  describe "#set_retry_policy" do
+    it "accepts a policy id string — base and per-environment, preserving other env fields" do
+      job.set_retry_policy("global-retry") # base
+      expect(job.retry_policy).to eq("global-retry")
+      job.set_enabled(true, environment: "production")
+      job.set_retry_policy("prod-retry", environment: "production") # existing-entry branch
+      job.set_retry_policy("stg-retry", environment: "staging") # new-entry branch
+      expect(job.retry_policy).to eq("global-retry") # base untouched
+      expect(job.environments["production"].retry_policy).to eq("prod-retry")
+      expect(job.environments["production"].enabled).to be(true) # preserved
+      expect(job.environments["staging"].retry_policy).to eq("stg-retry")
+      expect(job.environments["staging"].enabled).to be(false) # default on new entry
+    end
+
+    it "accepts a RetryPolicy instance, using its id — base and per-environment" do
+      policy = Smplkit::Jobs::RetryPolicy.new(
+        id: "obj-retry", name: "P", max_retries: 1,
+        backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1
+      )
+      job.set_retry_policy(policy) # object, base
+      expect(job.retry_policy).to eq("obj-retry")
+      job.set_retry_policy(policy, environment: "production") # object, per-env
+      expect(job.environments["production"].retry_policy).to eq("obj-retry")
+    end
   end
 
   describe "#set_timezone" do
@@ -766,6 +941,25 @@ RSpec.describe Smplkit::Jobs::Job do
       expect(parsed.environments["development"].timezone).to eq("Europe/London") # per-env decodes
     end
 
+    it "decodes the base retry_policy and per-environment retry_policy overrides from the wire" do
+      resource = SmplkitGeneratedClient::Jobs::JobResource.new(
+        id: "j", type: "job",
+        attributes: SmplkitGeneratedClient::Jobs::Job.new(
+          name: "n", schedule: "0 * * * *", kind: "recurring",
+          retry_policy: "global-retry",
+          configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://x"),
+          environments: {
+            "development" => SmplkitGeneratedClient::Jobs::JobEnvironment.new(
+              enabled: true, retry_policy: "dev-retry"
+            )
+          }
+        )
+      )
+      parsed = described_class.from_resource(resource)
+      expect(parsed.retry_policy).to eq("global-retry") # base decodes
+      expect(parsed.environments["development"].retry_policy).to eq("dev-retry") # per-env decodes
+    end
+
     it "exposes save! and delete! aliases" do
       expect(described_class.instance_method(:save!)).to eq(described_class.instance_method(:save))
       expect(described_class.instance_method(:delete!)).to eq(described_class.instance_method(:delete))
@@ -794,11 +988,12 @@ RSpec.describe Smplkit::Jobs::JobEnvironment do
       expect(env.next_run_at).to be_nil
     end
 
-    it "parses the schedule override, timezone override, configuration override, and read-only next_run_at" do
+    it "parses the schedule, timezone, retry_policy, configuration overrides, and read-only next_run_at" do
       wire = SmplkitGeneratedClient::Jobs::JobEnvironment.new(
         enabled: true,
         schedule: "0 3 * * *",
         timezone: "Europe/London",
+        retry_policy: "env-retry",
         configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://e.com"),
         next_run_at: "2026-06-06T03:00:00Z"
       )
@@ -806,6 +1001,7 @@ RSpec.describe Smplkit::Jobs::JobEnvironment do
       expect(env.enabled).to be(true)
       expect(env.schedule).to eq("0 3 * * *")
       expect(env.timezone).to eq("Europe/London")
+      expect(env.retry_policy).to eq("env-retry")
       expect(env.configuration).to be_a(Smplkit::Jobs::HttpConfig)
       expect(env.configuration.url).to eq("https://e.com")
       expect(env.next_run_at).to eq("2026-06-06T03:00:00Z")
@@ -845,19 +1041,22 @@ RSpec.describe "Smplkit::Jobs environment helpers" do
     it "passes JobEnvironment instances through and coerces hash forms" do
       out = Smplkit::Jobs.normalize_environments(
         "production" => Smplkit::Jobs::JobEnvironment.new(enabled: true, schedule: "0 1 * * *"),
-        "staging" => { enabled: true, schedule: "0 2 * * *", configuration: cfg },
+        "staging" => { enabled: true, schedule: "0 2 * * *", retry_policy: "stg-retry", configuration: cfg },
         "dev" => { enabled: false, configuration: { url: "https://dev.example.com" } },
-        "qa" => { "enabled" => true, "schedule" => "0 3 * * *" }
+        "qa" => { "enabled" => true, "schedule" => "0 3 * * *", "retry_policy" => "qa-retry" }
       )
       expect(out["production"].enabled).to be(true)
       expect(out["production"].schedule).to eq("0 1 * * *")
       expect(out["staging"].schedule).to eq("0 2 * * *")
+      expect(out["staging"].retry_policy).to eq("stg-retry") # symbol-key form
       expect(out["staging"].configuration).to be(cfg)
       expect(out["dev"].configuration).to be_a(Smplkit::Jobs::HttpConfig)
       expect(out["dev"].configuration.url).to eq("https://dev.example.com")
       expect(out["dev"].schedule).to be_nil # absent -> nil
+      expect(out["dev"].retry_policy).to be_nil # absent -> nil
       expect(out["qa"].enabled).to be(true)
       expect(out["qa"].schedule).to eq("0 3 * * *") # string-key form
+      expect(out["qa"].retry_policy).to eq("qa-retry") # string-key form
       expect(out["qa"].configuration).to be_nil
     end
   end
@@ -876,8 +1075,73 @@ RSpec.describe Smplkit::Jobs::RunTrigger do
   it "carries the wire values for each trigger in VALUES" do
     expect(described_class::MANUAL).to eq("MANUAL")
     expect(described_class::RERUN).to eq("RERUN")
+    expect(described_class::RETRY).to eq("RETRY")
     expect(described_class::SCHEDULE).to eq("SCHEDULE")
-    expect(described_class::VALUES).to eq(%w[MANUAL RERUN SCHEDULE])
+    expect(described_class::VALUES).to eq(%w[MANUAL RERUN RETRY SCHEDULE])
+  end
+end
+
+RSpec.describe Smplkit::Jobs::Backoff do
+  it "carries the wire values for each strategy in VALUES" do
+    expect(described_class::EXPONENTIAL).to eq("exponential")
+    expect(described_class::FIXED).to eq("fixed")
+    expect(described_class::VALUES).to eq(%w[exponential fixed])
+  end
+end
+
+RSpec.describe Smplkit::Jobs::RetryReason do
+  it "carries the wire values for each reason in VALUES" do
+    expect(described_class::CONNECTION_ERROR).to eq("CONNECTION_ERROR")
+    expect(described_class::NON_SUCCESS_STATUS).to eq("NON_SUCCESS_STATUS")
+    expect(described_class::TIMEOUT).to eq("TIMEOUT")
+    expect(described_class::VALUES).to eq(%w[CONNECTION_ERROR NON_SUCCESS_STATUS TIMEOUT])
+  end
+end
+
+RSpec.describe Smplkit::Jobs::RetryOn do
+  it "defaults both lists to empty (retries nothing)" do
+    on = described_class.new
+    expect(on.statuses).to eq([])
+    expect(on.reasons).to eq([])
+  end
+
+  describe ".to_wire" do
+    it "serializes statuses and reasons (reasons as their string values)" do
+      on = described_class.new(statuses: [429, 503], reasons: [Smplkit::Jobs::RetryReason::TIMEOUT])
+      wire = described_class.to_wire(on)
+      expect(wire.statuses).to eq([429, 503])
+      expect(wire.reasons).to eq(["TIMEOUT"])
+    end
+
+    it "serializes an empty RetryOn to empty lists" do
+      wire = described_class.to_wire(described_class.new)
+      expect(wire.statuses).to eq([])
+      expect(wire.reasons).to eq([])
+    end
+  end
+
+  describe ".from_wire" do
+    it "returns an empty RetryOn for nil" do
+      on = described_class.from_wire(nil)
+      expect(on.statuses).to eq([])
+      expect(on.reasons).to eq([])
+    end
+
+    it "round-trips a populated wire model" do
+      wire = described_class.to_wire(
+        described_class.new(statuses: [500], reasons: [Smplkit::Jobs::RetryReason::CONNECTION_ERROR])
+      )
+      back = described_class.from_wire(wire)
+      expect(back.statuses).to eq([500])
+      expect(back.reasons).to eq(["CONNECTION_ERROR"])
+    end
+
+    it "coerces nil wire lists to empty arrays" do
+      wire = SmplkitGeneratedClient::Jobs::RetryOn.new
+      back = described_class.from_wire(wire)
+      expect(back.statuses).to eq([])
+      expect(back.reasons).to eq([])
+    end
   end
 end
 
@@ -1087,5 +1351,199 @@ RSpec.describe "Smplkit::Jobs.call_api" do
     err = SmplkitGeneratedClient::Jobs::ApiError.new(code: 200, response_body: "")
     expect { Smplkit::Jobs.call_api { raise err } }
       .to raise_error(SmplkitGeneratedClient::Jobs::ApiError)
+  end
+end
+
+RSpec.describe Smplkit::Jobs::RetryPoliciesClient do
+  subject(:policies) { Smplkit::Jobs::JobsClient.new(auth_client: api_client).retry_policies }
+
+  let(:api_client) do
+    Smplkit::Transport.build_api_client(
+      SmplkitGeneratedClient::Jobs, "jobs", resolved, accept: "application/vnd.api+json"
+    )
+  end
+  let(:resolved) do
+    Smplkit::ConfigResolution::ResolvedClientConfig.new(
+      api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
+    )
+  end
+  let(:base_url) { "https://jobs.smplkit.test" }
+  let(:policy_id) { "showcase-retry" }
+  let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
+
+  def policy_resource(id: "showcase-retry", version: 1, created: true, max_delay: 60,
+                      statuses: [429, 503], reasons: ["TIMEOUT"])
+    {
+      id: id, type: "retry_policy",
+      attributes: {
+        name: "Retry on server errors", max_retries: 5, backoff: "exponential",
+        delay_seconds: 2, max_delay_seconds: max_delay,
+        retry_on: { statuses: statuses, reasons: reasons },
+        created_at: created ? "2026-06-04T00:00:00Z" : nil,
+        updated_at: created ? "2026-06-04T00:00:00Z" : nil,
+        deleted_at: nil, version: version
+      }
+    }
+  end
+
+  describe "#new + RetryPolicy#save (create)" do
+    it "POSTs the create envelope and refreshes the instance from the response" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/retry-policies").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: policy_resource }.to_json, headers: json_api)
+      policy = policies.new(policy_id, name: "Retry on server errors", max_retries: 5,
+                                       backoff: Smplkit::Jobs::Backoff::EXPONENTIAL,
+                                       delay_seconds: 2, max_delay_seconds: 60,
+                                       retry_on: Smplkit::Jobs::RetryOn.new(
+                                         statuses: [429, 503],
+                                         reasons: [Smplkit::Jobs::RetryReason::TIMEOUT]
+                                       ))
+      expect(policy.created_at).to be_nil
+      policy.save
+      data = captured["data"]
+      expect(data["id"]).to eq(policy_id)
+      expect(data["type"]).to eq("retry_policy")
+      attrs = data["attributes"]
+      expect(attrs["name"]).to eq("Retry on server errors")
+      expect(attrs["max_retries"]).to eq(5)
+      expect(attrs["backoff"]).to eq("exponential")
+      expect(attrs["delay_seconds"]).to eq(2)
+      expect(attrs["max_delay_seconds"]).to eq(60)
+      expect(attrs["retry_on"]).to eq({ "statuses" => [429, 503], "reasons" => ["TIMEOUT"] })
+      expect(policy.created_at).not_to be_nil
+      expect(policy.version).to eq(1)
+    end
+
+    it "omits max_delay_seconds from the wire when unset, but always sends retry_on" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/retry-policies").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: policy_resource(max_delay: nil) }.to_json, headers: json_api)
+      policies.new(policy_id, name: "n", max_retries: 0,
+                              backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1).save
+      attrs = captured["data"]["attributes"]
+      expect(attrs).not_to have_key("max_delay_seconds")
+      expect(attrs["retry_on"]).to eq({ "statuses" => [], "reasons" => [] }) # empty: retries nothing
+    end
+
+    it "raises ArgumentError when saving a policy with an empty id" do
+      policy = policies.new("", name: "n", max_retries: 1,
+                                backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1)
+      expect { policy.save }.to raise_error(ArgumentError, /id is required/)
+    end
+
+    it "raises ConflictError when the id is already taken" do
+      stub_request(:post, "#{base_url}/api/v1/retry-policies").to_return(
+        status: 409, body: { errors: [{ status: "409" }] }.to_json, headers: json_api
+      )
+      policy = policies.new(policy_id, name: "n", max_retries: 1,
+                                       backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1)
+      expect { policy.save }.to raise_error(Smplkit::ConflictError)
+    end
+  end
+
+  describe "#get / RetryPolicy#save (update) / delete" do
+    it "returns a RetryPolicy bound to the client on get" do
+      stub_request(:get, "#{base_url}/api/v1/retry-policies/#{policy_id}").to_return(
+        status: 200, body: { data: policy_resource }.to_json, headers: json_api
+      )
+      policy = policies.get(policy_id)
+      expect(policy).to be_a(Smplkit::Jobs::RetryPolicy)
+      expect(policy.backoff).to eq("exponential")
+      expect(policy.max_delay_seconds).to eq(60)
+      expect(policy.retry_on.statuses).to eq([429, 503])
+      expect(policy.retry_on.reasons).to eq(["TIMEOUT"])
+      expect(policy.instance_variable_get(:@client)).to be(policies)
+    end
+
+    it "RetryPolicy#save issues PUT once created_at is present and bumps the version" do
+      stub_request(:get, "#{base_url}/api/v1/retry-policies/#{policy_id}").to_return(
+        status: 200, body: { data: policy_resource }.to_json, headers: json_api
+      )
+      put_stub = stub_request(:put, "#{base_url}/api/v1/retry-policies/#{policy_id}").to_return(
+        status: 200, body: { data: policy_resource(version: 2) }.to_json, headers: json_api
+      )
+      policy = policies.get(policy_id)
+      policy.name = "Renamed"
+      policy.save
+      expect(put_stub).to have_been_requested
+      expect(policy.version).to eq(2)
+    end
+
+    it "_update_retry_policy rejects a policy with no id" do
+      detached = Smplkit::Jobs::RetryPolicy.new(
+        policies, id: nil, name: "n", max_retries: 1,
+                  backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1
+      )
+      expect { policies._update_retry_policy(detached) }.to raise_error(ArgumentError, /no id/)
+    end
+
+    it "RetryPolicy#delete issues DELETE" do
+      stub_request(:get, "#{base_url}/api/v1/retry-policies/#{policy_id}").to_return(
+        status: 200, body: { data: policy_resource }.to_json, headers: json_api
+      )
+      del_stub = stub_request(:delete, "#{base_url}/api/v1/retry-policies/#{policy_id}").to_return(status: 204)
+      policies.get(policy_id).delete
+      expect(del_stub).to have_been_requested
+    end
+
+    it "client #delete returns nil and issues DELETE by id" do
+      del_stub = stub_request(:delete, "#{base_url}/api/v1/retry-policies/#{policy_id}").to_return(status: 204)
+      expect(policies.delete(policy_id)).to be_nil
+      expect(del_stub).to have_been_requested
+    end
+
+    it "raises NotFoundError on a 404" do
+      stub_request(:get, "#{base_url}/api/v1/retry-policies/#{policy_id}").to_return(
+        status: 404, body: { errors: [{ status: "404" }] }.to_json, headers: json_api
+      )
+      expect { policies.get(policy_id) }.to raise_error(Smplkit::NotFoundError)
+    end
+  end
+
+  describe "#list" do
+    it "forwards filter[name] and paging params and returns bound policies" do
+      captured = nil
+      stub_request(:get, %r{#{base_url}/api/v1/retry-policies\b}).with do |req|
+        captured = req.uri.query_values
+        true
+      end.to_return(status: 200,
+                    body: { data: [policy_resource(id: "a"), policy_resource(id: "b")],
+                            meta: { pagination: { page: 1, size: 10 } } }.to_json,
+                    headers: json_api)
+      result = policies.list(name: "server", page_number: 1, page_size: 10)
+      expect(captured["filter[name]"]).to eq("server")
+      expect(captured["page[number]"]).to eq("1")
+      expect(captured["page[size]"]).to eq("10")
+      expect(result.map(&:id)).to eq(%w[a b])
+    end
+
+    it "returns an empty list when data is empty" do
+      stub_request(:get, %r{#{base_url}/api/v1/retry-policies\b}).to_return(
+        status: 200, body: { data: [], meta: { pagination: { page: 1, size: 1000 } } }.to_json,
+        headers: json_api
+      )
+      expect(policies.list).to be_empty
+    end
+  end
+
+  describe "active-record guards" do
+    it "raises when save / delete are called without a bound client" do
+      detached = Smplkit::Jobs::RetryPolicy.new(
+        id: "x", name: "n", max_retries: 1, backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1
+      )
+      expect { detached.save }.to raise_error(/cannot save/)
+      expect { detached.delete }.to raise_error(/cannot delete/)
+    end
+
+    it "exposes save! and delete! aliases" do
+      expect(Smplkit::Jobs::RetryPolicy.instance_method(:save!))
+        .to eq(Smplkit::Jobs::RetryPolicy.instance_method(:save))
+      expect(Smplkit::Jobs::RetryPolicy.instance_method(:delete!))
+        .to eq(Smplkit::Jobs::RetryPolicy.instance_method(:delete))
+    end
   end
 end
