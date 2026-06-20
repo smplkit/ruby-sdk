@@ -145,6 +145,34 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       expect(attrs["environments"]["staging"]["configuration"]["url"]).to eq("https://api.example.com/cache/warm")
     end
 
+    it "sends the base timezone and a per-environment timezone override, omitting it where unset" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
+      job = jobs.new_recurring_job(job_id, name: "n", schedule: "0 * * * *", configuration: http_config)
+      job.set_timezone("America/New_York") # base timezone
+      job.set_enabled(true, environment: "development")
+      job.set_timezone("Europe/London", environment: "development") # per-env override
+      job.set_enabled(true, environment: "production") # no per-env timezone
+      job.save
+      attrs = captured["data"]["attributes"]
+      expect(attrs["timezone"]).to eq("America/New_York") # base on the wire
+      expect(attrs["environments"]["development"]["timezone"]).to eq("Europe/London")
+      expect(attrs["environments"]["production"]).not_to have_key("timezone") # omitted when unset
+    end
+
+    it "omits the base timezone from the wire when it is unset" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
+      jobs.new_recurring_job(job_id, name: "n", schedule: "0 * * * *", configuration: http_config).save
+      expect(captured["data"]["attributes"]).not_to have_key("timezone")
+    end
+
     it "schedules a one-off job: ISO-8601 schedule, birth-environment header, no environments map" do
       body = nil
       headers = nil
@@ -684,6 +712,24 @@ RSpec.describe Smplkit::Jobs::Job do
     end
   end
 
+  describe "#set_timezone" do
+    it "replaces the base timezone when no environment is given" do
+      job.set_timezone("America/New_York")
+      expect(job.timezone).to eq("America/New_York")
+    end
+
+    it "sets a per-environment timezone override, preserving the per-env schedule and leaving the base untouched" do
+      job.set_schedule("0 4 * * *", environment: "production")
+      job.set_timezone("Europe/London", environment: "production") # existing-entry branch
+      job.set_timezone("Asia/Tokyo", environment: "staging") # new-entry branch
+      expect(job.timezone).to be_nil # base untouched
+      expect(job.environments["production"].timezone).to eq("Europe/London")
+      expect(job.environments["production"].schedule).to eq("0 4 * * *") # preserved
+      expect(job.environments["staging"].timezone).to eq("Asia/Tokyo")
+      expect(job.environments["staging"].enabled).to be(false) # default on new entry
+    end
+  end
+
   describe ".from_resource" do
     it "derives a false enabled roll-up and defaults type / concurrency_policy when the wire omits them" do
       resource = SmplkitGeneratedClient::Jobs::JobResource.new(
@@ -701,6 +747,25 @@ RSpec.describe Smplkit::Jobs::Job do
       expect(parsed.concurrency_policy).to eq("ALLOW")
     end
 
+    it "decodes the base timezone and per-environment timezone overrides from the wire" do
+      resource = SmplkitGeneratedClient::Jobs::JobResource.new(
+        id: "j", type: "job",
+        attributes: SmplkitGeneratedClient::Jobs::Job.new(
+          name: "n", schedule: "0 * * * *", kind: "recurring",
+          timezone: "America/New_York",
+          configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://x"),
+          environments: {
+            "development" => SmplkitGeneratedClient::Jobs::JobEnvironment.new(
+              enabled: true, schedule: "0 3 * * *", timezone: "Europe/London"
+            )
+          }
+        )
+      )
+      parsed = described_class.from_resource(resource)
+      expect(parsed.timezone).to eq("America/New_York") # base decodes
+      expect(parsed.environments["development"].timezone).to eq("Europe/London") # per-env decodes
+    end
+
     it "exposes save! and delete! aliases" do
       expect(described_class.instance_method(:save!)).to eq(described_class.instance_method(:save))
       expect(described_class.instance_method(:delete!)).to eq(described_class.instance_method(:delete))
@@ -714,29 +779,33 @@ RSpec.describe Smplkit::Jobs::JobEnvironment do
       env = described_class.from_wire(nil)
       expect(env.enabled).to be(false)
       expect(env.schedule).to be_nil
+      expect(env.timezone).to be_nil
       expect(env.configuration).to be_nil
       expect(env.next_run_at).to be_nil
     end
 
-    it "coerces a nil enabled to false and leaves schedule / configuration nil when absent" do
+    it "coerces a nil enabled to false and leaves schedule / timezone / configuration nil when absent" do
       wire = SmplkitGeneratedClient::Jobs::JobEnvironment.new(enabled: nil)
       env = described_class.from_wire(wire)
       expect(env.enabled).to be(false)
       expect(env.schedule).to be_nil
+      expect(env.timezone).to be_nil
       expect(env.configuration).to be_nil
       expect(env.next_run_at).to be_nil
     end
 
-    it "parses the schedule override, configuration override, and read-only next_run_at" do
+    it "parses the schedule override, timezone override, configuration override, and read-only next_run_at" do
       wire = SmplkitGeneratedClient::Jobs::JobEnvironment.new(
         enabled: true,
         schedule: "0 3 * * *",
+        timezone: "Europe/London",
         configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://e.com"),
         next_run_at: "2026-06-06T03:00:00Z"
       )
       env = described_class.from_wire(wire)
       expect(env.enabled).to be(true)
       expect(env.schedule).to eq("0 3 * * *")
+      expect(env.timezone).to eq("Europe/London")
       expect(env.configuration).to be_a(Smplkit::Jobs::HttpConfig)
       expect(env.configuration.url).to eq("https://e.com")
       expect(env.next_run_at).to eq("2026-06-06T03:00:00Z")

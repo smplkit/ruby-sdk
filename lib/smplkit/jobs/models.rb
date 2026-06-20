@@ -79,7 +79,8 @@ module Smplkit
     # (+{ enabled: true, schedule: "0 3 * * *", configuration: HttpConfig.new(...) }+)
     # so callers can use the lightweight hash form without importing the model. A
     # dict-form +configuration+ override is coerced to an {HttpConfig} so it
-    # serializes on save; an optional +schedule+ cron override passes through.
+    # serializes on save; optional +schedule+ cron and +timezone+ overrides pass
+    # through.
     #
     # @api private
     def self.normalize_environments(environments)
@@ -94,6 +95,7 @@ module Smplkit
                               JobEnvironment.new(
                                 enabled: value[:enabled] || value["enabled"] || false,
                                 schedule: value[:schedule] || value["schedule"],
+                                timezone: value[:timezone] || value["timezone"],
                                 configuration: cfg
                               )
                             end
@@ -291,6 +293,13 @@ module Smplkit
     #     inherits the job's base {Job#schedule}. When present, it must be a
     #     5-field UTC cron expression and is only meaningful on a recurring job —
     #     it cannot turn a one-off job recurring or vice-versa.
+    # @!attribute [rw] timezone
+    #   @return [String, nil] Optional per-environment IANA timezone override for
+    #     evaluating this environment's cron {#schedule} (recurring jobs only).
+    #     +nil+ (the default) inherits the base {Job#timezone}, else UTC. When
+    #     present, it must be a valid IANA zone key (e.g. +"America/New_York"+);
+    #     it may be set on an environment that inherits the base schedule (it
+    #     need not also override {#schedule}). Sent on writes only when present.
     # @!attribute [rw] configuration
     #   @return [HttpConfig, nil] Optional per-environment request configuration
     #     that fully replaces the job's base {Job#configuration} for this
@@ -301,8 +310,8 @@ module Smplkit
     #   @return [String, nil] Read-only. The next scheduled fire time in this
     #     environment. +nil+ when the environment is not enabled, or once a
     #     one-off run has fired. Never written back on save.
-    JobEnvironment = Struct.new(:enabled, :schedule, :configuration, :next_run_at, keyword_init: true) do
-      def initialize(enabled: false, schedule: nil, configuration: nil, next_run_at: nil)
+    JobEnvironment = Struct.new(:enabled, :schedule, :timezone, :configuration, :next_run_at, keyword_init: true) do
+      def initialize(enabled: false, schedule: nil, timezone: nil, configuration: nil, next_run_at: nil)
         super
       end
 
@@ -318,6 +327,7 @@ module Smplkit
         new(
           enabled: src.enabled.nil? ? false : src.enabled,
           schedule: src.schedule,
+          timezone: src.timezone,
           configuration: cfg.nil? ? nil : HttpConfig.from_wire(cfg),
           next_run_at: src.next_run_at
         )
@@ -386,6 +396,16 @@ module Smplkit
       #   {#set_schedule}.
       attr_accessor :schedule
 
+      # @return [String, nil] The base IANA timezone the cron {#schedule} is
+      #   evaluated in (e.g. +"America/New_York"+); +nil+ (the default) means
+      #   UTC. The base every environment inherits unless it sets its own
+      #   {JobEnvironment#timezone}. The cron fires on this zone's wall clock
+      #   (DST-aware) while +next_run_at+ is still reported as a UTC instant.
+      #   Only valid on a recurring (cron) job — leave +nil+ for a manual or
+      #   one-off job. Set it with {#set_timezone}; sent on writes only when
+      #   present.
+      attr_accessor :timezone
+
       # @return [HttpConfig] The base HTTP request to perform when the job fires.
       #   Per-environment overrides live in {#environments}.
       attr_accessor :configuration
@@ -416,7 +436,7 @@ module Smplkit
       attr_accessor :birth_environment
 
       def initialize(client = nil, id:, name:, configuration:, schedule: nil,
-                     description: nil, environments: nil,
+                     timezone: nil, description: nil, environments: nil,
                      kind: nil, type: "http", concurrency_policy: "ALLOW",
                      birth_environment: nil, created_at: nil,
                      updated_at: nil, deleted_at: nil, version: nil)
@@ -428,6 +448,7 @@ module Smplkit
         @kind = kind
         @type = type
         @schedule = schedule
+        @timezone = timezone
         @configuration = configuration
         @concurrency_policy = concurrency_policy
         @birth_environment = birth_environment
@@ -580,6 +601,29 @@ module Smplkit
         end
       end
 
+      # Set the IANA timezone the cron schedule is evaluated in — base
+      # (+environment+ omitted) or per-environment.
+      #
+      # With +environment+ omitted (the default), sets the base {#timezone}
+      # every environment inherits unless it overrides it. With an +environment+
+      # given, sets that environment's per-environment +timezone+ override on
+      # {#environments}, creating the override entry if it doesn't exist yet
+      # (preserving any already-set +enabled+ / +schedule+ / +configuration+ on
+      # it). A timezone is only valid on a recurring (cron) job; +nil+ means UTC
+      # (base) or "inherit the base" (per-environment). Call {#save} to persist.
+      #
+      # @param timezone [String, nil] A valid IANA timezone key (e.g.
+      #   +"America/New_York"+), or +nil+ for UTC / inherit.
+      # @param environment [String, nil] An environment key for a per-environment
+      #   override, or +nil+ to set the base timezone.
+      def set_timezone(timezone, environment: nil)
+        if environment.nil?
+          @timezone = timezone
+        else
+          _environment_override(environment).timezone = timezone
+        end
+      end
+
       # Trigger one immediate, manual run of this job (a +MANUAL+ run).
       #
       # @param environment [String, nil] Environment the run executes in.
@@ -633,6 +677,7 @@ module Smplkit
         @kind = other.kind
         @type = other.type
         @schedule = other.schedule
+        @timezone = other.timezone
         @configuration = other.configuration
         @concurrency_policy = other.concurrency_policy
         @created_at = other.created_at
@@ -663,6 +708,7 @@ module Smplkit
           kind: a.kind,
           type: a.type || "http",
           schedule: a.schedule,
+          timezone: a.timezone,
           configuration: HttpConfig.from_wire(a.configuration),
           concurrency_policy: a.concurrency_policy || "ALLOW",
           created_at: a.created_at,

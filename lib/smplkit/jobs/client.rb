@@ -394,13 +394,15 @@ module Smplkit
       # Convert the wrapper +environments+ map to the generated model hash.
       #
       # Each entry's +enabled+ is always written; a per-environment +schedule+
-      # (cron) override and +configuration+ override are each sent only when
-      # present (omit to inherit the job's base +schedule+ / +configuration+).
-      # The read-only per-environment +next_run_at+ is never written.
+      # (cron) override, +timezone+ override, and +configuration+ override are
+      # each sent only when present (omit to inherit the job's base +schedule+ /
+      # +timezone+ / +configuration+). The read-only per-environment
+      # +next_run_at+ is never written.
       def environments_to_wire(environments)
         (environments || {}).each_with_object({}) do |(env_key, env), out|
           attrs = { enabled: env.enabled }
           attrs[:schedule] = env.schedule unless env.schedule.nil?
+          attrs[:timezone] = env.timezone unless env.timezone.nil?
           attrs[:configuration] = HttpConfig.to_wire(env.configuration) unless env.configuration.nil?
           out[env_key.to_s] = SmplkitGeneratedClient::Jobs::JobEnvironment.new(attrs)
         end
@@ -418,6 +420,11 @@ module Smplkit
           configuration: HttpConfig.to_wire(job.configuration),
           concurrency_policy: job.concurrency_policy
         }
+        # +timezone+ is only valid on a recurring (cron) job; an unset +nil+ is
+        # omitted, leaving the server default of UTC. (Unlike +schedule+, whose
+        # explicit +null+ creates a manual job, omitting +timezone+ simply
+        # inherits UTC — so it is sent only when present.)
+        attrs[:timezone] = job.timezone unless job.timezone.nil?
         environments = job.environments
         attrs[:environments] = environments_to_wire(environments) unless environments.nil? || environments.empty?
         SmplkitGeneratedClient::Jobs::Job.new(attrs)
