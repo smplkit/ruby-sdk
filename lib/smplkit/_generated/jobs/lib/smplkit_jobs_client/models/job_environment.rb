@@ -19,8 +19,11 @@ module SmplkitGeneratedClient::Jobs
     # Whether the job schedules runs in this environment. A job runs in an environment only via this field; it is disabled in every environment by default.
     attr_accessor :enabled
 
-    # Per-environment schedule override. Omit to inherit the job's base `schedule`. When present, it must be a 5-field cron expression evaluated in **UTC** (e.g. `0 3 * * *`), and is only allowed on a recurring (cron) job — it varies the cadence within that environment. It cannot appear on a manual or one-off job, and cannot change a job's kind.
+    # Per-environment schedule override. Omit to inherit the job's base `schedule`. When present, it must be a 5-field cron expression (e.g. `0 3 * * *`), evaluated in this environment's effective `timezone` (the per-environment override, else the base, else UTC), and is only allowed on a recurring (cron) job — it varies the cadence within that environment. It cannot appear on a manual or one-off job, and cannot change a job's kind.
     attr_accessor :schedule
+
+    # Per-environment timezone override for evaluating this environment's cron `schedule`. Omit to inherit the base `timezone` (else UTC). When present, it must be a valid IANA timezone key (e.g. `America/New_York`). Only valid on a recurring (cron) job; it may be set on an environment that inherits the base schedule (it need not also override `schedule`).
+    attr_accessor :timezone
 
     # Per-environment HTTP request override. Omit to inherit the job's base `configuration`. When present, it fully replaces the base configuration for runs in this environment.
     attr_accessor :configuration
@@ -33,6 +36,7 @@ module SmplkitGeneratedClient::Jobs
       {
         :'enabled' => :'enabled',
         :'schedule' => :'schedule',
+        :'timezone' => :'timezone',
         :'configuration' => :'configuration',
         :'next_run_at' => :'next_run_at'
       }
@@ -53,6 +57,7 @@ module SmplkitGeneratedClient::Jobs
       {
         :'enabled' => :'Boolean',
         :'schedule' => :'String',
+        :'timezone' => :'String',
         :'configuration' => :'JobHttpConfiguration',
         :'next_run_at' => :'Time'
       }
@@ -62,6 +67,7 @@ module SmplkitGeneratedClient::Jobs
     def self.openapi_nullable
       Set.new([
         :'schedule',
+        :'timezone',
         :'configuration',
         :'next_run_at'
       ])
@@ -91,6 +97,10 @@ module SmplkitGeneratedClient::Jobs
 
       if attributes.key?(:'schedule')
         self.schedule = attributes[:'schedule']
+      end
+
+      if attributes.key?(:'timezone')
+        self.timezone = attributes[:'timezone']
       end
 
       if attributes.key?(:'configuration')
@@ -124,6 +134,7 @@ module SmplkitGeneratedClient::Jobs
       self.class == o.class &&
           enabled == o.enabled &&
           schedule == o.schedule &&
+          timezone == o.timezone &&
           configuration == o.configuration &&
           next_run_at == o.next_run_at
     end
@@ -137,7 +148,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [enabled, schedule, configuration, next_run_at].hash
+      [enabled, schedule, timezone, configuration, next_run_at].hash
     end
 
     # Builds the object from hash
