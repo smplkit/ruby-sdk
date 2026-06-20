@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Jobs
       @api_client = api_client
     end
     # Cancel Run
-    # Cancel a pending or running run.  Returns `409` if the run is already in a terminal state. Canceling a running run stops us tracking it, but the HTTP request may already be in flight — cancel means \"stop tracking,\" not \"guaranteed it didn't happen.\"
+    # Cancel a pending or running run.  Returns `404` if the run does not exist and `409` if it is already in a terminal state. Canceling a running run stops us tracking it, but the HTTP request may already be in flight — cancel means \"stop tracking,\" not \"guaranteed it didn't happen.\" A run that has already started running still counts toward your monthly run allowance even if you cancel it; a run canceled while it is still pending does not count.
     # @param run_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [RunResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Cancel Run
-    # Cancel a pending or running run.  Returns &#x60;409&#x60; if the run is already in a terminal state. Canceling a running run stops us tracking it, but the HTTP request may already be in flight — cancel means \&quot;stop tracking,\&quot; not \&quot;guaranteed it didn&#39;t happen.\&quot;
+    # Cancel a pending or running run.  Returns &#x60;404&#x60; if the run does not exist and &#x60;409&#x60; if it is already in a terminal state. Canceling a running run stops us tracking it, but the HTTP request may already be in flight — cancel means \&quot;stop tracking,\&quot; not \&quot;guaranteed it didn&#39;t happen.\&quot; A run that has already started running still counts toward your monthly run allowance even if you cancel it; a run canceled while it is still pending does not count.
     # @param run_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(RunResponse, Integer, Hash)>] RunResponse data, response status code and response headers
@@ -247,7 +247,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Rerun Run
-    # Spawn a new run from a prior run, using the job's current configuration.  Returns `409` if the run's parent job has been deleted.
+    # Spawn a new run from a prior run, using the job's current configuration.  Returns `404` if the run does not exist and `409` if the run's parent job has been deleted.
     # @param run_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [RunResponse]
@@ -257,7 +257,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Rerun Run
-    # Spawn a new run from a prior run, using the job&#39;s current configuration.  Returns &#x60;409&#x60; if the run&#39;s parent job has been deleted.
+    # Spawn a new run from a prior run, using the job&#39;s current configuration.  Returns &#x60;404&#x60; if the run does not exist and &#x60;409&#x60; if the run&#39;s parent job has been deleted.
     # @param run_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(RunResponse, Integer, Hash)>] RunResponse data, response status code and response headers

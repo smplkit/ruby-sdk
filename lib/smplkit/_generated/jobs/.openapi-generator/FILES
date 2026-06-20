@@ -7,6 +7,8 @@
 Gemfile
 README.md
 Rakefile
+docs/Error.md
+docs/ErrorResponse.md
 docs/HttpHeader.md
 docs/Job.md
 docs/JobCreateRequest.md
@@ -51,6 +53,8 @@ lib/smplkit_jobs_client/api_client.rb
 lib/smplkit_jobs_client/api_error.rb
 lib/smplkit_jobs_client/api_model_base.rb
 lib/smplkit_jobs_client/configuration.rb
+lib/smplkit_jobs_client/models/error.rb
+lib/smplkit_jobs_client/models/error_response.rb
 lib/smplkit_jobs_client/models/http_header.rb
 lib/smplkit_jobs_client/models/job.rb
 lib/smplkit_jobs_client/models/job_create_request.rb
@@ -87,6 +91,8 @@ spec/api/jobs_api_spec.rb
 spec/api/retry_policies_api_spec.rb
 spec/api/runs_api_spec.rb
 spec/api/usage_api_spec.rb
+spec/models/error_response_spec.rb
+spec/models/error_spec.rb
 spec/models/http_header_spec.rb
 spec/models/job_create_request_spec.rb
 spec/models/job_create_resource_spec.rb

@@ -109,6 +109,8 @@ Class | Method | HTTP request | Description
 
 ## Documentation for Models
 
+ - [SmplkitGeneratedClient::Jobs::Error](docs/Error.md)
+ - [SmplkitGeneratedClient::Jobs::ErrorResponse](docs/ErrorResponse.md)
  - [SmplkitGeneratedClient::Jobs::HttpHeader](docs/HttpHeader.md)
  - [SmplkitGeneratedClient::Jobs::Job](docs/Job.md)
  - [SmplkitGeneratedClient::Jobs::JobCreateRequest](docs/JobCreateRequest.md)
