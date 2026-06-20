@@ -18,6 +18,8 @@ require 'smplkit_jobs_client/version'
 require 'smplkit_jobs_client/configuration'
 
 # Models
+require 'smplkit_jobs_client/models/error'
+require 'smplkit_jobs_client/models/error_response'
 require 'smplkit_jobs_client/models/http_header'
 require 'smplkit_jobs_client/models/job'
 require 'smplkit_jobs_client/models/job_create_request'
