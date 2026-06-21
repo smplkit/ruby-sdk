@@ -25,7 +25,7 @@ module SmplkitGeneratedClient::Audit
     # Destination type.
     attr_accessor :forwarder_type
 
-    # Always false. Enablement is per-environment: a forwarder delivers in an environment only when `environments[<env>].enabled` is true. The base value is pinned false and cannot be set.
+    # Always false. Enablement is per-environment: a forwarder delivers in an environment only when that environment's entry in `environments` sets `enabled` to true. The base value is pinned false and cannot be set.
     attr_accessor :enabled
 
     # When true, this forwarder also receives platform change events that smplkit records about your own resources (flag, configuration, and similar changes). Each such event is delivered through every environment this forwarder is enabled in, using that environment's resolved configuration. Defaults to false — platform change events are not forwarded unless you opt in. Independent of the per-environment `enabled` settings, since platform change events are not tied to a deployment environment.
@@ -40,10 +40,10 @@ module SmplkitGeneratedClient::Audit
     # Template applied to each event before delivery. The shape depends on ``transform_type``: for `JSONATA`, a string containing a JSONata expression. Omit to deliver the event JSON unchanged.
     attr_accessor :transform
 
-    # Base delivery configuration template. Shape is discriminated by ``forwarder_type``; today all destination types use ``HttpConfiguration``. Branded vendor types (everything except `http`) constrain the configuration against a per-vendor template — see `GET /api/v1/forwarder_types` for the URL pattern, fixed headers, and customer-supplied placeholders for each type. A per-environment override in `environments` replaces this template for that environment.
+    # Base delivery configuration template. Shape is discriminated by ``forwarder_type``; today all destination types use ``HttpConfiguration``. Branded vendor types (everything except `http`) constrain the configuration against a per-vendor template — see `GET /api/v1/forwarder_types` for the URL pattern, fixed headers, and customer-supplied placeholders for each type. A per-environment entry in `environments` overrides individual fields of this template for that environment; fields it omits are inherited from here.
     attr_accessor :configuration
 
-    # Per-environment overrides keyed by environment key (e.g. `production`, `staging`). Each entry sets `enabled` (whether the forwarder delivers in that environment) and an optional `configuration` override (omit to inherit the base `configuration`). A forwarder with no entry for an environment is disabled there. Every referenced environment must exist and be managed for the account.
+    # Per-environment overrides keyed by environment key (e.g. `production`, `staging`). Each entry is a sparse map of only the fields that differ in that environment: `enabled` (whether the forwarder delivers there) plus any of `url`, `method`, `success_status`, `tls_verify`, `ca_cert`, and individual headers as `headers.<name>` (e.g. `headers.Authorization`). Fields you omit are inherited from the base `configuration`; an entry never needs to repeat the whole configuration. A forwarder with no entry for an environment is disabled there. Every referenced environment must exist and be managed for the account.
     attr_accessor :environments
 
     # When the forwarder was created.
@@ -122,7 +122,7 @@ module SmplkitGeneratedClient::Audit
         :'transform_type' => :'String',
         :'transform' => :'Object',
         :'configuration' => :'HttpConfiguration',
-        :'environments' => :'Hash<String, ForwarderEnvironment>',
+        :'environments' => :'Hash<String, Hash<String, Object>>',
         :'created_at' => :'Time',
         :'updated_at' => :'Time',
         :'deleted_at' => :'Time',

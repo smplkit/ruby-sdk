@@ -148,7 +148,6 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Audit::ForwarderDeliveryListResponse](docs/ForwarderDeliveryListResponse.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDeliveryResource](docs/ForwarderDeliveryResource.md)
  - [SmplkitGeneratedClient::Audit::ForwarderDeliveryResponse](docs/ForwarderDeliveryResponse.md)
- - [SmplkitGeneratedClient::Audit::ForwarderEnvironment](docs/ForwarderEnvironment.md)
  - [SmplkitGeneratedClient::Audit::ForwarderListResponse](docs/ForwarderListResponse.md)
  - [SmplkitGeneratedClient::Audit::ForwarderRequest](docs/ForwarderRequest.md)
  - [SmplkitGeneratedClient::Audit::ForwarderResource](docs/ForwarderResource.md)

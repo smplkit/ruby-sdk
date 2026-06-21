@@ -42,7 +42,6 @@ docs/ForwarderDeliveryListMeta.md
 docs/ForwarderDeliveryListResponse.md
 docs/ForwarderDeliveryResource.md
 docs/ForwarderDeliveryResponse.md
-docs/ForwarderEnvironment.md
 docs/ForwarderListResponse.md
 docs/ForwarderRequest.md
 docs/ForwarderResource.md
@@ -120,7 +119,6 @@ lib/smplkit_audit_client/models/forwarder_delivery_list_meta.rb
 lib/smplkit_audit_client/models/forwarder_delivery_list_response.rb
 lib/smplkit_audit_client/models/forwarder_delivery_resource.rb
 lib/smplkit_audit_client/models/forwarder_delivery_response.rb
-lib/smplkit_audit_client/models/forwarder_environment.rb
 lib/smplkit_audit_client/models/forwarder_list_response.rb
 lib/smplkit_audit_client/models/forwarder_request.rb
 lib/smplkit_audit_client/models/forwarder_resource.rb
@@ -189,7 +187,6 @@ spec/models/forwarder_delivery_list_response_spec.rb
 spec/models/forwarder_delivery_resource_spec.rb
 spec/models/forwarder_delivery_response_spec.rb
 spec/models/forwarder_delivery_spec.rb
-spec/models/forwarder_environment_spec.rb
 spec/models/forwarder_list_response_spec.rb
 spec/models/forwarder_request_spec.rb
 spec/models/forwarder_resource_spec.rb
