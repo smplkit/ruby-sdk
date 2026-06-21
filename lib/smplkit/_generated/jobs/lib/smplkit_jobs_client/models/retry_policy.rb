@@ -31,8 +31,17 @@ module SmplkitGeneratedClient::Jobs
     # The ceiling on the wait between retries, in seconds, for `exponential` backoff — once the doubling reaches it, every subsequent retry waits this long. Only valid with `exponential` backoff; omit it for `fixed`.
     attr_accessor :max_delay_seconds
 
-    # Which failures are retried. A run is retried only when its failure matches this set; an empty set retries nothing. Some failures are never retried regardless of this value.
-    attr_accessor :retry_on
+    # Retry a run that failed because the request did not complete within the job's timeout. Defaults to `false` (timeouts are not retried).
+    attr_accessor :retry_on_timeout
+
+    # Retry a run that failed because the destination could not be reached (DNS, connection refused, TLS, or transport error). Defaults to `false` (connection errors are not retried).
+    attr_accessor :retry_on_connection_error
+
+    # Allowlist of response status patterns to retry when a run fails because the response did not match the job's success status. Each element is either an exact 3-digit HTTP code (e.g. `429`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`) — for example `[\"429\", \"5xx\"]` to retry on rate-limit and any server error. Empty (the default) matches no status, so nothing is retried on a non-success response.
+    attr_accessor :retry_statuses
+
+    # Subtractions from `retry_statuses`, using the same exact-code or class syntax. A status that matches both lists is not retried — `except` wins on overlap — so `retry_statuses` of `[\"5xx\"]` with `retry_statuses_except` of `[\"501\"]` retries every server error except `501`. An element that does not overlap `retry_statuses` is allowed and simply has no effect. Empty (the default) subtracts nothing.
+    attr_accessor :retry_statuses_except
 
     # When the policy was created.
     attr_accessor :created_at
@@ -76,7 +85,10 @@ module SmplkitGeneratedClient::Jobs
         :'backoff' => :'backoff',
         :'delay_seconds' => :'delay_seconds',
         :'max_delay_seconds' => :'max_delay_seconds',
-        :'retry_on' => :'retry_on',
+        :'retry_on_timeout' => :'retry_on_timeout',
+        :'retry_on_connection_error' => :'retry_on_connection_error',
+        :'retry_statuses' => :'retry_statuses',
+        :'retry_statuses_except' => :'retry_statuses_except',
         :'created_at' => :'created_at',
         :'updated_at' => :'updated_at',
         :'deleted_at' => :'deleted_at',
@@ -102,7 +114,10 @@ module SmplkitGeneratedClient::Jobs
         :'backoff' => :'String',
         :'delay_seconds' => :'Integer',
         :'max_delay_seconds' => :'Integer',
-        :'retry_on' => :'RetryOn',
+        :'retry_on_timeout' => :'Boolean',
+        :'retry_on_connection_error' => :'Boolean',
+        :'retry_statuses' => :'Array<String>',
+        :'retry_statuses_except' => :'Array<String>',
         :'created_at' => :'Time',
         :'updated_at' => :'Time',
         :'deleted_at' => :'Time',
@@ -165,8 +180,28 @@ module SmplkitGeneratedClient::Jobs
         self.max_delay_seconds = attributes[:'max_delay_seconds']
       end
 
-      if attributes.key?(:'retry_on')
-        self.retry_on = attributes[:'retry_on']
+      if attributes.key?(:'retry_on_timeout')
+        self.retry_on_timeout = attributes[:'retry_on_timeout']
+      else
+        self.retry_on_timeout = false
+      end
+
+      if attributes.key?(:'retry_on_connection_error')
+        self.retry_on_connection_error = attributes[:'retry_on_connection_error']
+      else
+        self.retry_on_connection_error = false
+      end
+
+      if attributes.key?(:'retry_statuses')
+        if (value = attributes[:'retry_statuses']).is_a?(Array)
+          self.retry_statuses = value
+        end
+      end
+
+      if attributes.key?(:'retry_statuses_except')
+        if (value = attributes[:'retry_statuses_except']).is_a?(Array)
+          self.retry_statuses_except = value
+        end
       end
 
       if attributes.key?(:'created_at')
@@ -333,7 +368,10 @@ module SmplkitGeneratedClient::Jobs
           backoff == o.backoff &&
           delay_seconds == o.delay_seconds &&
           max_delay_seconds == o.max_delay_seconds &&
-          retry_on == o.retry_on &&
+          retry_on_timeout == o.retry_on_timeout &&
+          retry_on_connection_error == o.retry_on_connection_error &&
+          retry_statuses == o.retry_statuses &&
+          retry_statuses_except == o.retry_statuses_except &&
           created_at == o.created_at &&
           updated_at == o.updated_at &&
           deleted_at == o.deleted_at &&
@@ -349,7 +387,7 @@ module SmplkitGeneratedClient::Jobs
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, max_retries, backoff, delay_seconds, max_delay_seconds, retry_on, created_at, updated_at, deleted_at, version].hash
+      [name, max_retries, backoff, delay_seconds, max_delay_seconds, retry_on_timeout, retry_on_connection_error, retry_statuses, retry_statuses_except, created_at, updated_at, deleted_at, version].hash
     end
 
     # Builds the object from hash
