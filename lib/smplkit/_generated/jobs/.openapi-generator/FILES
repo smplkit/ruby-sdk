@@ -22,7 +22,6 @@ docs/JobResponse.md
 docs/JobsApi.md
 docs/ListMeta.md
 docs/PaginationMeta.md
-docs/RetryOn.md
 docs/RetryPoliciesApi.md
 docs/RetryPolicy.md
 docs/RetryPolicyCreateRequest.md
@@ -67,7 +66,6 @@ lib/smplkit_jobs_client/models/job_resource.rb
 lib/smplkit_jobs_client/models/job_response.rb
 lib/smplkit_jobs_client/models/list_meta.rb
 lib/smplkit_jobs_client/models/pagination_meta.rb
-lib/smplkit_jobs_client/models/retry_on.rb
 lib/smplkit_jobs_client/models/retry_policy.rb
 lib/smplkit_jobs_client/models/retry_policy_create_request.rb
 lib/smplkit_jobs_client/models/retry_policy_create_resource.rb
@@ -105,7 +103,6 @@ spec/models/job_response_spec.rb
 spec/models/job_spec.rb
 spec/models/list_meta_spec.rb
 spec/models/pagination_meta_spec.rb
-spec/models/retry_on_spec.rb
 spec/models/retry_policy_create_request_spec.rb
 spec/models/retry_policy_create_resource_spec.rb
 spec/models/retry_policy_list_response_spec.rb

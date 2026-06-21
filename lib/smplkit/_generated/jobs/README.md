@@ -123,7 +123,6 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Jobs::JobResponse](docs/JobResponse.md)
  - [SmplkitGeneratedClient::Jobs::ListMeta](docs/ListMeta.md)
  - [SmplkitGeneratedClient::Jobs::PaginationMeta](docs/PaginationMeta.md)
- - [SmplkitGeneratedClient::Jobs::RetryOn](docs/RetryOn.md)
  - [SmplkitGeneratedClient::Jobs::RetryPolicy](docs/RetryPolicy.md)
  - [SmplkitGeneratedClient::Jobs::RetryPolicyCreateRequest](docs/RetryPolicyCreateRequest.md)
  - [SmplkitGeneratedClient::Jobs::RetryPolicyCreateResource](docs/RetryPolicyCreateResource.md)

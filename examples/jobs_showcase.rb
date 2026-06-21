@@ -34,9 +34,10 @@ Smplkit::JobsClient.open do |jobs|
       backoff: Smplkit::Jobs::Backoff::EXPONENTIAL,
       delay_seconds: 2,
       max_delay_seconds: 60,
-      retry_on: Smplkit::Jobs::RetryOn.new(
-        statuses: [429, 503], reasons: [Smplkit::Jobs::RetryReason::TIMEOUT]
-      )
+      retry_on_timeout: true,
+      retry_on_connection_error: true,
+      retry_statuses: %w[429 5xx],
+      retry_statuses_except: ["501"]
     )
     retry_policy.save
     raise unless jobs.retry_policies.list.any? { |p| p.id == RETRY_POLICY_ID }
