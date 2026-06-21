@@ -141,14 +141,28 @@ module Smplkit
       # @param max_delay_seconds [Integer, nil] Ceiling on the wait between
       #   retries, for {Backoff::EXPONENTIAL} backoff only. +nil+ (the default)
       #   leaves it uncapped; omit it for {Backoff::FIXED}.
-      # @param retry_on [RetryOn, nil] Which failures to retry (see {RetryOn}).
-      #   +nil+ (the default) retries nothing.
+      # @param retry_on_timeout [Boolean] Retry a run that timed out. Defaults to
+      #   +false+.
+      # @param retry_on_connection_error [Boolean] Retry a run whose destination
+      #   could not be reached. Defaults to +false+.
+      # @param retry_statuses [Array<String>, nil] Allowlist of response-status
+      #   patterns to retry on a non-success response. Each element is an exact
+      #   3-digit code (e.g. +"429"+) or a class token (+"1xx"+ … +"5xx"+).
+      #   +nil+ (the default) retries no statuses.
+      # @param retry_statuses_except [Array<String>, nil] Patterns subtracted from
+      #   +retry_statuses+, using the same syntax; +except+ wins on overlap.
+      #   +nil+ (the default) subtracts nothing.
       # @return [Smplkit::Jobs::RetryPolicy]
-      def new(id, name:, max_retries:, backoff:, delay_seconds:, max_delay_seconds: nil, retry_on: nil)
+      def new(id, name:, max_retries:, backoff:, delay_seconds:, max_delay_seconds: nil,
+              retry_on_timeout: false, retry_on_connection_error: false,
+              retry_statuses: nil, retry_statuses_except: nil)
         RetryPolicy.new(
           self,
           id: id, name: name, max_retries: max_retries, backoff: backoff,
-          delay_seconds: delay_seconds, max_delay_seconds: max_delay_seconds, retry_on: retry_on
+          delay_seconds: delay_seconds, max_delay_seconds: max_delay_seconds,
+          retry_on_timeout: retry_on_timeout,
+          retry_on_connection_error: retry_on_connection_error,
+          retry_statuses: retry_statuses, retry_statuses_except: retry_statuses_except
         )
       end
 
@@ -214,8 +228,8 @@ module Smplkit
       private
 
       # Build the generated attributes model shared by create and update. The
-      # +retry_on+ failure set is always sent; +max_delay_seconds+ is sent only
-      # when present (omitting it leaves the policy uncapped / is invalid for
+      # four retry-condition fields are always sent; +max_delay_seconds+ is sent
+      # only when present (omitting it leaves the policy uncapped / is invalid for
       # fixed backoff).
       def build_retry_policy_attrs(policy)
         attrs = {
@@ -223,7 +237,10 @@ module Smplkit
           max_retries: policy.max_retries,
           backoff: policy.backoff,
           delay_seconds: policy.delay_seconds,
-          retry_on: RetryOn.to_wire(policy.retry_on)
+          retry_on_timeout: policy.retry_on_timeout,
+          retry_on_connection_error: policy.retry_on_connection_error,
+          retry_statuses: Array(policy.retry_statuses).map(&:to_s),
+          retry_statuses_except: Array(policy.retry_statuses_except).map(&:to_s)
         }
         attrs[:max_delay_seconds] = policy.max_delay_seconds unless policy.max_delay_seconds.nil?
         SmplkitGeneratedClient::Jobs::RetryPolicy.new(attrs)

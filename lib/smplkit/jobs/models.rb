@@ -144,19 +144,6 @@ module Smplkit
       VALUES = [EXPONENTIAL, FIXED].freeze
     end
 
-    # A failure category a retry policy can retry on.
-    #
-    # - +CONNECTION_ERROR+: The endpoint could not be reached.
-    # - +NON_SUCCESS_STATUS+: Any non-success response, regardless of +statuses+.
-    # - +TIMEOUT+: The run did not complete in time.
-    module RetryReason
-      CONNECTION_ERROR = "CONNECTION_ERROR"
-      NON_SUCCESS_STATUS = "NON_SUCCESS_STATUS"
-      TIMEOUT = "TIMEOUT"
-
-      VALUES = [CONNECTION_ERROR, NON_SUCCESS_STATUS, TIMEOUT].freeze
-    end
-
     # HTTP verb a job uses when it fires.
     #
     # Mirrors the jobs spec's method enum so a job's
@@ -184,46 +171,6 @@ module Smplkit
 
         raise ArgumentError,
               "Unknown HttpMethod #{value.inspect}; expected one of #{VALUES.inspect}"
-      end
-    end
-
-    # Which failures a retry policy retries. An empty {RetryOn} (both lists
-    # empty) retries nothing.
-    #
-    # @!attribute [rw] statuses
-    #   @return [Array<Integer>] Response status codes to retry when a run fails
-    #     because the response did not match the job's success status (e.g.
-    #     +[429, 503]+ for rate-limit and unavailable). Each is a 3-digit HTTP
-    #     code. Defaults to an empty list.
-    # @!attribute [rw] reasons
-    #   @return [Array<String>] Failure categories to retry — see {RetryReason}.
-    #     Defaults to an empty list.
-    RetryOn = Struct.new(:statuses, :reasons, keyword_init: true) do
-      def initialize(statuses: nil, reasons: nil)
-        super(statuses: statuses || [], reasons: reasons || [])
-      end
-
-      # @api private — Convert a {RetryOn} into the generated wire model.
-      #   Reasons are serialized as their raw string values.
-      #
-      # @param src [RetryOn] The failure set to serialize.
-      # @return [SmplkitGeneratedClient::Jobs::RetryOn] The wire model.
-      def self.to_wire(src)
-        SmplkitGeneratedClient::Jobs::RetryOn.new(
-          statuses: Array(src.statuses),
-          reasons: Array(src.reasons).map(&:to_s)
-        )
-      end
-
-      # @api private — Build a {RetryOn} from the generated wire model. A +nil+
-      #   wire value (the field was absent) yields an empty {RetryOn}.
-      #
-      # @param src [SmplkitGeneratedClient::Jobs::RetryOn, nil] The wire model.
-      # @return [RetryOn]
-      def self.from_wire(src)
-        return new if src.nil?
-
-        new(statuses: src.statuses || [], reasons: src.reasons || [])
       end
     end
 
@@ -1045,9 +992,23 @@ module Smplkit
       #   wire) leaves it uncapped; omit it for {Backoff::FIXED}.
       attr_accessor :max_delay_seconds
 
-      # @return [RetryOn] Which failures to retry; an empty {RetryOn} retries
-      #   nothing. Defaults to empty.
-      attr_accessor :retry_on
+      # @return [Boolean] Retry a run that timed out. Defaults to +false+.
+      attr_accessor :retry_on_timeout
+
+      # @return [Boolean] Retry a run whose destination could not be reached (a
+      #   connection error). Defaults to +false+.
+      attr_accessor :retry_on_connection_error
+
+      # @return [Array<String>] Allowlist of response-status patterns to retry on
+      #   a non-success response. Each element is an exact 3-digit code (e.g.
+      #   +"429"+) or a class token (+"1xx"+ … +"5xx"+). Defaults to an empty
+      #   list (retries no statuses).
+      attr_accessor :retry_statuses
+
+      # @return [Array<String>] Patterns subtracted from {#retry_statuses}, using
+      #   the same exact-code or class syntax. A status matching both lists is not
+      #   retried — +except+ wins on overlap. Defaults to an empty list.
+      attr_accessor :retry_statuses_except
 
       # @return [String, nil] ISO-8601 timestamp of first persist. +nil+ for an
       #   unsaved instance.
@@ -1065,7 +1026,9 @@ module Smplkit
       attr_accessor :version
 
       def initialize(client = nil, id:, name:, max_retries:, backoff:, delay_seconds:,
-                     max_delay_seconds: nil, retry_on: nil, created_at: nil,
+                     max_delay_seconds: nil, retry_on_timeout: false,
+                     retry_on_connection_error: false, retry_statuses: nil,
+                     retry_statuses_except: nil, created_at: nil,
                      updated_at: nil, deleted_at: nil, version: nil)
         @client = client
         @id = id
@@ -1074,7 +1037,10 @@ module Smplkit
         @backoff = backoff
         @delay_seconds = delay_seconds
         @max_delay_seconds = max_delay_seconds
-        @retry_on = retry_on || RetryOn.new
+        @retry_on_timeout = retry_on_timeout
+        @retry_on_connection_error = retry_on_connection_error
+        @retry_statuses = retry_statuses || []
+        @retry_statuses_except = retry_statuses_except || []
         @created_at = created_at
         @updated_at = updated_at
         @deleted_at = deleted_at
@@ -1115,7 +1081,10 @@ module Smplkit
         @backoff = other.backoff
         @delay_seconds = other.delay_seconds
         @max_delay_seconds = other.max_delay_seconds
-        @retry_on = other.retry_on
+        @retry_on_timeout = other.retry_on_timeout
+        @retry_on_connection_error = other.retry_on_connection_error
+        @retry_statuses = other.retry_statuses
+        @retry_statuses_except = other.retry_statuses_except
         @created_at = other.created_at
         @updated_at = other.updated_at
         @deleted_at = other.deleted_at
@@ -1138,7 +1107,10 @@ module Smplkit
           backoff: a.backoff,
           delay_seconds: a.delay_seconds,
           max_delay_seconds: a.max_delay_seconds,
-          retry_on: RetryOn.from_wire(a.retry_on),
+          retry_on_timeout: a.retry_on_timeout || false,
+          retry_on_connection_error: a.retry_on_connection_error || false,
+          retry_statuses: a.retry_statuses || [],
+          retry_statuses_except: a.retry_statuses_except || [],
           created_at: a.created_at,
           updated_at: a.updated_at,
           deleted_at: a.deleted_at,

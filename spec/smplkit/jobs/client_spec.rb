@@ -1089,59 +1089,29 @@ RSpec.describe Smplkit::Jobs::Backoff do
   end
 end
 
-RSpec.describe Smplkit::Jobs::RetryReason do
-  it "carries the wire values for each reason in VALUES" do
-    expect(described_class::CONNECTION_ERROR).to eq("CONNECTION_ERROR")
-    expect(described_class::NON_SUCCESS_STATUS).to eq("NON_SUCCESS_STATUS")
-    expect(described_class::TIMEOUT).to eq("TIMEOUT")
-    expect(described_class::VALUES).to eq(%w[CONNECTION_ERROR NON_SUCCESS_STATUS TIMEOUT])
-  end
-end
-
-RSpec.describe Smplkit::Jobs::RetryOn do
-  it "defaults both lists to empty (retries nothing)" do
-    on = described_class.new
-    expect(on.statuses).to eq([])
-    expect(on.reasons).to eq([])
+RSpec.describe Smplkit::Jobs::RetryPolicy do
+  it "defaults the four retry-condition fields (retries nothing)" do
+    policy = described_class.new(
+      id: "p", name: "n", max_retries: 1,
+      backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1
+    )
+    expect(policy.retry_on_timeout).to be(false)
+    expect(policy.retry_on_connection_error).to be(false)
+    expect(policy.retry_statuses).to eq([])
+    expect(policy.retry_statuses_except).to eq([])
   end
 
-  describe ".to_wire" do
-    it "serializes statuses and reasons (reasons as their string values)" do
-      on = described_class.new(statuses: [429, 503], reasons: [Smplkit::Jobs::RetryReason::TIMEOUT])
-      wire = described_class.to_wire(on)
-      expect(wire.statuses).to eq([429, 503])
-      expect(wire.reasons).to eq(["TIMEOUT"])
-    end
-
-    it "serializes an empty RetryOn to empty lists" do
-      wire = described_class.to_wire(described_class.new)
-      expect(wire.statuses).to eq([])
-      expect(wire.reasons).to eq([])
-    end
-  end
-
-  describe ".from_wire" do
-    it "returns an empty RetryOn for nil" do
-      on = described_class.from_wire(nil)
-      expect(on.statuses).to eq([])
-      expect(on.reasons).to eq([])
-    end
-
-    it "round-trips a populated wire model" do
-      wire = described_class.to_wire(
-        described_class.new(statuses: [500], reasons: [Smplkit::Jobs::RetryReason::CONNECTION_ERROR])
-      )
-      back = described_class.from_wire(wire)
-      expect(back.statuses).to eq([500])
-      expect(back.reasons).to eq(["CONNECTION_ERROR"])
-    end
-
-    it "coerces nil wire lists to empty arrays" do
-      wire = SmplkitGeneratedClient::Jobs::RetryOn.new
-      back = described_class.from_wire(wire)
-      expect(back.statuses).to eq([])
-      expect(back.reasons).to eq([])
-    end
+  it "retains explicit retry-condition values" do
+    policy = described_class.new(
+      id: "p", name: "n", max_retries: 1,
+      backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1,
+      retry_on_timeout: true, retry_on_connection_error: true,
+      retry_statuses: %w[429 5xx], retry_statuses_except: ["501"]
+    )
+    expect(policy.retry_on_timeout).to be(true)
+    expect(policy.retry_on_connection_error).to be(true)
+    expect(policy.retry_statuses).to eq(%w[429 5xx])
+    expect(policy.retry_statuses_except).to eq(["501"])
   end
 end
 
@@ -1372,13 +1342,17 @@ RSpec.describe Smplkit::Jobs::RetryPoliciesClient do
   let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
 
   def policy_resource(id: "showcase-retry", version: 1, created: true, max_delay: 60,
-                      statuses: [429, 503], reasons: ["TIMEOUT"])
+                      retry_on_timeout: true, retry_on_connection_error: true,
+                      retry_statuses: %w[429 5xx], retry_statuses_except: ["501"])
     {
       id: id, type: "retry_policy",
       attributes: {
         name: "Retry on server errors", max_retries: 5, backoff: "exponential",
         delay_seconds: 2, max_delay_seconds: max_delay,
-        retry_on: { statuses: statuses, reasons: reasons },
+        retry_on_timeout: retry_on_timeout,
+        retry_on_connection_error: retry_on_connection_error,
+        retry_statuses: retry_statuses,
+        retry_statuses_except: retry_statuses_except,
         created_at: created ? "2026-06-04T00:00:00Z" : nil,
         updated_at: created ? "2026-06-04T00:00:00Z" : nil,
         deleted_at: nil, version: version
@@ -1396,10 +1370,10 @@ RSpec.describe Smplkit::Jobs::RetryPoliciesClient do
       policy = policies.new(policy_id, name: "Retry on server errors", max_retries: 5,
                                        backoff: Smplkit::Jobs::Backoff::EXPONENTIAL,
                                        delay_seconds: 2, max_delay_seconds: 60,
-                                       retry_on: Smplkit::Jobs::RetryOn.new(
-                                         statuses: [429, 503],
-                                         reasons: [Smplkit::Jobs::RetryReason::TIMEOUT]
-                                       ))
+                                       retry_on_timeout: true,
+                                       retry_on_connection_error: true,
+                                       retry_statuses: %w[429 5xx],
+                                       retry_statuses_except: ["501"])
       expect(policy.created_at).to be_nil
       policy.save
       data = captured["data"]
@@ -1411,12 +1385,15 @@ RSpec.describe Smplkit::Jobs::RetryPoliciesClient do
       expect(attrs["backoff"]).to eq("exponential")
       expect(attrs["delay_seconds"]).to eq(2)
       expect(attrs["max_delay_seconds"]).to eq(60)
-      expect(attrs["retry_on"]).to eq({ "statuses" => [429, 503], "reasons" => ["TIMEOUT"] })
+      expect(attrs["retry_on_timeout"]).to be(true)
+      expect(attrs["retry_on_connection_error"]).to be(true)
+      expect(attrs["retry_statuses"]).to eq(%w[429 5xx])
+      expect(attrs["retry_statuses_except"]).to eq(["501"])
       expect(policy.created_at).not_to be_nil
       expect(policy.version).to eq(1)
     end
 
-    it "omits max_delay_seconds from the wire when unset, but always sends retry_on" do
+    it "omits max_delay_seconds from the wire when unset, but always sends the retry conditions" do
       captured = nil
       stub_request(:post, "#{base_url}/api/v1/retry-policies").with do |req|
         captured = JSON.parse(req.body)
@@ -1426,7 +1403,11 @@ RSpec.describe Smplkit::Jobs::RetryPoliciesClient do
                               backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1).save
       attrs = captured["data"]["attributes"]
       expect(attrs).not_to have_key("max_delay_seconds")
-      expect(attrs["retry_on"]).to eq({ "statuses" => [], "reasons" => [] }) # empty: retries nothing
+      # defaults: retries nothing
+      expect(attrs["retry_on_timeout"]).to be(false)
+      expect(attrs["retry_on_connection_error"]).to be(false)
+      expect(attrs["retry_statuses"]).to eq([])
+      expect(attrs["retry_statuses_except"]).to eq([])
     end
 
     it "raises ArgumentError when saving a policy with an empty id" do
@@ -1454,8 +1435,10 @@ RSpec.describe Smplkit::Jobs::RetryPoliciesClient do
       expect(policy).to be_a(Smplkit::Jobs::RetryPolicy)
       expect(policy.backoff).to eq("exponential")
       expect(policy.max_delay_seconds).to eq(60)
-      expect(policy.retry_on.statuses).to eq([429, 503])
-      expect(policy.retry_on.reasons).to eq(["TIMEOUT"])
+      expect(policy.retry_on_timeout).to be(true)
+      expect(policy.retry_on_connection_error).to be(true)
+      expect(policy.retry_statuses).to eq(%w[429 5xx])
+      expect(policy.retry_statuses_except).to eq(["501"])
       expect(policy.instance_variable_get(:@client)).to be(policies)
     end
 
