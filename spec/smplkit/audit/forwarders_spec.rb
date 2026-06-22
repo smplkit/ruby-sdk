@@ -416,6 +416,27 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
       expect(fwd.forward_smplkit_events).to be(true)
     end
 
+    it "omits forward_smplkit_events from the wire when not opted in at create" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(
+        status: 201,
+        body: { data: forwarder_resource }.to_json,
+        headers: json_api
+      )
+      fwd = forwarders.new(
+        fwd_id, name: "n", forwarder_type: "http",
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base")
+      )
+      fwd.save
+      # Minimal-body intent: a non-opted-in forwarder sends no
+      # forward_smplkit_events key at all (server default is false).
+      expect(captured.dig("data", "attributes")).not_to have_key("forward_smplkit_events")
+      expect(fwd.forward_smplkit_events).to be(false)
+    end
+
     it "surfaces forward_smplkit_events on read" do
       stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
         status: 200,

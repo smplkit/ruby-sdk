@@ -196,11 +196,19 @@ module Smplkit
       def build_attrs(forwarder)
         # The base +enabled+ is server-pinned false; we don't send it.
         # Enablement travels entirely through +environments+.
+        #
+        # +forward_smplkit_events+ is an additive opt-in; only put it on the
+        # wire when +true+ so the default (false) stays implicit and a
+        # non-opted-in forwarder's body is unchanged. The generated model
+        # defaults the field to +false+ (not nil), so it would otherwise always
+        # serialize — pass +nil+ instead, which the generated +Forwarder#to_hash+
+        # omits for this non-nullable attribute (mirrors the Python reference's
+        # +True if forward_smplkit_events else UNSET+).
         SmplkitGeneratedClient::Audit::Forwarder.new(
           name: forwarder.name,
           description: forwarder.description,
           forwarder_type: ForwarderType.coerce(forwarder.forwarder_type),
-          forward_smplkit_events: forwarder.forward_smplkit_events,
+          forward_smplkit_events: (true if forwarder.forward_smplkit_events),
           environments: environments_to_wire(forwarder.environments),
           filter: forwarder.filter,
           transform_type: TransformType.coerce(forwarder.transform_type),
