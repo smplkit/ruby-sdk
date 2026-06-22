@@ -14,15 +14,15 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # HTTP request configuration for delivering a payload to a destination.  The shared base shape for any product that posts to a customer-supplied HTTP destination. Smpl Audit forwarders use it directly; Smpl Jobs extends it (adding ``body`` and ``timeout``). When other transports land (``FTP``, ``SQS``, …) their own configuration schemas will join this one as members of a discriminated union under a ``configuration`` field.
-  class HttpConfiguration < ApiModelBase
+  # HTTP request a forwarder makes to deliver an event.  Identical to the shared HTTP configuration except that ``headers`` is a name→value object so an individual header can be overridden per environment by its name.
+  class ForwarderHttpConfiguration < ApiModelBase
     # HTTP method used when delivering the request.
     attr_accessor :method
 
     # Destination URL. Must be an absolute `http://` or `https://` URL with a hostname (e.g. `https://siem.example.com/in`).
     attr_accessor :url
 
-    # HTTP headers attached to each request.
+    # HTTP headers attached to each delivery, as a name→value object (e.g. `{\"DD-API-KEY\": \"s3cr3t\"}`). A header is overridden in a specific environment by its name via a `headers.<name>` entry in that environment's overrides; header names match case-insensitively.
     attr_accessor :headers
 
     # HTTP response status that indicates success. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
@@ -83,7 +83,7 @@ module SmplkitGeneratedClient::Audit
       {
         :'method' => :'String',
         :'url' => :'String',
-        :'headers' => :'Array<HttpHeader>',
+        :'headers' => :'Hash<String, String>',
         :'success_status' => :'String',
         :'tls_verify' => :'Boolean',
         :'ca_cert' => :'String'
@@ -101,14 +101,14 @@ module SmplkitGeneratedClient::Audit
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::HttpConfiguration` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `SmplkitGeneratedClient::Audit::ForwarderHttpConfiguration` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::HttpConfiguration`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `SmplkitGeneratedClient::Audit::ForwarderHttpConfiguration`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
@@ -126,7 +126,7 @@ module SmplkitGeneratedClient::Audit
       end
 
       if attributes.key?(:'headers')
-        if (value = attributes[:'headers']).is_a?(Array)
+        if (value = attributes[:'headers']).is_a?(Hash)
           self.headers = value
         end
       end

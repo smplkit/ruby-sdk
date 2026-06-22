@@ -22,7 +22,7 @@ module SmplkitGeneratedClient::Audit
     # Destination URL. Must be an absolute `http://` or `https://` URL with a hostname (e.g. `https://siem.example.com/in`).
     attr_accessor :url
 
-    # HTTP headers attached to the test request.
+    # HTTP headers attached to the test request, as a name→value object (e.g. `{\"Authorization\": \"Bearer s3cr3t\"}`).
     attr_accessor :headers
 
     # HTTP response status that indicates success. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
@@ -91,7 +91,7 @@ module SmplkitGeneratedClient::Audit
       {
         :'method' => :'String',
         :'url' => :'String',
-        :'headers' => :'Array<HttpHeader>',
+        :'headers' => :'Hash<String, String>',
         :'success_status' => :'String',
         :'timeout_ms' => :'Integer',
         :'tls_verify' => :'Boolean',
@@ -138,7 +138,7 @@ module SmplkitGeneratedClient::Audit
       end
 
       if attributes.key?(:'headers')
-        if (value = attributes[:'headers']).is_a?(Array)
+        if (value = attributes[:'headers']).is_a?(Hash)
           self.headers = value
         end
       end
