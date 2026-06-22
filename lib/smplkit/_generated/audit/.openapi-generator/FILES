@@ -42,7 +42,7 @@ docs/ForwarderDeliveryListMeta.md
 docs/ForwarderDeliveryListResponse.md
 docs/ForwarderDeliveryResource.md
 docs/ForwarderDeliveryResponse.md
-docs/ForwarderEnvironment.md
+docs/ForwarderHttpConfiguration.md
 docs/ForwarderListResponse.md
 docs/ForwarderRequest.md
 docs/ForwarderResource.md
@@ -58,8 +58,6 @@ docs/ForwarderTypeResponse.md
 docs/ForwarderTypeTransform.md
 docs/ForwarderTypesApi.md
 docs/ForwardersApi.md
-docs/HttpConfiguration.md
-docs/HttpHeader.md
 docs/ListMeta.md
 docs/PaginationMeta.md
 docs/ResourceTypeAttributes.md
@@ -120,7 +118,7 @@ lib/smplkit_audit_client/models/forwarder_delivery_list_meta.rb
 lib/smplkit_audit_client/models/forwarder_delivery_list_response.rb
 lib/smplkit_audit_client/models/forwarder_delivery_resource.rb
 lib/smplkit_audit_client/models/forwarder_delivery_response.rb
-lib/smplkit_audit_client/models/forwarder_environment.rb
+lib/smplkit_audit_client/models/forwarder_http_configuration.rb
 lib/smplkit_audit_client/models/forwarder_list_response.rb
 lib/smplkit_audit_client/models/forwarder_request.rb
 lib/smplkit_audit_client/models/forwarder_resource.rb
@@ -134,8 +132,6 @@ lib/smplkit_audit_client/models/forwarder_type_placeholder.rb
 lib/smplkit_audit_client/models/forwarder_type_resource.rb
 lib/smplkit_audit_client/models/forwarder_type_response.rb
 lib/smplkit_audit_client/models/forwarder_type_transform.rb
-lib/smplkit_audit_client/models/http_configuration.rb
-lib/smplkit_audit_client/models/http_header.rb
 lib/smplkit_audit_client/models/list_meta.rb
 lib/smplkit_audit_client/models/pagination_meta.rb
 lib/smplkit_audit_client/models/resource_type_attributes.rb
@@ -189,7 +185,7 @@ spec/models/forwarder_delivery_list_response_spec.rb
 spec/models/forwarder_delivery_resource_spec.rb
 spec/models/forwarder_delivery_response_spec.rb
 spec/models/forwarder_delivery_spec.rb
-spec/models/forwarder_environment_spec.rb
+spec/models/forwarder_http_configuration_spec.rb
 spec/models/forwarder_list_response_spec.rb
 spec/models/forwarder_request_spec.rb
 spec/models/forwarder_resource_spec.rb
@@ -204,8 +200,6 @@ spec/models/forwarder_type_resource_spec.rb
 spec/models/forwarder_type_response_spec.rb
 spec/models/forwarder_type_spec.rb
 spec/models/forwarder_type_transform_spec.rb
-spec/models/http_configuration_spec.rb
-spec/models/http_header_spec.rb
 spec/models/list_meta_spec.rb
 spec/models/pagination_meta_spec.rb
 spec/models/resource_type_attributes_spec.rb
