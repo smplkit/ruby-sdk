@@ -19,7 +19,7 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
   let(:json_api) { { "Content-Type" => "application/vnd.api+json" } }
 
   def forwarder_resource(name: "Datadog production", description: nil,
-                         enabled: false, forwarder_type: "datadog",
+                         forwarder_type: "datadog",
                          forward_smplkit_events: false,
                          filter: nil, transform_type: nil, transform: nil,
                          environments: {})
@@ -27,13 +27,13 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
       id: fwd_id,
       type: "forwarder",
       attributes: {
-        name: name, description: description, forwarder_type: forwarder_type, enabled: enabled,
+        name: name, description: description, forwarder_type: forwarder_type,
         forward_smplkit_events: forward_smplkit_events,
         filter: filter, transform_type: transform_type, transform: transform,
         environments: environments,
         configuration: {
           method: "POST", url: "https://siem.example.com/in",
-          headers: [{ name: "DD-API-KEY", value: "<redacted>" }],
+          headers: { "DD-API-KEY" => "<redacted>" },
           success_status: "2xx"
         },
         created_at: "2026-05-07T12:00:00Z",
@@ -53,14 +53,30 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
         name: "Datadog production", forwarder_type: "datadog",
         configuration: Smplkit::Audit::HttpConfiguration.new(
           method: "POST", url: "https://siem.example.com/in",
-          headers: [Smplkit::Audit::HttpHeader.new(name: "DD-API-KEY", value: "real-secret")]
+          headers: { "DD-API-KEY" => "real-secret" }
         ),
         filter: { "==" => [1, 1] }, transform_type: "JSONATA", transform: "$"
       )
       fwd.save
       expect(fwd.id).to eq(fwd_id)
       expect(fwd.name).to eq("Datadog production")
-      expect(fwd.configuration.headers.first.value).to eq("<redacted>")
+      expect(fwd.configuration.get_header("DD-API-KEY")).to eq("<redacted>")
+    end
+
+    it "serializes the base configuration headers as a name→value object" do
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: forwarder_resource }.to_json, headers: json_api)
+      forwarders.new(
+        fwd_id, name: "n", forwarder_type: "http",
+                configuration: Smplkit::Audit::HttpConfiguration.new(
+                  url: "https://x", headers: { "X-Api-Key" => "real" }
+                )
+      ).save
+      headers = captured.dig("data", "attributes", "configuration", "headers")
+      expect(headers).to eq("X-Api-Key" => "real")
     end
 
     it "defaults the display name to the id when name is omitted" do
@@ -171,40 +187,35 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
     end
   end
 
-  describe "environments map (ADR-055)" do
-    it "sends an environments map on create with per-env enabled + configuration override" do
+  describe "per-environment sparse overrides (ADR-056)" do
+    it "sends a flat overlay on create: enabled + only overridden leaves + headers.<name>" do
       captured = nil
       stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
         captured = JSON.parse(req.body)
         true
       end.to_return(
         status: 201,
-        body: { data: forwarder_resource(
-          environments: { "production" => { enabled: true } }
-        ) }.to_json,
+        body: { data: forwarder_resource(environments: { "production" => { enabled: true } }) }.to_json,
         headers: json_api
       )
       fwd = forwarders.new(
         fwd_id, name: "n", forwarder_type: "http",
-                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base"),
-                environments: {
-                  "production" => Smplkit::Audit::ForwarderEnvironment.new(
-                    enabled: true,
-                    configuration: Smplkit::Audit::HttpConfiguration.new(
-                      url: "https://prod-override",
-                      headers: [Smplkit::Audit::HttpHeader.new(name: "X-Prod", value: "real")]
-                    )
-                  )
-                }
+                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base")
       )
+      prod = fwd.environment("production")
+      prod.enabled = true
+      prod.url = "https://prod-override"
+      prod.set_header("X-Prod", "real")
       fwd.save
       envs = captured.dig("data", "attributes", "environments")
-      expect(envs["production"]["enabled"]).to be(true)
-      expect(envs["production"]["configuration"]["url"]).to eq("https://prod-override")
-      expect(envs["production"]["configuration"]["headers"].first["value"]).to eq("real")
+      expect(envs["production"]).to eq(
+        "enabled" => true,
+        "url" => "https://prod-override",
+        "headers.X-Prod" => "real"
+      )
     end
 
-    it "accepts a plain Hash environment entry (lightweight form)" do
+    it "accepts a plain Hash environment entry (lightweight form) of flat leaves" do
       captured = nil
       stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
         captured = JSON.parse(req.body)
@@ -217,13 +228,11 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
       fwd = forwarders.new(
         fwd_id, name: "n", forwarder_type: "http",
                 configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base"),
-                environments: { "production" => { enabled: true } }
+                environments: { "production" => { enabled: true, url: "https://prod" } }
       )
       fwd.save
       envs = captured.dig("data", "attributes", "environments")
-      expect(envs["production"]["enabled"]).to be(true)
-      # No per-env override → inherits the base configuration (omitted on the wire).
-      expect(envs["production"]["configuration"]).to be_nil
+      expect(envs["production"]).to eq("enabled" => true, "url" => "https://prod")
     end
 
     it "defaults a plain Hash entry's enabled to false when omitted (string-keyed)" do
@@ -239,10 +248,10 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
       )
       fwd.save
       envs = captured.dig("data", "attributes", "environments")
-      expect(envs["production"]["enabled"]).to be(true)
+      expect(envs["production"]).to eq("enabled" => true)
     end
 
-    it "defaults environments to an empty map and never sends enabled=true on the base" do
+    it "defaults environments to an empty map and never sends a base enabled" do
       captured = nil
       stub_request(:post, "#{base_url}/api/v1/forwarders").with do |req|
         captured = JSON.parse(req.body)
@@ -256,24 +265,19 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
       fwd.save
       attrs = captured.dig("data", "attributes")
       expect(attrs["environments"]).to eq({})
-      # The base ``enabled`` is server-pinned false — we never send it true.
-      expect(attrs["enabled"]).not_to be(true)
+      expect(attrs).not_to have_key("enabled")
     end
 
-    it "reads the environments map back from a get, redacting override headers" do
+    it "reads the flat overlay back from a get (pure-override null reads, redacted headers)" do
       stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
         status: 200,
         body: { data: forwarder_resource(
           environments: {
             "production" => {
-              enabled: true,
-              configuration: {
-                method: "POST", url: "https://prod-override",
-                headers: [{ name: "X-Prod", value: "<redacted>" }],
-                success_status: "2xx"
-              }
+              enabled: true, url: "https://prod-override",
+              "headers.X-Prod": "<redacted>"
             },
-            "staging" => { enabled: false, configuration: nil }
+            "staging" => { enabled: false }
           }
         ) }.to_json,
         headers: json_api
@@ -283,24 +287,34 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
       prod = fwd.environments["production"]
       expect(prod).to be_a(Smplkit::Audit::ForwarderEnvironment)
       expect(prod.enabled).to be(true)
-      expect(prod.configuration.url).to eq("https://prod-override")
-      expect(prod.configuration.headers.first.value).to eq("<redacted>")
+      expect(prod.url).to eq("https://prod-override")
+      expect(prod.get_header("X-Prod")).to eq("<redacted>")
+      expect(prod.success_status).to be_nil # un-overridden leaf reads as nil (no base merge)
       stg = fwd.environments["staging"]
       expect(stg.enabled).to be(false)
-      expect(stg.configuration).to be_nil
+      expect(stg.url).to be_nil
     end
 
-    it "exposes enabled as read-only and always false on reads" do
+    it "exposes enabled as a derived roll-up: true when any environment is enabled" do
       stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
         status: 200,
-        body: { data: forwarder_resource(enabled: false, environments: { "production" => { enabled: true } }) }.to_json,
+        body: { data: forwarder_resource(environments: { "production" => { enabled: true } }) }.to_json,
         headers: json_api
       )
       fwd = forwarders.get(fwd_id)
-      expect(fwd.enabled).to be(false)
+      expect(fwd.enabled).to be(true)
     end
 
-    it "round-trips the environments map through Forwarder#save (PUT)" do
+    it "exposes enabled as false when no environment is enabled" do
+      stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
+        status: 200,
+        body: { data: forwarder_resource(environments: { "production" => { enabled: false } }) }.to_json,
+        headers: json_api
+      )
+      expect(forwarders.get(fwd_id).enabled).to be(false)
+    end
+
+    it "round-trips the overlay through Forwarder#save (PUT)" do
       stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
         status: 200,
         body: { data: forwarder_resource(environments: { "production" => { enabled: true } }) }.to_json,
@@ -316,13 +330,13 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
         headers: json_api
       )
       fwd = forwarders.get(fwd_id)
-      fwd.environments["production"].enabled = false
+      fwd.environment("production").enabled = false
       fwd.save
       expect(captured.dig("data", "attributes", "environments", "production", "enabled")).to be(false)
       expect(fwd.environments["production"].enabled).to be(false)
     end
 
-    it "defaults a wire ForwarderEnvironment with absent enabled to false" do
+    it "defaults a wire overlay with absent enabled to false" do
       stub_request(:get, "#{base_url}/api/v1/forwarders/#{fwd_id}").to_return(
         status: 200,
         body: { data: forwarder_resource(environments: { "production" => {} }) }.to_json,
@@ -330,67 +344,29 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
       )
       fwd = forwarders.get(fwd_id)
       expect(fwd.environments["production"].enabled).to be(false)
-      expect(fwd.environments["production"].configuration).to be_nil
+      expect(fwd.environments["production"].url).to be_nil
     end
   end
 
-  describe "Forwarder#set_configuration / #set_enabled" do
-    it "set_configuration replaces the base configuration when no environment given" do
-      fwd = forwarders.new(
+  describe "Forwarder#environment" do
+    let(:fwd) do
+      forwarders.new(
         fwd_id, name: "n", forwarder_type: "http",
                 configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base")
       )
-      replacement = Smplkit::Audit::HttpConfiguration.new(url: "https://new-base")
-      fwd.set_configuration(replacement)
-      expect(fwd.configuration.url).to eq("https://new-base")
     end
 
-    it "set_configuration with an environment creates the override entry, preserving enabled" do
-      fwd = forwarders.new(
-        fwd_id, name: "n", forwarder_type: "http",
-                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base")
-      )
-      fwd.set_enabled(true, environment: "production")
-      fwd.set_configuration(
-        Smplkit::Audit::HttpConfiguration.new(url: "https://prod"),
-        environment: "production"
-      )
+    it "creates the override entry on first access and sets leaves directly" do
+      fwd.environment("production").enabled = true
+      fwd.environment("production").url = "https://prod"
       override = fwd.environments["production"]
       expect(override.enabled).to be(true)
-      expect(override.configuration.url).to eq("https://prod")
+      expect(override.url).to eq("https://prod")
     end
 
-    it "set_enabled with no environment sets the base enabled flag" do
-      fwd = forwarders.new(
-        fwd_id, name: "n", forwarder_type: "http",
-                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base")
-      )
-      fwd.set_enabled(true)
-      expect(fwd.enabled).to be(true)
-    end
-
-    it "set_enabled with an environment creates the override entry, preserving configuration" do
-      fwd = forwarders.new(
-        fwd_id, name: "n", forwarder_type: "http",
-                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base")
-      )
-      fwd.set_configuration(
-        Smplkit::Audit::HttpConfiguration.new(url: "https://prod"),
-        environment: "production"
-      )
-      fwd.set_enabled(true, environment: "production")
-      override = fwd.environments["production"]
-      expect(override.enabled).to be(true)
-      expect(override.configuration.url).to eq("https://prod")
-    end
-
-    it "_environment_override returns the existing override when present" do
-      fwd = forwarders.new(
-        fwd_id, name: "n", forwarder_type: "http",
-                configuration: Smplkit::Audit::HttpConfiguration.new(url: "https://base")
-      )
-      first = fwd._environment_override("production")
-      second = fwd._environment_override("production")
+    it "returns the same override object on repeated access" do
+      first = fwd.environment("production")
+      second = fwd.environment("production")
       expect(second).to be(first)
     end
   end
@@ -433,8 +409,8 @@ RSpec.describe Smplkit::Audit::ForwardersClient do
           data: {
             id: fwd_id, type: "forwarder",
             attributes: {
-              name: "n", forwarder_type: "http", enabled: false,
-              configuration: { method: "POST", url: "https://x", headers: [], success_status: "2xx" },
+              name: "n", forwarder_type: "http",
+              configuration: { method: "POST", url: "https://x", headers: {}, success_status: "2xx" },
               created_at: "2026-05-07T12:00:00Z", updated_at: "2026-05-07T12:00:00Z", version: 1
             }
           }

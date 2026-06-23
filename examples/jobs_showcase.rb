@@ -53,35 +53,32 @@ Smplkit::JobsClient.open do |jobs|
       configuration: Smplkit::Jobs::HttpConfig.new(
         method: "POST",
         url: "https://httpbin.org/post",
-        headers: [{ name: "Authorization", value: "Bearer s3cr3t" }],
+        headers: { "Authorization" => "Bearer s3cr3t" },
         body: '{"scope": "all"}',
         timeout: 30
       )
     )
-    job.set_enabled(true, environment: "development")
-    job.set_enabled(true, environment: "production")
-    job.set_schedule("0 */6 * * *", timezone: "America/New_York", environment: "development")
-    job.set_configuration(
-      Smplkit::Jobs::HttpConfig.new(
-        method: "POST",
-        url: "https://development.example.com/cache/warm",
-        headers: [{ name: "Authorization", value: "Bearer development-s3cr3t" }],
-        body: '{"scope": "all"}'
-      ),
-      environment: "development"
-    )
+
+    # enable the job to run in various environments
+    job.environment("development").enabled = true
+    job.environment("production").enabled = true
+
+    # change how the job runs in production (sparse per-environment overrides)
+    prod = job.environment("production")
+    prod.schedule = "0 */6 * * *"
+    prod.timezone = "America/New_York"
+    prod.url = "https://production.example.com/cache/warm"
+    prod.set_header("Authorization", "Bearer production-s3cr3t")
     job.save
     raise unless job.is_recurring == true
-    raise unless job.is_enabled(environment: "development") == true
-    raise unless job.is_enabled(environment: "production") == true
-    raise unless job.environments["development"].timezone == "America/New_York"
-    raise unless job.get_configuration(environment: "development").url == "https://development.example.com/cache/warm"
+    raise unless job.environment("production").schedule == "0 */6 * * *"
+    raise unless job.environment("production").url == "https://production.example.com/cache/warm"
 
     puts "Created recurring job #{job.id.inspect} (v#{job.version})"
 
     # get a job
     fetched = jobs.get(RECURRING_JOB_ID)
-    raise unless fetched.environments["development"].schedule == "0 */6 * * *"
+    raise unless fetched.environments["production"].schedule == "0 */6 * * *"
 
     puts "Fetched job #{RECURRING_JOB_ID.inspect}"
 
@@ -93,8 +90,7 @@ Smplkit::JobsClient.open do |jobs|
 
     # update a job
     job.name = "Nightly cache warm (v2)"
-    job.set_retry_policy(retry_policy, environment: "production")
-    job.set_schedule("30 2 * * *", timezone: "America/Los_Angeles", environment: "production")
+    job.environment("production").retry_policy = retry_policy
     job.save
     raise unless job.version == 2
 
@@ -142,7 +138,7 @@ Smplkit::JobsClient.open do |jobs|
       name: "On-demand reindex",
       configuration: Smplkit::Jobs::HttpConfig.new(method: "POST", url: "https://httpbin.org/post")
     )
-    manual.set_enabled(true, environment: "production")
+    manual.environment("production").enabled = true
     manual.save
     raise unless manual.is_manual == true
 
@@ -162,7 +158,7 @@ Smplkit::JobsClient.open do |jobs|
     )
     oneoff.save
     raise unless oneoff.is_one_off == true
-    raise unless oneoff.is_enabled(environment: "development") == true
+    raise unless oneoff.environment("development").enabled == true
     raise unless oneoff.environments["development"].next_run_at
 
     puts "Created one-off job #{oneoff.id.inspect} to run in development"

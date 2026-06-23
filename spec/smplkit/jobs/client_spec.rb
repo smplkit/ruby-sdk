@@ -26,22 +26,6 @@ RSpec.describe Smplkit::Jobs::JobsClient do
     pair&.last
   end
 
-  def env_block(production_enabled: true)
-    {
-      production: { enabled: production_enabled, next_run_at: "2026-06-06T02:00:00Z" },
-      development: {
-        enabled: false,
-        schedule: "30 2 * * *",
-        configuration: {
-          method: "POST", url: "https://development.example.com/cache/warm",
-          headers: [], body: "{}", success_status: "2xx", timeout: 30,
-          tls_verify: true, ca_cert: nil
-        },
-        next_run_at: nil
-      }
-    }
-  end
-
   def job_resource(id: "nightly-cache-warm", version: 1, created: true,
                    environments: nil, kind: nil)
     attributes = {
@@ -49,7 +33,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       kind: kind, type: "http", schedule: "0 2 * * *",
       configuration: {
         method: "POST", url: "https://api.example.com/cache/warm",
-        headers: [{ name: "Authorization", value: "<redacted>" }],
+        headers: { "Authorization" => "<redacted>" },
         body: "{\"scope\": \"all\"}", success_status: "2xx", timeout: 30,
         tls_verify: true, ca_cert: nil
       },
@@ -93,7 +77,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
   def http_config
     Smplkit::Jobs::HttpConfig.new(
       method: "POST", url: "https://api.example.com/cache/warm",
-      headers: [Smplkit::Jobs::HttpHeader.new(name: "Authorization", value: "Bearer s3cr3t")],
+      headers: { "Authorization" => "Bearer s3cr3t" },
       body: "{\"scope\": \"all\"}", timeout: 30
     )
   end
@@ -110,7 +94,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       expect(job.id).to eq(job_id)
       expect(job.version).to eq(1)
       expect(job.created_at).not_to be_nil
-      expect(job.configuration.headers.first.value).to eq("<redacted>")
+      expect(job.configuration.get_header("Authorization")).to eq("<redacted>")
     end
 
     it "sends the create body with the caller-supplied id, body, and timeout" do
@@ -126,23 +110,27 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       expect(captured).to include("\"timeout\":30")
     end
 
-    it "sends the environments map (per-env enabled + config) and never writes base enabled" do
+    it "sends each environment as a flat sparse overlay and never writes base enabled" do
       captured = nil
       stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
         captured = JSON.parse(req.body)
         true
       end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
+      staging = Smplkit::Jobs::JobEnvironment.new(enabled: true, url: "https://staging.example.com/warm")
+      staging.set_header("Authorization", "Bearer staging")
       jobs.new_recurring_job(job_id, name: "n", schedule: "0 * * * *", configuration: http_config,
                                      environments: {
                                        "production" => Smplkit::Jobs::JobEnvironment.new(enabled: true),
-                                       "staging" => Smplkit::Jobs::JobEnvironment.new(enabled: true,
-                                                                                      configuration: http_config)
+                                       "staging" => staging
                                      }).save
       attrs = captured["data"]["attributes"]
       expect(attrs).not_to have_key("enabled")
-      expect(attrs["environments"]["production"]).to eq({ "enabled" => true })
-      expect(attrs["environments"]["staging"]["enabled"]).to be(true)
-      expect(attrs["environments"]["staging"]["configuration"]["url"]).to eq("https://api.example.com/cache/warm")
+      expect(attrs["environments"]["production"]).to eq({ "enabled" => true }) # sparse: only enabled
+      expect(attrs["environments"]["staging"]).to eq(
+        "enabled" => true,
+        "url" => "https://staging.example.com/warm",
+        "headers.Authorization" => "Bearer staging"
+      )
     end
 
     it "sends the base timezone and a per-environment timezone override, omitting it where unset" do
@@ -152,10 +140,10 @@ RSpec.describe Smplkit::Jobs::JobsClient do
         true
       end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
       job = jobs.new_recurring_job(job_id, name: "n", schedule: "0 * * * *", configuration: http_config)
-      job.set_timezone("America/New_York") # base timezone
-      job.set_enabled(true, environment: "development")
-      job.set_timezone("Europe/London", environment: "development") # per-env override
-      job.set_enabled(true, environment: "production") # no per-env timezone
+      job.timezone = "America/New_York" # base timezone
+      job.environment("development").enabled = true
+      job.environment("development").timezone = "Europe/London" # per-env override
+      job.environment("production").enabled = true # no per-env timezone
       job.save
       attrs = captured["data"]["attributes"]
       expect(attrs["timezone"]).to eq("America/New_York") # base on the wire
@@ -181,9 +169,9 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
       job = jobs.new_recurring_job(job_id, name: "n", schedule: "0 * * * *", configuration: http_config,
                                            timezone: "America/New_York", retry_policy: "global-retry")
-      job.set_enabled(true, environment: "development")
-      job.set_retry_policy("dev-retry", environment: "development") # per-env override
-      job.set_enabled(true, environment: "production") # no per-env retry override
+      job.environment("development").enabled = true
+      job.environment("development").retry_policy = "dev-retry" # per-env override
+      job.environment("production").enabled = true # no per-env retry override
       job.save
       attrs = captured["data"]["attributes"]
       expect(attrs["timezone"]).to eq("America/New_York") # threaded through the constructor
@@ -239,7 +227,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       end.to_return(status: 201, body: { data: job_resource(kind: "manual") }.to_json, headers: json_api)
       job = jobs.new_manual_job("manual-job", name: "Manual", configuration: http_config)
       expect(job.schedule).to be_nil # no schedule supplied
-      job.set_enabled(true, environment: "production")
+      job.environment("production").enabled = true
       job.save
       expect(job.is_manual).to be(true)
       expect(job.kind).to eq("manual")
@@ -328,7 +316,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       )
       job = jobs.get(job_id)
       job.name = "Nightly cache warm (v2)"
-      job.set_schedule("30 2 * * *")
+      job.schedule = "30 2 * * *"
       job.save
       expect(put_stub).to have_been_requested
       expect(job.version).to eq(2)
@@ -791,117 +779,70 @@ RSpec.describe Smplkit::Jobs::Job do
     end
   end
 
-  describe "#set_enabled / #is_enabled" do
-    it "creates and updates a per-environment override and reads it back" do
-      expect(job.is_enabled).to be(false) # roll-up default (no envs)
-      job.set_enabled(true, environment: "production")
+  describe "#environment + #enabled roll-up" do
+    it "creates an override entry on first access and is idempotent" do
+      first = job.environment("production")
+      first.enabled = true
+      second = job.environment("production")
+      expect(second).to be(first) # same object, override preserved
       expect(job.environments["production"].enabled).to be(true)
-      job.set_enabled(false, environment: "production") # existing-entry branch
-      expect(job.is_enabled(environment: "production")).to be(false)
-      expect(job.is_enabled(environment: "staging")).to be(false) # env absent from map
     end
 
-    it "is_enabled / enabled with no argument derive the roll-up from environments" do
+    it "derives #enabled from the environments map (true when any environment is enabled)" do
       expect(job.enabled).to be(false) # no environments enabled
-      expect(job.is_enabled).to be(false)
-      job.set_enabled(true, environment: "production")
-      expect(job.enabled).to be(true) # at least one environment enabled
-      expect(job.is_enabled).to be(true)
+      job.environment("production").enabled = true
+      expect(job.enabled).to be(true)
+      job.environment("production").enabled = false
+      expect(job.enabled).to be(false)
     end
   end
 
-  describe "#set_configuration / #get_configuration" do
-    it "sets and resolves base and per-environment configuration" do
-      expect(job.get_configuration).to be(base) # base
-      expect(job.get_configuration(environment: "production")).to be(base) # no override -> base
-      override = Smplkit::Jobs::HttpConfig.new(url: "https://prod.example.com")
-      job.set_configuration(override, environment: "production")
-      expect(job.get_configuration(environment: "production")).to be(override) # override wins
-      job.set_enabled(true, environment: "staging") # entry with no configuration
-      expect(job.get_configuration(environment: "staging")).to be(base) # falls back to base
+  describe "per-environment leaf overrides" do
+    it "sets request leaves and headers on an environment, leaving un-set leaves nil (pure override)" do
+      prod = job.environment("production")
+      prod.enabled = true
+      prod.url = "https://prod.example.com/warm"
+      prod.timeout = 60
+      prod.set_header("Authorization", "Bearer prod")
+      expect(prod.url).to eq("https://prod.example.com/warm")
+      expect(prod.timeout).to eq(60)
+      expect(prod.get_header("Authorization")).to eq("Bearer prod")
+      expect(prod.body).to be_nil # un-set leaf inherits the base server-side; reads as nil
+      expect(job.configuration).to be(base) # base definition untouched
     end
 
-    it "set_configuration with no environment replaces the base configuration" do
-      new_cfg = Smplkit::Jobs::HttpConfig.new(url: "https://new.example.com")
-      job.set_configuration(new_cfg)
-      expect(job.configuration).to be(new_cfg)
-    end
-  end
-
-  describe "#set_schedule" do
-    it "replaces the base schedule when no environment is given" do
-      job.set_schedule("30 2 * * *")
-      expect(job.schedule).to eq("30 2 * * *")
-    end
-
-    it "sets a per-environment schedule override, creating the entry and preserving enabled" do
-      job.set_enabled(true, environment: "production")
-      job.set_schedule("0 3 * * *", environment: "production") # existing-entry branch
-      job.set_schedule("0 4 * * *", environment: "staging") # new-entry branch
-      expect(job.schedule).to eq("0 * * * *") # base untouched
-      expect(job.environments["production"].schedule).to eq("0 3 * * *")
-      expect(job.environments["production"].enabled).to be(true) # preserved
-      expect(job.environments["staging"].schedule).to eq("0 4 * * *")
-      expect(job.environments["staging"].enabled).to be(false) # default on new entry
-    end
-
-    it "also sets the timezone on the same scope when a timezone is given" do
-      job.set_schedule("0 6 * * *", timezone: "America/New_York") # base
-      expect(job.schedule).to eq("0 6 * * *")
-      expect(job.timezone).to eq("America/New_York")
-      job.set_schedule("0 7 * * *", timezone: "Europe/London", environment: "production") # per-env
-      expect(job.environments["production"].schedule).to eq("0 7 * * *")
-      expect(job.environments["production"].timezone).to eq("Europe/London")
-    end
-
-    it "leaves the timezone untouched when no timezone is given" do
-      job.set_timezone("UTC")
-      job.set_schedule("0 8 * * *") # no timezone arg
-      expect(job.timezone).to eq("UTC")
-    end
-  end
-
-  describe "#set_retry_policy" do
-    it "accepts a policy id string — base and per-environment, preserving other env fields" do
-      job.set_retry_policy("global-retry") # base
-      expect(job.retry_policy).to eq("global-retry")
-      job.set_enabled(true, environment: "production")
-      job.set_retry_policy("prod-retry", environment: "production") # existing-entry branch
-      job.set_retry_policy("stg-retry", environment: "staging") # new-entry branch
-      expect(job.retry_policy).to eq("global-retry") # base untouched
-      expect(job.environments["production"].retry_policy).to eq("prod-retry")
-      expect(job.environments["production"].enabled).to be(true) # preserved
-      expect(job.environments["staging"].retry_policy).to eq("stg-retry")
-      expect(job.environments["staging"].enabled).to be(false) # default on new entry
-    end
-
-    it "accepts a RetryPolicy instance, using its id — base and per-environment" do
+    it "coerces a per-environment retry_policy from a RetryPolicy or an id string" do
       policy = Smplkit::Jobs::RetryPolicy.new(
         id: "obj-retry", name: "P", max_retries: 1,
         backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1
       )
-      job.set_retry_policy(policy) # object, base
-      expect(job.retry_policy).to eq("obj-retry")
-      job.set_retry_policy(policy, environment: "production") # object, per-env
+      job.environment("production").retry_policy = policy
       expect(job.environments["production"].retry_policy).to eq("obj-retry")
+      job.environment("staging").retry_policy = "stg-retry"
+      expect(job.environments["staging"].retry_policy).to eq("stg-retry")
     end
   end
 
-  describe "#set_timezone" do
-    it "replaces the base timezone when no environment is given" do
-      job.set_timezone("America/New_York")
+  describe "base field assignment" do
+    it "sets base schedule / timezone / configuration by direct assignment" do
+      job.schedule = "30 2 * * *"
+      job.timezone = "America/New_York"
+      new_cfg = Smplkit::Jobs::HttpConfig.new(url: "https://new.example.com")
+      job.configuration = new_cfg
+      expect(job.schedule).to eq("30 2 * * *")
       expect(job.timezone).to eq("America/New_York")
+      expect(job.configuration).to be(new_cfg)
     end
 
-    it "sets a per-environment timezone override, preserving the per-env schedule and leaving the base untouched" do
-      job.set_schedule("0 4 * * *", environment: "production")
-      job.set_timezone("Europe/London", environment: "production") # existing-entry branch
-      job.set_timezone("Asia/Tokyo", environment: "staging") # new-entry branch
-      expect(job.timezone).to be_nil # base untouched
-      expect(job.environments["production"].timezone).to eq("Europe/London")
-      expect(job.environments["production"].schedule).to eq("0 4 * * *") # preserved
-      expect(job.environments["staging"].timezone).to eq("Asia/Tokyo")
-      expect(job.environments["staging"].enabled).to be(false) # default on new entry
+    it "coerces the base retry_policy from a RetryPolicy or an id string" do
+      job.retry_policy = "global-retry"
+      expect(job.retry_policy).to eq("global-retry")
+      policy = Smplkit::Jobs::RetryPolicy.new(
+        id: "obj-retry", name: "P", max_retries: 1,
+        backoff: Smplkit::Jobs::Backoff::FIXED, delay_seconds: 1
+      )
+      job.retry_policy = policy
+      expect(job.retry_policy).to eq("obj-retry") # coerced to id
     end
   end
 
@@ -922,7 +863,7 @@ RSpec.describe Smplkit::Jobs::Job do
       expect(parsed.concurrency_policy).to eq("ALLOW")
     end
 
-    it "decodes the base timezone and per-environment timezone overrides from the wire" do
+    it "decodes the base timezone and per-environment timezone overrides from the flat overlay" do
       resource = SmplkitGeneratedClient::Jobs::JobResource.new(
         id: "j", type: "job",
         attributes: SmplkitGeneratedClient::Jobs::Job.new(
@@ -930,9 +871,7 @@ RSpec.describe Smplkit::Jobs::Job do
           timezone: "America/New_York",
           configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://x"),
           environments: {
-            "development" => SmplkitGeneratedClient::Jobs::JobEnvironment.new(
-              enabled: true, schedule: "0 3 * * *", timezone: "Europe/London"
-            )
+            "development" => { "enabled" => true, "schedule" => "0 3 * * *", "timezone" => "Europe/London" }
           }
         )
       )
@@ -941,7 +880,7 @@ RSpec.describe Smplkit::Jobs::Job do
       expect(parsed.environments["development"].timezone).to eq("Europe/London") # per-env decodes
     end
 
-    it "decodes the base retry_policy and per-environment retry_policy overrides from the wire" do
+    it "decodes the base retry_policy and per-environment retry_policy overrides from the flat overlay" do
       resource = SmplkitGeneratedClient::Jobs::JobResource.new(
         id: "j", type: "job",
         attributes: SmplkitGeneratedClient::Jobs::Job.new(
@@ -949,9 +888,7 @@ RSpec.describe Smplkit::Jobs::Job do
           retry_policy: "global-retry",
           configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://x"),
           environments: {
-            "development" => SmplkitGeneratedClient::Jobs::JobEnvironment.new(
-              enabled: true, retry_policy: "dev-retry"
-            )
+            "development" => { "enabled" => true, "retry_policy" => "dev-retry" }
           }
         )
       )
@@ -968,43 +905,68 @@ RSpec.describe Smplkit::Jobs::Job do
 end
 
 RSpec.describe Smplkit::Jobs::JobEnvironment do
-  describe ".from_wire" do
-    it "returns a disabled, override-free environment for nil" do
-      env = described_class.from_wire(nil)
-      expect(env.enabled).to be(false)
-      expect(env.schedule).to be_nil
-      expect(env.timezone).to be_nil
-      expect(env.configuration).to be_nil
-      expect(env.next_run_at).to be_nil
-    end
-
-    it "coerces a nil enabled to false and leaves schedule / timezone / configuration nil when absent" do
-      wire = SmplkitGeneratedClient::Jobs::JobEnvironment.new(enabled: nil)
-      env = described_class.from_wire(wire)
-      expect(env.enabled).to be(false)
-      expect(env.schedule).to be_nil
-      expect(env.timezone).to be_nil
-      expect(env.configuration).to be_nil
-      expect(env.next_run_at).to be_nil
-    end
-
-    it "parses the schedule, timezone, retry_policy, configuration overrides, and read-only next_run_at" do
-      wire = SmplkitGeneratedClient::Jobs::JobEnvironment.new(
-        enabled: true,
-        schedule: "0 3 * * *",
-        timezone: "Europe/London",
-        retry_policy: "env-retry",
-        configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(url: "https://e.com"),
-        next_run_at: "2026-06-06T03:00:00Z"
+  describe "#to_payload" do
+    it "emits enabled plus only overridden leaves and each header as headers.<name>" do
+      env = described_class.new(enabled: true, schedule: "0 3 * * *", url: "https://e.com")
+      env.set_header("Authorization", "Bearer x")
+      expect(env.to_payload).to eq(
+        "enabled" => true,
+        "schedule" => "0 3 * * *",
+        "url" => "https://e.com",
+        "headers.Authorization" => "Bearer x"
       )
-      env = described_class.from_wire(wire)
+    end
+
+    it "emits only enabled when nothing else is overridden, and never emits next_run_at" do
+      env = described_class.new(enabled: false, next_run_at: "2026-06-06T03:00:00Z")
+      expect(env.to_payload).to eq("enabled" => false)
+    end
+  end
+
+  describe ".from_flat" do
+    it "returns a disabled, override-free environment for nil" do
+      env = described_class.from_flat(nil)
+      expect(env.enabled).to be(false)
+      expect(env.schedule).to be_nil
+      expect(env.url).to be_nil
+      expect(env.headers).to eq({})
+      expect(env.next_run_at).to be_nil
+    end
+
+    it "parses enabled, scalar leaves, headers.<name> (dotted name preserved), and read-only next_run_at" do
+      env = described_class.from_flat(
+        "enabled" => true,
+        "schedule" => "0 3 * * *",
+        "timezone" => "Europe/London",
+        "retry_policy" => "env-retry",
+        "url" => "https://e.com",
+        "timeout" => 45,
+        :"headers.X-Foo.Bar" => "dotted", # symbol key, dotted header name
+        "next_run_at" => "2026-06-06T03:00:00Z",
+        "unknown_leaf" => "ignored"
+      )
       expect(env.enabled).to be(true)
       expect(env.schedule).to eq("0 3 * * *")
       expect(env.timezone).to eq("Europe/London")
       expect(env.retry_policy).to eq("env-retry")
-      expect(env.configuration).to be_a(Smplkit::Jobs::HttpConfig)
-      expect(env.configuration.url).to eq("https://e.com")
-      expect(env.next_run_at).to eq("2026-06-06T03:00:00Z")
+      expect(env.url).to eq("https://e.com")
+      expect(env.timeout).to eq(45)
+      expect(env.get_header("X-Foo.Bar")).to eq("dotted")
+      expect(env.next_run_at).to eq("2026-06-06T03:00:00Z") # read-only, passed through
+    end
+
+    it "reads an un-overridden leaf as nil (pure override, no base merge)" do
+      env = described_class.from_flat("enabled" => true)
+      expect(env.url).to be_nil
+      expect(env.body).to be_nil
+    end
+  end
+
+  describe "header keys" do
+    it "stringifies header keys passed to the constructor so get_header works by name" do
+      env = described_class.new(headers: { "X-Foo": "v" })
+      expect(env.get_header("X-Foo")).to eq("v")
+      expect(env.to_payload["headers.X-Foo"]).to eq("v")
     end
   end
 end
@@ -1038,26 +1000,27 @@ RSpec.describe "Smplkit::Jobs environment helpers" do
       expect(Smplkit::Jobs.normalize_environments({})).to eq({})
     end
 
-    it "passes JobEnvironment instances through and coerces hash forms" do
+    it "passes JobEnvironment instances through and splats hash forms (symbol & string keys)" do
       out = Smplkit::Jobs.normalize_environments(
         "production" => Smplkit::Jobs::JobEnvironment.new(enabled: true, schedule: "0 1 * * *"),
-        "staging" => { enabled: true, schedule: "0 2 * * *", retry_policy: "stg-retry", configuration: cfg },
-        "dev" => { enabled: false, configuration: { url: "https://dev.example.com" } },
+        "staging" => { enabled: true, schedule: "0 2 * * *", retry_policy: "stg-retry",
+                       url: "https://staging", headers: { Authorization: "Bearer s" } },
+        "dev" => { enabled: false, url: "https://dev.example.com" },
         "qa" => { "enabled" => true, "schedule" => "0 3 * * *", "retry_policy" => "qa-retry" }
       )
       expect(out["production"].enabled).to be(true)
       expect(out["production"].schedule).to eq("0 1 * * *")
       expect(out["staging"].schedule).to eq("0 2 * * *")
       expect(out["staging"].retry_policy).to eq("stg-retry") # symbol-key form
-      expect(out["staging"].configuration).to be(cfg)
-      expect(out["dev"].configuration).to be_a(Smplkit::Jobs::HttpConfig)
-      expect(out["dev"].configuration.url).to eq("https://dev.example.com")
+      expect(out["staging"].url).to eq("https://staging")
+      expect(out["staging"].get_header("Authorization")).to eq("Bearer s")
+      expect(out["dev"].url).to eq("https://dev.example.com")
       expect(out["dev"].schedule).to be_nil # absent -> nil
       expect(out["dev"].retry_policy).to be_nil # absent -> nil
       expect(out["qa"].enabled).to be(true)
       expect(out["qa"].schedule).to eq("0 3 * * *") # string-key form
       expect(out["qa"].retry_policy).to eq("qa-retry") # string-key form
-      expect(out["qa"].configuration).to be_nil
+      expect(out["qa"].url).to be_nil
     end
   end
 end
@@ -1142,7 +1105,7 @@ RSpec.describe Smplkit::Jobs::HttpConfig do
       .to raise_error(ArgumentError, /Unknown HttpMethod/)
   end
 
-  it "defaults method, success_status, timeout, tls_verify, and body" do
+  it "defaults method, success_status, timeout, tls_verify, body, and an empty headers map" do
     cfg = described_class.new(url: "https://x")
     expect(cfg.method).to eq("POST")
     expect(cfg.success_status).to eq("2xx")
@@ -1150,28 +1113,37 @@ RSpec.describe Smplkit::Jobs::HttpConfig do
     expect(cfg.tls_verify).to be(true)
     expect(cfg.ca_cert).to be_nil
     expect(cfg.body).to be_nil
-    expect(cfg.headers).to be_empty
+    expect(cfg.headers).to eq({})
+  end
+
+  it "set_header / get_header read and write individual headers by name" do
+    cfg = described_class.new(url: "https://x")
+    cfg.set_header("Authorization", "Bearer x")
+    expect(cfg.get_header("Authorization")).to eq("Bearer x")
+    expect(cfg.get_header("Absent")).to be_nil
+  end
+
+  it "stringifies header keys passed to the constructor so get_header works by name" do
+    cfg = described_class.new(url: "https://x", headers: { Authorization: "Bearer t" })
+    expect(cfg.get_header("Authorization")).to eq("Bearer t")
   end
 
   describe ".to_wire" do
-    it "maps Struct headers, body, and timeout onto the generated config" do
+    it "maps name→value headers, body, and timeout onto the generated config" do
       cfg = described_class.new(
-        url: "https://x", body: "{}", timeout: 45,
-        headers: [Smplkit::Jobs::HttpHeader.new(name: "A", value: "1")]
+        url: "https://x", body: "{}", timeout: 45, headers: { "A" => "1" }
       )
       wire = described_class.to_wire(cfg)
       expect(wire.url).to eq("https://x")
       expect(wire.body).to eq("{}")
       expect(wire.timeout).to eq(45)
-      expect(wire.headers.first.name).to eq("A")
+      expect(wire.headers).to eq("A" => "1")
     end
 
-    it "accepts a Hash and Hash-shaped headers" do
-      wire = described_class.to_wire(
-        url: "https://x", headers: [{ name: "h", value: "v" }]
-      )
+    it "accepts a Hash (not just a struct) and stringifies header keys" do
+      wire = described_class.to_wire(url: "https://x", headers: { h: "v" })
       expect(wire.url).to eq("https://x")
-      expect(wire.headers.first.value).to eq("v")
+      expect(wire.headers).to eq("h" => "v")
     end
   end
 
@@ -1180,19 +1152,18 @@ RSpec.describe Smplkit::Jobs::HttpConfig do
       out = described_class.from_wire(nil)
       expect(out.method).to eq("POST")
       expect(out.timeout).to eq(30)
-      expect(out.headers).to be_empty
+      expect(out.headers).to eq({})
     end
 
-    it "round-trips a populated generated config" do
+    it "round-trips a populated generated config, stringifying header keys" do
       wire = described_class.to_wire(
-        described_class.new(url: "https://x", body: "{}", timeout: 60,
-                            headers: [Smplkit::Jobs::HttpHeader.new(name: "A", value: "1")])
+        described_class.new(url: "https://x", body: "{}", timeout: 60, headers: { "A" => "1" })
       )
       back = described_class.from_wire(wire)
       expect(back.url).to eq("https://x")
       expect(back.body).to eq("{}")
       expect(back.timeout).to eq(60)
-      expect(back.headers.first.name).to eq("A")
+      expect(back.get_header("A")).to eq("1")
     end
 
     it "defaults nullable method, headers, and tls_verify when the wire omits them" do
@@ -1206,7 +1177,7 @@ RSpec.describe Smplkit::Jobs::HttpConfig do
       out = described_class.from_wire(wire)
       expect(out.method).to eq("POST")
       expect(out.url).to eq("https://x")
-      expect(out.headers).to be_empty
+      expect(out.headers).to eq({})
       expect(out.success_status).to eq("2xx")
       expect(out.timeout).to eq(30)
       expect(out.tls_verify).to be(true)
@@ -1214,7 +1185,7 @@ RSpec.describe Smplkit::Jobs::HttpConfig do
 
     it "preserves an explicit tls_verify false" do
       wire = SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(
-        method: "POST", url: "https://x", headers: [], body: nil,
+        method: "POST", url: "https://x", headers: {}, body: nil,
         success_status: "2xx", timeout: 30, tls_verify: false, ca_cert: nil
       )
       expect(described_class.from_wire(wire).tls_verify).to be(false)
@@ -1244,15 +1215,14 @@ RSpec.describe "Smplkit::Jobs::Job environments parsing" do
       attributes: {
         name: "n", description: nil, kind: "recurring", type: "http",
         schedule: "0 * * * *",
-        configuration: { method: "POST", url: "https://api.example.com/hook", headers: [],
+        configuration: { method: "POST", url: "https://api.example.com/hook", headers: {},
                          body: nil, success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil },
         environments: {
           production: { enabled: true, schedule: "0 3 * * *", next_run_at: "2026-06-06T03:00:00Z" },
           staging: {
             enabled: false,
-            configuration: { method: "POST", url: "https://staging.example.com/hook", headers: [],
-                             body: nil, success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil },
-            next_run_at: nil
+            url: "https://staging.example.com/hook",
+            "headers.X-Stg": "<redacted>"
           }
         },
         concurrency_policy: "ALLOW", created_at: "2026-06-04T00:00:00Z",
@@ -1261,7 +1231,7 @@ RSpec.describe "Smplkit::Jobs::Job environments parsing" do
     }
   end
 
-  it "parses the environments map, kind, derived roll-up, and per-env schedule / next_run_at on read" do
+  it "parses the flat overlays, kind, derived roll-up, per-env leaves, and read-only next_run_at" do
     stub_request(:get, "#{base_url}/api/v1/jobs/j").to_return(
       status: 200, body: { data: job_with_environments }.to_json, headers: json_api
     )
@@ -1269,19 +1239,22 @@ RSpec.describe "Smplkit::Jobs::Job environments parsing" do
     expect(job.enabled).to be(true) # derived roll-up (production enabled)
     expect(job.kind).to eq("recurring")
     expect(job.is_recurring).to be(true)
-    expect(job.is_enabled(environment: "production")).to be(true)
-    expect(job.environments["production"].configuration).to be_nil # inherits base
-    expect(job.environments["production"].schedule).to eq("0 3 * * *") # per-env override
-    # next_run_at is typed Time on the generated model, so it round-trips as a
-    # parsed Time; the wrapper passes it through unchanged.
-    expect(job.environments["production"].next_run_at).to eq(Time.utc(2026, 6, 6, 3, 0, 0)) # read-only
-    expect(job.is_enabled(environment: "staging")).to be(false)
-    expect(job.environments["staging"].schedule).to be_nil # inherits base schedule
-    expect(job.environments["staging"].next_run_at).to be_nil
-    expect(job.get_configuration(environment: "staging").url).to eq("https://staging.example.com/hook")
+    prod = job.environments["production"]
+    expect(prod.enabled).to be(true)
+    expect(prod.url).to be_nil # inherits base (pure override)
+    expect(prod.schedule).to eq("0 3 * * *") # per-env override
+    # next_run_at lives in the free-form overlay (Object), so it passes through
+    # as the raw wire string, not a parsed Time.
+    expect(prod.next_run_at).to eq("2026-06-06T03:00:00Z") # read-only
+    stg = job.environments["staging"]
+    expect(stg.enabled).to be(false)
+    expect(stg.schedule).to be_nil # inherits base schedule
+    expect(stg.next_run_at).to be_nil
+    expect(stg.url).to eq("https://staging.example.com/hook") # per-env leaf override
+    expect(stg.get_header("X-Stg")).to eq("<redacted>")
   end
 
-  it "sends a per-environment schedule override and never sends next_run_at on save" do
+  it "sends a per-environment leaf override and never sends next_run_at on save" do
     stub_request(:get, "#{base_url}/api/v1/jobs/j").to_return(
       status: 200, body: { data: job_with_environments }.to_json, headers: json_api
     )
@@ -1291,7 +1264,7 @@ RSpec.describe "Smplkit::Jobs::Job environments parsing" do
       true
     end.to_return(status: 200, body: { data: job_with_environments }.to_json, headers: json_api)
     job = jobs.get("j")
-    job.set_schedule("0 5 * * *", environment: "production")
+    job.environment("production").schedule = "0 5 * * *"
     job.save
     prod = captured["data"]["attributes"]["environments"]["production"]
     expect(prod["schedule"]).to eq("0 5 * * *")

@@ -113,9 +113,10 @@ module Smplkit
     # policies.
     #
     # A {RetryPolicy} is an active record: build one with {#new}, set fields, and
-    # call +#save+; then reference it from a job's +retry_policy+ (see
-    # {JobsClient#new_recurring_job} and {Job#set_retry_policy}). Retry policies
-    # are account-global — never environment-scoped.
+    # call +#save+; then reference it from a job's +retry_policy+ — base:
+    # +job.retry_policy = policy+; per-environment:
+    # +job.environment(env).retry_policy = policy+. Retry policies are
+    # account-global — never environment-scoped.
     class RetryPoliciesClient
       # @param api [SmplkitGeneratedClient::Jobs::RetryPoliciesApi] The generated
       #   retry-policies API.
@@ -380,11 +381,12 @@ module Smplkit
       #   sends each time it fires.
       # @param description [String, nil] Optional free-text description.
       # @param environments [Hash{String => Smplkit::Jobs::JobEnvironment, Hash}, nil]
-      #   Per-environment overrides keyed by environment key — each a
-      #   {Smplkit::Jobs::JobEnvironment}, or a plain hash (+{ enabled: true }+,
-      #   optionally with a +:schedule+ cron override and/or a +:configuration+
-      #   {Smplkit::Jobs::HttpConfig} override). The job is scheduled only in
-      #   environments enabled here.
+      #   Per-environment sparse overrides keyed by environment key — each a
+      #   {Smplkit::Jobs::JobEnvironment}, or a plain hash of its constructor kwargs
+      #   (+{ enabled: true }+, optionally with +:schedule+, +:timezone+,
+      #   +:retry_policy+, request leaves like +:url+, and a +:headers+ name→value
+      #   map). Each entry overrides only the leaves it sets; the job is scheduled
+      #   only in environments enabled here.
       # @param concurrency_policy [String] How overlapping runs are handled.
       #   Defaults to +"ALLOW"+.
       # @return [Smplkit::Jobs::Job]
@@ -411,10 +413,11 @@ module Smplkit
       #   sends each time it runs.
       # @param description [String, nil] Optional free-text description.
       # @param environments [Hash{String => Smplkit::Jobs::JobEnvironment, Hash}, nil]
-      #   Per-environment overrides keyed by environment key — each a
-      #   {Smplkit::Jobs::JobEnvironment}, or a plain hash (+{ enabled: true }+,
-      #   optionally with a +:configuration+ {Smplkit::Jobs::HttpConfig}
-      #   override). The job is triggerable only in environments enabled here.
+      #   Per-environment sparse overrides keyed by environment key — each a
+      #   {Smplkit::Jobs::JobEnvironment}, or a plain hash of its constructor kwargs
+      #   (+{ enabled: true }+, optionally with request leaves like +:url+ and a
+      #   +:headers+ name→value map). Each entry overrides only the leaves it sets;
+      #   the job is triggerable only in environments enabled here.
       # @param concurrency_policy [String] How overlapping runs are handled.
       #   Defaults to +"ALLOW"+.
       # @param retry_policy [String, nil] Retry policy for failed runs — the id of
@@ -583,22 +586,14 @@ module Smplkit
         )
       end
 
-      # Convert the wrapper +environments+ map to the generated model hash.
-      #
-      # Each entry's +enabled+ is always written; a per-environment +schedule+
-      # (cron) override, +timezone+ override, +retry_policy+ override, and
-      # +configuration+ override are each sent only when present (omit to inherit
-      # the job's base +schedule+ / +timezone+ / +retry_policy+ /
-      # +configuration+). The read-only per-environment +next_run_at+ is never
-      # written.
+      # Convert the wrapper +environments+ map to the flat per-environment overlay
+      # the generated +Job+ model carries (ADR-056). Each value is the
+      # environment's sparse leaf-path overlay: +enabled+ plus only the leaves it
+      # overrides, with each header as a +headers.<name>+ leaf. The read-only
+      # per-environment +next_run_at+ is never written.
       def environments_to_wire(environments)
         (environments || {}).each_with_object({}) do |(env_key, env), out|
-          attrs = { enabled: env.enabled }
-          attrs[:schedule] = env.schedule unless env.schedule.nil?
-          attrs[:timezone] = env.timezone unless env.timezone.nil?
-          attrs[:retry_policy] = env.retry_policy unless env.retry_policy.nil?
-          attrs[:configuration] = HttpConfig.to_wire(env.configuration) unless env.configuration.nil?
-          out[env_key.to_s] = SmplkitGeneratedClient::Jobs::JobEnvironment.new(attrs)
+          out[env_key.to_s] = env.to_payload
         end
       end
 
