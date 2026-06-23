@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Jobs
-  # HTTP request a job performs when it fires.  Extends the shared forwarder configuration with the two fields a scheduled job needs beyond a forwarder, and represents headers as a name→value object so an individual header can be overridden per environment by its name.
+  # HTTP request a job performs when it fires.  Extends the shared HTTP configuration with the two fields a scheduled job needs beyond a forwarder (``body`` and ``timeout``); everything else, including the shared name→value ``headers`` object, is inherited unchanged.
   class JobHttpConfiguration < ApiModelBase
     # HTTP method used when delivering the request.
     attr_accessor :method
@@ -22,7 +22,7 @@ module SmplkitGeneratedClient::Jobs
     # Destination URL. Must be an absolute `http://` or `https://` URL with a hostname (e.g. `https://siem.example.com/in`).
     attr_accessor :url
 
-    # HTTP headers sent on each request, as a name→value object (e.g. `{\"Authorization\": \"Bearer s3cr3t\"}`). A header is overridden per environment by its name via a `headers.<name>` entry in that environment's overrides; header names match case-insensitively.
+    # HTTP headers attached to each request, as a name→value object (e.g. `{\"Authorization\": \"Bearer s3cr3t\"}`). Override an individual header in a specific environment by its name via a `headers.<name>` entry in that environment's overrides; header names match case-insensitively.
     attr_accessor :headers
 
     # HTTP response status that indicates success. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
