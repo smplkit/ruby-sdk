@@ -95,7 +95,7 @@ Smplkit::Client.open(environment: "production") do |client|
     forwarder = client.audit.forwarders.new(
       forwarder_id,
       configuration: Smplkit::Audit::HttpConfiguration.new(
-        headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")],
+        headers: { "X-Showcase" => "ok" },
         method: Smplkit::Audit::HttpMethod::POST,
         url: "https://example.com"
       ),
@@ -118,22 +118,16 @@ Smplkit::Client.open(environment: "production") do |client|
     puts "Fetched forwarder: #{forwarder.name} (id=#{forwarder.id})"
     raise unless forwarder.id == forwarder_id
 
-    # configure where to forward events in production
-    forwarder.set_configuration(
-      Smplkit::Audit::HttpConfiguration.new(
-        headers: [Smplkit::Audit::HttpHeader.new(name: "X-Showcase", value: "ok")],
-        method: Smplkit::Audit::HttpMethod::POST,
-        url: "https://httpbin.org/post"
-      ),
-      environment: "production"
-    )
+    # configure where to forward events in production (sparse per-environment override)
+    forwarder.environment("production").url = "https://httpbin.org/post"
+    forwarder.environment("production").set_header("X-Showcase", "ok")
     forwarder.save
-    raise unless forwarder.environments["production"].configuration.url == "https://httpbin.org/post"
+    raise unless forwarder.environments["production"].url == "https://httpbin.org/post"
 
     puts "Updated forwarder: #{forwarder.name}"
 
     # start forwarding events in production
-    forwarder.set_enabled(true, environment: "production")
+    forwarder.environment("production").enabled = true
     forwarder.save
     puts "Enabled forwarder #{forwarder.name} (id=#{forwarder.id}) to start forwarding events in production"
 

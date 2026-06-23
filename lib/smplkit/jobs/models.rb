@@ -75,31 +75,19 @@ module Smplkit
 
     # Coerce a caller's +environments+ map to {JobEnvironment} instances.
     #
-    # Accepts either {JobEnvironment} values or plain hashes
-    # (+{ enabled: true, schedule: "0 3 * * *", configuration: HttpConfig.new(...) }+)
-    # so callers can use the lightweight hash form without importing the model. A
-    # dict-form +configuration+ override is coerced to an {HttpConfig} so it
-    # serializes on save; optional +schedule+ cron, +timezone+, and
-    # +retry_policy+ overrides pass through.
+    # Accepts either {JobEnvironment} values or plain hashes of its constructor
+    # kwargs (+{ enabled: true, schedule: "0 3 * * *", url: "https://prod/warm",
+    # headers: { "Authorization" => "Bearer prod" } }+) so callers can use the
+    # lightweight hash form without importing the model. Each hash is splatted
+    # into {JobEnvironment.new}; both symbol- and string-keyed hashes work.
     #
     # @api private
     def self.normalize_environments(environments)
       return {} if environments.nil? || environments.empty?
 
       environments.each_with_object({}) do |(env_key, value), out|
-        out[env_key.to_s] = if value.is_a?(JobEnvironment)
-                              value
-                            else
-                              cfg = value[:configuration] || value["configuration"]
-                              cfg = HttpConfig.new(**cfg) if cfg.is_a?(Hash)
-                              JobEnvironment.new(
-                                enabled: value[:enabled] || value["enabled"] || false,
-                                schedule: value[:schedule] || value["schedule"],
-                                timezone: value[:timezone] || value["timezone"],
-                                retry_policy: value[:retry_policy] || value["retry_policy"],
-                                configuration: cfg
-                              )
-                            end
+        out[env_key.to_s] =
+          value.is_a?(JobEnvironment) ? value : JobEnvironment.new(**value.transform_keys(&:to_sym))
       end
     end
 
@@ -174,15 +162,6 @@ module Smplkit
       end
     end
 
-    # A single name/value HTTP header on the request a job performs.
-    #
-    # @!attribute [rw] name
-    #   @return [String] Header name (e.g. +"Authorization"+, +"Content-Type"+).
-    # @!attribute [rw] value
-    #   @return [String] Header value. Returned in plaintext on reads, so a
-    #     get-mutate-put round-trip preserves it without re-entering secrets.
-    HttpHeader = Struct.new(:name, :value, keyword_init: true)
-
     # The HTTP request a job performs when it fires (the +http+ configuration).
     #
     # Extends the shared forwarder shape with the two fields a scheduled job
@@ -193,9 +172,12 @@ module Smplkit
     # @!attribute [rw] url
     #   @return [String] Destination URL the job requests on each run.
     # @!attribute [rw] headers
-    #   @return [Array<HttpHeader>] Headers attached to every request. Values
-    #     often carry credentials and are returned in plaintext on reads, so a
-    #     get-mutate-put round-trip preserves them without re-entering secrets.
+    #   @return [Hash{String => String}] Headers attached to every request, as a
+    #     name→value object (e.g. +{ "Authorization" => "Bearer s3cr3t" }+). Use
+    #     {#set_header} / {#get_header} to read and write individual headers.
+    #     Values often carry credentials and are returned in plaintext on reads,
+    #     so a get-mutate-put round-trip preserves them without re-entering
+    #     secrets.
     # @!attribute [rw] body
     #   @return [String, nil] Request body sent on each run. +nil+ (the default)
     #     sends an empty body, suitable for a connectivity ping. Sent verbatim —
@@ -229,13 +211,31 @@ module Smplkit
         success_status: "2xx", timeout: 30, tls_verify: true, ca_cert: nil
       )
         super(
-          method: HttpMethod.coerce(method), url: url, headers: headers || [], body: body,
-          success_status: success_status, timeout: timeout, tls_verify: tls_verify, ca_cert: ca_cert
+          method: HttpMethod.coerce(method), url: url, headers: (headers || {}).transform_keys(&:to_s),
+          body: body, success_status: success_status, timeout: timeout, tls_verify: tls_verify, ca_cert: ca_cert
         )
       end
 
+      # Set (or replace) a single request header by name.
+      #
+      # @param name [String] Header name.
+      # @param value [String] Header value.
+      def set_header(name, value)
+        self.headers ||= {}
+        headers[name.to_s] = value
+      end
+
+      # The value of header +name+, or +nil+ when it is not set.
+      #
+      # @param name [String] Header name.
+      # @return [String, nil]
+      def get_header(name)
+        (headers || {})[name.to_s]
+      end
+
       # @api private — Convert an {HttpConfig} (or a Hash with the same keys)
-      #   into the generated wire model the jobs service expects.
+      #   into the generated wire model the jobs service expects. Headers travel
+      #   as the generated name→value headers object.
       #
       # @param src [HttpConfig, Hash] The HTTP configuration to serialize.
       # @return [SmplkitGeneratedClient::Jobs::JobHttpConfiguration] The wire model.
@@ -244,14 +244,7 @@ module Smplkit
         SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new(
           method: HttpMethod.coerce(h.method),
           url: h.url,
-          headers: (h.headers || []).map do |hdr|
-            name, value = if hdr.is_a?(Hash)
-                            [hdr[:name] || hdr["name"], hdr[:value] || hdr["value"]]
-                          else
-                            [hdr.name, hdr.value]
-                          end
-            SmplkitGeneratedClient::Jobs::HttpHeader.new(name: name, value: value)
-          end,
+          headers: (h.headers || {}).transform_keys(&:to_s),
           body: h.body,
           success_status: h.success_status,
           timeout: h.timeout,
@@ -273,11 +266,13 @@ module Smplkit
         # +url+, +success_status+, and +timeout+ are required non-nil on the
         # generated jobs config, so they pass straight through. +method+,
         # +tls_verify+, +headers+, +body+, and +ca_cert+ are nullable and get
-        # wrapper-side defaults when the wire omits them.
+        # wrapper-side defaults when the wire omits them. Header keys arrive as
+        # symbols (the generated client symbolizes JSON) — stringify them so
+        # {#get_header} and round-trips behave by name.
         new(
           method: src.method || HttpMethod::POST,
           url: src.url,
-          headers: (src.headers || []).map { |h| HttpHeader.new(name: h.name, value: h.value) },
+          headers: (src.headers || {}).transform_keys(&:to_s),
           body: src.body,
           success_status: src.success_status,
           timeout: src.timeout,
@@ -292,70 +287,169 @@ module Smplkit
     end
     # rubocop:enable Lint/StructNewOverride
 
-    # Per-environment enablement, schedule, and configuration override for a job.
+    # The per-environment scalar override leaves (everything except +enabled+ and
+    # +headers+, which are addressed individually as +headers.<name>+). These map
+    # 1:1 onto {JobEnvironment} fields and onto the flat overlay's leaf paths, in
+    # payload order.
     #
-    # A job runs in a given environment only when that environment has an entry
-    # in {Job#environments} with +enabled: true+ (scheduled there for a
-    # recurring job, triggerable there for a manual one); an environment with no
-    # entry (or +enabled: false+) is disabled there.
+    # @api private
+    JOB_ENV_SCALAR_LEAVES =
+      %i[schedule timezone retry_policy url method timeout body success_status tls_verify ca_cert].freeze
+    # The same leaves as wire-key strings, for parsing the flat overlay.
+    #
+    # @api private
+    JOB_ENV_SCALAR_LEAF_NAMES = JOB_ENV_SCALAR_LEAVES.map(&:to_s).freeze
+
+    # One environment's *sparse override* for a job (ADR-056).
+    #
+    # A job's {Job#environments} map holds one of these per environment. Only the
+    # leaves you set are sent on save; everything you leave unset is inherited
+    # from the job's base definition, and the server resolves base ⊕ overrides
+    # when the job fires. The base definition is disabled everywhere, so a job
+    # runs in an environment only when that environment's override sets
+    # +enabled: true+.
+    #
+    # Reach one through {Job#environment}, e.g.
+    # +job.environment("production").url = "https://prod.example.com/warm"+.
+    #
+    # *Reading a leaf returns this environment's override, or +nil+ when it does
+    # not override that leaf* — the SDK does not merge in the base value (jobs
+    # resolve server-side). To see a base value, read the job's base definition
+    # ({Job#configuration}, {Job#schedule}, …).
     #
     # @!attribute [rw] enabled
-    #   @return [Boolean] Whether the job is enabled in this environment.
-    #     Defaults to +false+.
+    #   @return [Boolean] Whether the job runs in this environment. Defaults to +false+.
     # @!attribute [rw] schedule
-    #   @return [String, nil] Optional per-environment cron schedule override
-    #     that varies the cadence in this environment. +nil+ (the default)
-    #     inherits the job's base {Job#schedule}. When present, it must be a
-    #     5-field UTC cron expression and is only meaningful on a recurring job —
-    #     it cannot turn a one-off job recurring or vice-versa.
+    #   @return [String, nil] Per-environment cron override (recurring jobs only).
+    #     +nil+ inherits the base {Job#schedule}.
     # @!attribute [rw] timezone
-    #   @return [String, nil] Optional per-environment IANA timezone override for
-    #     evaluating this environment's cron {#schedule} (recurring jobs only).
-    #     +nil+ (the default) inherits the base {Job#timezone}, else UTC. When
-    #     present, it must be a valid IANA zone key (e.g. +"America/New_York"+);
-    #     it may be set on an environment that inherits the base schedule (it
-    #     need not also override {#schedule}). Sent on writes only when present.
+    #   @return [String, nil] Per-environment IANA timezone override (recurring
+    #     jobs only). +nil+ inherits the base {Job#timezone}, else UTC.
     # @!attribute [rw] retry_policy
-    #   @return [String, nil] Optional per-environment retry-policy override — the
-    #     id of a {RetryPolicy} (or +"Default"+). +nil+ (the default) inherits the
-    #     job's base {Job#retry_policy}. Sent on writes only when present.
-    # @!attribute [rw] configuration
-    #   @return [HttpConfig, nil] Optional per-environment request configuration
-    #     that fully replaces the job's base {Job#configuration} for this
-    #     environment. +nil+ (the default) inherits the base configuration. As
-    #     with the base configuration, header values are returned in plaintext on
-    #     reads, so a get-mutate-put round-trip preserves them.
+    #   @return [String, nil] Per-environment retry-policy override — a policy id,
+    #     a {RetryPolicy} (coerced to its id), or +"Default"+. +nil+ inherits the
+    #     base {Job#retry_policy}.
+    # @!attribute [rw] url
+    #   @return [String, nil] Per-environment URL override. +nil+ inherits the base.
+    # @!attribute [rw] method
+    #   @return [String, nil] Per-environment HTTP-method override. +nil+ inherits the base.
+    # @!attribute [rw] timeout
+    #   @return [Integer, nil] Per-environment timeout override. +nil+ inherits the base.
+    # @!attribute [rw] body
+    #   @return [String, nil] Per-environment body override. +nil+ inherits the base.
+    # @!attribute [rw] success_status
+    #   @return [String, nil] Per-environment success-status override. +nil+ inherits the base.
+    # @!attribute [rw] tls_verify
+    #   @return [Boolean, nil] Per-environment TLS-verify override. +nil+ inherits the base.
+    # @!attribute [rw] ca_cert
+    #   @return [String, nil] Per-environment CA-cert override. +nil+ inherits the base.
+    # @!attribute [rw] headers
+    #   @return [Hash{String => String}] Per-environment header overrides, as a
+    #     name→value object. Each entry overrides (or adds) that one header by name
+    #     on top of the base headers, leaving the rest inherited. Use {#set_header}
+    #     / {#get_header}.
     # @!attribute [rw] next_run_at
-    #   @return [String, nil] Read-only. The next scheduled fire time in this
-    #     environment. +nil+ when the environment is not enabled, or once a
-    #     one-off run has fired. Never written back on save.
+    #   @return [String, nil] Read-only next scheduled fire time in this
+    #     environment, or +nil+ when not enabled / once a one-off has fired. Never
+    #     sent on save.
+    #
+    # rubocop:disable Lint/StructNewOverride -- ``:method`` matches the
+    # API attribute and shadowing Struct#method is the expected ergonomics.
     JobEnvironment = Struct.new(
-      :enabled, :schedule, :timezone, :retry_policy, :configuration, :next_run_at, keyword_init: true
+      :enabled, :schedule, :timezone, :retry_policy, :url, :method, :timeout,
+      :body, :success_status, :tls_verify, :ca_cert, :headers, :next_run_at,
+      keyword_init: true
     ) do
       def initialize(enabled: false, schedule: nil, timezone: nil, retry_policy: nil,
-                     configuration: nil, next_run_at: nil)
-        super
+                     url: nil, method: nil, timeout: nil, body: nil, success_status: nil,
+                     tls_verify: nil, ca_cert: nil, headers: nil, next_run_at: nil)
+        super(
+          enabled: enabled, schedule: schedule, timezone: timezone,
+          retry_policy: (retry_policy.is_a?(RetryPolicy) ? retry_policy.id : retry_policy),
+          url: url, method: method, timeout: timeout, body: body,
+          success_status: success_status, tls_verify: tls_verify, ca_cert: ca_cert,
+          headers: (headers || {}).transform_keys(&:to_s), next_run_at: next_run_at
+        )
       end
 
-      # @api private — Build a {JobEnvironment} from the generated wire model.
-      #
-      # @param src [SmplkitGeneratedClient::Jobs::JobEnvironment, nil] The wire
-      #   model, or +nil+ for a disabled environment with no override.
-      # @return [JobEnvironment]
-      def self.from_wire(src)
-        return new if src.nil?
+      # Coerce a retry-policy reference to its id on assignment, so both
+      # +env.retry_policy = policy+ and +env.retry_policy = "retry-on-5xx"+ work.
+      def retry_policy=(value)
+        self[:retry_policy] = value.is_a?(RetryPolicy) ? value.id : value
+      end
 
-        cfg = src.configuration
+      # Override (or add) a single header by name in this environment.
+      #
+      # @param name [String] Header name.
+      # @param value [String] Header value.
+      def set_header(name, value)
+        self.headers ||= {}
+        headers[name.to_s] = value
+      end
+
+      # This environment's override for header +name+, or +nil+ when it does not
+      # override that header.
+      #
+      # @param name [String] Header name.
+      # @return [String, nil]
+      def get_header(name)
+        (headers || {})[name.to_s]
+      end
+
+      # @api private — Emit the flat sparse leaf-path overlay (ADR-056): +enabled+
+      #   plus only the leaves this environment overrides, with each header as a
+      #   +headers.<name>+ leaf. +next_run_at+ is read-only and never emitted.
+      #
+      # @return [Hash{String => Object}]
+      def to_payload
+        payload = { "enabled" => enabled }
+        JOB_ENV_SCALAR_LEAVES.each do |leaf|
+          value = self[leaf]
+          payload[leaf.to_s] = value unless value.nil?
+        end
+        (headers || {}).each { |name, value| payload["headers.#{name}"] = value }
+        payload
+      end
+
+      # @api private — Parse the flat leaf-path overlay the server returns
+      #   (ADR-056). Header leaves arrive as +headers.<name>+ (split on the first
+      #   dot, so a dotted header name like +X-Foo.Bar+ is preserved); every other
+      #   leaf is a single top-level key. Unknown leaves are ignored for forward
+      #   compatibility. Keys may be symbols or strings.
+      #
+      # @param raw [Hash, nil] The flat overlay hash, or +nil+ for an empty
+      #   override.
+      # @return [JobEnvironment]
+      def self.from_flat(raw)
+        return new if raw.nil?
+
+        headers = {}
+        scalars = {}
+        next_run_at = nil
+        raw.each do |key, value|
+          key = key.to_s
+          if key == "next_run_at"
+            next_run_at = value
+            next
+          end
+          group, _dot, name = key.partition(".")
+          if group == "headers" && !name.empty?
+            headers[name] = value
+          elsif JOB_ENV_SCALAR_LEAF_NAMES.include?(key) || key == "enabled"
+            scalars[key] = value
+          end
+        end
         new(
-          enabled: src.enabled.nil? ? false : src.enabled,
-          schedule: src.schedule,
-          timezone: src.timezone,
-          retry_policy: src.retry_policy,
-          configuration: cfg.nil? ? nil : HttpConfig.from_wire(cfg),
-          next_run_at: src.next_run_at
+          enabled: scalars["enabled"] ? true : false,
+          schedule: scalars["schedule"], timezone: scalars["timezone"],
+          retry_policy: scalars["retry_policy"], url: scalars["url"], method: scalars["method"],
+          timeout: scalars["timeout"], body: scalars["body"], success_status: scalars["success_status"],
+          tls_verify: scalars["tls_verify"], ca_cert: scalars["ca_cert"],
+          headers: headers, next_run_at: next_run_at
         )
       end
     end
+    # rubocop:enable Lint/StructNewOverride
 
     # A unit of work: an HTTP request, run on a schedule or triggered on demand.
     #
@@ -368,11 +462,13 @@ module Smplkit
     #
     # A job's {#kind} follows from its {#schedule}: a recurring (cron) job, a
     # manual job (no schedule, runs only when triggered), or a one-off (+now+ /
-    # datetime) job that runs a single time. Enablement is per environment, set
-    # via {#set_enabled} (and read via {#is_enabled}); base {#enabled} is a
-    # derived roll-up over {#environments}. The base schedule is
-    # environment-agnostic, while each environment may carry its own cron
-    # {#set_schedule} override.
+    # datetime) job that runs a single time. Enablement and every other override
+    # is per environment: reach an environment's sparse override via
+    # {#environment} and set its +enabled+ / leaf fields
+    # (+job.environment("production").enabled = true+). Base {#enabled} is a
+    # read-only roll-up over {#environments} (+true+ when enabled in at least one
+    # environment). Base fields ({#schedule}, {#timezone}, {#retry_policy},
+    # {#configuration}) are set by direct assignment.
     class Job
       # @return [String] Caller-supplied unique identifier for the job (the
       #   resource +id+). Unique within the account and immutable; the service
@@ -385,20 +481,20 @@ module Smplkit
       # @return [String, nil] Free-text description. +nil+ when unset.
       attr_accessor :description
 
-      # @return [Boolean] Derived roll-up: +true+ when the job is enabled in at
+      # @return [Boolean] Read-only roll-up: +true+ when the job is enabled in at
       #   least one environment. Computed from {#environments} rather than read
-      #   from the wire — the API no longer carries a top-level +enabled+. Set
-      #   enablement per environment via {#set_enabled} / {#environments}.
+      #   from the wire — the API has no top-level +enabled+. Enable per
+      #   environment via +job.environment(env).enabled = true+.
       def enabled
         (@environments || {}).each_value.any?(&:enabled)
       end
 
-      # @return [Hash{String => JobEnvironment}] Per-environment overrides keyed
-      #   by environment key (e.g. +"production"+). The writable surface for
-      #   enablement: a recurring job fires in an environment only when
-      #   +environments[env].enabled+ is +true+. Each entry may carry an optional
-      #   {HttpConfig} override; omit it to inherit the base {#configuration}.
-      #   Every referenced environment must exist and be managed for the account.
+      # @return [Hash{String => JobEnvironment}] Per-environment sparse overrides
+      #   keyed by environment key (e.g. +"production"+). A job runs in an
+      #   environment only when +environments[env].enabled+ is +true+. Each entry
+      #   overrides only the leaves it sets; omitted leaves inherit the base
+      #   definition. Reach one via {#environment}. Every referenced environment
+      #   must exist and be managed for the account.
       attr_accessor :environments
 
       # @return [String, nil] Read-only. How the job runs, derived from its
@@ -415,8 +511,9 @@ module Smplkit
       #   evaluated in UTC for a recurring job; an ISO-8601 datetime for a
       #   one-off run at that instant; or the literal +"now"+ for a one-off run
       #   as soon as possible. A datetime or +"now"+ job disables itself after it
-      #   fires. The schedule is environment-agnostic — set it with
-      #   {#set_schedule}.
+      #   fires. The schedule is environment-agnostic — set it by direct
+      #   assignment; per-environment cron overrides live on
+      #   +job.environment(env).schedule+.
       attr_accessor :schedule
 
       # @return [String, nil] The base IANA timezone the cron {#schedule} is
@@ -425,16 +522,22 @@ module Smplkit
       #   {JobEnvironment#timezone}. The cron fires on this zone's wall clock
       #   (DST-aware) while +next_run_at+ is still reported as a UTC instant.
       #   Only valid on a recurring (cron) job — leave +nil+ for a manual or
-      #   one-off job. Set it with {#set_timezone}; sent on writes only when
-      #   present.
+      #   one-off job. Sent on writes only when present.
       attr_accessor :timezone
 
       # @return [String, nil] The base retry policy for failed runs — the id of a
       #   {RetryPolicy}, overridable per environment via
       #   {JobEnvironment#retry_policy}. +nil+ (the default, omitted on the wire)
-      #   uses the built-in +"Default"+ policy, which never retries. Set it with
-      #   {#set_retry_policy}; sent on writes only when present.
-      attr_accessor :retry_policy
+      #   uses the built-in +"Default"+ policy, which never retries. Assigning
+      #   accepts a {RetryPolicy} (its id is used) or a policy id string; sent on
+      #   writes only when present.
+      attr_reader :retry_policy
+
+      # Set the base retry policy, coercing a {RetryPolicy} to its id so both
+      # +job.retry_policy = policy+ and +job.retry_policy = "retry-on-5xx"+ work.
+      def retry_policy=(value)
+        @retry_policy = value.is_a?(RetryPolicy) ? value.id : value
+      end
 
       # @return [HttpConfig] The base HTTP request to perform when the job fires.
       #   Per-environment overrides live in {#environments}.
@@ -479,7 +582,7 @@ module Smplkit
         @type = type
         @schedule = schedule
         @timezone = timezone
-        @retry_policy = retry_policy
+        self.retry_policy = retry_policy
         @configuration = configuration
         @concurrency_policy = concurrency_policy
         @birth_environment = birth_environment
@@ -517,35 +620,24 @@ module Smplkit
       end
       alias delete! delete
 
-      # Enable or disable the job in a single environment.
+      # The per-environment override for +environment+ — the single place to read
+      # or set what this job overrides there (ADR-056).
       #
-      # Sets the per-environment override's +enabled+ on {#environments},
-      # creating the override entry if it doesn't exist yet (preserving any
-      # already-set +configuration+ on it). Call {#save} to persist.
+      # Returns the {JobEnvironment} for +environment+, creating an empty one (and
+      # inserting it into {#environments}) on first access, so you can set
+      # overrides directly:
       #
-      # @param enabled [Boolean] Whether the job should fire in this environment.
-      # @param environment [String] The environment key to enable / disable.
-      def set_enabled(enabled, environment:)
-        _environment_override(environment).enabled = enabled
-      end
-
-      # Whether the job is enabled.
+      #   job.environment("production").enabled = true
+      #   job.environment("production").url = "https://prod.example.com/warm"
+      #   job.environment("production").set_header("Authorization", "Bearer prod")
       #
-      # With +environment+ omitted (the default), returns the roll-up — +true+
-      # when the job is enabled in at least one environment. With an
-      # +environment+, returns whether the job is enabled in that specific
-      # environment.
+      # Only the leaves you set are sent on save; everything else inherits the
+      # base definition (the server resolves base ⊕ overrides when the job fires).
       #
-      # @param environment [String, nil] An environment key, or +nil+ for the
-      #   roll-up across every environment.
-      # @return [Boolean]
-      def is_enabled(environment: nil)
-        return enabled if environment.nil?
-
-        override = @environments[environment]
-        return false if override.nil?
-
-        override.enabled
+      # @param environment [String] The environment key.
+      # @return [JobEnvironment]
+      def environment(environment)
+        @environments[environment] ||= JobEnvironment.new
       end
 
       # Whether this is a recurring (cron-scheduled) job.
@@ -567,127 +659,6 @@ module Smplkit
       # @return [Boolean]
       def is_one_off
         @kind == JobKind::ONE_OFF
-      end
-
-      # Set the job's configuration — base (+environment+ omitted) or
-      # per-environment.
-      #
-      # With +environment+ given, sets the per-environment override's
-      # configuration on {#environments}, creating the override entry if it
-      # doesn't exist yet (preserving any already-set +enabled+ on it). Call
-      # {#save} to persist.
-      #
-      # @param configuration [HttpConfig] The HTTP request configuration.
-      # @param environment [String, nil] An environment key for a per-environment
-      #   override, or +nil+ to set the base configuration.
-      def set_configuration(configuration, environment: nil)
-        if environment.nil?
-          @configuration = configuration
-        else
-          _environment_override(environment).configuration = configuration
-        end
-      end
-
-      # The job's effective configuration.
-      #
-      # With +environment+ omitted (the default), returns the base
-      # configuration. With an +environment+, returns that environment's
-      # configuration override when it has one, else the base configuration —
-      # the request the job actually sends when it fires in that environment.
-      #
-      # @param environment [String, nil] An environment key, or +nil+ for the
-      #   base configuration.
-      # @return [HttpConfig]
-      def get_configuration(environment: nil)
-        unless environment.nil?
-          override = @environments[environment]
-          return override.configuration if override && !override.configuration.nil?
-        end
-        @configuration
-      end
-
-      # Set the job's schedule — base (+environment+ omitted) or per-environment.
-      #
-      # With +environment+ omitted (the default), sets the base {#schedule} —
-      # an ISO-8601 datetime, a 5-field UTC cron expression, or the literal
-      # +"now"+ — which every environment inherits unless it overrides it.
-      #
-      # With +environment+ given, sets that environment's per-environment cron
-      # +schedule+ override on {#environments}, creating the override entry if it
-      # doesn't exist yet (preserving any already-set +enabled+ / +configuration+
-      # on it). A per-environment override is a cron expression only and varies
-      # the cadence within that environment; it cannot turn a one-off job
-      # recurring or vice-versa. Call {#save} to persist.
-      #
-      # Because the timezone is an integral part of a cron cadence, a +timezone+
-      # may be supplied alongside the schedule; when given it sets the same
-      # scope's timezone too (equivalent to a follow-up {#set_timezone}). Omit it
-      # to leave the timezone untouched. For a timezone-only change, use
-      # {#set_timezone}.
-      #
-      # @param schedule [String] An ISO-8601 datetime, a 5-field UTC cron
-      #   expression, or the literal +"now"+ (base); a 5-field UTC cron
-      #   expression (per-environment).
-      # @param timezone [String, nil] An optional IANA timezone to set on the
-      #   same scope (recurring jobs only). +nil+ (the default) leaves the
-      #   timezone untouched.
-      # @param environment [String, nil] An environment key for a per-environment
-      #   override, or +nil+ to set the base schedule.
-      def set_schedule(schedule, timezone: nil, environment: nil)
-        if environment.nil?
-          @schedule = schedule
-        else
-          _environment_override(environment).schedule = schedule
-        end
-        set_timezone(timezone, environment: environment) unless timezone.nil?
-      end
-
-      # Set the IANA timezone the cron schedule is evaluated in — base
-      # (+environment+ omitted) or per-environment.
-      #
-      # With +environment+ omitted (the default), sets the base {#timezone}
-      # every environment inherits unless it overrides it. With an +environment+
-      # given, sets that environment's per-environment +timezone+ override on
-      # {#environments}, creating the override entry if it doesn't exist yet
-      # (preserving any already-set +enabled+ / +schedule+ / +configuration+ on
-      # it). A timezone is only valid on a recurring (cron) job; +nil+ means UTC
-      # (base) or "inherit the base" (per-environment). Call {#save} to persist.
-      #
-      # @param timezone [String, nil] A valid IANA timezone key (e.g.
-      #   +"America/New_York"+), or +nil+ for UTC / inherit.
-      # @param environment [String, nil] An environment key for a per-environment
-      #   override, or +nil+ to set the base timezone.
-      def set_timezone(timezone, environment: nil)
-        if environment.nil?
-          @timezone = timezone
-        else
-          _environment_override(environment).timezone = timezone
-        end
-      end
-
-      # Set the retry policy for failed runs — base (+environment+ omitted) or
-      # per-environment.
-      #
-      # With +environment+ omitted (the default), sets the base {#retry_policy}
-      # every environment inherits unless it overrides it. With an +environment+
-      # given, sets that environment's per-environment override on
-      # {#environments}, creating the override entry if it doesn't exist yet
-      # (preserving any already-set +enabled+ / +schedule+ / +timezone+ /
-      # +configuration+ on it). Call {#save} to persist.
-      #
-      # Accepts either a {RetryPolicy} instance (its id is used) or a policy id
-      # string — pass +"Default"+ for the built-in never-retry policy.
-      #
-      # @param retry_policy [RetryPolicy, String] A {RetryPolicy} or a policy id.
-      # @param environment [String, nil] An environment key for a per-environment
-      #   override, or +nil+ to set the base retry policy.
-      def set_retry_policy(retry_policy, environment: nil)
-        policy_id = retry_policy.is_a?(RetryPolicy) ? retry_policy.id : retry_policy
-        if environment.nil?
-          @retry_policy = policy_id
-        else
-          _environment_override(environment).retry_policy = policy_id
-        end
       end
 
       # Trigger one immediate, manual run of this job (a +MANUAL+ run).
@@ -731,17 +702,6 @@ module Smplkit
         )
       end
 
-      # Return the override for +environment+, creating an empty one if absent.
-      #
-      # The per-environment mutators reach through here so an existing override's
-      # other field is preserved when only one of +enabled+ / +configuration+ is
-      # being set.
-      #
-      # @api private
-      def _environment_override(environment)
-        @environments[environment] ||= JobEnvironment.new
-      end
-
       # @api private
       def _apply(other)
         @id = other.id
@@ -770,7 +730,7 @@ module Smplkit
       def self.from_resource(resource, client: nil)
         a = resource.attributes
         environments = (a.environments || {}).each_with_object({}) do |(env_key, env_raw), out|
-          out[env_key.to_s] = JobEnvironment.from_wire(env_raw)
+          out[env_key.to_s] = JobEnvironment.from_flat(env_raw)
         end
         new(
           client,
@@ -958,9 +918,9 @@ module Smplkit
     #
     # Active-record style: instantiate via +client.jobs.retry_policies.new(...)+,
     # mutate fields directly, and call {#save} to persist or {#delete} to remove.
-    # Reference a saved policy from a job's {Job#retry_policy} (see
-    # {JobsClient#new_recurring_job} and {Job#set_retry_policy}). Retry policies
-    # are account-global — never environment-scoped.
+    # Reference a saved policy from a job's {Job#retry_policy} (base) or
+    # {JobEnvironment#retry_policy} (per environment, via {Job#environment}).
+    # Retry policies are account-global — never environment-scoped.
     #
     # A policy decides whether and how a failed run is retried. A job that
     # references nothing uses the built-in +"Default"+ policy, which never

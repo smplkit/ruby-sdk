@@ -38,13 +38,15 @@ module Smplkit
       #   returned in plaintext on reads, so a get-mutate-put round-trip
       #   preserves them without re-entering secrets.
       # @param environments [Hash{String => Smplkit::Audit::ForwarderEnvironment, Hash}, nil]
-      #   Per-environment overrides keyed by environment key (e.g.
+      #   Per-environment sparse overrides keyed by environment key (e.g.
       #   +"production"+). A forwarder delivers in an environment only when that
       #   environment's entry has +enabled: true+. Values may be
-      #   {Smplkit::Audit::ForwarderEnvironment} instances or plain hashes
-      #   (+{ enabled: true }+, optionally with a +:configuration+
-      #   {Smplkit::Audit::HttpConfiguration} override). Omit to create a
-      #   forwarder that delivers nowhere until enabled per environment.
+      #   {Smplkit::Audit::ForwarderEnvironment} instances or plain hashes of its
+      #   constructor kwargs (+{ enabled: true }+, optionally with request leaves
+      #   like +:url+ and a +:headers+ name→value map); each entry overrides only
+      #   the leaves it sets, inheriting the base +configuration+ for the rest.
+      #   Omit to create a forwarder that delivers nowhere until enabled per
+      #   environment.
       # @param description [String, nil] Optional free-text description.
       # @param forward_smplkit_events [Boolean] When +true+, the forwarder also
       #   receives platform change events that smplkit records about the
@@ -162,34 +164,26 @@ module Smplkit
       # Coerce a caller's +environments+ map to wrapper instances.
       #
       # Accepts either {Smplkit::Audit::ForwarderEnvironment} values or plain
-      # hashes (+{ enabled: true, configuration: HttpConfiguration.new(...) }+)
-      # so callers can use the lightweight hash form without importing the model.
+      # hashes of its constructor kwargs (+{ enabled: true, url: "https://...",
+      # headers: { "DD-API-KEY" => "x" } }+) so callers can use the lightweight
+      # hash form without importing the model. Both symbol- and string-keyed
+      # hashes work.
       def normalize_environments(environments)
         return {} if environments.nil? || environments.empty?
 
         environments.each_with_object({}) do |(env_key, value), out|
-          out[env_key.to_s] = if value.is_a?(ForwarderEnvironment)
-                                value
-                              else
-                                ForwarderEnvironment.new(
-                                  enabled: value[:enabled] || value["enabled"] || false,
-                                  configuration: value[:configuration] || value["configuration"]
-                                )
-                              end
+          out[env_key.to_s] =
+            value.is_a?(ForwarderEnvironment) ? value : ForwarderEnvironment.new(**value.transform_keys(&:to_sym))
         end
       end
 
-      # Convert the wrapper +environments+ map to the generated model hash.
-      #
-      # Per-environment +configuration+ overrides are sent as full
-      # {Smplkit::Audit::HttpConfiguration} payloads (plaintext headers in),
-      # mirroring the base configuration's round-trip semantics.
+      # Convert the wrapper +environments+ map to the flat per-environment overlay
+      # the generated +Forwarder+ model carries (ADR-056). Each value is the
+      # environment's sparse leaf-path overlay: +enabled+ plus only the leaves it
+      # overrides, with each header as a +headers.<name>+ leaf.
       def environments_to_wire(environments)
         (environments || {}).each_with_object({}) do |(env_key, env), out|
-          out[env_key.to_s] = SmplkitGeneratedClient::Audit::ForwarderEnvironment.new(
-            enabled: env.enabled,
-            configuration: env.configuration.nil? ? nil : HttpConfiguration.to_wire(env.configuration)
-          )
+          out[env_key.to_s] = env.to_payload
         end
       end
 

@@ -35,7 +35,7 @@ SmplkitGeneratedClient::Audit.configure do |config|
 end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
-forwarder_create_request = SmplkitGeneratedClient::Audit::ForwarderCreateRequest.new({data: SmplkitGeneratedClient::Audit::ForwarderCreateResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::DATADOG, configuration: SmplkitGeneratedClient::Audit::HttpConfiguration.new({url: 'url_example'})})})}) # ForwarderCreateRequest | 
+forwarder_create_request = SmplkitGeneratedClient::Audit::ForwarderCreateRequest.new({data: SmplkitGeneratedClient::Audit::ForwarderCreateResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::DATADOG, configuration: SmplkitGeneratedClient::Audit::ForwarderHttpConfiguration.new({url: 'url_example'})})})}) # ForwarderCreateRequest | 
 
 begin
   # Create Forwarder
@@ -619,7 +619,7 @@ end
 
 api_instance = SmplkitGeneratedClient::Audit::ForwardersApi.new
 forwarder_id = 'forwarder_id_example' # String | 
-forwarder_request = SmplkitGeneratedClient::Audit::ForwarderRequest.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::DATADOG, configuration: SmplkitGeneratedClient::Audit::HttpConfiguration.new({url: 'url_example'})})})}) # ForwarderRequest | 
+forwarder_request = SmplkitGeneratedClient::Audit::ForwarderRequest.new({data: SmplkitGeneratedClient::Audit::ForwarderResource.new({attributes: SmplkitGeneratedClient::Audit::Forwarder.new({name: 'name_example', forwarder_type: SmplkitGeneratedClient::Audit::ForwarderType::DATADOG, configuration: SmplkitGeneratedClient::Audit::ForwarderHttpConfiguration.new({url: 'url_example'})})})}) # ForwarderRequest | 
 
 begin
   # Update Forwarder

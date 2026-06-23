@@ -327,26 +327,19 @@ module Smplkit
       end
     end
 
-    # A single name/value HTTP header on a forwarder destination.
-    #
-    # @!attribute [rw] name
-    #   @return [String] Header name (e.g. +"Authorization"+, +"DD-API-KEY"+).
-    # @!attribute [rw] value
-    #   @return [String] Header value. Returned in plaintext on reads, so a
-    #     get-mutate-put round-trip preserves it without re-entering secrets.
-    HttpHeader = Struct.new(:name, :value, keyword_init: true)
-
-    # Forwarder destination HTTP request shape.
+    # Forwarder destination HTTP request shape — the base configuration.
     #
     # @!attribute [rw] method
     #   @return [String] HTTP verb used for delivery. Defaults to {HttpMethod::POST}.
     # @!attribute [rw] url
     #   @return [String] Destination URL the audit service sends each event to.
     # @!attribute [rw] headers
-    #   @return [Array<HttpHeader>] Headers attached to every outbound request.
-    #     Values often carry credentials and are returned in plaintext on
-    #     reads, so a get-mutate-put round-trip preserves them without
-    #     re-entering secrets.
+    #   @return [Hash{String => String}] Headers attached to every outbound
+    #     request, as a name→value object (e.g. +{ "DD-API-KEY" => "s3cr3t" }+).
+    #     Use {#set_header} / {#get_header} to read and write individual headers.
+    #     Values often carry credentials and are returned in plaintext on reads,
+    #     so a get-mutate-put round-trip preserves them without re-entering
+    #     secrets.
     # @!attribute [rw] success_status
     #   @return [String] Status the destination must return for delivery to count
     #     as success — an exact code (+"200"+, +"204"+) or a class (+"2xx"+, +"4xx"+).
@@ -374,25 +367,34 @@ module Smplkit
         success_status: "2xx", tls_verify: true, ca_cert: nil
       )
         super(
-          method: HttpMethod.coerce(method), url: url, headers: headers || [],
+          method: HttpMethod.coerce(method), url: url, headers: (headers || {}).transform_keys(&:to_s),
           success_status: success_status, tls_verify: tls_verify, ca_cert: ca_cert
         )
       end
 
+      # Set (or replace) a single request header by name.
+      #
+      # @param name [String] Header name.
+      # @param value [String] Header value.
+      def set_header(name, value)
+        self.headers ||= {}
+        headers[name.to_s] = value
+      end
+
+      # The value of header +name+, or +nil+ when it is not set.
+      #
+      # @param name [String] Header name.
+      # @return [String, nil]
+      def get_header(name)
+        (headers || {})[name.to_s]
+      end
+
       def self.to_wire(src)
         h = src.is_a?(Hash) ? new(**src) : src
-        SmplkitGeneratedClient::Audit::HttpConfiguration.new(
+        SmplkitGeneratedClient::Audit::ForwarderHttpConfiguration.new(
           method: HttpMethod.coerce(h.method),
           url: h.url,
-          headers: (h.headers || []).map do |hdr|
-            name, value = if hdr.is_a?(Hash)
-                            [hdr[:name] || hdr["name"],
-                             hdr[:value] || hdr["value"]]
-                          else
-                            [hdr.name, hdr.value]
-                          end
-            SmplkitGeneratedClient::Audit::HttpHeader.new(name: name, value: value)
-          end,
+          headers: (h.headers || {}).transform_keys(&:to_s),
           success_status: h.success_status,
           tls_verify: h.tls_verify,
           ca_cert: h.ca_cert
@@ -404,11 +406,13 @@ module Smplkit
 
         # Absent ``tls_verify`` on the wire means a forwarder persisted
         # before the field landed — default to verifying so its prior
-        # secure behaviour is preserved.
+        # secure behaviour is preserved. Header keys arrive as symbols (the
+        # generated client symbolizes JSON) — stringify them so {#get_header}
+        # and round-trips behave by name.
         new(
           method: src.method || HttpMethod::POST,
           url: src.url || "",
-          headers: (src.headers || []).map { |h| HttpHeader.new(name: h.name, value: h.value) },
+          headers: (src.headers || {}).transform_keys(&:to_s),
           success_status: src.success_status || "2xx",
           # rubocop:disable Style/RedundantCondition -- nil and false are
           # distinct: nil means "field absent on the wire" (default to true);
@@ -421,39 +425,133 @@ module Smplkit
     end
     # rubocop:enable Lint/StructNewOverride
 
-    # Per-environment enablement and optional configuration override for a
-    # forwarder.
+    # The per-environment scalar override leaves a forwarder may set (everything
+    # except +enabled+ and +headers+, which are addressed individually as
+    # +headers.<name>+). Forwarders are event-driven, so — unlike jobs — there is
+    # no schedule / timezone / retry_policy leaf. These map 1:1 onto
+    # {ForwarderEnvironment} fields and onto the flat overlay's leaf paths.
     #
-    # A forwarder delivers events in a given environment only when that
-    # environment has an entry in {Forwarder#environments} with
-    # +enabled: true+. An environment with no entry (or +enabled: false+)
-    # receives no deliveries.
+    # @api private
+    FORWARDER_ENV_SCALAR_LEAVES = %i[url method success_status tls_verify ca_cert].freeze
+    # The same leaves as wire-key strings, for parsing the flat overlay.
+    #
+    # @api private
+    FORWARDER_ENV_SCALAR_LEAF_NAMES = FORWARDER_ENV_SCALAR_LEAVES.map(&:to_s).freeze
+
+    # One environment's *sparse override* for a forwarder (ADR-056).
+    #
+    # A forwarder's {Forwarder#environments} map holds one of these per
+    # environment. Only the leaves you set are sent on save; everything you leave
+    # unset is inherited from the forwarder's base definition, and the server
+    # resolves base ⊕ overrides when an event is delivered. The base definition
+    # delivers nowhere, so a forwarder delivers in an environment only when that
+    # environment's override sets +enabled: true+.
+    #
+    # Reach one through {Forwarder#environment}, e.g.
+    # +forwarder.environment("production").url = "https://prod.siem.example.com/in"+.
+    #
+    # *Reading a leaf returns this environment's override, or +nil+ when it does
+    # not override that leaf* — the SDK does not merge in the base value
+    # (forwarders resolve server-side). To see a base value, read the forwarder's
+    # base definition ({Forwarder#configuration}).
     #
     # @!attribute [rw] enabled
     #   @return [Boolean] Whether the forwarder delivers events in this
     #     environment. Defaults to +false+.
-    # @!attribute [rw] configuration
-    #   @return [HttpConfiguration, nil] Optional per-environment destination
-    #     configuration that fully replaces the forwarder's base
-    #     {Forwarder#configuration} for this environment. +nil+ (the default)
-    #     inherits the base configuration. As with the base configuration,
-    #     header values are returned in plaintext on reads, so a get-mutate-put
-    #     round-trip preserves them without re-entering secrets.
-    ForwarderEnvironment = Struct.new(:enabled, :configuration, keyword_init: true) do
-      def initialize(enabled: false, configuration: nil)
-        super
+    # @!attribute [rw] url
+    #   @return [String, nil] Per-environment URL override. +nil+ inherits the base.
+    # @!attribute [rw] method
+    #   @return [String, nil] Per-environment HTTP-method override. +nil+ inherits the base.
+    # @!attribute [rw] success_status
+    #   @return [String, nil] Per-environment success-status override. +nil+ inherits the base.
+    # @!attribute [rw] tls_verify
+    #   @return [Boolean, nil] Per-environment TLS-verify override. +nil+ inherits the base.
+    # @!attribute [rw] ca_cert
+    #   @return [String, nil] Per-environment CA-cert override. +nil+ inherits the base.
+    # @!attribute [rw] headers
+    #   @return [Hash{String => String}] Per-environment header overrides, as a
+    #     name→value object. Each entry overrides (or adds) that one header by name
+    #     on top of the base headers, leaving the rest inherited. Use {#set_header}
+    #     / {#get_header}.
+    #
+    # rubocop:disable Lint/StructNewOverride -- ``:method`` matches the
+    # API attribute and shadowing Struct#method is the expected ergonomics.
+    ForwarderEnvironment = Struct.new(
+      :enabled, :url, :method, :success_status, :tls_verify, :ca_cert, :headers,
+      keyword_init: true
+    ) do
+      def initialize(enabled: false, url: nil, method: nil, success_status: nil,
+                     tls_verify: nil, ca_cert: nil, headers: nil)
+        super(
+          enabled: enabled, url: url, method: method, success_status: success_status,
+          tls_verify: tls_verify, ca_cert: ca_cert, headers: (headers || {}).transform_keys(&:to_s)
+        )
       end
 
-      def self.from_wire(src)
-        return new if src.nil?
+      # Override (or add) a single header by name in this environment.
+      #
+      # @param name [String] Header name.
+      # @param value [String] Header value.
+      def set_header(name, value)
+        self.headers ||= {}
+        headers[name.to_s] = value
+      end
 
-        cfg = src.configuration
+      # This environment's override for header +name+, or +nil+ when it does not
+      # override that header.
+      #
+      # @param name [String] Header name.
+      # @return [String, nil]
+      def get_header(name)
+        (headers || {})[name.to_s]
+      end
+
+      # @api private — Emit the flat sparse leaf-path overlay (ADR-056): +enabled+
+      #   plus only the leaves this environment overrides, with each header as a
+      #   +headers.<name>+ leaf.
+      #
+      # @return [Hash{String => Object}]
+      def to_payload
+        payload = { "enabled" => enabled }
+        FORWARDER_ENV_SCALAR_LEAVES.each do |leaf|
+          value = self[leaf]
+          payload[leaf.to_s] = value unless value.nil?
+        end
+        (headers || {}).each { |name, value| payload["headers.#{name}"] = value }
+        payload
+      end
+
+      # @api private — Parse the flat leaf-path overlay the server returns
+      #   (ADR-056). Header leaves arrive as +headers.<name>+ (split on the first
+      #   dot, so a dotted header name like +X-Foo.Bar+ is preserved); every other
+      #   leaf is a single top-level key. Unknown leaves are ignored for forward
+      #   compatibility. Keys may be symbols or strings.
+      #
+      # @param raw [Hash, nil] The flat overlay hash, or +nil+ for an empty override.
+      # @return [ForwarderEnvironment]
+      def self.from_flat(raw)
+        return new if raw.nil?
+
+        headers = {}
+        scalars = {}
+        (raw || {}).each do |key, value|
+          key = key.to_s
+          group, _dot, name = key.partition(".")
+          if group == "headers" && !name.empty?
+            headers[name] = value
+          elsif FORWARDER_ENV_SCALAR_LEAF_NAMES.include?(key) || key == "enabled"
+            scalars[key] = value
+          end
+        end
         new(
-          enabled: src.enabled.nil? ? false : src.enabled,
-          configuration: cfg.nil? ? nil : HttpConfiguration.from_wire(cfg)
+          enabled: scalars["enabled"] ? true : false,
+          url: scalars["url"], method: scalars["method"],
+          success_status: scalars["success_status"], tls_verify: scalars["tls_verify"],
+          ca_cert: scalars["ca_cert"], headers: headers
         )
       end
     end
+    # rubocop:enable Lint/StructNewOverride
 
     # A SIEM streaming forwarder configured on the customer's account.
     #
@@ -476,11 +574,13 @@ module Smplkit
       # @return [String] One of {ForwarderType::VALUES}.
       attr_accessor :forwarder_type
 
-      # @return [Boolean] Read-only. Always +false+ — the base enablement is
-      #   pinned off. Whether a forwarder actually delivers is decided per
-      #   environment via {#environments}; mutating this field has no effect on
-      #   the server.
-      attr_accessor :enabled
+      # @return [Boolean] Read-only roll-up: +true+ when the forwarder is enabled
+      #   in at least one environment. Derived from {#environments} — there is no
+      #   server-side top-level +enabled+ field. Enable per environment via
+      #   +forwarder.environment(env).enabled = true+.
+      def enabled
+        (@environments || {}).each_value.any?(&:enabled)
+      end
 
       # @return [Boolean] When +true+, this forwarder also receives platform
       #   change events that smplkit records about your own resources (flag,
@@ -492,12 +592,12 @@ module Smplkit
       #   not tied to a deployment environment.
       attr_accessor :forward_smplkit_events
 
-      # @return [Hash{String => ForwarderEnvironment}] Per-environment overrides
-      #   keyed by environment key (e.g. +"production"+, +"staging"+). A
+      # @return [Hash{String => ForwarderEnvironment}] Per-environment sparse
+      #   overrides keyed by environment key (e.g. +"production"+, +"staging"+). A
       #   forwarder delivers in an environment only when
-      #   +environments[env].enabled+ is +true+. Each entry may carry an optional
-      #   {HttpConfiguration} override; omit it to inherit the base
-      #   {#configuration}. Every referenced environment must exist and be
+      #   +environments[env].enabled+ is +true+. Each entry overrides only the
+      #   leaves it sets; omitted leaves inherit the base {#configuration}. Reach
+      #   one via {#environment}. Every referenced environment must exist and be
       #   managed for the account.
       attr_accessor :environments
 
@@ -536,7 +636,7 @@ module Smplkit
       attr_accessor :version
 
       def initialize(client = nil, name:, forwarder_type:, configuration:,
-                     id: nil, enabled: false, forward_smplkit_events: false,
+                     id: nil, forward_smplkit_events: false,
                      environments: nil, description: nil,
                      filter: nil, transform: nil, transform_type: nil,
                      created_at: nil, updated_at: nil, deleted_at: nil, version: nil)
@@ -545,10 +645,6 @@ module Smplkit
         @name = name
         @forwarder_type = ForwarderType.coerce(forwarder_type)
         @configuration = configuration
-        # ``enabled`` is server-pinned false; we keep the attribute so reads
-        # round-trip the server value, but enablement is driven by
-        # ``environments`` (see the class docstring).
-        @enabled = enabled
         @forward_smplkit_events = forward_smplkit_events
         @environments = environments || {}
         @description = description
@@ -593,44 +689,23 @@ module Smplkit
       end
       alias delete! delete
 
-      # Set this forwarder's destination configuration in memory.
+      # The per-environment override for +environment+ — the single place to read
+      # or set what this forwarder overrides there (ADR-056).
       #
-      # With +environment+ omitted, replaces the base {#configuration}. With
-      # +environment+ given, sets the per-environment override's configuration
-      # on {#environments}, creating the override entry if it doesn't exist yet
-      # (preserving any already-set +enabled+ on it). Call {#save} to persist.
-      def set_configuration(configuration, environment: nil)
-        if environment.nil?
-          @configuration = configuration
-        else
-          _environment_override(environment).configuration = configuration
-        end
-      end
-
-      # Set this forwarder's enablement in memory.
+      # Returns the {ForwarderEnvironment} for +environment+, creating an empty
+      # one (and inserting it into {#environments}) on first access, so you can
+      # set overrides directly:
       #
-      # With +environment+ omitted, sets the base {#enabled} (which the server
-      # pins false regardless — enablement is per-environment). With
-      # +environment+ given, sets the per-environment override's +enabled+ on
-      # {#environments}, creating the override entry if it doesn't exist yet
-      # (preserving any already-set +configuration+ on it). Call {#save} to
-      # persist.
-      def set_enabled(enabled, environment: nil)
-        if environment.nil?
-          @enabled = enabled
-        else
-          _environment_override(environment).enabled = enabled
-        end
-      end
-
-      # Return the override for +environment+, creating an empty one if absent.
+      #   forwarder.environment("production").enabled = true
+      #   forwarder.environment("production").url = "https://prod.siem.example.com/in"
+      #   forwarder.environment("production").set_header("DD-API-KEY", "prod-secret")
       #
-      # The per-environment mutators reach through here so an existing
-      # override's other field is preserved when only one of +enabled+ /
-      # +configuration+ is being set.
+      # Only the leaves you set are sent on save; everything else inherits the
+      # base definition (the server resolves base ⊕ overrides on delivery).
       #
-      # @api private
-      def _environment_override(environment)
+      # @param environment [String] The environment key.
+      # @return [ForwarderEnvironment]
+      def environment(environment)
         @environments[environment] ||= ForwarderEnvironment.new
       end
 
@@ -640,7 +715,6 @@ module Smplkit
         @name = other.name
         @forwarder_type = other.forwarder_type
         @configuration = other.configuration
-        @enabled = other.enabled
         @forward_smplkit_events = other.forward_smplkit_events
         @environments = other.environments
         @description = other.description
@@ -676,7 +750,7 @@ module Smplkit
       def self.from_resource(resource, client: nil)
         a = resource.attributes
         environments = (a.environments || {}).each_with_object({}) do |(env_key, env_raw), out|
-          out[env_key.to_s] = ForwarderEnvironment.from_wire(env_raw)
+          out[env_key.to_s] = ForwarderEnvironment.from_flat(env_raw)
         end
         new(
           client,
@@ -684,10 +758,8 @@ module Smplkit
           name: a.name,
           description: a.description,
           forwarder_type: a.forwarder_type,
-          # The base ``enabled`` is server-pinned false; round-trip whatever
-          # the server returned (always false) without assuming a default of
-          # true.
-          enabled: a.enabled.nil? ? false : a.enabled,
+          # The base ``enabled`` roll-up is derived from ``environments``, not
+          # read from the wire — the API has no top-level ``enabled``.
           # ``forward_smplkit_events`` defaults to false; a forwarder persisted
           # before the field landed reads back as not opted in.
           forward_smplkit_events: a.forward_smplkit_events.nil? ? false : a.forward_smplkit_events,
