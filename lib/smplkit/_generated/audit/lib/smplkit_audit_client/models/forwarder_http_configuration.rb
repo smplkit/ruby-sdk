@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Audit
-  # HTTP request a forwarder makes to deliver an event.  Identical to the shared HTTP configuration except that ``headers`` is a name→value object so an individual header can be overridden per environment by its name.
+  # HTTP request a forwarder makes to deliver an event.  The shared HTTP configuration, unchanged — including the name→value ``headers`` object whose entries can be overridden per environment by name. It exists as a distinct subclass only so the spec exposes a forwarder-specific schema name; it adds no fields of its own.
   class ForwarderHttpConfiguration < ApiModelBase
     # HTTP method used when delivering the request.
     attr_accessor :method
@@ -22,7 +22,7 @@ module SmplkitGeneratedClient::Audit
     # Destination URL. Must be an absolute `http://` or `https://` URL with a hostname (e.g. `https://siem.example.com/in`).
     attr_accessor :url
 
-    # HTTP headers attached to each delivery, as a name→value object (e.g. `{\"DD-API-KEY\": \"s3cr3t\"}`). A header is overridden in a specific environment by its name via a `headers.<name>` entry in that environment's overrides; header names match case-insensitively.
+    # HTTP headers attached to each request, as a name→value object (e.g. `{\"Authorization\": \"Bearer s3cr3t\"}`). Override an individual header in a specific environment by its name via a `headers.<name>` entry in that environment's overrides; header names match case-insensitively.
     attr_accessor :headers
 
     # HTTP response status that indicates success. Either a specific status code (e.g. `200`, `204`) or a status class (`1xx`, `2xx`, `3xx`, `4xx`, `5xx`).
