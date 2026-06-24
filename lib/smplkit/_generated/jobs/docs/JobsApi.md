@@ -14,11 +14,11 @@ All URIs are relative to *http://localhost*
 
 ## create_job
 
-> <JobResponse> create_job(job_create_request, opts)
+> <JobResponse> create_job(job_create_request)
 
 Create Job
 
-Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. The job's kind follows from its `schedule`: omit the schedule for a permanent **manual** job (triggered on demand), give a cron expression for a **recurring** job, or a datetime / `now` for a **one-off** job. A recurring or manual job supplies `environments` to choose where it runs; a recurring job begins scheduling immediately in each enabled environment. A one-off job is created in the environment named by the `X-Smplkit-Environment` header (implied when the credential is scoped to a single environment); a `now` one-off enqueues its single run immediately.
+Create a job for this account.  The caller supplies the job's id as `data.id`. Ids are unique within an account and immutable. The job's kind follows from its `schedule`: omit the schedule for a permanent **manual** job (triggered on demand), give a cron expression for a **recurring** job, or a datetime / `now` for a **one-off** job. Supply `environments` to choose where the job runs: a recurring job begins scheduling immediately in each enabled environment, while a one-off job names its target environment(s) by the keys of that map and enqueues one run per environment (a single-environment credential implies the one environment when the map is empty). A `now` one-off enqueues its run(s) immediately.
 
 ### Examples
 
@@ -33,13 +33,10 @@ end
 
 api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
 job_create_request = SmplkitGeneratedClient::Jobs::JobCreateRequest.new({data: SmplkitGeneratedClient::Jobs::JobCreateResource.new({id: 'id_example', attributes: SmplkitGeneratedClient::Jobs::Job.new({name: 'name_example', configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new({url: 'url_example'})})})}) # JobCreateRequest | 
-opts = {
-  x_smplkit_environment: 'x_smplkit_environment_example' # String | The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its `environments` map.
-}
 
 begin
   # Create Job
-  result = api_instance.create_job(job_create_request, opts)
+  result = api_instance.create_job(job_create_request)
   p result
 rescue SmplkitGeneratedClient::Jobs::ApiError => e
   puts "Error when calling JobsApi->create_job: #{e}"
@@ -50,12 +47,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<JobResponse>, Integer, Hash)> create_job_with_http_info(job_create_request, opts)
+> <Array(<JobResponse>, Integer, Hash)> create_job_with_http_info(job_create_request)
 
 ```ruby
 begin
   # Create Job
-  data, status_code, headers = api_instance.create_job_with_http_info(job_create_request, opts)
+  data, status_code, headers = api_instance.create_job_with_http_info(job_create_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <JobResponse>
@@ -69,7 +66,6 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **job_create_request** | [**JobCreateRequest**](JobCreateRequest.md) |  |  |
-| **x_smplkit_environment** | **String** | The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map. | [optional] |
 
 ### Return type
 
@@ -311,7 +307,7 @@ end
 
 Run Job Now
 
-Trigger one immediate run of the job in a specified environment (a `MANUAL` run).  This is the primary execution path for a manual job and is also usable ad hoc for a recurring job (\"run now\"). The job's schedule and enabled state are untouched. The run executes in the environment named by the `X-Smplkit-Environment` header; when the job is enabled in exactly one environment that environment is used, and a single-environment credential implies it. The environment must be one the job is **enabled** in (409 otherwise). The run executes the job's effective configuration for that environment. It is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason `QUOTA_EXCEEDED` rather than being rejected here.
+Trigger one immediate run of the job in a specified environment (a `MANUAL` run).  This is the primary execution path for a manual job and is also usable ad hoc for a recurring job (\"run now\"). The job's schedule and enabled state are untouched. The run executes in the environment named by the request body's `environment`; when the job is enabled in exactly one environment that environment is used, and a single-environment credential implies it. The environment must be one the job is **enabled** in (409 otherwise). The run executes the job's effective configuration for that environment. It is enqueued and executed by the worker; if the account is over its run allotment the run will fail with reason `QUOTA_EXCEEDED` rather than being rejected here.
 
 ### Examples
 
@@ -327,7 +323,7 @@ end
 api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
 job_id = 'job_id_example' # String | 
 opts = {
-  x_smplkit_environment: 'x_smplkit_environment_example' # String | The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its `environments` map.
+  run_now_request: SmplkitGeneratedClient::Jobs::RunNowRequest.new # RunNowRequest | 
 }
 
 begin
@@ -362,7 +358,7 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **job_id** | **String** |  |  |
-| **x_smplkit_environment** | **String** | The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map. | [optional] |
+| **run_now_request** | [**RunNowRequest**](RunNowRequest.md) |  | [optional] |
 
 ### Return type
 
@@ -374,17 +370,17 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/vnd.api+json
 - **Accept**: application/vnd.api+json
 
 
 ## update_job
 
-> <JobResponse> update_job(job_id, job_request, opts)
+> <JobResponse> update_job(job_id, job_request)
 
 Update Job
 
-Replace an existing job. Every writable field is overwritten.  The job's kind is re-derived from the new `schedule` (omit it for a manual job). Set enablement per environment via the `environments` map (a recurring or manual job), or by recreating a one-off job in the desired environment. Each environment may carry its own cron `schedule` override (recurring jobs only). Editing a recurring environment's effective schedule recomputes its next fire time; an edit that leaves it unchanged preserves the existing cadence.
+Replace an existing job. Every writable field is overwritten.  The job's kind is re-derived from the new `schedule` (omit it for a manual job). Set enablement per environment via the `environments` map (a recurring or manual job), or by recreating a one-off job naming its target environment(s) in that map. Each environment may carry its own cron `schedule` override (recurring jobs only). Editing a recurring environment's effective schedule recomputes its next fire time; an edit that leaves it unchanged preserves the existing cadence.
 
 ### Examples
 
@@ -400,13 +396,10 @@ end
 api_instance = SmplkitGeneratedClient::Jobs::JobsApi.new
 job_id = 'job_id_example' # String | 
 job_request = SmplkitGeneratedClient::Jobs::JobRequest.new({data: SmplkitGeneratedClient::Jobs::JobResource.new({attributes: SmplkitGeneratedClient::Jobs::Job.new({name: 'name_example', configuration: SmplkitGeneratedClient::Jobs::JobHttpConfiguration.new({url: 'url_example'})})})}) # JobRequest | 
-opts = {
-  x_smplkit_environment: 'x_smplkit_environment_example' # String | The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its `environments` map.
-}
 
 begin
   # Update Job
-  result = api_instance.update_job(job_id, job_request, opts)
+  result = api_instance.update_job(job_id, job_request)
   p result
 rescue SmplkitGeneratedClient::Jobs::ApiError => e
   puts "Error when calling JobsApi->update_job: #{e}"
@@ -417,12 +410,12 @@ end
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<JobResponse>, Integer, Hash)> update_job_with_http_info(job_id, job_request, opts)
+> <Array(<JobResponse>, Integer, Hash)> update_job_with_http_info(job_id, job_request)
 
 ```ruby
 begin
   # Update Job
-  data, status_code, headers = api_instance.update_job_with_http_info(job_id, job_request, opts)
+  data, status_code, headers = api_instance.update_job_with_http_info(job_id, job_request)
   p status_code # => 2xx
   p headers # => { ... }
   p data # => <JobResponse>
@@ -437,7 +430,6 @@ end
 | ---- | ---- | ----------- | ----- |
 | **job_id** | **String** |  |  |
 | **job_request** | [**JobRequest**](JobRequest.md) |  |  |
-| **x_smplkit_environment** | **String** | The environment to operate in. Names the single environment a one-off job is born in (or a manual run executes in). Optional when the credential is scoped to a single environment (which is then implied); required when the credential can reach several environments and the choice is otherwise ambiguous. Ignored for a recurring job, whose environments come from its &#x60;environments&#x60; map. | [optional] |
 
 ### Return type
 

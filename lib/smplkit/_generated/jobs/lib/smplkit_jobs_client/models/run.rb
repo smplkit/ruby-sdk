@@ -22,7 +22,7 @@ module SmplkitGeneratedClient::Jobs
     # The job's version at the time the run executed.
     attr_accessor :job_version
 
-    # The environment this run executed in. A scheduled run inherits the firing job-environment; a manual run is created in the environment you name with the `X-Smplkit-Environment` header; a rerun copies its source run's environment.
+    # The environment this run executed in. A scheduled run inherits the firing job-environment; a manual run is created in the environment you name in the run request body (implied when your credential is scoped to a single environment); a rerun copies its source run's environment.
     attr_accessor :environment
 
     # Why the run exists: `SCHEDULE`, `MANUAL` (Run now), `RERUN`, or `RETRY` (an automatic retry of a failed run).

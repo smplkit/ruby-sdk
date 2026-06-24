@@ -6,7 +6,7 @@
 | ---- | ---- | ----------- | ----- |
 | **job** | **String** | The id of the job this run belongs to. |  |
 | **job_version** | **Integer** | The job&#39;s version at the time the run executed. | [optional] |
-| **environment** | **String** | The environment this run executed in. A scheduled run inherits the firing job-environment; a manual run is created in the environment you name with the &#x60;X-Smplkit-Environment&#x60; header; a rerun copies its source run&#39;s environment. |  |
+| **environment** | **String** | The environment this run executed in. A scheduled run inherits the firing job-environment; a manual run is created in the environment you name in the run request body (implied when your credential is scoped to a single environment); a rerun copies its source run&#39;s environment. |  |
 | **trigger** | **String** | Why the run exists: &#x60;SCHEDULE&#x60;, &#x60;MANUAL&#x60; (Run now), &#x60;RERUN&#x60;, or &#x60;RETRY&#x60; (an automatic retry of a failed run). |  |
 | **rerun_of** | **String** | The source run&#39;s id; set only when &#x60;trigger&#x60; is &#x60;RERUN&#x60;. | [optional] |
 | **_retry** | [**RunRetry**](RunRetry.md) | Retry-chain position, present only when &#x60;trigger&#x60; is &#x60;RETRY&#x60;: the id of the original run the chain retries (&#x60;of&#x60;) and this run&#39;s &#x60;attempt&#x60; number. | [optional] |
