@@ -17,7 +17,7 @@ All URIs are relative to *http://localhost*
 
 Create Retry Policy
 
-Create a retry policy for this account.  The caller supplies the policy's id as `data.id`. Ids are unique within an account and immutable. `Default` is reserved for the built-in policy and cannot be created.
+Create a retry policy for this account.  The caller supplies the policy's id as `data.id`. Ids are unique within an account and immutable.
 
 ### Examples
 
@@ -86,7 +86,7 @@ end
 
 Delete Retry Policy
 
-Delete a retry policy.  The built-in `Default` policy cannot be deleted (`403`). A policy still referenced by any job — at the base level or in a per-environment override — cannot be deleted (`409`); the error lists the referencing job ids under `meta.referencing_jobs` so they can be reassigned to `Default` first.
+Delete a retry policy.  A policy still referenced by any job — at the base level or in a per-environment override — cannot be deleted (`409`); the error lists the referencing job ids under `meta.referencing_jobs` so they can be reassigned (or cleared to no policy) first.
 
 ### Examples
 
@@ -154,7 +154,7 @@ nil (empty response body)
 
 Get Retry Policy
 
-Retrieve a single retry policy by its id.  `Default` returns the built-in do-not-retry policy.
+Retrieve a single retry policy by its id.
 
 ### Examples
 
@@ -223,7 +223,7 @@ end
 
 List Retry Policies
 
-List this account's retry policies.  Default sort is `name` ascending. Sort by `name`, `created_at`, or `updated_at` (prefix `-` for descending). The built-in `Default` policy is not included here — it always exists and is retrievable at `/retry-policies/Default`.
+List this account's retry policies.  Default sort is `name` ascending. Sort by `name`, `created_at`, or `updated_at` (prefix `-` for descending).
 
 ### Examples
 
@@ -302,7 +302,7 @@ end
 
 Update Retry Policy
 
-Replace an existing retry policy. Every writable field is overwritten.  The built-in `Default` policy cannot be modified.
+Replace an existing retry policy. Every writable field is overwritten.
 
 ### Examples
 

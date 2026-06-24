@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module SmplkitGeneratedClient::Jobs
-  # A named, reusable automatic-retry policy.  A policy decides whether and how a failed run is retried. Reference it from a job's `retry_policy` (and optionally override it per environment). A job that references nothing uses the built-in `Default` policy, which never retries.
+  # A named, reusable automatic-retry policy.  A policy decides whether and how a failed run is retried. Reference it from a job's `retry_policy` (and optionally override it per environment). A job that references no policy is never retried.
   class RetryPolicy < ApiModelBase
     # Human-readable name for the policy.
     attr_accessor :name
