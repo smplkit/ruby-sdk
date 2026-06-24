@@ -203,7 +203,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       expect(jobs.retry_policies).to be_a(Smplkit::Jobs::RetryPoliciesClient)
     end
 
-    it "schedules a one-off job: ISO-8601 schedule, birth-environment header, no environments map" do
+    it "schedules a one-off job: ISO-8601 schedule, birth environment in the body map, no header" do
       body = nil
       headers = nil
       stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
@@ -214,9 +214,39 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       when_at = Time.utc(2030, 1, 1, 12, 30)
       jobs.schedule("one-off", name: "One", schedule: when_at, configuration: http_config,
                                environment: "development").save
+      attrs = body["data"]["attributes"]
+      expect(attrs["schedule"]).to eq(when_at.iso8601) # datetime -> ISO-8601
+      # the birth environment is an enabled entry in the environments map
+      expect(attrs["environments"]["development"]).to eq({ "enabled" => true })
+      expect(env_header(headers)).to be_nil # birth environment travels in the body, not a header
+    end
+
+    it "schedules a one-off job with no environment: empty map, no header" do
+      # No explicit environment and no client default → empty map; the service
+      # implies the environment from a single-environment credential.
+      body = nil
+      headers = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
+        body = JSON.parse(req.body)
+        headers = req.headers
+        true
+      end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
+      jobs.schedule("one-off", name: "One", schedule: Time.utc(2030, 1, 1, 12, 30),
+                               configuration: http_config).save
       expect(body["data"]["attributes"]).not_to have_key("environments")
-      expect(body["data"]["attributes"]["schedule"]).to eq(when_at.iso8601) # datetime -> ISO-8601
-      expect(env_header(headers)).to eq("development")
+      expect(env_header(headers)).to be_nil
+    end
+
+    it "schedules a one-off job using the client's configured environment as the birth env" do
+      client = described_class.new(auth_client: api_client, environment: "production")
+      body = nil
+      stub_request(:post, "#{base_url}/api/v1/jobs").with do |req|
+        body = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: { data: job_resource }.to_json, headers: json_api)
+      client.schedule("one-off", name: "One", schedule: Time.utc(2030, 1, 1, 12, 30),
+                                 configuration: http_config).save
+      expect(body["data"]["attributes"]["environments"]["production"]).to eq({ "enabled" => true })
     end
 
     it "creates a manual job with no schedule: sends schedule null and reads back kind manual" do
@@ -360,7 +390,9 @@ RSpec.describe Smplkit::Jobs::JobsClient do
   end
 
   describe "environment header on writes" do
-    it "sends the client's configured environment on update" do
+    it "never sends an environment header on update, even when the client has one configured" do
+      # The environment now travels in the body (the environments map), so the
+      # update PUT carries no X-Smplkit-Environment header.
       client = described_class.new(auth_client: api_client, environment: "production")
       stub_request(:get, "#{base_url}/api/v1/jobs/#{job_id}").to_return(
         status: 200, body: { data: job_resource }.to_json, headers: json_api
@@ -373,10 +405,10 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       job = client.get(job_id)
       job.name = "renamed"
       job.save
-      expect(env_header(captured)).to eq("production")
+      expect(env_header(captured)).to be_nil
     end
 
-    it "omits the environment header on update when the client has no environment" do
+    it "never sends an environment header on update when the client has no environment" do
       stub_request(:get, "#{base_url}/api/v1/jobs/#{job_id}").to_return(
         status: 200, body: { data: job_resource }.to_json, headers: json_api
       )
@@ -405,27 +437,31 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       expect(run.result["status"]).to eq(200)
     end
 
-    it "sends an explicit environment as the X-Smplkit-Environment header" do
-      captured = nil
+    it "sends an explicit environment in the run-now request body, not a header" do
+      captured_body = nil
+      captured_headers = nil
       stub_request(:post, "#{base_url}/api/v1/jobs/#{job_id}/actions/run").with do |req|
-        captured = req.headers
+        captured_body = req.body
+        captured_headers = req.headers
         true
       end.to_return(status: 200, body: { data: run_resource(trigger: "MANUAL") }.to_json, headers: json_api)
       jobs.run(job_id, environment: "development")
-      expect(env_header(captured)).to eq("development")
+      expect(JSON.parse(captured_body)).to eq({ "environment" => "development" })
+      expect(env_header(captured_headers)).to be_nil # no request header anymore
     end
 
-    it "falls back to the client's configured environment, else omits the header" do
+    it "falls back to the client's configured environment in the body, else sends no body" do
       with_default = described_class.new(auth_client: api_client, environment: "production")
-      captured = nil
+      captured_body = nil
       stub_request(:post, "#{base_url}/api/v1/jobs/#{job_id}/actions/run").with do |req|
-        captured = req.headers
+        captured_body = req.body
         true
       end.to_return(status: 200, body: { data: run_resource(trigger: "MANUAL") }.to_json, headers: json_api)
       with_default.run(job_id)
-      expect(env_header(captured)).to eq("production")
+      expect(JSON.parse(captured_body)).to eq({ "environment" => "production" })
+      # neither explicit arg nor client default → no body; the service implies it
       jobs.run(job_id)
-      expect(env_header(captured)).to be_nil
+      expect(captured_body.to_s).to be_empty
     end
   end
 
@@ -451,10 +487,10 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       jobs.get(job_id)
     end
 
-    it "trigger sends the environment header and returns a re-runnable Run" do
-      captured = nil
+    it "trigger sends the environment in the run-now body and returns a re-runnable Run" do
+      captured_body = nil
       stub_request(:post, "#{base_url}/api/v1/jobs/#{job_id}/actions/run").with do |req|
-        captured = req.headers
+        captured_body = req.body
         true
       end.to_return(status: 200, body: { data: run_resource(trigger: "MANUAL") }.to_json, headers: json_api)
       rerun_stub = stub_request(:post, "#{base_url}/api/v1/runs/#{run_id}/actions/rerun").to_return(
@@ -462,7 +498,7 @@ RSpec.describe Smplkit::Jobs::JobsClient do
       )
       run = bound_job.trigger(environment: "production")
       expect(run.trigger).to eq("MANUAL")
-      expect(env_header(captured)).to eq("production")
+      expect(JSON.parse(captured_body)).to eq({ "environment" => "production" })
       expect(run.rerun.trigger).to eq("RERUN")
       expect(rerun_stub).to have_been_requested
     end

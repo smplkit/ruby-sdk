@@ -32,6 +32,7 @@ docs/Run.md
 docs/RunListLinks.md
 docs/RunListMeta.md
 docs/RunListResponse.md
+docs/RunNowRequest.md
 docs/RunResource.md
 docs/RunResponse.md
 docs/RunRetry.md
@@ -73,6 +74,7 @@ lib/smplkit_jobs_client/models/run.rb
 lib/smplkit_jobs_client/models/run_list_links.rb
 lib/smplkit_jobs_client/models/run_list_meta.rb
 lib/smplkit_jobs_client/models/run_list_response.rb
+lib/smplkit_jobs_client/models/run_now_request.rb
 lib/smplkit_jobs_client/models/run_resource.rb
 lib/smplkit_jobs_client/models/run_response.rb
 lib/smplkit_jobs_client/models/run_retry.rb
@@ -107,6 +109,7 @@ spec/models/retry_policy_spec.rb
 spec/models/run_list_links_spec.rb
 spec/models/run_list_meta_spec.rb
 spec/models/run_list_response_spec.rb
+spec/models/run_now_request_spec.rb
 spec/models/run_resource_spec.rb
 spec/models/run_response_spec.rb
 spec/models/run_retry_spec.rb
