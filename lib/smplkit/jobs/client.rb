@@ -395,7 +395,7 @@ module Smplkit
         _new_job(
           id, name: name, schedule: schedule, timezone: timezone, retry_policy: retry_policy,
               configuration: configuration, description: description, environments: environments,
-              concurrency_policy: concurrency_policy, environment: nil
+              concurrency_policy: concurrency_policy
         )
       end
 
@@ -429,7 +429,7 @@ module Smplkit
         _new_job(
           id, name: name, schedule: nil, retry_policy: retry_policy,
               configuration: configuration, description: description, environments: environments,
-              concurrency_policy: concurrency_policy, environment: nil
+              concurrency_policy: concurrency_policy
         )
       end
 
@@ -458,8 +458,9 @@ module Smplkit
                    concurrency_policy: "ALLOW", retry_policy: nil, environment: nil)
         _new_job(
           id, name: name, schedule: schedule.iso8601, retry_policy: retry_policy,
-              configuration: configuration, description: description, environments: nil,
-              concurrency_policy: concurrency_policy, environment: environment
+              configuration: configuration, description: description,
+              environments: birth_env_map(environment.nil? ? @environment : environment),
+              concurrency_policy: concurrency_policy
         )
       end
 
@@ -525,7 +526,12 @@ module Smplkit
       #   set to +MANUAL+.
       def run(id, environment: nil)
         env = environment.nil? ? @environment : environment
-        resp = Jobs.call_api { @api.run_job_now(id, x_smplkit_environment: env) }
+        # The target environment now travels in the run-now request body (the
+        # X-Smplkit-Environment header was dropped). When no environment is
+        # resolved, send no body at all so the service implies it.
+        opts = {}
+        opts[:run_now_request] = SmplkitGeneratedClient::Jobs::RunNowRequest.new(environment: env) unless env.nil?
+        resp = Jobs.call_api { @api.run_job_now(id, opts) }
         Run.from_resource(resp.data, runs: @runs)
       end
 
@@ -540,18 +546,19 @@ module Smplkit
       # @api private — POST a new job. Called by {Smplkit::Jobs::Job#save} on
       #   unsaved instances. The jobs service requires a caller-supplied
       #   +data.id+ on create and 409s on conflict. A one-off job's birth
-      #   environment travels as the +X-Smplkit-Environment+ header.
+      #   environment travels as an enabled entry in the body's +environments+
+      #   map (see {#_new_job}); there is no request header.
       def _create_job(job)
         raise ArgumentError, "Job.id is required on create (caller-supplied key)" if job.id.nil? || job.id.empty?
 
-        resp = Jobs.call_api { @api.create_job(build_create_body(job), x_smplkit_environment: job.birth_environment) }
+        resp = Jobs.call_api { @api.create_job(build_create_body(job)) }
         Job.from_resource(resp.data, client: self)
       end
 
       # @api private — Full-replace PUT for an existing job. Called by
-      #   {Smplkit::Jobs::Job#save} on instances with +created_at+. The client's
-      #   configured environment (if any) travels as the +X-Smplkit-Environment+
-      #   header.
+      #   {Smplkit::Jobs::Job#save} on instances with +created_at+. The target
+      #   environment travels in the body (the +environments+ map), so the update
+      #   carries no environment header.
       #
       # Header values come back in plaintext on the GET path, so a fetched job
       # round-trips through this full-replace PUT with its header values intact
@@ -559,7 +566,7 @@ module Smplkit
       def _update_job(job)
         raise ArgumentError, "cannot update a Job with no id" if job.id.nil?
 
-        resp = Jobs.call_api { @api.update_job(job.id, build_body(job), x_smplkit_environment: @environment) }
+        resp = Jobs.call_api { @api.update_job(job.id, build_body(job)) }
         Job.from_resource(resp.data, client: self)
       end
 
@@ -569,7 +576,7 @@ module Smplkit
       # public constructors ({#new_recurring_job}, {#new_manual_job}, {#schedule})
       # funnel through here.
       def _new_job(id, name:, schedule:, configuration:, description:,
-                   environments:, concurrency_policy:, environment:,
+                   environments:, concurrency_policy:,
                    timezone: nil, retry_policy: nil)
         Job.new(
           self,
@@ -581,9 +588,19 @@ module Smplkit
           configuration: configuration,
           description: description,
           environments: Jobs.normalize_environments(environments),
-          concurrency_policy: concurrency_policy,
-          birth_environment: environment.nil? ? @environment : environment
+          concurrency_policy: concurrency_policy
         )
+      end
+
+      # A one-off job's birth environment as an enabled +environments+ entry.
+      # The target environment of a one-off job is now conveyed by a key of the
+      # body's +environments+ map (there is no request header). Returns +nil+
+      # when the environment is unknown, leaving the map empty so a
+      # single-environment credential implies it server-side.
+      def birth_env_map(environment)
+        return nil if environment.nil? || environment.empty?
+
+        { environment => JobEnvironment.new(enabled: true) }
       end
 
       # Convert the wrapper +environments+ map to the flat per-environment overlay

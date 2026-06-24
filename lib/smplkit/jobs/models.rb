@@ -562,16 +562,10 @@ module Smplkit
       #   server-side write.
       attr_accessor :version
 
-      # @api private — For a one-off job, the environment it is born in, sent as
-      #   the +X-Smplkit-Environment+ header by {JobsClient#_create_job}. Ignored
-      #   for recurring and manual jobs, whose environments come from
-      #   {#environments}.
-      attr_accessor :birth_environment
-
       def initialize(client = nil, id:, name:, configuration:, schedule: nil,
                      timezone: nil, retry_policy: nil, description: nil, environments: nil,
                      kind: nil, type: "http", concurrency_policy: "ALLOW",
-                     birth_environment: nil, created_at: nil,
+                     created_at: nil,
                      updated_at: nil, deleted_at: nil, version: nil)
         @client = client
         @id = id
@@ -585,7 +579,6 @@ module Smplkit
         self.retry_policy = retry_policy
         @configuration = configuration
         @concurrency_policy = concurrency_policy
-        @birth_environment = birth_environment
         @created_at = created_at
         @updated_at = updated_at
         @deleted_at = deleted_at
