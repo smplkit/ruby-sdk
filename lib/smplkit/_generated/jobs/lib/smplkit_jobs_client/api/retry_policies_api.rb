@@ -20,7 +20,7 @@ module SmplkitGeneratedClient::Jobs
       @api_client = api_client
     end
     # Create Retry Policy
-    # Create a retry policy for this account.  The caller supplies the policy's id as `data.id`. Ids are unique within an account and immutable. `Default` is reserved for the built-in policy and cannot be created.
+    # Create a retry policy for this account.  The caller supplies the policy's id as `data.id`. Ids are unique within an account and immutable.
     # @param retry_policy_create_request [RetryPolicyCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [RetryPolicyResponse]
@@ -30,7 +30,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Create Retry Policy
-    # Create a retry policy for this account.  The caller supplies the policy&#39;s id as &#x60;data.id&#x60;. Ids are unique within an account and immutable. &#x60;Default&#x60; is reserved for the built-in policy and cannot be created.
+    # Create a retry policy for this account.  The caller supplies the policy&#39;s id as &#x60;data.id&#x60;. Ids are unique within an account and immutable.
     # @param retry_policy_create_request [RetryPolicyCreateRequest] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(RetryPolicyResponse, Integer, Hash)>] RetryPolicyResponse data, response status code and response headers
@@ -88,7 +88,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Delete Retry Policy
-    # Delete a retry policy.  The built-in `Default` policy cannot be deleted (`403`). A policy still referenced by any job — at the base level or in a per-environment override — cannot be deleted (`409`); the error lists the referencing job ids under `meta.referencing_jobs` so they can be reassigned to `Default` first.
+    # Delete a retry policy.  A policy still referenced by any job — at the base level or in a per-environment override — cannot be deleted (`409`); the error lists the referencing job ids under `meta.referencing_jobs` so they can be reassigned (or cleared to no policy) first.
     # @param policy_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [nil]
@@ -98,7 +98,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Delete Retry Policy
-    # Delete a retry policy.  The built-in &#x60;Default&#x60; policy cannot be deleted (&#x60;403&#x60;). A policy still referenced by any job — at the base level or in a per-environment override — cannot be deleted (&#x60;409&#x60;); the error lists the referencing job ids under &#x60;meta.referencing_jobs&#x60; so they can be reassigned to &#x60;Default&#x60; first.
+    # Delete a retry policy.  A policy still referenced by any job — at the base level or in a per-environment override — cannot be deleted (&#x60;409&#x60;); the error lists the referencing job ids under &#x60;meta.referencing_jobs&#x60; so they can be reassigned (or cleared to no policy) first.
     # @param policy_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(nil, Integer, Hash)>] nil, response status code and response headers
@@ -149,7 +149,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Get Retry Policy
-    # Retrieve a single retry policy by its id.  `Default` returns the built-in do-not-retry policy.
+    # Retrieve a single retry policy by its id.
     # @param policy_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [RetryPolicyResponse]
@@ -159,7 +159,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Get Retry Policy
-    # Retrieve a single retry policy by its id.  &#x60;Default&#x60; returns the built-in do-not-retry policy.
+    # Retrieve a single retry policy by its id.
     # @param policy_id [String] 
     # @param [Hash] opts the optional parameters
     # @return [Array<(RetryPolicyResponse, Integer, Hash)>] RetryPolicyResponse data, response status code and response headers
@@ -212,7 +212,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Retry Policies
-    # List this account's retry policies.  Default sort is `name` ascending. Sort by `name`, `created_at`, or `updated_at` (prefix `-` for descending). The built-in `Default` policy is not included here — it always exists and is retrievable at `/retry-policies/Default`.
+    # List this account's retry policies.  Default sort is `name` ascending. Sort by `name`, `created_at`, or `updated_at` (prefix `-` for descending).
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_name Case-insensitive substring match on the policy &#x60;name&#x60; (matches when the name contains the given text).
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'name')
@@ -226,7 +226,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # List Retry Policies
-    # List this account&#39;s retry policies.  Default sort is &#x60;name&#x60; ascending. Sort by &#x60;name&#x60;, &#x60;created_at&#x60;, or &#x60;updated_at&#x60; (prefix &#x60;-&#x60; for descending). The built-in &#x60;Default&#x60; policy is not included here — it always exists and is retrievable at &#x60;/retry-policies/Default&#x60;.
+    # List this account&#39;s retry policies.  Default sort is &#x60;name&#x60; ascending. Sort by &#x60;name&#x60;, &#x60;created_at&#x60;, or &#x60;updated_at&#x60; (prefix &#x60;-&#x60; for descending).
     # @param [Hash] opts the optional parameters
     # @option opts [String] :filter_name Case-insensitive substring match on the policy &#x60;name&#x60; (matches when the name contains the given text).
     # @option opts [String] :sort Field to sort by. Prefix with &#x60;-&#x60; for descending order. Default: &#x60;name&#x60;. Allowed values: &#x60;created_at&#x60;, &#x60;-created_at&#x60;, &#x60;name&#x60;, &#x60;-name&#x60;, &#x60;updated_at&#x60;, &#x60;-updated_at&#x60;. (default to 'name')
@@ -288,7 +288,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Update Retry Policy
-    # Replace an existing retry policy. Every writable field is overwritten.  The built-in `Default` policy cannot be modified.
+    # Replace an existing retry policy. Every writable field is overwritten.
     # @param policy_id [String] 
     # @param retry_policy_request [RetryPolicyRequest] 
     # @param [Hash] opts the optional parameters
@@ -299,7 +299,7 @@ module SmplkitGeneratedClient::Jobs
     end
 
     # Update Retry Policy
-    # Replace an existing retry policy. Every writable field is overwritten.  The built-in &#x60;Default&#x60; policy cannot be modified.
+    # Replace an existing retry policy. Every writable field is overwritten.
     # @param policy_id [String] 
     # @param retry_policy_request [RetryPolicyRequest] 
     # @param [Hash] opts the optional parameters
