@@ -55,9 +55,36 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
+  test-min-floor:
+    name: Test (minimum dependency floor)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Run on the minimum supported Ruby (required_ruby_version >= 3.1).
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+          bundler-cache: false
+
+      - name: Pin runtime deps to their declared floor and install
+        run: |
+          # Bundler resolves to the HIGHEST satisfying version, so the normal
+          # suite never exercises the floor we publish. scripts/floor_gemfile.rb
+          # pins each customer-facing runtime gem to the lowest published
+          # version satisfying its gemspec constraint, proving the floors are
+          # real and not aspirational.
+          ruby scripts/floor_gemfile.rb
+          BUNDLE_GEMFILE=Gemfile.floor bundle install --jobs 4
+
+      - name: Test against the declared floor
+        run: BUNDLE_GEMFILE=Gemfile.floor bundle exec rspec -Ilib
+
   ci-gate:
     if: always()
-    needs: [lint, test]
+    needs: [lint, test, test-min-floor]
     runs-on: ubuntu-latest
     steps:
       - uses: smplkit/.github-public/actions/ci-gate@main

@@ -17,3 +17,4 @@ node_modules/
 .steep_cache/
 /vendor/bundle/
 .claude/
+Gemfile.floor
