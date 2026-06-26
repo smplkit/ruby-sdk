@@ -35,6 +35,7 @@ def runtime_deps_of(name, version)
   dep = Gem::Dependency.new(name, "= #{version}")
   pair = FETCHER.spec_for_dependency(dep).first.find { |t, _| t.version == version }
   return [] unless pair
+
   name_tuple, source = pair
   source.fetch_spec(name_tuple).runtime_dependencies
 end
@@ -52,13 +53,14 @@ loop do
   direct.each do |n|
     runtime_deps_of(n, floor[n]).each do |dep|
       next unless direct.include?(dep.name)
+
       combined = Gem::Requirement.new(gemspec_req[dep.name].as_list + dep.requirement.as_list)
       need = lowest_satisfying(dep.name, combined)
-      if need && need > floor[dep.name]
-        warn "  raise #{dep.name} #{floor[dep.name]} -> #{need} (required by #{n} #{floor[n]})"
-        floor[dep.name] = need
-        changed = true
-      end
+      next unless need && need > floor[dep.name]
+
+      warn "  raise #{dep.name} #{floor[dep.name]} -> #{need} (required by #{n} #{floor[n]})"
+      floor[dep.name] = need
+      changed = true
     end
   end
   break unless changed
