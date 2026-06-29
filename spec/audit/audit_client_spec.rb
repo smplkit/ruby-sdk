@@ -194,6 +194,60 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
 
+    it "passes severity into the request body when supplied" do
+      captured = nil
+      stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.record(
+          event_type: "user.locked",
+          resource_type: "user",
+          resource_id: "u-1",
+          severity: "WARN"
+        )
+        client.events.flush(timeout: 2.0)
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          sleep 0.02
+        end
+        expect(captured.dig("data", "attributes", "severity")).to eq("WARN")
+      ensure
+        client._close
+      end
+    end
+
+    it "sends severity as null when not supplied (server defaults to INFO)" do
+      # Mirrors category: an omitted severity serializes as JSON null
+      # rather than being stripped, and the audit service treats a null
+      # severity as INFO.
+      captured = nil
+      stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: event_response_body, headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.record(event_type: "user.created", resource_type: "user", resource_id: "u-1")
+        client.events.flush(timeout: 2.0)
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2.0
+        until WebMock::RequestRegistry.instance.times_executed(stub.request_pattern).positive? \
+              || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          sleep 0.02
+        end
+        attrs = captured.dig("data", "attributes")
+        expect(attrs).to have_key("severity")
+        expect(attrs["severity"]).to be_nil
+      ensure
+        client._close
+      end
+    end
+
     it "nests snapshot inside data on the request body" do
       captured = nil
       stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|

@@ -53,6 +53,9 @@ module Smplkit
       #   as supplied; powers the audit log's category filter and the
       #   +categories+ discovery listing ({Smplkit::Audit::AuditClient#categories}).
       #   Omit it to leave the event uncategorized.
+      # @param severity [String, nil] Optional severity level for the event —
+      #   one of +"TRACE"+, +"DEBUG"+, +"INFO"+, +"WARN"+, +"ERROR"+, or
+      #   +"FATAL"+. Omit it to let the server default the level to +"INFO"+.
       # @param data [Hash, nil] Free-form contextual JSON. To record a resource
       #   snapshot, place it inside +data+ — smplkit's own convention nests it at
       #   +data["snapshot"]+ for consistency, but the shape is unconstrained.
@@ -73,8 +76,9 @@ module Smplkit
       # @return [void]
       def record(event_type:, resource_type:, resource_id:,
                  occurred_at: nil, actor_type: nil, actor_id: nil,
-                 actor_label: nil, category: nil, data: nil, idempotency_key: nil,
-                 do_not_forward: false, flush: false, flush_timeout: 5.0)
+                 actor_label: nil, category: nil, severity: nil, data: nil,
+                 idempotency_key: nil, do_not_forward: false, flush: false,
+                 flush_timeout: 5.0)
         raise ArgumentError, "event_type is required" if event_type.nil? || event_type.to_s.empty?
         raise ArgumentError, "resource_type is required" if resource_type.nil? || resource_type.to_s.empty?
         raise ArgumentError, "resource_id is required" if resource_id.nil? || resource_id.to_s.empty?
@@ -103,6 +107,7 @@ module Smplkit
           actor_id: actor_id,
           actor_label: actor_label,
           category: category,
+          severity: severity,
           data: data || {},
           do_not_forward: do_not_forward
         )
