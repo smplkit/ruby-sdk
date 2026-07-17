@@ -135,6 +135,17 @@ jobs:
         env:
           SMPLKIT_GEM_VERSION: ${{ steps.prep.outputs.version }}
         uses: rubygems/release-gem@v1
+        with:
+          # The action's experimental sigstore-attestation support preloads
+          # (via RUBYOPT) code that activates the runner Ruby's DEFAULT
+          # openssl before bundler/setup runs. The bundle now resolves the
+          # openssl GEM at a newer version (io-stream >= 0.13 declares
+          # `openssl >= 3.3`, which bundler satisfies with openssl 4.x), so
+          # the preloaded default clashes with the bundled gem and
+          # `bundle exec rake release` aborts with Gem::LoadError. Disable
+          # the experimental preload until the upstream action tolerates a
+          # bundled openssl newer than the runner default.
+          attestations: "false"
 
       - name: Summary
         run: |
