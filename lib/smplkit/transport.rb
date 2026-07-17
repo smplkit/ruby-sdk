@@ -15,9 +15,36 @@ module Smplkit
   #
   # @api private
   module Transport
-    SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
+    # Headers the SDK always owns — +extra_headers+ cannot override these
+    # (authorization carries the credential; content-type is set per request
+    # by the generated client). User-Agent is deliberately NOT in this list:
+    # a caller-supplied User-Agent wins over the SDK default.
+    SDK_OWNED_HEADERS = %w[authorization content-type].freeze
 
     module_function
+
+    # Whether an extra-headers hash carries a caller-supplied User-Agent,
+    # under any representation the surface accepts — string keys in any
+    # casing ("User-Agent", "user-agent", …) and symbol keys (:"user-agent").
+    def user_agent_supplied?(extra_headers)
+      (extra_headers || {}).keys.any? { |k| k.to_s.casecmp("user-agent").zero? }
+    end
+
+    # Stamp the default headers onto a generated +ApiClient+.
+    #
+    # User-Agent precedence: caller-supplied via +extra_headers+ (any casing
+    # or symbol representation) > the SDK default (+Smplkit.user_agent+,
+    # +smplkit-sdk-ruby/<version>+) > the generated stack's own default
+    # (+OpenAPI-Generator/x.y.z/ruby+, removed here so exactly one
+    # User-Agent representation remains). Other +extra_headers+ entries are
+    # applied as-is unless SDK-owned.
+    def apply_headers(client, extra_headers)
+      client.default_headers.delete("User-Agent")
+      client.default_headers["User-Agent"] = Smplkit.user_agent unless user_agent_supplied?(extra_headers)
+      (extra_headers || {}).each do |k, v|
+        client.default_headers[k] = v unless SDK_OWNED_HEADERS.include?(k.to_s.downcase)
+      end
+    end
 
     # Project the runtime +ResolvedConfig+ down to the transport subset.
     #
@@ -92,11 +119,8 @@ module Smplkit
       configuration.debugging = cfg.debug
       HttpPool.configure(configuration)
       generated_module::ApiClient.new(configuration).tap do |client|
-        client.default_headers["User-Agent"] = "smplkit-ruby-sdk/#{Smplkit::VERSION}"
         client.default_headers["Accept"] = accept if accept
-        (cfg.extra_headers || {}).each do |k, v|
-          client.default_headers[k] = v unless SDK_OWNED_HEADERS.include?(k.downcase)
-        end
+        apply_headers(client, cfg.extra_headers)
       end
     end
   end

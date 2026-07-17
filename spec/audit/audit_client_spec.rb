@@ -652,17 +652,53 @@ RSpec.describe Smplkit::Audit::AuditClient do
       client = described_class.new(api_key: api_key, base_url: base_url,
                                    extra_headers: {
                                      "Authorization" => "Bearer overridden",
-                                     "User-Agent" => "rogue",
                                      "X-Pass" => "yes"
                                    })
       begin
         api_client = client.events.instance_variable_get(:@api).api_client
         expect(api_client.default_headers["Authorization"]).not_to eq("Bearer overridden")
-        expect(api_client.default_headers["User-Agent"]).to eq("smplkit-ruby-sdk/#{Smplkit::VERSION}")
+        expect(api_client.default_headers["User-Agent"]).to eq(Smplkit.user_agent)
         expect(api_client.default_headers["X-Pass"]).to eq("yes")
       ensure
         client._close
       end
+    end
+  end
+
+  describe "User-Agent" do
+    # Record one event through the stateless (buffered: false) write path —
+    # a single blocking POST — and return the request headers webmock saw.
+    def capture_record_headers(**client_kwargs)
+      captured = nil
+      stub_request(:post, "#{base_url}/api/v1/events").with do |req|
+        captured = req.headers
+        true
+      end.to_return(status: 201, body: event_response_body,
+                    headers: { "Content-Type" => "application/vnd.api+json" })
+      client = described_class.new(api_key: api_key, base_url: base_url,
+                                   buffered: false, **client_kwargs)
+      begin
+        client.events.record(event_type: "user.created", resource_type: "user", resource_id: "u-1")
+      ensure
+        client._close
+      end
+      captured
+    end
+
+    it "sends the default SDK User-Agent on the wire" do
+      headers = capture_record_headers
+      expect(headers["User-Agent"]).to eq("smplkit-sdk-ruby/#{Smplkit.gem_version}")
+      expect(headers["User-Agent"]).to start_with("smplkit-sdk-ruby/")
+    end
+
+    it "a caller-supplied User-Agent wins on the wire" do
+      headers = capture_record_headers(extra_headers: { "User-Agent" => "acme-app/9.9" })
+      expect(headers["User-Agent"]).to eq("acme-app/9.9")
+    end
+
+    it "a caller-supplied User-Agent wins even in an alternate casing" do
+      headers = capture_record_headers(extra_headers: { "user-agent" => "acme-app/9.9" })
+      expect(headers["User-Agent"]).to eq("acme-app/9.9")
     end
   end
 

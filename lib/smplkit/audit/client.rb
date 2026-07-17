@@ -36,8 +36,9 @@ module Smplkit
     # @param debug [Boolean, nil] Enable SDK debug logging.
     # @param timeout [Float] Per-request timeout, in seconds. Defaults to +10.0+.
     # @param extra_headers [Hash{String => String}, nil] Extra headers attached
-    #   to every request. SDK-owned headers (authorization, content-type,
-    #   user-agent) cannot be overridden.
+    #   to every request. SDK-owned headers (authorization, content-type)
+    #   cannot be overridden. A caller-supplied User-Agent (any casing)
+    #   replaces the SDK default +smplkit-sdk-ruby/<version>+.
     # @param buffered [Boolean] Buffer event recording (default +true+):
     #   +events.record+ enqueues onto an in-memory buffer that a background
     #   worker drains with retry, and returns immediately. Set +false+ for the
@@ -47,8 +48,6 @@ module Smplkit
     #   and edge runtimes, where an instance may be constructed per request.
     class AuditClient
       attr_reader :events, :resource_types, :event_types, :categories, :forwarders
-
-      SDK_OWNED_HEADERS = %w[authorization content-type user-agent].freeze
 
       def initialize(api_key: nil, base_url: nil, environment: nil, profile: nil,
                      base_domain: nil, scheme: nil, debug: nil, timeout: 10.0,
@@ -77,17 +76,15 @@ module Smplkit
         cfg.debugging = debug unless debug.nil?
         HttpPool.configure(cfg)
         api_client = SmplkitGeneratedClient::Audit::ApiClient.new(cfg)
-        api_client.default_headers["User-Agent"] = "smplkit-ruby-sdk/#{Smplkit::VERSION}"
         # Runtime audit ops are environment-scoped, but the scoping is
         # body-driven (ADR-055): +events.record+ stamps the configured
         # environment onto the event request body, and the read surfaces
         # (events list plus the resource_type / event_type / category discovery
         # lists) default +filter[environment]+ to it. The transport therefore
-        # carries only auth plus any caller-supplied +extra_headers+ — no
-        # environment header. Forwarder CRUD is environment-agnostic.
-        extra_headers&.each do |k, v|
-          api_client.default_headers[k] = v unless SDK_OWNED_HEADERS.include?(k.downcase)
-        end
+        # carries only auth, the default User-Agent, and any caller-supplied
+        # +extra_headers+ — no environment header. Forwarder CRUD is
+        # environment-agnostic.
+        Transport.apply_headers(api_client, extra_headers)
         @events = Events.new(
           SmplkitGeneratedClient::Audit::EventsApi.new(api_client),
           environment: environment, buffered: buffered

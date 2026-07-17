@@ -34,7 +34,10 @@ module Smplkit
   class SharedWebSocket
     BACKOFF_SCHEDULE = [1, 2, 4, 8, 16, 32, 60].freeze
 
-    USER_AGENT = "smplkit-ruby-sdk/#{Smplkit::VERSION}".freeze
+    # Sent on the WebSocket upgrade request — the platform WAF rejects
+    # handshakes that carry no User-Agent. There is no caller-supplied
+    # header surface on the WebSocket, so the SDK default always applies.
+    USER_AGENT = Smplkit.user_agent.freeze
 
     def initialize(app_base_url:, api_key:, metrics: nil)
       @app_base_url = app_base_url

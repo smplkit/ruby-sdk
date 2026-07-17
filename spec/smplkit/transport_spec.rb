@@ -61,8 +61,11 @@ RSpec.describe Smplkit::Transport do
     end
 
     it "stamps the SDK User-Agent on every transport" do
-      ua = "smplkit-ruby-sdk/#{Smplkit::VERSION}"
+      ua = "smplkit-sdk-ruby/#{Smplkit.gem_version}"
       expect(transports.app_http.default_headers["User-Agent"]).to eq(ua)
+      expect(transports.config_http.default_headers["User-Agent"]).to eq(ua)
+      expect(transports.flags_http.default_headers["User-Agent"]).to eq(ua)
+      expect(transports.logging_http.default_headers["User-Agent"]).to eq(ua)
       expect(transports.jobs_http.default_headers["User-Agent"]).to eq(ua)
     end
 
@@ -79,7 +82,7 @@ RSpec.describe Smplkit::Transport do
       expect(client.config.host).to eq("app.smplkit.test")
       expect(client.config.base_path).to eq("")
       expect(client.config.access_token).to eq("k")
-      expect(client.default_headers["User-Agent"]).to eq("smplkit-ruby-sdk/#{Smplkit::VERSION}")
+      expect(client.default_headers["User-Agent"]).to eq(Smplkit.user_agent)
     end
 
     it "applies the Accept header when one is passed" do
@@ -111,15 +114,59 @@ RSpec.describe Smplkit::Transport do
         extra_headers: {
           "X-Pass" => "yes",
           "Authorization" => "Bearer rogue",
-          "User-Agent" => "rogue",
           "Content-Type" => "text/plain"
         }
       )
       client = described_class.build_api_client(SmplkitGeneratedClient::App, "app", cfg)
       expect(client.default_headers["X-Pass"]).to eq("yes")
-      expect(client.default_headers["User-Agent"]).to eq("smplkit-ruby-sdk/#{Smplkit::VERSION}")
+      expect(client.default_headers["User-Agent"]).to eq(Smplkit.user_agent)
       expect(client.default_headers["Authorization"]).not_to eq("Bearer rogue")
       expect(client.default_headers["Content-Type"]).not_to eq("text/plain")
+    end
+
+    it "lets a caller-supplied User-Agent win over the SDK default" do
+      cfg = Smplkit::ConfigResolution::ResolvedClientConfig.new(
+        api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false,
+        extra_headers: { "User-Agent" => "acme-app/9.9" }
+      )
+      client = described_class.build_api_client(SmplkitGeneratedClient::App, "app", cfg)
+      expect(client.default_headers["User-Agent"]).to eq("acme-app/9.9")
+      ua_keys = client.default_headers.keys.select { |k| k.to_s.casecmp("user-agent").zero? }
+      expect(ua_keys).to eq(["User-Agent"])
+    end
+
+    it "detects a caller-supplied User-Agent case-insensitively (no duplicate UA keys)" do
+      cfg = Smplkit::ConfigResolution::ResolvedClientConfig.new(
+        api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false,
+        extra_headers: { "user-agent" => "acme-app/9.9" }
+      )
+      client = described_class.build_api_client(SmplkitGeneratedClient::App, "app", cfg)
+      ua_entries = client.default_headers.select { |k, _| k.to_s.casecmp("user-agent").zero? }
+      expect(ua_entries).to eq("user-agent" => "acme-app/9.9")
+    end
+
+    it "detects a symbol-keyed caller User-Agent" do
+      cfg = Smplkit::ConfigResolution::ResolvedClientConfig.new(
+        api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false,
+        extra_headers: { "USER-AGENT": "acme-app/9.9" }
+      )
+      client = described_class.build_api_client(SmplkitGeneratedClient::App, "app", cfg)
+      ua_entries = client.default_headers.select { |k, _| k.to_s.casecmp("user-agent").zero? }
+      expect(ua_entries).to eq("USER-AGENT": "acme-app/9.9")
+    end
+  end
+
+  describe ".user_agent_supplied?" do
+    it "is false for nil and for hashes without a User-Agent" do
+      expect(described_class.user_agent_supplied?(nil)).to be(false)
+      expect(described_class.user_agent_supplied?({ "X-A" => "b" })).to be(false)
+    end
+
+    it "matches any casing and symbol representations" do
+      expect(described_class.user_agent_supplied?({ "User-Agent" => "x" })).to be(true)
+      expect(described_class.user_agent_supplied?({ "user-agent" => "x" })).to be(true)
+      expect(described_class.user_agent_supplied?({ "USER-AGENT" => "x" })).to be(true)
+      expect(described_class.user_agent_supplied?({ "user-agent": "x" })).to be(true)
     end
   end
 end

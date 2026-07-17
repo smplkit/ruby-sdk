@@ -96,8 +96,9 @@ RSpec.describe Smplkit::SharedWebSocket do
       expect(Smplkit::SharedWebSocket::BACKOFF_SCHEDULE).to eq([1, 2, 4, 8, 16, 32, 60])
     end
 
-    it "USER_AGENT identifies the Ruby SDK with version" do
-      expect(Smplkit::SharedWebSocket::USER_AGENT).to start_with("smplkit-ruby-sdk/")
+    it "USER_AGENT identifies the Ruby SDK with the gem version" do
+      expect(Smplkit::SharedWebSocket::USER_AGENT).to eq("smplkit-sdk-ruby/#{Smplkit.gem_version}")
+      expect(Smplkit::SharedWebSocket::USER_AGENT).to start_with("smplkit-sdk-ruby/")
     end
   end
 
@@ -147,6 +148,13 @@ RSpec.describe Smplkit::SharedWebSocket do
       allow(fake_connection).to receive(:read).and_return(JSON.generate("type" => "connected"), nil)
       ws.send(:connect, task)
       expect(ws.connection_status).to eq("connected")
+    end
+
+    it "sends the SDK User-Agent on the handshake" do
+      allow(fake_connection).to receive(:read).and_return(JSON.generate("type" => "connected"), nil)
+      ws.send(:connect, task)
+      expect(Async::WebSocket::Client).to have_received(:connect)
+        .with(:endpoint, headers: { "user-agent" => "smplkit-sdk-ruby/#{Smplkit.gem_version}" })
     end
 
     it "is a no-op once the socket has been closed" do

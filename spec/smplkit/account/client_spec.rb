@@ -54,6 +54,34 @@ RSpec.describe Smplkit::Account::AccountClient do
     end
   end
 
+  describe "User-Agent" do
+    def capture_get_headers(extra_headers: nil)
+      captured = nil
+      stub_request(:get, path).with do |req|
+        captured = req.headers
+        true
+      end.to_return(status: 200, body: "{}", headers: json)
+      described_class.new(api_key: "k", base_url: base_url, extra_headers: extra_headers).settings.get
+      captured
+    end
+
+    it "sends the default SDK User-Agent on the wire" do
+      headers = capture_get_headers
+      expect(headers["User-Agent"]).to eq("smplkit-sdk-ruby/#{Smplkit.gem_version}")
+      expect(headers["User-Agent"]).to start_with("smplkit-sdk-ruby/")
+    end
+
+    it "a caller-supplied User-Agent wins on the wire" do
+      headers = capture_get_headers(extra_headers: { "User-Agent" => "acme-app/9.9" })
+      expect(headers["User-Agent"]).to eq("acme-app/9.9")
+    end
+
+    it "a caller-supplied User-Agent wins even in an alternate casing" do
+      headers = capture_get_headers(extra_headers: { "user-agent" => "acme-app/9.9" })
+      expect(headers["User-Agent"]).to eq("acme-app/9.9")
+    end
+  end
+
   it "close is a no-op" do
     expect(account.close).to be_nil
   end

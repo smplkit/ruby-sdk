@@ -36,7 +36,12 @@ module Smplkit
         @headers = {
           "Authorization" => "Bearer #{api_key}",
           "Content-Type" => "application/json"
-        }.merge(extra_headers || {})
+        }
+        # Default SDK User-Agent unless the caller supplied one (any casing) —
+        # without it this raw Faraday connection would fall through to
+        # Faraday's own "Faraday vX.Y.Z" default.
+        @headers["User-Agent"] = Smplkit.user_agent unless Transport.user_agent_supplied?(extra_headers)
+        @headers.merge!(extra_headers || {})
       end
 
       # Fetch the authenticated account's current settings.
