@@ -171,6 +171,9 @@ module Smplkit
       #   equals this value. Omit to match any.
       # @param actor_id [String, nil] Return only events whose +actor_id+
       #   matches this value as a literal string. Omit to match any.
+      # @param category [String, nil] Filter to this exact category — the
+      #   indexed correlation label callers stamp on related events. Omit to
+      #   match any.
       # @param occurred_at_range [String, nil] Restrict to events whose
       #   +occurred_at+ falls in this range. Omit to leave the time window open.
       # @param search [String, nil] Optional free-text filter — returns only
@@ -189,7 +192,7 @@ module Smplkit
       # @return [Smplkit::Audit::ListEventsPage] A page of the matching events;
       #   its +#next_cursor+ is set when more pages are available.
       def list(event_type: nil, resource_type: nil, resource_id: nil,
-               actor_type: nil, actor_id: nil, occurred_at_range: nil,
+               actor_type: nil, actor_id: nil, category: nil, occurred_at_range: nil,
                search: nil, environments: nil, page_size: nil, page_after: nil)
         # Generated client opts use snake_case keys that internally map
         # to the JSON:API ``filter[*]`` / ``page[*]`` query-string format
@@ -202,6 +205,7 @@ module Smplkit
         opts[:filter_resource_id] = resource_id if resource_id
         opts[:filter_actor_type] = actor_type if actor_type
         opts[:filter_actor_id] = actor_id if actor_id
+        opts[:filter_category] = category if category
         opts[:filter_occurred_at] = occurred_at_range if occurred_at_range
         opts[:filter_search] = search if search
         resolved_environment = Smplkit::Audit.resolve_environment_filter(environments, @environment)

@@ -540,6 +540,28 @@ RSpec.describe Smplkit::Audit::AuditClient do
       end
     end
 
+    it "passes filter[category] to the generated client, omitting it by default" do
+      captured_uri = nil
+      stub_request(:get, %r{#{Regexp.escape(base_url)}/api/v1/events})
+        .with do |req|
+          captured_uri = req.uri.to_s
+          true
+        end
+        .to_return(status: 200, body: { data: [], meta: { page_size: 50 } }.to_json,
+                   headers: { "Content-Type" => "application/vnd.api+json" })
+
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      begin
+        client.events.list(category: "billing")
+        expect(captured_uri).to include("filter%5Bcategory%5D=billing")
+
+        client.events.list
+        expect(captured_uri).not_to include("filter%5Bcategory%5D")
+      ensure
+        client._close
+      end
+    end
+
     describe "filter[environment]" do
       def capture_events_list(args)
         captured_uri = nil
