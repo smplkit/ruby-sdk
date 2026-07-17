@@ -1539,3 +1539,49 @@ RSpec.describe Smplkit::Jobs::RetryPoliciesClient do
     end
   end
 end
+
+# --- JobsClient environment resolution (standalone) ---------------------
+
+RSpec.describe "Smplkit::Jobs::JobsClient (environment resolution)" do
+  around do |ex|
+    saved = ENV.fetch("SMPLKIT_ENVIRONMENT", nil)
+    ENV.delete("SMPLKIT_ENVIRONMENT")
+    ex.run
+  ensure
+    saved.nil? ? ENV.delete("SMPLKIT_ENVIRONMENT") : ENV["SMPLKIT_ENVIRONMENT"] = saved
+  end
+
+  it "resolves environment from SMPLKIT_ENVIRONMENT when omitted" do
+    ENV["SMPLKIT_ENVIRONMENT"] = "resolved-env"
+    client = Smplkit::Jobs::JobsClient.new("sk_jobs", base_domain: "smplkit.test")
+    expect(client.instance_variable_get(:@environment)).to eq("resolved-env")
+    client.close
+  end
+
+  it "prefers an explicit environment kwarg over SMPLKIT_ENVIRONMENT" do
+    ENV["SMPLKIT_ENVIRONMENT"] = "resolved-env"
+    client = Smplkit::Jobs::JobsClient.new("sk_jobs", base_domain: "smplkit.test", environment: "explicit")
+    expect(client.instance_variable_get(:@environment)).to eq("explicit")
+    client.close
+  end
+
+  it "leaves environment nil when configured nowhere" do
+    client = Smplkit::Jobs::JobsClient.new("sk_jobs", base_domain: "smplkit.test")
+    expect(client.instance_variable_get(:@environment)).to be_nil
+    client.close
+  end
+
+  it "keeps the raw environment kwarg on the wired (auth_client) path" do
+    ENV["SMPLKIT_ENVIRONMENT"] = "resolved-env"
+    resolved = Smplkit::ConfigResolution::ResolvedClientConfig.new(
+      api_key: "k", base_domain: "smplkit.test", scheme: "https", debug: false
+    )
+    transport = Smplkit::Transport.build_api_client(
+      SmplkitGeneratedClient::Jobs, "jobs", resolved, accept: "application/vnd.api+json"
+    )
+    # Wired: no resolution runs — the parent already resolved once.
+    client = Smplkit::Jobs::JobsClient.new(auth_client: transport)
+    expect(client.instance_variable_get(:@environment)).to be_nil
+    client.close
+  end
+end

@@ -156,6 +156,63 @@ RSpec.describe Smplkit::ConfigResolution do
       expect(cfg.scheme).to eq("http")
       expect(cfg.debug).to be(true)
     end
+
+    it "leaves environment and service nil when configured nowhere" do
+      cfg = described_class.resolve_client_config(api_key: "k", home_dir: @home_dir)
+      expect(cfg.environment).to be_nil
+      expect(cfg.service).to be_nil
+    end
+
+    it "resolves environment and service from env vars" do
+      ENV["SMPLKIT_ENVIRONMENT"] = "stg"
+      ENV["SMPLKIT_SERVICE"] = "svc-env"
+      cfg = described_class.resolve_client_config(api_key: "k", home_dir: @home_dir)
+      expect(cfg.environment).to eq("stg")
+      expect(cfg.service).to eq("svc-env")
+    end
+
+    it "resolves environment and service from the config file" do
+      File.write(File.join(@home_dir, ".smplkit"), <<~INI)
+        [common]
+        environment = file-env
+        [default]
+        api_key = filekey
+        service = file-svc
+      INI
+      cfg = described_class.resolve_client_config(home_dir: @home_dir)
+      expect(cfg.environment).to eq("file-env")
+      expect(cfg.service).to eq("file-svc")
+    end
+
+    it "prefers constructor environment/service over env vars and file" do
+      File.write(File.join(@home_dir, ".smplkit"), <<~INI)
+        [default]
+        api_key = filekey
+        environment = file-env
+        service = file-svc
+      INI
+      ENV["SMPLKIT_ENVIRONMENT"] = "env-env"
+      ENV["SMPLKIT_SERVICE"] = "env-svc"
+      cfg = described_class.resolve_client_config(
+        api_key: "k", environment: "ctor-env", service: "ctor-svc", home_dir: @home_dir
+      )
+      expect(cfg.environment).to eq("ctor-env")
+      expect(cfg.service).to eq("ctor-svc")
+    end
+
+    it "env vars override file environment/service" do
+      File.write(File.join(@home_dir, ".smplkit"), <<~INI)
+        [default]
+        api_key = filekey
+        environment = file-env
+        service = file-svc
+      INI
+      ENV["SMPLKIT_ENVIRONMENT"] = "env-env"
+      ENV["SMPLKIT_SERVICE"] = "env-svc"
+      cfg = described_class.resolve_client_config(home_dir: @home_dir)
+      expect(cfg.environment).to eq("env-env")
+      expect(cfg.service).to eq("env-svc")
+    end
   end
 
   describe ".service_url" do

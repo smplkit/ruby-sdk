@@ -284,12 +284,14 @@ module Smplkit
     # Reuses the config resolver (jobs is account-global and never
     # environment-scoped at the transport layer) so a standalone jobs client
     # resolves credentials/base-domain from +~/.smplkit+ / env vars /
-    # constructor args exactly like the top-level clients do. Smpl Jobs is
-    # JSON:API, so the transport carries the +application/vnd.api+json+ Accept
-    # header.
-    def self.jobs_transport(api_key:, profile:, base_domain:, scheme:, debug:, extra_headers:)
+    # constructor args exactly like the top-level clients do. The client-level
+    # default +environment+ resolves through the same chain (constructor
+    # argument wins) and is returned alongside. Smpl Jobs is JSON:API, so the
+    # transport carries the +application/vnd.api+json+ Accept header.
+    def self.jobs_transport(api_key:, profile:, base_domain:, scheme:, environment:, debug:, extra_headers:)
       cfg = ConfigResolution.resolve_client_config(
-        profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
+        profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme,
+        environment: environment, debug: debug
       )
       merged = {}
       merged.merge!(cfg.extra_headers || {})
@@ -298,7 +300,10 @@ module Smplkit
         api_key: cfg.api_key, base_domain: cfg.base_domain, scheme: cfg.scheme,
         debug: cfg.debug, extra_headers: merged
       )
-      Transport.build_api_client(SmplkitGeneratedClient::Jobs, "jobs", tcfg, accept: "application/vnd.api+json")
+      transport = Transport.build_api_client(
+        SmplkitGeneratedClient::Jobs, "jobs", tcfg, accept: "application/vnd.api+json"
+      )
+      [transport, cfg.environment]
     end
 
     # The active-record entry points are {#new_recurring_job}, {#new_manual_job},
@@ -327,18 +332,26 @@ module Smplkit
       # @param environment [String, nil] Default environment for
       #   environment-scoped operations — the environment a one-off job created
       #   through this client is born in, the default a manual run executes in,
-      #   and the default scope for +runs.list+. +nil+ leaves these unset (the
+      #   and the default scope for +runs.list+. When omitted, resolved from
+      #   +SMPLKIT_ENVIRONMENT+ or +~/.smplkit+. +nil+ leaves these unset (the
       #   credential's permitted environment is implied where unambiguous).
       # @param auth_client [Object, nil] Internal — a pre-built transport
       #   supplied by a top-level client so the jobs surface shares one
       #   connection pool. Not for direct use.
       def initialize(api_key = nil, profile: nil, base_domain: nil, scheme: nil,
                      debug: nil, extra_headers: nil, environment: nil, auth_client: nil)
-        auth = auth_client || Jobs.jobs_transport(
-          api_key: api_key, profile: profile, base_domain: base_domain,
-          scheme: scheme, debug: debug, extra_headers: extra_headers
-        )
-        @environment = environment
+        if auth_client.nil?
+          # Standalone: resolve like Smplkit::Client — defaults → ~/.smplkit →
+          # SMPLKIT_* env vars → constructor args — environment included.
+          auth, resolved_env = Jobs.jobs_transport(
+            api_key: api_key, profile: profile, base_domain: base_domain,
+            scheme: scheme, environment: environment, debug: debug, extra_headers: extra_headers
+          )
+          @environment = resolved_env
+        else
+          auth = auth_client
+          @environment = environment
+        end
         @api = SmplkitGeneratedClient::Jobs::JobsApi.new(auth)
         @runs = RunsClient.new(SmplkitGeneratedClient::Jobs::RunsApi.new(auth), environment: environment)
         @retry_policies = RetryPoliciesClient.new(SmplkitGeneratedClient::Jobs::RetryPoliciesApi.new(auth))

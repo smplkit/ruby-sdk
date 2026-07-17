@@ -36,7 +36,7 @@ module Smplkit
     )
 
     ResolvedClientConfig = Struct.new(
-      :api_key, :base_domain, :scheme, :debug, :extra_headers,
+      :api_key, :base_domain, :scheme, :environment, :service, :debug, :extra_headers,
       keyword_init: true
     )
 
@@ -160,18 +160,21 @@ module Smplkit
     end
 
     def resolve_client_config(profile: nil, api_key: nil, base_domain: nil,
-                              scheme: nil, debug: nil, home_dir: nil)
+                              scheme: nil, environment: nil, service: nil,
+                              debug: nil, home_dir: nil)
       resolved = {
         "api_key" => nil,
         "base_domain" => "smplkit.com",
         "scheme" => "https",
+        "environment" => nil,
+        "service" => nil,
         "debug" => false
       }
 
       active_profile = profile || ENV["SMPLKIT_PROFILE"] || "default"
 
       file_values = read_config_file(active_profile, home_dir: home_dir)
-      %w[api_key base_domain scheme debug].each do |key|
+      %w[api_key base_domain scheme environment service debug].each do |key|
         next unless file_values.key?(key)
 
         val = file_values[key]
@@ -180,7 +183,8 @@ module Smplkit
 
       [
         %w[api_key SMPLKIT_API_KEY], %w[base_domain SMPLKIT_BASE_DOMAIN],
-        %w[scheme SMPLKIT_SCHEME], %w[debug SMPLKIT_DEBUG]
+        %w[scheme SMPLKIT_SCHEME], %w[environment SMPLKIT_ENVIRONMENT],
+        %w[service SMPLKIT_SERVICE], %w[debug SMPLKIT_DEBUG]
       ].each do |key, env_var|
         env_val = ENV.fetch(env_var, "")
         next if env_val.empty?
@@ -188,7 +192,10 @@ module Smplkit
         resolved[key] = key == "debug" ? parse_bool(env_val, env_var) : env_val
       end
 
-      ctor = { "api_key" => api_key, "base_domain" => base_domain, "scheme" => scheme, "debug" => debug }
+      ctor = {
+        "api_key" => api_key, "base_domain" => base_domain, "scheme" => scheme,
+        "environment" => environment, "service" => service, "debug" => debug
+      }
       ctor.each { |k, v| resolved[k] = v unless v.nil? }
 
       missing_required(resolved, "api_key", active_profile)
@@ -197,6 +204,11 @@ module Smplkit
         api_key: resolved["api_key"].to_s,
         base_domain: resolved["base_domain"].to_s,
         scheme: resolved["scheme"].to_s,
+        # Preserve nil rather than coercing to the literal string "" —
+        # +environment+ and +service+ are optional and their absence is
+        # meaningful (no environment signal is sent on the wire).
+        environment: resolved["environment"]&.to_s,
+        service: resolved["service"]&.to_s,
         debug: resolved["debug"] ? true : false
       )
     end

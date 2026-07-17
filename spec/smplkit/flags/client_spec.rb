@@ -863,6 +863,119 @@ RSpec.describe Smplkit::Flags::FlagsClient do
   end
 
   # ----------------------------------------------------------------
+  # Stateless mode (streaming: false)
+  # ----------------------------------------------------------------
+
+  describe "stateless mode (streaming: false)" do
+    # Override the wired subject: the after-hook +flags._close+ must tear down
+    # THIS standalone client (and never touch the parent/ws lets, whose
+    # construction would trip the no-WebSocket expectations below).
+    subject(:flags) do
+      described_class.new(
+        "sk_test", environment: "staging", streaming: false, base_url: flags_host
+      )
+    end
+
+    it "connects and evaluates without ever creating a WebSocket" do
+      expect(Smplkit::SharedWebSocket).not_to receive(:new)
+      stub_runtime([flag_resource("checkout-v2", environments: checkout_environments)])
+      handle = flags.boolean_flag("checkout-v2", default: false)
+      ctx = [Smplkit::Context.new("user", "u-1", plan: "enterprise")]
+      expect(handle.get(context: ctx)).to be(true)
+    end
+
+    it "refresh re-fetches on demand and fires change listeners" do
+      expect(Smplkit::SharedWebSocket).not_to receive(:new)
+      stub_request(:post, "#{flags_host}/api/v1/flags/bulk")
+        .to_return(status: 200, body: bulk_body, headers: jsonapi_headers)
+      stub_request(:get, "#{flags_host}/api/v1/flags").with(query: hash_including({}))
+                                                      .to_return(
+                                                        { status: 200,
+                                                          body: list_body([flag_resource("checkout-v2", environments: checkout_environments)]),
+                                                          headers: jsonapi_headers },
+                                                        { status: 200,
+                                                          body: list_body([flag_resource("checkout-v2", default: true)]),
+                                                          headers: jsonapi_headers }
+                                                      )
+      handle = flags.boolean_flag("checkout-v2", default: false)
+      expect(handle.get).to be(false)
+      events = []
+      flags.on_change("checkout-v2") { |e| events << e }
+      flags.refresh
+      expect(events.map(&:source)).to eq(["manual"])
+      expect(handle.get).to be(true)
+    end
+
+    it "runs threshold flushes inline instead of spawning a background thread" do
+      flags # construct before the Thread expectation narrows the example
+      expect(Thread).not_to receive(:new)
+      bulk = stub_request(:post, "#{flags_host}/api/v1/flags/bulk")
+             .to_return(status: 200, body: bulk_body(Smplkit::FLAG_BATCH_FLUSH_SIZE), headers: jsonapi_headers)
+      declarations = (0...Smplkit::FLAG_BATCH_FLUSH_SIZE).map do |i|
+        Smplkit::FlagDeclaration.new(id: "flag-#{i}", type: "BOOLEAN", default: false)
+      end
+      flags.register(declarations)
+      # The threshold flush ran synchronously inside the crossing register call.
+      expect(bulk).to have_been_requested.once
+      expect(flags.pending_count).to eq(0)
+    end
+  end
+
+  # ----------------------------------------------------------------
+  # Environment/service resolution (standalone)
+  # ----------------------------------------------------------------
+
+  describe "environment/service resolution (standalone)" do
+    around do |ex|
+      saved = ENV.to_h.slice("SMPLKIT_ENVIRONMENT", "SMPLKIT_SERVICE")
+      %w[SMPLKIT_ENVIRONMENT SMPLKIT_SERVICE].each { |k| ENV.delete(k) }
+      ex.run
+    ensure
+      %w[SMPLKIT_ENVIRONMENT SMPLKIT_SERVICE].each { |k| saved.key?(k) ? ENV[k] = saved[k] : ENV.delete(k) }
+    end
+
+    it "resolves environment and service from SMPLKIT_* env vars" do
+      ENV["SMPLKIT_ENVIRONMENT"] = "stg"
+      ENV["SMPLKIT_SERVICE"] = "svc-env"
+      standalone = described_class.new("sk_test", base_url: flags_host)
+      expect(standalone.instance_variable_get(:@environment)).to eq("stg")
+      expect(standalone.instance_variable_get(:@service)).to eq("svc-env")
+      standalone.close
+    end
+
+    it "prefers explicit environment/service kwargs over env vars" do
+      ENV["SMPLKIT_ENVIRONMENT"] = "stg"
+      ENV["SMPLKIT_SERVICE"] = "svc-env"
+      standalone = described_class.new(
+        "sk_test", environment: "ctor-env", service: "ctor-svc", base_url: flags_host
+      )
+      expect(standalone.instance_variable_get(:@environment)).to eq("ctor-env")
+      expect(standalone.instance_variable_get(:@service)).to eq("ctor-svc")
+      standalone.close
+    end
+
+    it "auto-injects the resolved service into the evaluation context" do
+      ENV["SMPLKIT_SERVICE"] = "svc-inject"
+      service_rule_envs = {
+        "staging" => {
+          "enabled" => true, "default" => nil,
+          "rules" => [
+            { "logic" => { "==" => [{ "var" => "service.key" }, "svc-inject"] },
+              "value" => true, "description" => "svc match" }
+          ]
+        }
+      }
+      stub_runtime([flag_resource("svc-flag", environments: service_rule_envs)])
+      standalone = described_class.new(
+        "sk_test", environment: "staging", streaming: false, base_url: flags_host
+      )
+      handle = standalone.boolean_flag("svc-flag", default: false)
+      expect(handle.get).to be(true)
+      standalone.close
+    end
+  end
+
+  # ----------------------------------------------------------------
   # .open convenience constructor
   # ----------------------------------------------------------------
 

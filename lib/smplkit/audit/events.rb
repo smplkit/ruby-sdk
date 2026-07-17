@@ -7,22 +7,33 @@ module Smplkit
     # +#record+ is fire-and-forget by default — the call enqueues the event
     # onto an in-memory bounded buffer and returns immediately. Pass
     # +flush: true+ to block until the event is durable before continuing.
+    # In stateless mode (+buffered: false+ on the client) there is no buffer:
+    # every +#record+ performs one blocking POST and raises on failure.
     # +#list+ and +#get+ are synchronous reads.
     class Events
-      def initialize(api, environment: nil)
+      def initialize(api, environment: nil, buffered: true)
         @api = api
         @environment = environment
-        @buffer = EventBuffer.new(api)
+        # Stateless mode installs no buffer at all — no worker thread, no
+        # background state — so a client may be constructed per request in
+        # serverless or edge runtimes.
+        @buffer = buffered ? EventBuffer.new(api) : nil
       end
 
-      # Enqueue an audit event for asynchronous delivery.
+      # Record an audit event.
       #
-      # Returns immediately when +flush+ is +false+ (the default) — the
-      # buffer's worker thread performs the actual POST with retry on
-      # transient failures. When +flush: true+, this call blocks until the
-      # buffer has drained or +flush_timeout+ elapses; use it when the caller
-      # needs the event durable before continuing (CLI tools, in-test
-      # assertions, or any flow about to terminate the process).
+      # In the default buffered mode this enqueues for asynchronous delivery
+      # and returns immediately — the buffer's worker thread performs the
+      # actual POST with retry on transient failures. When +flush: true+,
+      # the call blocks until the buffer has drained or +flush_timeout+
+      # elapses; use it when the caller needs the event durable before
+      # continuing (CLI tools, in-test assertions, or any flow about to
+      # terminate the process).
+      #
+      # In stateless mode (+buffered: false+ on the client) every call
+      # performs one blocking POST and raises one of the SDK's typed errors
+      # on failure; +flush+/+flush_timeout+ are meaningless there and
+      # ignored.
       #
       # Actor attribution (+actor_type+, +actor_id+, +actor_label+) is
       # customer-supplied and free-form. The audit service stores
@@ -69,10 +80,11 @@ module Smplkit
       #   enabled forwarder so the skip is visible in the forwarder delivery log.
       # @param flush [Boolean] When +true+, block until the buffer has drained
       #   (or +flush_timeout+ elapses) before returning. Defaults to +false+
-      #   (fire-and-forget).
+      #   (fire-and-forget). Ignored in stateless mode (+buffered: false+),
+      #   where every record is already durable on return.
       # @param flush_timeout [Float, nil] Upper bound on the blocking flush, in
-      #   seconds. Ignored when +flush+ is +false+. +nil+ blocks indefinitely.
-      #   Defaults to +5.0+.
+      #   seconds. Ignored when +flush+ is +false+ and in stateless mode.
+      #   +nil+ blocks indefinitely. Defaults to +5.0+.
       # @return [void]
       def record(event_type:, resource_type:, resource_id:,
                  occurred_at: nil, actor_type: nil, actor_id: nil,
@@ -124,6 +136,14 @@ module Smplkit
           attributes: attrs
         )
         body = SmplkitGeneratedClient::Audit::EventRequest.new(data: resource)
+        if @buffer.nil?
+          # Stateless path: one blocking POST per call — the same wire call
+          # the buffer's worker performs, but failures surface to the caller
+          # as the SDK's typed errors instead of being retried in background.
+          opts = idempotency_key ? { idempotency_key: idempotency_key } : {}
+          Smplkit::Audit.call_api { @api.record_event(body, opts) }
+          return nil
+        end
         @buffer.enqueue(body, idempotency_key)
         @buffer.flush(timeout: flush_timeout) if flush
         nil
@@ -221,18 +241,22 @@ module Smplkit
       # Block until the in-memory buffer is drained or the timeout elapses.
       #
       # Useful for draining buffered events at process shutdown or after a batch
-      # of fire-and-forget records.
+      # of fire-and-forget records. A no-op in stateless mode
+      # (+buffered: false+), where every record is already durable on return.
       #
       # @param timeout [Float, nil] Upper bound on the blocking flush, in
       #   seconds. +nil+ blocks indefinitely. Defaults to +5.0+.
       # @return [void]
       def flush(timeout: 5.0)
-        @buffer.flush(timeout: timeout)
+        @buffer&.flush(timeout: timeout)
+        nil
       end
 
-      # @api private — drains best-effort and stops the worker thread.
+      # @api private — drains best-effort and stops the worker thread. A no-op
+      #   in stateless mode (+buffered: false+), which has no worker to stop.
       def _close
-        @buffer.close
+        @buffer&.close
+        nil
       end
     end
 

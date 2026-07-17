@@ -145,14 +145,17 @@ module Smplkit
     # +base_url+/+api_key+ are used directly when supplied (the path a top-level
     # client takes after it has already resolved them); otherwise the management
     # config resolver fills in whatever is missing (+~/.smplkit+ / env vars /
-    # defaults). The app transport backs the standalone contexts client
+    # defaults). +environment+/+service+ resolve the same way (constructor
+    # argument wins). The app transport backs the standalone contexts client
     # (evaluation-context registration); the app base URL is returned so a
     # standalone client can open its own WebSocket against the event gateway.
     #
     # @api private
-    def self.flags_transport(api_key:, base_url:, profile:, base_domain:, scheme:, debug:, extra_headers:)
+    def self.flags_transport(api_key:, base_url:, profile:, base_domain:, scheme:,
+                             environment:, service:, debug:, extra_headers:)
       cfg = ConfigResolution.resolve_client_config(
-        profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
+        profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme,
+        environment: environment, service: service, debug: debug
       )
       resolved_key = api_key.nil? ? cfg.api_key : api_key
       merged = {}
@@ -165,7 +168,7 @@ module Smplkit
       app_url = ConfigResolution.service_url(cfg.scheme, "app", cfg.base_domain)
       flags_http = Transport.build_api_client(SmplkitGeneratedClient::Flags, "flags", tcfg, base_url: base_url)
       app_http = Transport.build_api_client(SmplkitGeneratedClient::App, "app", tcfg)
-      [flags_http, app_http, app_url, resolved_key]
+      [flags_http, app_http, app_url, resolved_key, cfg.environment, cfg.service]
     end
 
     # The Smpl Flags client (sync).
@@ -186,24 +189,68 @@ module Smplkit
     # definitions into the local cache, and opens the live-updates WebSocket. No
     # explicit install step is required.
     class FlagsClient
-      def initialize(api_key = nil, environment: nil, base_url: nil, profile: nil,
+      # @param api_key [String, nil] API key. When omitted, resolved from
+      #   +SMPLKIT_API_KEY+ or +~/.smplkit+.
+      # @param environment [String, nil] Deployment environment used to resolve
+      #   runtime flag values and to scope discovery declarations. When
+      #   omitted, resolved from +SMPLKIT_ENVIRONMENT+ or +~/.smplkit+.
+      # @param service [String, nil] Service name attached to discovery
+      #   declarations and auto-injected into the evaluation context. When
+      #   omitted, resolved from +SMPLKIT_SERVICE+ or +~/.smplkit+. Optional.
+      # @param base_url [String, nil] Full flags-service base URL. Usually
+      #   resolved from +base_domain+/+scheme+; supplied directly by the
+      #   top-level clients which have already computed it.
+      # @param profile [String, nil] Named +~/.smplkit+ profile section.
+      # @param base_domain [String, nil] Base domain for API requests (default
+      #   +"smplkit.com"+).
+      # @param scheme [String, nil] URL scheme (default +"https"+).
+      # @param debug [Boolean, nil] Enable SDK debug logging.
+      # @param extra_headers [Hash{String => String}, nil] Extra headers
+      #   attached to every request.
+      # @param streaming [Boolean] Live updates over WebSocket (default
+      #   +true+): the first live call opens a shared socket and flag changes
+      #   stream in. Set +false+ for the stateless read-through surface: the
+      #   first live call still fetches all flag definitions once (blocking),
+      #   evaluation stays local, +refresh+ re-fetches on demand, and NO socket
+      #   or background thread is ever created — the right shape for serverless
+      #   and edge runtimes. +on_change+ listeners fire only from explicit
+      #   +refresh+ calls in this mode (there is no stream to drive them).
+      # @param parent [Smplkit::Client, nil] Internal — the owning client. Not
+      #   for direct use.
+      # @param transport [Object, nil] Internal — a pre-built flags transport
+      #   supplied by a top-level client so the flags surface shares one
+      #   connection pool. Not for direct use.
+      # @param contexts [Object, nil] Internal — +client.platform.contexts+
+      #   used for evaluation-context registration. Not for direct use.
+      # @param metrics [Object, nil] Internal — the parent's metrics reporter.
+      def initialize(api_key = nil, environment: nil, service: nil, base_url: nil, profile: nil,
                      base_domain: nil, scheme: nil, debug: nil, extra_headers: nil,
-                     parent: nil, transport: nil, contexts: nil, metrics: nil)
+                     streaming: true, parent: nil, transport: nil, contexts: nil, metrics: nil)
         @parent = parent
         @metrics = metrics
-        @environment = parent.nil? ? environment : parent._environment
-        @service = parent&._service
+        @streaming = streaming ? true : false
         @standalone_api_key = nil
         if transport.nil?
-          @flags_http, app_http, @app_base_url, @standalone_api_key = Flags.flags_transport(
-            api_key: api_key, base_url: base_url, profile: profile,
-            base_domain: base_domain, scheme: scheme, debug: debug, extra_headers: extra_headers
-          )
+          # Standalone: resolve like Smplkit::Client — defaults → ~/.smplkit →
+          # SMPLKIT_* env vars → constructor args — environment and service
+          # included.
+          @flags_http, app_http, @app_base_url, @standalone_api_key, resolved_env, resolved_service =
+            Flags.flags_transport(
+              api_key: api_key, base_url: base_url, profile: profile,
+              base_domain: base_domain, scheme: scheme, environment: environment,
+              service: service, debug: debug, extra_headers: extra_headers
+            )
+          @environment = parent.nil? ? resolved_env : parent._environment
+          @service = parent.nil? ? resolved_service : parent._service
           # Standalone: build our own contexts client (and own its app transport).
           @contexts = Platform::ContextsClient.new(app_http, ContextRegistrationBuffer.new)
         else
           @flags_http = transport
           @app_base_url = nil
+          # Wired: the parent has already resolved environment/service once —
+          # its values win over both the raw kwargs and re-resolution.
+          @environment = parent.nil? ? environment : parent._environment
+          @service = parent.nil? ? service : parent._service
           # Wired: borrow client.platform.contexts as the evaluation-context
           # registration seam.
           @contexts = contexts
@@ -372,7 +419,13 @@ module Smplkit
         end
         return unless @buffer.pending_count >= FLAG_BATCH_FLUSH_SIZE
 
-        Thread.new { threshold_flush }
+        # Stateless mode (+streaming: false+) never spawns background threads —
+        # the threshold flush runs inline (blocking) instead.
+        if @streaming
+          Thread.new { threshold_flush }
+        else
+          threshold_flush
+        end
       end
 
       # POST pending declarations to the flags bulk endpoint.
@@ -648,6 +701,8 @@ module Smplkit
       # Flushes any buffered discovery declarations, fetches all flag
       # definitions into the local cache, opens the shared WebSocket, and
       # subscribes to +flag_changed+ / +flag_deleted+ / +flags_changed+ events.
+      # In stateless mode (+streaming: false+) no socket is ever created;
+      # +refresh+ re-fetches on demand.
       #
       # Idempotent and internal — every live method calls it on first use, so
       # the live surface auto-connects with no explicit step.
@@ -666,6 +721,7 @@ module Smplkit
         fetch_all_flags
         @cache.clear
         @connected = true
+        return unless @streaming
 
         @ws_manager = ensure_ws
         return if @ws_subscribed

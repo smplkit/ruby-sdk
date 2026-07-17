@@ -44,14 +44,18 @@ module Smplkit
     # +base_url+/+api_key+ are used directly when supplied (the path a top-level
     # client takes after it has already resolved them); otherwise the management
     # config resolver fills in whatever is missing (+~/.smplkit+ / env vars /
-    # defaults). The app transport is needed for the WebSocket gateway, which
-    # lives on the app service (like flags); the app base URL is returned so a
-    # standalone client can open its own WebSocket against the event gateway.
+    # defaults). +environment+/+service+ resolve the same way (constructor
+    # argument wins). The app transport is needed for the WebSocket gateway,
+    # which lives on the app service (like flags); the app base URL is returned
+    # so a standalone client can open its own WebSocket against the event
+    # gateway.
     #
     # @api private
-    def self.logging_transport(api_key:, base_url:, profile:, base_domain:, scheme:, debug:, extra_headers:)
+    def self.logging_transport(api_key:, base_url:, profile:, base_domain:, scheme:,
+                               environment:, service:, debug:, extra_headers:)
       cfg = ConfigResolution.resolve_client_config(
-        profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme, debug: debug
+        profile: profile, api_key: api_key, base_domain: base_domain, scheme: scheme,
+        environment: environment, service: service, debug: debug
       )
       resolved_key = api_key.nil? ? cfg.api_key : api_key
       merged = {}
@@ -64,7 +68,7 @@ module Smplkit
       app_url = ConfigResolution.service_url(cfg.scheme, "app", cfg.base_domain)
       logging_http = Transport.build_api_client(SmplkitGeneratedClient::Logging, "logging", tcfg, base_url: base_url)
       app_http = Transport.build_api_client(SmplkitGeneratedClient::App, "app", tcfg)
-      [logging_http, app_http, app_url, resolved_key]
+      [logging_http, app_http, app_url, resolved_key, cfg.environment, cfg.service]
     end
 
     # Discover and load the SDK's built-in logging adapters.
@@ -107,9 +111,15 @@ module Smplkit
     # +LoggingClient+ and shared here so discovery (driven by
     # +LoggingClient#install+) and explicit +register+ drain through one queue.
     class LoggersClient
-      def initialize(http_client, buffer:)
+      # @param http_client [Object] The logging-service transport.
+      # @param buffer [LoggerRegistrationBuffer] The shared discovery buffer,
+      #   owned by the fused +LoggingClient+.
+      # @param streaming [Boolean] Internal — +false+ runs threshold flushes
+      #   inline instead of on a background thread (stateless mode).
+      def initialize(http_client, buffer:, streaming: true)
         @api = SmplkitGeneratedClient::Logging::LoggersApi.new(http_client)
         @buffer = buffer
+        @streaming = streaming ? true : false
       end
 
       # Queue one or more logger sources for registration with the server.
@@ -138,7 +148,13 @@ module Smplkit
         end
         return unless @buffer.pending_count >= LOGGER_BATCH_FLUSH_SIZE
 
-        Thread.new { threshold_flush }
+        # Stateless mode (+streaming: false+) never spawns background threads —
+        # the threshold flush runs inline (blocking) instead.
+        if @streaming
+          Thread.new { threshold_flush }
+        else
+          threshold_flush
+        end
       end
 
       # Drain the buffer and POST pending logger sources to the bulk endpoint.
@@ -423,28 +439,70 @@ module Smplkit
     class LoggingClient
       attr_reader :loggers, :log_groups
 
-      def initialize(api_key = nil, environment: nil, base_url: nil, profile: nil,
+      # @param api_key [String, nil] API key. When omitted, resolved from
+      #   +SMPLKIT_API_KEY+ or +~/.smplkit+.
+      # @param environment [String, nil] Deployment environment used to resolve
+      #   logger levels and to scope discovery declarations. When omitted,
+      #   resolved from +SMPLKIT_ENVIRONMENT+ or +~/.smplkit+.
+      # @param service [String, nil] Service name attached to discovery
+      #   declarations. When omitted, resolved from +SMPLKIT_SERVICE+ or
+      #   +~/.smplkit+. Optional.
+      # @param base_url [String, nil] Full logging-service base URL. Usually
+      #   resolved from +base_domain+/+scheme+; supplied directly by the
+      #   top-level clients which have already computed it.
+      # @param profile [String, nil] Named +~/.smplkit+ profile section.
+      # @param base_domain [String, nil] Base domain for API requests (default
+      #   +"smplkit.com"+).
+      # @param scheme [String, nil] URL scheme (default +"https"+).
+      # @param debug [Boolean, nil] Enable SDK debug logging.
+      # @param extra_headers [Hash{String => String}, nil] Extra headers
+      #   attached to every request.
+      # @param streaming [Boolean] Live updates over WebSocket (default
+      #   +true+): +install+ opens a shared socket and server-side level
+      #   changes stream in. Set +false+ for the stateless apply-once surface:
+      #   +install+ still loads adapters, flushes discovery, and applies the
+      #   server's levels — all blocking — but NO socket or background thread
+      #   is ever created; +refresh+ re-fetches and re-applies on demand. The
+      #   right shape for serverless and edge runtimes; note that live level
+      #   changes then arrive only via +refresh+.
+      # @param parent [Smplkit::Client, nil] Internal — the owning client. Not
+      #   for direct use.
+      # @param transport [Object, nil] Internal — a pre-built logging transport
+      #   supplied by a top-level client so the logging surface shares one
+      #   connection pool. Not for direct use.
+      # @param metrics [Object, nil] Internal — the parent's metrics reporter.
+      def initialize(api_key = nil, environment: nil, service: nil, base_url: nil, profile: nil,
                      base_domain: nil, scheme: nil, debug: nil, extra_headers: nil,
-                     parent: nil, transport: nil, metrics: nil)
+                     streaming: true, parent: nil, transport: nil, metrics: nil)
         @parent = parent
         @metrics = metrics
-        @environment = parent.nil? ? environment : parent._environment
-        @service = parent&._service
+        @streaming = streaming ? true : false
         @standalone_api_key = nil
         if transport.nil?
-          @logging_http, _app_http, @app_base_url, @standalone_api_key = Logging.logging_transport(
-            api_key: api_key, base_url: base_url, profile: profile,
-            base_domain: base_domain, scheme: scheme, debug: debug, extra_headers: extra_headers
-          )
+          # Standalone: resolve like Smplkit::Client — defaults → ~/.smplkit →
+          # SMPLKIT_* env vars → constructor args — environment and service
+          # included.
+          @logging_http, _app_http, @app_base_url, @standalone_api_key, resolved_env, resolved_service =
+            Logging.logging_transport(
+              api_key: api_key, base_url: base_url, profile: profile,
+              base_domain: base_domain, scheme: scheme, environment: environment,
+              service: service, debug: debug, extra_headers: extra_headers
+            )
+          @environment = parent.nil? ? resolved_env : parent._environment
+          @service = parent.nil? ? resolved_service : parent._service
         else
           @logging_http = transport
           @app_base_url = nil
+          # Wired: the parent has already resolved environment/service once —
+          # its values win over both the raw kwargs and re-resolution.
+          @environment = parent.nil? ? environment : parent._environment
+          @service = parent.nil? ? service : parent._service
         end
 
         # Discovery buffer is owned by this client; the loggers sub-client shares
         # it so discovery and explicit registration drain together.
         @buffer = LoggerRegistrationBuffer.new
-        @loggers = LoggersClient.new(@logging_http, buffer: @buffer)
+        @loggers = LoggersClient.new(@logging_http, buffer: @buffer, streaming: @streaming)
         @log_groups = LogGroupsClient.new(@logging_http)
 
         # Live-surface state.
@@ -542,9 +600,13 @@ module Smplkit
                         "(logging: #{@logging_http&.config&.host}): #{e.class}: #{e.message}")
         end
 
-        # 7. Register WebSocket event handlers for real-time level updates
-        @ws_manager = ensure_ws
-        ws_handlers.each { |event, handler| @ws_manager.on(event, &handler) }
+        # 7. Register WebSocket event handlers for real-time level updates.
+        # In stateless mode (+streaming: false+) no socket is ever created —
+        # level changes then arrive only via +refresh+.
+        if @streaming
+          @ws_manager = ensure_ws
+          ws_handlers.each { |event, handler| @ws_manager.on(event, &handler) }
+        end
 
         @connected = true
         self

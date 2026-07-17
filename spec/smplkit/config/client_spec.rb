@@ -1045,6 +1045,144 @@ RSpec.describe "Smplkit::Config::ConfigClient (standalone)" do
   end
 end
 
+# --- ConfigClient stateless mode (streaming: false) --------------------
+
+RSpec.describe "Smplkit::Config::ConfigClient (stateless, streaming: false)" do
+  subject(:config) do
+    Smplkit::Config::ConfigClient.new(
+      "sk_stateless", environment: "staging", streaming: false,
+                      base_url: "https://config.smplkit.test", base_domain: "smplkit.test"
+    )
+  end
+
+  after { config.close }
+
+  def jsonapi_headers
+    { "Content-Type" => "application/vnd.api+json" }
+  end
+
+  def cfg_resource(id, items: {})
+    {
+      "id" => id, "type" => "config",
+      "attributes" => {
+        "name" => id, "description" => nil, "parent" => nil,
+        "items" => items.transform_values { |v| { "value" => v, "type" => "STRING" } },
+        "environments" => {},
+        "created_at" => "2026-01-01T00:00:00Z", "updated_at" => "2026-01-01T00:00:00Z"
+      }
+    }
+  end
+
+  def list_body(*resources)
+    { "data" => resources, "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }.to_json
+  end
+
+  def stub_list(*resources)
+    stub_request(:get, "https://config.smplkit.test/api/v1/configs")
+      .with(query: hash_including({}))
+      .to_return(status: 200, body: list_body(*resources), headers: jsonapi_headers)
+  end
+
+  it "connects without ever creating a WebSocket and serves reads from the one-shot fetch" do
+    expect(Smplkit::SharedWebSocket).not_to receive(:new)
+    stub_list(cfg_resource("billing", items: { "max_seats" => 50 }))
+    expect(config.get_value("billing", "max_seats")).to eq(50)
+    expect(config.subscribe("billing")["max_seats"]).to eq(50)
+  end
+
+  it "refresh re-fetches on demand and fires change listeners from deltas" do
+    expect(Smplkit::SharedWebSocket).not_to receive(:new)
+    stub_request(:get, "https://config.smplkit.test/api/v1/configs")
+      .with(query: hash_including({}))
+      .to_return(
+        { status: 200, body: list_body(cfg_resource("billing", items: { "max_seats" => 50 })),
+          headers: jsonapi_headers },
+        { status: 200, body: list_body(cfg_resource("billing", items: { "max_seats" => 99 })),
+          headers: jsonapi_headers }
+      )
+    expect(config.get_value("billing", "max_seats")).to eq(50)
+    events = []
+    config.on_change("billing") { |e| events << e }
+    config.refresh
+    expect(config.get_value("billing", "max_seats")).to eq(99)
+    expect(events.size).to eq(1)
+    expect(events.first.item_key).to eq("max_seats")
+    expect(events.first.old_value).to eq(50)
+    expect(events.first.new_value).to eq(99)
+    expect(events.first.source).to eq("manual")
+  end
+
+  it "runs threshold flushes inline instead of spawning a background thread" do
+    expect(Thread).not_to receive(:new)
+    bulk = stub_request(:post, "https://config.smplkit.test/api/v1/configs/bulk")
+           .to_return(status: 200, body: "{}", headers: jsonapi_headers)
+    Smplkit::CONFIG_BATCH_FLUSH_SIZE.times do |i|
+      config.register_config("cfg-#{i}", service: nil, environment: nil)
+    end
+    # The threshold flush ran synchronously inside the crossing register call.
+    expect(bulk).to have_been_requested.once
+    expect(config.pending_count).to eq(0)
+  end
+end
+
+# --- ConfigClient environment/service resolution ------------------------
+
+RSpec.describe "Smplkit::Config::ConfigClient (environment/service resolution)" do
+  around do |ex|
+    saved = ENV.to_h.slice("SMPLKIT_ENVIRONMENT", "SMPLKIT_SERVICE")
+    %w[SMPLKIT_ENVIRONMENT SMPLKIT_SERVICE].each { |k| ENV.delete(k) }
+    ex.run
+  ensure
+    %w[SMPLKIT_ENVIRONMENT SMPLKIT_SERVICE].each { |k| saved.key?(k) ? ENV[k] = saved[k] : ENV.delete(k) }
+  end
+
+  def standalone(**kwargs)
+    Smplkit::Config::ConfigClient.new(
+      "sk_resolution", base_url: "https://config.smplkit.test", base_domain: "smplkit.test", **kwargs
+    )
+  end
+
+  it "resolves environment and service from SMPLKIT_* env vars" do
+    ENV["SMPLKIT_ENVIRONMENT"] = "stg"
+    ENV["SMPLKIT_SERVICE"] = "svc-env"
+    client = standalone
+    expect(client.instance_variable_get(:@environment)).to eq("stg")
+    expect(client.instance_variable_get(:@service)).to eq("svc-env")
+    client.close
+  end
+
+  it "prefers explicit environment/service kwargs over env vars" do
+    ENV["SMPLKIT_ENVIRONMENT"] = "stg"
+    ENV["SMPLKIT_SERVICE"] = "svc-env"
+    client = standalone(environment: "ctor-env", service: "ctor-svc")
+    expect(client.instance_variable_get(:@environment)).to eq("ctor-env")
+    expect(client.instance_variable_get(:@service)).to eq("ctor-svc")
+    client.close
+  end
+
+  it "attaches the resolved service and environment to discovery declarations" do
+    ENV["SMPLKIT_SERVICE"] = "svc-wire"
+    # streaming: false so the live call below never opens a real WebSocket.
+    client = standalone(environment: "env-wire", streaming: false)
+    captured = nil
+    stub_request(:post, "https://config.smplkit.test/api/v1/configs/bulk")
+      .with { |req| captured = JSON.parse(req.body) }
+      .to_return(status: 200, body: "{}", headers: { "Content-Type" => "application/vnd.api+json" })
+    stub_request(:get, "https://config.smplkit.test/api/v1/configs")
+      .with(query: hash_including({}))
+      .to_return(status: 200,
+                 body: { "data" => [], "meta" => { "pagination" => { "page" => 1, "size" => 1000 } } }.to_json,
+                 headers: { "Content-Type" => "application/vnd.api+json" })
+    # The default form of get_value registers the config + item declaration.
+    expect(client.get_value("observed", "k", 1)).to eq(1)
+    client.flush
+    declared = captured["configs"].first
+    expect(declared["service"]).to eq("svc-wire")
+    expect(declared["environment"]).to eq("env-wire")
+    client.close
+  end
+end
+
 # --- ConfigClient.open ------------------------------------------------
 
 RSpec.describe "Smplkit::Config::ConfigClient.open" do

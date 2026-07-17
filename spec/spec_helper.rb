@@ -21,8 +21,16 @@ end
 
 require "smplkit"
 require "webmock/rspec"
+require "tmpdir"
 
 WebMock.disable_net_connect!(allow_localhost: false)
+
+# An empty HOME for the whole suite: config resolution now reads
+# environment/service (not just credentials) from ~/.smplkit, so a developer's
+# real file (e.g. a [common] environment) must never leak values into tests.
+# Examples that want file-based resolution stub Dir.home themselves or pass
+# home_dir explicitly — both override this default.
+SMPLKIT_SPEC_EMPTY_HOME = Dir.mktmpdir("smplkit-spec-home")
 
 RSpec.configure do |config|
   config.expect_with :rspec do |c|
@@ -30,6 +38,11 @@ RSpec.configure do |config|
   end
   config.disable_monkey_patching!
   config.warnings = false
+
+  # Point config resolution at the empty HOME (see above).
+  config.before do
+    allow(Dir).to receive(:home).and_return(SMPLKIT_SPEC_EMPTY_HOME)
+  end
 
   # Reset request context between examples to avoid leakage.
   config.after do

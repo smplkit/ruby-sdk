@@ -1115,6 +1115,114 @@ RSpec.describe "Smplkit::Logging::LoggingClient (standalone)" do
   end
 end
 
+# --- LoggingClient stateless mode (streaming: false) --------------------
+#
+# The stateless shape still installs — adapters, discovery, one blocking
+# fetch-and-apply — but never opens a WebSocket or spawns a background
+# thread; +refresh+ re-fetches and re-applies on demand.
+RSpec.describe "Smplkit::Logging::LoggingClient (stateless, streaming: false)" do
+  subject(:logging) do
+    Smplkit::Logging::LoggingClient.new(
+      "sk_stateless", environment: "staging", streaming: false,
+                      base_url: "https://logging.smplkit.test", base_domain: "smplkit.test"
+    )
+  end
+
+  let(:base_url) { "https://logging.smplkit.test" }
+
+  after { logging.close }
+
+  def jsonapi_headers
+    { "Content-Type" => "application/vnd.api+json" }
+  end
+
+  def logger_resource(id, level:, managed: true)
+    {
+      "id" => id, "type" => "logger",
+      "attributes" => {
+        "name" => id, "level" => level, "group" => nil,
+        "managed" => managed, "environments" => {},
+        "created_at" => "2026-01-01T00:00:00Z", "updated_at" => "2026-01-01T00:00:00Z"
+      }
+    }
+  end
+
+  def list_body(*resources)
+    {
+      "data" => resources,
+      "meta" => { "pagination" => { "page" => 1, "size" => 1000, "total" => resources.length,
+                                    "total_pages" => 1 } }
+    }.to_json
+  end
+
+  def stub_bulk
+    stub_request(:post, "#{base_url}/api/v1/loggers/bulk")
+      .to_return(status: 200, body: { "registered" => 1 }.to_json, headers: jsonapi_headers)
+  end
+
+  def stub_groups_list
+    stub_request(:get, "#{base_url}/api/v1/log_groups")
+      .with(query: hash_including({}))
+      .to_return(status: 200, body: list_body, headers: jsonapi_headers)
+  end
+
+  it "install applies levels once without ever creating a WebSocket" do
+    expect(Smplkit::SharedWebSocket).not_to receive(:new)
+    stub_bulk
+    stub_groups_list
+    stub_request(:get, "#{base_url}/api/v1/loggers")
+      .with(query: hash_including({}))
+      .to_return(status: 200, body: list_body(logger_resource("my.logger", level: "DEBUG")),
+                 headers: jsonapi_headers)
+    adapter = TestAdapter.new([["My.Logger", nil, Smplkit::LogLevel::INFO]])
+    logging.register_adapter(adapter)
+    logging.install
+    expect(adapter.applied).to eq([["My.Logger", Smplkit::LogLevel::DEBUG]])
+  end
+
+  it "keeps the NotInstalledError gate on on_change/refresh before install" do
+    expect { logging.refresh }.to raise_error(Smplkit::NotInstalledError)
+    expect { logging.on_change { nil } }.to raise_error(Smplkit::NotInstalledError)
+  end
+
+  it "refresh re-fetches and re-applies on demand, firing change listeners" do
+    stub_bulk
+    stub_groups_list
+    stub_request(:get, "#{base_url}/api/v1/loggers")
+      .with(query: hash_including({}))
+      .to_return(
+        { status: 200, body: list_body(logger_resource("my.logger", level: "INFO")),
+          headers: jsonapi_headers },
+        { status: 200, body: list_body(logger_resource("my.logger", level: "WARN")),
+          headers: jsonapi_headers }
+      )
+    adapter = TestAdapter.new([["My.Logger", nil, Smplkit::LogLevel::INFO]])
+    logging.register_adapter(adapter)
+    logging.install
+    adapter.applied.clear
+    events = []
+    logging.on_change("my.logger") { |e| events << e }
+    logging.refresh
+    expect(adapter.applied).to eq([["My.Logger", Smplkit::LogLevel::WARN]])
+    expect(events.size).to eq(1)
+    expect(events.first.id).to eq("my.logger")
+    expect(events.first.level).to eq("WARN")
+    expect(events.first.source).to eq("manual")
+  end
+
+  it "runs logger threshold flushes inline instead of spawning a background thread" do
+    expect(Thread).not_to receive(:new)
+    bulk = stub_bulk
+    sources = (0...Smplkit::LOGGER_BATCH_FLUSH_SIZE).map do |i|
+      Smplkit::Logging::LoggerSource.new(name: "logger.#{i}", resolved_level: "INFO")
+    end
+    logging.loggers.register(sources)
+    # The threshold flush ran synchronously inside the crossing register call.
+    expect(bulk).to have_been_requested.once
+    expect(logging.loggers.pending_count).to eq(0)
+  end
+end
+
 # --- LoggingClient.open ------------------------------------------------
 RSpec.describe "Smplkit::Logging::LoggingClient.open" do
   # +.open+ forwards only keyword args to +new+, whose +api_key+ is positional;

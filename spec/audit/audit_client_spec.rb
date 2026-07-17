@@ -802,6 +802,133 @@ RSpec.describe Smplkit::Audit::AuditClient do
     end
   end
 
+  describe "stateless mode (buffered: false)" do
+    def stateless_client(**kwargs)
+      described_class.new(api_key: api_key, base_url: base_url, environment: "production",
+                          buffered: false, **kwargs)
+    end
+
+    it "never constructs an EventBuffer (no worker thread)" do
+      expect(Smplkit::Audit::EventBuffer).not_to receive(:new)
+      client = stateless_client
+      expect(client.events.instance_variable_get(:@buffer)).to be_nil
+      client._close
+    end
+
+    it "record performs one blocking POST per call and stamps the environment" do
+      captured = nil
+      stub = stub_request(:post, "#{base_url}/api/v1/events").with do |req|
+        captured = JSON.parse(req.body)
+        true
+      end.to_return(status: 201, body: event_response_body,
+                    headers: { "Content-Type" => "application/vnd.api+json" })
+      client = stateless_client
+      client.events.record(event_type: "user.created", resource_type: "user", resource_id: "u-1")
+      # Durable on return — no flush, no drain wait.
+      expect(stub).to have_been_requested.once
+      expect(captured.dig("data", "attributes", "environment")).to eq("production")
+      client._close
+    end
+
+    it "record passes Idempotency-Key as a request header" do
+      stub = stub_request(:post, "#{base_url}/api/v1/events")
+             .with(headers: { "Idempotency-Key" => "key-stateless" })
+             .to_return(status: 201, body: event_response_body,
+                        headers: { "Content-Type" => "application/vnd.api+json" })
+      client = stateless_client
+      client.events.record(
+        event_type: "user.created", resource_type: "user", resource_id: "u-1",
+        idempotency_key: "key-stateless"
+      )
+      expect(stub).to have_been_requested.once
+      client._close
+    end
+
+    it "record raises the SDK's typed errors on failure" do
+      stub_request(:post, "#{base_url}/api/v1/events").to_return(
+        status: 422, body: { errors: [{ status: "422", detail: "bad payload" }] }.to_json,
+        headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      client = stateless_client
+      expect do
+        client.events.record(event_type: "user.created", resource_type: "user", resource_id: "u-1")
+      end.to raise_error(Smplkit::ValidationError)
+      client._close
+    end
+
+    it "record ignores flush:/flush_timeout: (already durable on return)" do
+      stub = stub_request(:post, "#{base_url}/api/v1/events").to_return(
+        status: 201, body: event_response_body,
+        headers: { "Content-Type" => "application/vnd.api+json" }
+      )
+      client = stateless_client
+      client.events.record(
+        event_type: "user.created", resource_type: "user", resource_id: "u-1",
+        flush: true, flush_timeout: 0.01
+      )
+      expect(stub).to have_been_requested.once
+      client._close
+    end
+
+    it "events.flush and _close are no-ops" do
+      client = stateless_client
+      expect(client.events.flush(timeout: 0.01)).to be_nil
+      expect { client._close }.not_to raise_error
+    end
+  end
+
+  describe "environment resolution (uniform subclient resolution)" do
+    around do |ex|
+      saved = ENV.fetch("SMPLKIT_ENVIRONMENT", nil)
+      ENV.delete("SMPLKIT_ENVIRONMENT")
+      ex.run
+    ensure
+      saved.nil? ? ENV.delete("SMPLKIT_ENVIRONMENT") : ENV["SMPLKIT_ENVIRONMENT"] = saved
+    end
+
+    it "skips resolution when api_key, base_url, and environment are all supplied" do
+      expect(Smplkit::ConfigResolution).not_to receive(:resolve_client_config)
+      client = described_class.new(api_key: api_key, base_url: base_url, environment: "production")
+      expect(client.events.instance_variable_get(:@environment)).to eq("production")
+      client._close
+    end
+
+    it "resolves environment from SMPLKIT_ENVIRONMENT when omitted" do
+      ENV["SMPLKIT_ENVIRONMENT"] = "resolved-env"
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      expect(client.events.instance_variable_get(:@environment)).to eq("resolved-env")
+      client._close
+    end
+
+    it "resolves environment from ~/.smplkit when omitted" do
+      Dir.mktmpdir do |home|
+        File.write(File.join(home, ".smplkit"), <<~INI)
+          [default]
+          api_key = file-key
+          environment = file-env
+        INI
+        allow(Dir).to receive(:home).and_return(home)
+        client = described_class.new(api_key: api_key, base_url: base_url)
+        expect(client.events.instance_variable_get(:@environment)).to eq("file-env")
+        client._close
+      end
+    end
+
+    it "prefers an explicit environment kwarg over SMPLKIT_ENVIRONMENT" do
+      ENV["SMPLKIT_ENVIRONMENT"] = "resolved-env"
+      # base_url is omitted so resolution still runs; the kwarg must win.
+      client = described_class.new(api_key: api_key, base_domain: "example.test", environment: "explicit")
+      expect(client.events.instance_variable_get(:@environment)).to eq("explicit")
+      client._close
+    end
+
+    it "leaves environment nil when configured nowhere" do
+      client = described_class.new(api_key: api_key, base_url: base_url)
+      expect(client.events.instance_variable_get(:@environment)).to be_nil
+      client._close
+    end
+  end
+
   describe "standalone construction" do
     # Explicit api_key + base_domain + scheme are ctor args, which take
     # precedence over ~/.smplkit / env vars in the resolver, so these assertions
