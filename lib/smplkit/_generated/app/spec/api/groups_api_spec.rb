@@ -34,7 +34,7 @@ describe 'GroupsApi' do
 
   # unit tests for create_group
   # Create Group
-  # Create an Environment Access Group. The caller provides the group id (a snake-case key, unique within the account) in the request body. The id is immutable thereafter. Returns &#x60;409&#x60; if a group with that id already exists, or &#x60;422&#x60; if &#x60;managed_environments&#x60; is not exactly &#x60;[&#39;*&#39;]&#x60; or a subset of the account&#39;s standard environment keys.
+  # Create an Environment Access Group. The caller provides the group id (a kebab-case key, unique within the account) in the request body. The id is immutable thereafter. Returns &#x60;409&#x60; if a group with that id already exists, or &#x60;422&#x60; if &#x60;managed_environments&#x60; is not exactly &#x60;[&#39;*&#39;]&#x60; or a subset of the account&#39;s standard environment keys.
   # @param group_create_request 
   # @param [Hash] opts the optional parameters
   # @return [GroupResponse]

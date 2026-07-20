@@ -17,7 +17,7 @@ All URIs are relative to *http://localhost*
 
 Create Group
 
-Create an Environment Access Group. The caller provides the group id (a snake-case key, unique within the account) in the request body. The id is immutable thereafter. Returns `409` if a group with that id already exists, or `422` if `managed_environments` is not exactly `['*']` or a subset of the account's standard environment keys.
+Create an Environment Access Group. The caller provides the group id (a kebab-case key, unique within the account) in the request body. The id is immutable thereafter. Returns `409` if a group with that id already exists, or `422` if `managed_environments` is not exactly `['*']` or a subset of the account's standard environment keys.
 
 ### Examples
 
