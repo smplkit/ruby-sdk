@@ -56,3 +56,13 @@ CI fails the build if wrapper-layer line coverage is below 100% (set in `spec/sp
 ## Publishing — version comes from the tag
 
 The gemspec derives the gem version at build time from `git describe --tags --abbrev=0` (with `SMPLKIT_GEM_VERSION` env-var override for the manual_version dispatch path). `lib/smplkit/version.rb` stays at `"0.0.0"` and is only used as a local-dev fallback. `sdk-release-prepare` creates the canonical tag; `rake release` is overridden in the `Rakefile` to skip Bundler's `git tag` step (the tag is already pushed) and just push the gem.
+
+## smplkit MCP server — operate the platform via MCP
+
+smplkit runs a **hosted MCP server** at `https://mcp.smplkit.com/api/mcp` that operates the whole platform — feature flags, config, log levels, audit search, and scheduled jobs — exposed as MCP tools (source: the `mcp` repo). When a task means *operating* the platform (reading job runs, flipping a flag, changing a config value, setting a log level, searching the audit log) rather than editing service source, prefer these MCP tools over ad-hoc curl or one-off SDK scripts.
+
+If it isn't connected yet, tell the user and offer to add it:
+
+    claude mcp add --transport http smplkit https://mcp.smplkit.com/api/mcp
+
+First connect does a one-time browser sign-in (Google/Microsoft, WorkOS AuthKit OAuth) and refreshes itself after that. A committed `.mcp.json` at each repo root advertises the same server so Claude Code / Cursor auto-detect it.
