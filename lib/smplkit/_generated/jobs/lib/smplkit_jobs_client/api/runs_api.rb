@@ -145,6 +145,76 @@ module SmplkitGeneratedClient::Jobs
       return data, status_code, headers
     end
 
+    # Get Run Stats
+    # Report aggregated statistics over this account's runs.  One request answers the common monitoring questions: how many runs matched the filters (`total`), how they broke down by lifecycle state (`tally`), how they were distributed over time (`buckets`, when the `bucket` directive is given), which runs failed most recently (`recent_failures`, at most 3, newest first), and what fires next (`next_scheduled`).  Filters compose with AND:  - `filter[created_at]` — a half-open `[start,end)` date range (see the   parameter for the interval syntax). - `filter[environment]` — one environment key or a comma-separated list   (any-of); omitted covers every environment you can access.  `next_scheduled` honors only the environment filter: it reports the soonest `PENDING` run with a fire time at or after the request, no matter when that run was created.  The resource id is always `current` — statistics are computed at read time, not stored.
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :filter_created_at Restrict the statistics to runs whose &#x60;created_at&#x60; falls in a half-open &#x60;[start,end)&#x60; interval. Bounds are ISO-8601 timestamps; &#x60;*&#x60; leaves a bound open. The leading bracket is &#x60;[&#x60; (inclusive) or &#x60;(&#x60; (exclusive) and the trailing bracket is &#x60;]&#x60; (inclusive) or &#x60;)&#x60; (exclusive). Example: &#x60;[2026-06-01T00:00:00Z,*)&#x60; covers everything from June 1 onward. Does not apply to &#x60;next_scheduled&#x60;.
+    # @option opts [String] :filter_environment Comma-separated list of environment keys to scope the statistics to (e.g. &#x60;production,staging&#x60;). When omitted, statistics cover every environment you can access.
+    # @option opts [String] :bucket Also return run counts over time, grouped into buckets of this size (a directive, not a filter). One of &#x60;1m&#x60;, &#x60;5m&#x60;, &#x60;15m&#x60;, &#x60;1h&#x60;, &#x60;6h&#x60;, or &#x60;1d&#x60;. Omit to skip the time series.
+    # @return [RunStatsResponse]
+    def get_run_stats(opts = {})
+      data, _status_code, _headers = get_run_stats_with_http_info(opts)
+      data
+    end
+
+    # Get Run Stats
+    # Report aggregated statistics over this account&#39;s runs.  One request answers the common monitoring questions: how many runs matched the filters (&#x60;total&#x60;), how they broke down by lifecycle state (&#x60;tally&#x60;), how they were distributed over time (&#x60;buckets&#x60;, when the &#x60;bucket&#x60; directive is given), which runs failed most recently (&#x60;recent_failures&#x60;, at most 3, newest first), and what fires next (&#x60;next_scheduled&#x60;).  Filters compose with AND:  - &#x60;filter[created_at]&#x60; — a half-open &#x60;[start,end)&#x60; date range (see the   parameter for the interval syntax). - &#x60;filter[environment]&#x60; — one environment key or a comma-separated list   (any-of); omitted covers every environment you can access.  &#x60;next_scheduled&#x60; honors only the environment filter: it reports the soonest &#x60;PENDING&#x60; run with a fire time at or after the request, no matter when that run was created.  The resource id is always &#x60;current&#x60; — statistics are computed at read time, not stored.
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :filter_created_at Restrict the statistics to runs whose &#x60;created_at&#x60; falls in a half-open &#x60;[start,end)&#x60; interval. Bounds are ISO-8601 timestamps; &#x60;*&#x60; leaves a bound open. The leading bracket is &#x60;[&#x60; (inclusive) or &#x60;(&#x60; (exclusive) and the trailing bracket is &#x60;]&#x60; (inclusive) or &#x60;)&#x60; (exclusive). Example: &#x60;[2026-06-01T00:00:00Z,*)&#x60; covers everything from June 1 onward. Does not apply to &#x60;next_scheduled&#x60;.
+    # @option opts [String] :filter_environment Comma-separated list of environment keys to scope the statistics to (e.g. &#x60;production,staging&#x60;). When omitted, statistics cover every environment you can access.
+    # @option opts [String] :bucket Also return run counts over time, grouped into buckets of this size (a directive, not a filter). One of &#x60;1m&#x60;, &#x60;5m&#x60;, &#x60;15m&#x60;, &#x60;1h&#x60;, &#x60;6h&#x60;, or &#x60;1d&#x60;. Omit to skip the time series.
+    # @return [Array<(RunStatsResponse, Integer, Hash)>] RunStatsResponse data, response status code and response headers
+    def get_run_stats_with_http_info(opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: RunsApi.get_run_stats ...'
+      end
+      allowable_values = ["1m", "5m", "15m", "1h", "6h", "1d"]
+      if @api_client.config.client_side_validation && opts[:'bucket'] && !allowable_values.include?(opts[:'bucket'])
+        fail ArgumentError, "invalid value for \"bucket\", must be one of #{allowable_values}"
+      end
+      # resource path
+      local_var_path = '/api/v1/run_stats'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'filter[created_at]'] = opts[:'filter_created_at'] if !opts[:'filter_created_at'].nil?
+      query_params[:'filter[environment]'] = opts[:'filter_environment'] if !opts[:'filter_environment'].nil?
+      query_params[:'bucket'] = opts[:'bucket'] if !opts[:'bucket'].nil?
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/vnd.api+json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'RunStatsResponse'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['HTTPBearer']
+
+      new_options = opts.merge(
+        :operation => :"RunsApi.get_run_stats",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: RunsApi#get_run_stats\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # List Runs
     # List runs for this account (cursor paginated).  Default sort is `-created_at` (newest first). Sort by `created_at`, `started_at`, `finished_at`, `scheduled_for`, `status`, `job`, or `total_duration_ms`, ascending or descending (prefix `-` for descending). Keep the same `sort` value across paginated requests so the cursor stays consistent. Runs that have not reached the relevant lifecycle point (`started_at`, `finished_at`, `scheduled_for`, `total_duration_ms` unset) sort to the end regardless of direction.  Filters compose with AND:  - `filter[job]={id}` — a single job's run history. - `filter[status]` — one state or a comma-separated list (any-of). - `filter[trigger]` — one trigger (`SCHEDULE`, `MANUAL`, `RERUN`, `RETRY`)   or a comma-separated list of them (any-of). - `filter[environment]` — one environment key or a comma-separated list   (any-of); omitted covers every environment you can access. - `filter[created_at]` / `filter[started_at]` / `filter[finished_at]` /   `filter[scheduled_for]` — half-open `[start,end)` date ranges (see each   parameter for the interval syntax).  Set `last_run_only=true` to collapse the result to the last completed run for each job-and-environment combination. \"Completed\" means a terminal state — succeeded, failed, or canceled; in-flight runs (pending or running) are not included, so a job that is mid-run still surfaces its previous completed result and a combination with no completed run yet returns nothing. The filters above still apply, evaluated before the collapse, so each row is the most recent completed run in its group that also satisfies them.
     # @param [Hash] opts the optional parameters

@@ -6,6 +6,7 @@ All URIs are relative to *http://localhost*
 | ------ | ------------ | ----------- |
 | [**cancel_run**](RunsApi.md#cancel_run) | **POST** /api/v1/runs/{run_id}/actions/cancel | Cancel Run |
 | [**get_run**](RunsApi.md#get_run) | **GET** /api/v1/runs/{run_id} | Get Run |
+| [**get_run_stats**](RunsApi.md#get_run_stats) | **GET** /api/v1/run_stats | Get Run Stats |
 | [**list_runs**](RunsApi.md#list_runs) | **GET** /api/v1/runs | List Runs |
 | [**rerun_run**](RunsApi.md#rerun_run) | **POST** /api/v1/runs/{run_id}/actions/rerun | Rerun Run |
 
@@ -137,6 +138,81 @@ end
 ### Return type
 
 [**RunResponse**](RunResponse.md)
+
+### Authorization
+
+[HTTPBearer](../README.md#HTTPBearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/vnd.api+json
+
+
+## get_run_stats
+
+> <RunStatsResponse> get_run_stats(opts)
+
+Get Run Stats
+
+Report aggregated statistics over this account's runs.  One request answers the common monitoring questions: how many runs matched the filters (`total`), how they broke down by lifecycle state (`tally`), how they were distributed over time (`buckets`, when the `bucket` directive is given), which runs failed most recently (`recent_failures`, at most 3, newest first), and what fires next (`next_scheduled`).  Filters compose with AND:  - `filter[created_at]` — a half-open `[start,end)` date range (see the   parameter for the interval syntax). - `filter[environment]` — one environment key or a comma-separated list   (any-of); omitted covers every environment you can access.  `next_scheduled` honors only the environment filter: it reports the soonest `PENDING` run with a fire time at or after the request, no matter when that run was created.  The resource id is always `current` — statistics are computed at read time, not stored.
+
+### Examples
+
+```ruby
+require 'time'
+require 'smplkit_jobs_client'
+# setup authorization
+SmplkitGeneratedClient::Jobs.configure do |config|
+  # Configure Bearer authorization: HTTPBearer
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = SmplkitGeneratedClient::Jobs::RunsApi.new
+opts = {
+  filter_created_at: 'filter_created_at_example', # String | Restrict the statistics to runs whose `created_at` falls in a half-open `[start,end)` interval. Bounds are ISO-8601 timestamps; `*` leaves a bound open. The leading bracket is `[` (inclusive) or `(` (exclusive) and the trailing bracket is `]` (inclusive) or `)` (exclusive). Example: `[2026-06-01T00:00:00Z,*)` covers everything from June 1 onward. Does not apply to `next_scheduled`.
+  filter_environment: 'filter_environment_example', # String | Comma-separated list of environment keys to scope the statistics to (e.g. `production,staging`). When omitted, statistics cover every environment you can access.
+  bucket: '1m' # String | Also return run counts over time, grouped into buckets of this size (a directive, not a filter). One of `1m`, `5m`, `15m`, `1h`, `6h`, or `1d`. Omit to skip the time series.
+}
+
+begin
+  # Get Run Stats
+  result = api_instance.get_run_stats(opts)
+  p result
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling RunsApi->get_run_stats: #{e}"
+end
+```
+
+#### Using the get_run_stats_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<RunStatsResponse>, Integer, Hash)> get_run_stats_with_http_info(opts)
+
+```ruby
+begin
+  # Get Run Stats
+  data, status_code, headers = api_instance.get_run_stats_with_http_info(opts)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <RunStatsResponse>
+rescue SmplkitGeneratedClient::Jobs::ApiError => e
+  puts "Error when calling RunsApi->get_run_stats_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **filter_created_at** | **String** | Restrict the statistics to runs whose &#x60;created_at&#x60; falls in a half-open &#x60;[start,end)&#x60; interval. Bounds are ISO-8601 timestamps; &#x60;*&#x60; leaves a bound open. The leading bracket is &#x60;[&#x60; (inclusive) or &#x60;(&#x60; (exclusive) and the trailing bracket is &#x60;]&#x60; (inclusive) or &#x60;)&#x60; (exclusive). Example: &#x60;[2026-06-01T00:00:00Z,*)&#x60; covers everything from June 1 onward. Does not apply to &#x60;next_scheduled&#x60;. | [optional] |
+| **filter_environment** | **String** | Comma-separated list of environment keys to scope the statistics to (e.g. &#x60;production,staging&#x60;). When omitted, statistics cover every environment you can access. | [optional] |
+| **bucket** | **String** | Also return run counts over time, grouped into buckets of this size (a directive, not a filter). One of &#x60;1m&#x60;, &#x60;5m&#x60;, &#x60;15m&#x60;, &#x60;1h&#x60;, &#x60;6h&#x60;, or &#x60;1d&#x60;. Omit to skip the time series. | [optional] |
+
+### Return type
+
+[**RunStatsResponse**](RunStatsResponse.md)
 
 ### Authorization
 

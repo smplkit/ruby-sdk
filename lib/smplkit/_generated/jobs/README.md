@@ -99,6 +99,7 @@ Class | Method | HTTP request | Description
 *SmplkitGeneratedClient::Jobs::RetryPoliciesApi* | [**update_retry_policy**](docs/RetryPoliciesApi.md#update_retry_policy) | **PUT** /api/v1/retry-policies/{policy_id} | Update Retry Policy
 *SmplkitGeneratedClient::Jobs::RunsApi* | [**cancel_run**](docs/RunsApi.md#cancel_run) | **POST** /api/v1/runs/{run_id}/actions/cancel | Cancel Run
 *SmplkitGeneratedClient::Jobs::RunsApi* | [**get_run**](docs/RunsApi.md#get_run) | **GET** /api/v1/runs/{run_id} | Get Run
+*SmplkitGeneratedClient::Jobs::RunsApi* | [**get_run_stats**](docs/RunsApi.md#get_run_stats) | **GET** /api/v1/run_stats | Get Run Stats
 *SmplkitGeneratedClient::Jobs::RunsApi* | [**list_runs**](docs/RunsApi.md#list_runs) | **GET** /api/v1/runs | List Runs
 *SmplkitGeneratedClient::Jobs::RunsApi* | [**rerun_run**](docs/RunsApi.md#rerun_run) | **POST** /api/v1/runs/{run_id}/actions/rerun | Rerun Run
 *SmplkitGeneratedClient::Jobs::UsageApi* | [**get_usage**](docs/UsageApi.md#get_usage) | **GET** /api/v1/usage | Get Usage
@@ -133,6 +134,13 @@ Class | Method | HTTP request | Description
  - [SmplkitGeneratedClient::Jobs::RunResource](docs/RunResource.md)
  - [SmplkitGeneratedClient::Jobs::RunResponse](docs/RunResponse.md)
  - [SmplkitGeneratedClient::Jobs::RunRetry](docs/RunRetry.md)
+ - [SmplkitGeneratedClient::Jobs::RunStat](docs/RunStat.md)
+ - [SmplkitGeneratedClient::Jobs::RunStatBucket](docs/RunStatBucket.md)
+ - [SmplkitGeneratedClient::Jobs::RunStatFailure](docs/RunStatFailure.md)
+ - [SmplkitGeneratedClient::Jobs::RunStatNextScheduled](docs/RunStatNextScheduled.md)
+ - [SmplkitGeneratedClient::Jobs::RunStatResource](docs/RunStatResource.md)
+ - [SmplkitGeneratedClient::Jobs::RunStatTally](docs/RunStatTally.md)
+ - [SmplkitGeneratedClient::Jobs::RunStatsResponse](docs/RunStatsResponse.md)
  - [SmplkitGeneratedClient::Jobs::Usage](docs/Usage.md)
  - [SmplkitGeneratedClient::Jobs::UsageResource](docs/UsageResource.md)
  - [SmplkitGeneratedClient::Jobs::UsageResponse](docs/UsageResponse.md)
