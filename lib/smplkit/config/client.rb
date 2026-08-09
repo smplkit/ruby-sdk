@@ -14,17 +14,17 @@
 #   resolved read), +bind+ (a live Struct/Hash binding), +on_change+, and
 #   +refresh+. The first live call transparently flushes discovery, fetches and
 #   resolves every config into the local cache, and opens the live-updates
-#   WebSocket — no explicit install step.
+#   event stream — no explicit install step.
 #
 # The client supports two construction shapes:
 #
 # * *Wired* into +Smplkit::Client+ — borrows the parent's config transport for
-#   both runtime fetch and CRUD and the parent's shared WebSocket for the live
-#   channel. This is the common path.
+#   both runtime fetch and CRUD and the parent's shared event stream for the
+#   live channel. This is the common path.
 # * *Standalone* — +ConfigClient.new(api_key: ..., base_url: ..., ...)+ builds
 #   and owns its own config transport, and on first live use opens and owns its
-#   own WebSocket. +close+ tears down only the owned transport and owned
-#   WebSocket.
+#   own event stream. +close+ tears down only the owned transport and owned
+#   event stream.
 module Smplkit
   module Config
     # Module-level helpers for the config client. Extracted so they can be
@@ -339,7 +339,7 @@ module Smplkit
     # resolver fills in whatever is missing (+~/.smplkit+ / env vars /
     # defaults). +environment+/+service+ resolve the same way (constructor
     # argument wins). The app base URL is returned alongside so a standalone
-    # client can open its own WebSocket against the event gateway.
+    # client can open its own event stream against the app service.
     #
     # @api private
     # @param api_key [String, nil] API key, or +nil+ to resolve it.
@@ -392,7 +392,7 @@ module Smplkit
     # is pure CRUD. The live surface (+subscribe+ / +get_value+ / +bind+ /
     # +on_change+ / +refresh+) connects lazily on first use — the first call
     # flushes discovery, fetches and resolves all configs into the local cache,
-    # and opens the live-updates WebSocket. No explicit install step is
+    # and opens the live-updates event stream. No explicit install step is
     # required.
     class ConfigClient
       # Sentinel distinguishing "no default supplied" from an explicit +nil+
@@ -418,8 +418,8 @@ module Smplkit
       # @param debug [Boolean, nil] Enable SDK debug logging.
       # @param extra_headers [Hash{String => String}, nil] Extra headers
       #   attached to every request.
-      # @param streaming [Boolean] Live updates over WebSocket (default
-      #   +true+): the first live call opens a shared socket and config changes
+      # @param streaming [Boolean] Live updates over the event stream (default
+      #   +true+): the first live call opens a shared stream and config changes
       #   stream in. Set +false+ for the stateless read-through surface: the
       #   first live call still fetches and resolves every config once
       #   (blocking), reads stay local, +refresh+ re-fetches on demand, and NO
@@ -478,8 +478,8 @@ module Smplkit
         @connected = false
         @lock = Mutex.new
         @listeners = [] # [callback, config_id_or_nil, item_key_or_nil]
-        @ws_manager = nil
-        @owns_ws = false
+        @event_stream = nil
+        @owns_stream = false
       end
 
       # ----------------------------------------------------------------
@@ -648,7 +648,7 @@ module Smplkit
       # authoritative and synced onto the bound object; if it is brand-new, the
       # cache entry is seeded in-memory from the bound object's values resolved
       # through its bound parent chain (no network round-trip). On every
-      # WebSocket-delivered change thereafter the bound object is mutated in
+      # stream-delivered change thereafter the bound object is mutated in
       # place. Readers always see the current resolved value with no proxy
       # indirection.
       #
@@ -677,7 +677,7 @@ module Smplkit
 
         parent_id = register_binding_declaration(id, config, parent)
 
-        # Register the binding BEFORE syncing so WebSocket dispatch finds it.
+        # Register the binding BEFORE syncing so event dispatch finds it.
         @bindings[id] = config
         @bound_parents[id] = parent_id
         seed_or_sync_binding(id, config)
@@ -803,17 +803,17 @@ module Smplkit
 
       # Release resources — only those this client owns.
       #
-      # Tears down the owned WebSocket (opened by a standalone client on first
-      # live use) and the owned HTTP transport (standalone construction). A
-      # wired client borrows the parent's transport and WebSocket and closes
-      # neither.
+      # Tears down the owned event stream (opened by a standalone client on
+      # first live use) and the owned HTTP transport (standalone construction).
+      # A wired client borrows the parent's transport and event stream and
+      # closes neither.
       #
       # @return [void]
       def close
-        if @owns_ws && @ws_manager
-          @ws_manager.stop
-          @ws_manager = nil
-          @owns_ws = false
+        if @owns_stream && @event_stream
+          @event_stream.stop
+          @event_stream = nil
+          @owns_stream = false
         end
         nil
       end
@@ -848,29 +848,31 @@ module Smplkit
       private
 
       # ----------------------------------------------------------------
-      # Live surface: lazy connect + transport / WebSocket helpers
+      # Live surface: lazy connect + transport / event stream helpers
       # ----------------------------------------------------------------
 
-      def ensure_ws
-        return @parent._ensure_ws unless @parent.nil?
+      def ensure_event_stream
+        return @parent._ensure_event_stream unless @parent.nil?
 
-        if @ws_manager.nil?
-          @ws_manager = SharedWebSocket.new(
+        if @event_stream.nil?
+          @event_stream = EventStream.new(
             app_base_url: @app_base_url, api_key: @standalone_api_key, metrics: @metrics
           )
-          @ws_manager.start
-          @owns_ws = true
+          @event_stream.start
+          @owns_stream = true
         end
-        @ws_manager
+        @event_stream
       end
 
       # Open the live connection to the running Smpl Config service.
       #
       # Flushes any buffered discovery declarations, fetches and resolves every
       # config for the configured environment into the local cache, opens the
-      # shared WebSocket, and subscribes to +config_changed+ / +config_deleted+
-      # / +configs_changed+ events. In stateless mode (+streaming: false+) no
-      # socket is ever created; +refresh+ re-fetches on demand.
+      # shared event stream, and subscribes to +config_changed+ /
+      # +config_deleted+ / +configs_changed+ events. Also registers the
+      # bulk-refresh path as the stream's reconnect refetch, so a stream outage
+      # ends with a full re-sync. In stateless mode (+streaming: false+) no
+      # stream is ever created; +refresh+ re-fetches on demand.
       #
       # Idempotent and internal — every live method calls it on first use, so
       # the live surface auto-connects with no explicit step.
@@ -892,10 +894,11 @@ module Smplkit
         @connected = true
         return unless @streaming
 
-        @ws_manager = ensure_ws
-        @ws_manager.on("config_changed") { |data| handle_config_changed(data) }
-        @ws_manager.on("config_deleted") { |data| handle_config_deleted(data) }
-        @ws_manager.on("configs_changed") { |data| handle_configs_changed(data) }
+        @event_stream = ensure_event_stream
+        @event_stream.on("config_changed") { |data| handle_config_changed(data) }
+        @event_stream.on("config_deleted") { |data| handle_config_deleted(data) }
+        @event_stream.on("configs_changed") { |data| handle_configs_changed(data) }
+        @event_stream.on_reconnect { handle_configs_changed({}) }
       end
 
       # List configs directly from the API for the runtime cache.
@@ -1047,7 +1050,7 @@ module Smplkit
       #
       # A freshly-bound config lives only as a seed until it is flushed and
       # fetched; without this, any cache rebuild (a manual refresh, or a
-      # WebSocket event for another config) would drop it. Server-present
+      # push event for another config) would drop it. Server-present
       # configs are already in +new_cache+ and are authoritative — only bound
       # ids missing from it are re-seeded.
       def merge_pending_seeds(new_cache)
@@ -1124,7 +1127,7 @@ module Smplkit
       end
 
       # ----------------------------------------------------------------
-      # Internal: event handlers (called by SharedWebSocket)
+      # Internal: event handlers (called by EventStream)
       # ----------------------------------------------------------------
 
       # Re-resolve every config in +store+ and fire change listeners.
@@ -1189,7 +1192,7 @@ module Smplkit
 
           new_store[key] = cfg
           ensure_ancestors_cached(new_store)
-          rebuild_from_store(new_store, source: "websocket")
+          rebuild_from_store(new_store, source: "push")
         rescue StandardError => e
           Smplkit.debug("config", "config_changed handler failed for #{key.inspect}: #{e.class}: #{e.message}")
         end
@@ -1202,11 +1205,11 @@ module Smplkit
         new_store = @lock.synchronize { @raw_config_store.dup }
         return if new_store.delete(key).nil?
 
-        rebuild_from_store(new_store, source: "websocket")
+        rebuild_from_store(new_store, source: "push")
       end
 
       def handle_configs_changed(_data)
-        do_refresh("websocket")
+        do_refresh("push")
       rescue StandardError => e
         Smplkit.debug("config", "configs_changed refresh failed: #{e.class}: #{e.message}")
       end

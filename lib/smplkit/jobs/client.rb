@@ -268,8 +268,8 @@ module Smplkit
     # The Smpl Jobs client — accessed via +client.jobs+.
     #
     # Unlike Config/Flags/Logging, Jobs has no live "phone-home" agent — no
-    # environment registration, no WebSocket — so its entire surface lives on
-    # one client. Defining a job, triggering a run, and reading run history are
+    # environment registration, no event stream — so its entire surface lives
+    # on one client. Defining a job, triggering a run, and reading run history are
     # all plain request/response calls here:
     #
     #   client.jobs.{new_recurring_job,new_manual_job,schedule,get,list,delete,run,usage}

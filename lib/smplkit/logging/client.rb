@@ -20,19 +20,19 @@
 # * *Live surface* — directly on the client. +register_adapter+ is a PRE-install
 #   configuration call (allowed before +install+). +install+ opens the live
 #   connection (monkey-patches the app's logging framework, discovers loggers,
-#   fetches + applies levels, opens the shared WebSocket). +on_change+ /
+#   fetches + applies levels, opens the shared event stream). +on_change+ /
 #   +refresh+ require +install+ first; calling them earlier raises
 #   +NotInstalledError+.
 #
 # The client supports two construction shapes:
 #
 # * *Wired* into +Smplkit::Client+ — borrows the parent's logging transport for
-#   both runtime fetch and CRUD and the parent's shared WebSocket for the live
-#   channel. This is the common path.
+#   both runtime fetch and CRUD and the parent's shared event stream for the
+#   live channel. This is the common path.
 # * *Standalone* — +LoggingClient.new(api_key: ..., base_url: ..., ...)+ builds
-#   and owns its own logging transport and an app transport (the WebSocket
-#   gateway lives on the app service), and on +install+ opens and owns its own
-#   WebSocket. +close+ tears down only the owned transports and owned WebSocket.
+#   and owns its own logging transport and an app transport (the event stream
+#   lives on the app service), and on +install+ opens and owns its own event
+#   stream. +close+ tears down only the owned transports and owned event stream.
 module Smplkit
   module Logging
     NOT_INSTALLED_MESSAGE = "Smpl Logging live operations require install() first — this opens a live " \
@@ -45,10 +45,9 @@ module Smplkit
     # client takes after it has already resolved them); otherwise the management
     # config resolver fills in whatever is missing (+~/.smplkit+ / env vars /
     # defaults). +environment+/+service+ resolve the same way (constructor
-    # argument wins). The app transport is needed for the WebSocket gateway,
-    # which lives on the app service (like flags); the app base URL is returned
-    # so a standalone client can open its own WebSocket against the event
-    # gateway.
+    # argument wins). The app transport is needed because the event stream
+    # lives on the app service (like flags); the app base URL is returned so a
+    # standalone client can open its own event stream against the app service.
     #
     # @api private
     def self.logging_transport(api_key:, base_url:, profile:, base_domain:, scheme:,
@@ -97,7 +96,7 @@ module Smplkit
     #     +"INFO"+, +"DEBUG"+) — the same value the resolution algorithm returns.
     # @!attribute [rw] source
     #   @return [String] Short string identifying the trigger — typically
-    #     +"websocket"+ or +"manual"+ (a +refresh+ call).
+    #     +"push"+ (a live update) or +"manual"+ (a +refresh+ call).
     LoggerChangeEvent = Struct.new(:id, :level, :source, keyword_init: true) do
       def ==(other)
         other.is_a?(LoggerChangeEvent) &&
@@ -457,8 +456,8 @@ module Smplkit
       # @param debug [Boolean, nil] Enable SDK debug logging.
       # @param extra_headers [Hash{String => String}, nil] Extra headers
       #   attached to every request.
-      # @param streaming [Boolean] Live updates over WebSocket (default
-      #   +true+): +install+ opens a shared socket and server-side level
+      # @param streaming [Boolean] Live updates over the event stream (default
+      #   +true+): +install+ opens a shared stream and server-side level
       #   changes stream in. Set +false+ for the stateless apply-once surface:
       #   +install+ still loads adapters, flushes discovery, and applies the
       #   server's levels — all blocking — but NO socket or background thread
@@ -514,8 +513,8 @@ module Smplkit
         @key_listeners = Hash.new { |h, k| h[k] = [] }
         @adapters = []
         @explicit_adapters = false
-        @ws_manager = nil
-        @owns_ws = false
+        @event_stream = nil
+        @owns_stream = false
         @lock = Mutex.new
       end
 
@@ -545,12 +544,12 @@ module Smplkit
         @adapters.dup
       end
 
-      # --- Live surface: install (gate) + transport / WebSocket helpers ---
+      # --- Live surface: install (gate) + transport / event stream helpers ---
 
       # Hook smplkit into the application's logging machinery.
       #
       # Loads adapters, scans existing loggers, applies levels from the smplkit
-      # server, and wires WebSocket handlers for live updates. This IS the
+      # server, and wires event stream handlers for live updates. This IS the
       # explicit consent gate — +on_change+ / +refresh+ require it first.
       #
       # Idempotent — safe to call multiple times.
@@ -600,12 +599,15 @@ module Smplkit
                         "(logging: #{@logging_http&.config&.host}): #{e.class}: #{e.message}")
         end
 
-        # 7. Register WebSocket event handlers for real-time level updates.
-        # In stateless mode (+streaming: false+) no socket is ever created —
-        # level changes then arrive only via +refresh+.
+        # 7. Register event stream handlers for real-time level updates, plus
+        # the bulk-refresh path as the stream's reconnect refetch so a stream
+        # outage ends with a full re-sync. In stateless mode
+        # (+streaming: false+) no stream is ever created — level changes then
+        # arrive only via +refresh+.
         if @streaming
-          @ws_manager = ensure_ws
-          ws_handlers.each { |event, handler| @ws_manager.on(event, &handler) }
+          @event_stream = ensure_event_stream
+          stream_handlers.each { |event, handler| @event_stream.on(event, &handler) }
+          @event_stream.on_reconnect(refetch_callback)
         end
 
         @connected = true
@@ -643,9 +645,9 @@ module Smplkit
 
       # Release resources — only those this client owns.
       #
-      # Uninstalls the adapter hooks, unsubscribes from the WebSocket, and tears
-      # down the owned WebSocket (standalone install). A wired client borrows the
-      # parent's transport and WebSocket and closes neither.
+      # Uninstalls the adapter hooks, unsubscribes from the event stream, and
+      # tears down the owned event stream (standalone install). A wired client
+      # borrows the parent's transport and event stream and closes neither.
       def close
         Smplkit.debug("lifecycle", "LoggingClient.close() called")
         @adapters.each do |adapter|
@@ -653,13 +655,14 @@ module Smplkit
         rescue StandardError => e
           Smplkit.debug("logging", "adapter #{adapter.name} uninstall_hook failed: #{e.class}: #{e.message}")
         end
-        if @ws_manager
-          ws_handlers.each { |event, handler| @ws_manager.off(event, handler) }
-          if @owns_ws
-            @ws_manager.stop
-            @owns_ws = false
+        if @event_stream
+          stream_handlers.each { |event, handler| @event_stream.off(event, handler) }
+          @event_stream.off_reconnect(refetch_callback)
+          if @owns_stream
+            @event_stream.stop
+            @owns_stream = false
           end
-          @ws_manager = nil
+          @event_stream = nil
         end
         @connected = false
       end
@@ -674,7 +677,7 @@ module Smplkit
       #
       # Mirrors Ruby's +File.open+ block form: the client is closed
       # automatically when the block returns or raises, so a standalone client's
-      # owned transports and WebSocket are always torn down.
+      # owned transports and event stream are always torn down.
       #
       #   Smplkit::LoggingClient.open(environment: "production") do |logging|
       #     logging.loggers.new("sqlalchemy.engine").save
@@ -701,10 +704,10 @@ module Smplkit
 
       # Memoized event → handler map so +install+ registers and +close+
       # unsubscribes the exact same callback objects. They are stored as procs
-      # (not bound methods) because +SharedWebSocket#off+ removes by object
+      # (not bound methods) because +EventStream#off+ removes by object
       # identity, and +on(event, &proc)+ stores the very proc passed here.
-      def ws_handlers
-        @ws_handlers ||= {
+      def stream_handlers
+        @stream_handlers ||= {
           "logger_changed" => proc { |data| handle_logger_changed(data) },
           "logger_deleted" => proc { |data| handle_logger_deleted(data) },
           "group_changed" => proc { |data| handle_group_changed(data) },
@@ -713,17 +716,24 @@ module Smplkit
         }
       end
 
-      def ensure_ws
-        return @parent._ensure_ws unless @parent.nil?
+      # Memoized reconnect refetch — the same bulk-refresh path the
+      # +loggers_changed+ handler runs, registered with the stream on
+      # +install+ and deregistered (by object identity) on +close+.
+      def refetch_callback
+        @refetch_callback ||= proc { handle_loggers_changed({}) }
+      end
 
-        if @ws_manager.nil?
-          @ws_manager = SharedWebSocket.new(
+      def ensure_event_stream
+        return @parent._ensure_event_stream unless @parent.nil?
+
+        if @event_stream.nil?
+          @event_stream = EventStream.new(
             app_base_url: @app_base_url, api_key: @standalone_api_key, metrics: @metrics
           )
-          @ws_manager.start
-          @owns_ws = true
+          @event_stream.start
+          @owns_stream = true
         end
-        @ws_manager
+        @event_stream
       end
 
       # --- Internal ---
@@ -777,8 +787,8 @@ module Smplkit
       # path).
       #
       # Silent — does not fire change-listener events. Use
-      # +fetch_and_apply_deltas+ from the WS / refresh paths to get per-logger
-      # fanout.
+      # +fetch_and_apply_deltas+ from the push / refresh paths to get
+      # per-logger fanout.
       def fetch_and_apply(trigger: "unknown")
         fetch_cache(trigger)
         apply_levels
@@ -858,58 +868,58 @@ module Smplkit
         end
       end
 
-      # --- Internal: event handlers (called by SharedWebSocket) ---
+      # --- Internal: event handlers (called by EventStream) ---
 
       def handle_logger_changed(data)
         key = data["id"] || ""
-        Smplkit.debug("websocket", "logger_changed: fetching logger #{key.inspect}")
+        Smplkit.debug("events", "logger_changed: fetching logger #{key.inspect}")
         pre = snapshot_effective_levels
         begin
           entry_id, entry = @loggers.get_logger_entry(key)
           @loggers_cache[entry_id || key] = entry
         rescue StandardError => e
-          Smplkit.debug("websocket", "failed to fetch logger #{key.inspect} after WS event: #{e.class}: #{e.message}")
+          Smplkit.debug("events", "failed to fetch logger #{key.inspect} after push event: #{e.class}: #{e.message}")
           return
         end
-        apply_deltas_and_fire(pre, "websocket")
+        apply_deltas_and_fire(pre, "push")
       end
 
       def handle_logger_deleted(data)
         key = data["id"] || ""
-        Smplkit.debug("websocket", "logger_deleted: removing logger #{key.inspect}")
+        Smplkit.debug("events", "logger_deleted: removing logger #{key.inspect}")
         pre = snapshot_effective_levels
         @loggers_cache.delete(key)
-        apply_deltas_and_fire(pre, "websocket")
+        apply_deltas_and_fire(pre, "push")
       end
 
       def handle_group_changed(data)
         key = data["id"] || ""
-        Smplkit.debug("websocket", "group_changed: fetching group #{key.inspect}")
+        Smplkit.debug("events", "group_changed: fetching group #{key.inspect}")
         pre = snapshot_effective_levels
         begin
           entry_id, entry = @log_groups.get_group_entry(key)
           @groups_cache[entry_id || key] = entry
         rescue StandardError => e
-          Smplkit.debug("websocket",
-                        "failed to fetch log group #{key.inspect} after WS event: #{e.class}: #{e.message}")
+          Smplkit.debug("events",
+                        "failed to fetch log group #{key.inspect} after push event: #{e.class}: #{e.message}")
           return
         end
-        apply_deltas_and_fire(pre, "websocket")
+        apply_deltas_and_fire(pre, "push")
       end
 
       def handle_group_deleted(data)
         key = data["id"] || ""
-        Smplkit.debug("websocket", "group_deleted: removing group #{key.inspect}")
+        Smplkit.debug("events", "group_deleted: removing group #{key.inspect}")
         pre = snapshot_effective_levels
         @groups_cache.delete(key)
-        apply_deltas_and_fire(pre, "websocket")
+        apply_deltas_and_fire(pre, "push")
       end
 
       def handle_loggers_changed(_data)
-        Smplkit.debug("websocket", "loggers_changed: full re-fetch")
-        fetch_and_apply_deltas(trigger: "loggers_changed WS event", source: "websocket")
+        Smplkit.debug("events", "loggers_changed: full re-fetch")
+        fetch_and_apply_deltas(trigger: "loggers_changed event", source: "push")
       rescue StandardError => e
-        Smplkit.debug("websocket",
+        Smplkit.debug("events",
                       "failed to re-fetch/apply logging levels after loggers_changed event: #{e.class}: #{e.message}")
       end
     end

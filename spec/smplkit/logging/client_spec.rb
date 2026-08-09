@@ -7,14 +7,14 @@ require "spec_helper"
 #     buffer, runtime entry fetches) — works immediately, no +install+.
 #   - Pre-install configuration: +register_adapter+ / +adapters+.
 #   - Live surface: +install+ (the consent gate), +on_change+ / +refresh+
-#     (gated, raise +NotInstalledError+ before install), the WebSocket dispatch
-#     pipeline, and +close+ / +_close+.
+#     (gated, raise +NotInstalledError+ before install), the event stream
+#     dispatch pipeline, and +close+ / +_close+.
 #   - Module helpers: +Logging.auto_load_adapters+, +LoggerChangeEvent+.
 #
 # The client is wired with a parent double plus an injected transport pointed
-# at a WebMock host. The parent's shared WebSocket is constructed but never
-# +start+ed — dispatch is driven directly via +SharedWebSocket#dispatch+, so no
-# real socket opens.
+# at a WebMock host. The parent's shared event stream is constructed but never
+# +start+ed — dispatch is driven directly via +EventStream#dispatch+, so no
+# real connection opens.
 
 # A real +Adapters::Base+ subclass (instance_double trips
 # +is_a?(Adapters::Base)+, so the live surface needs a genuine subclass).
@@ -68,16 +68,16 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     )
   end
   let(:transport) { Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Logging, "logging", tcfg) }
-  let(:ws) { Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
+  let(:stream) { Smplkit::EventStream.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
   let(:parent) do
     double("Smplkit::Client",
            _environment: "staging", _service: "svc",
-           _ensure_started: nil, _ensure_ws: ws)
+           _ensure_started: nil, _ensure_event_stream: stream)
   end
   let(:metrics) { nil }
   let(:adapter) { TestAdapter.new }
 
-  # Always release the (never-started) WebSocket / adapter hooks so no
+  # Always release the (never-started) event stream / adapter hooks so no
   # background state leaks between examples.
   after { logging.close }
 
@@ -270,16 +270,32 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       expect(adapter.hook_block).to be_a(Proc)
     end
 
-    it "registers WebSocket handlers for every level-affecting event" do
+    it "registers event stream handlers for every level-affecting event" do
       stub_bulk
       stub_loggers_list
       stub_groups_list
       logging.register_adapter(adapter)
       logging.install
-      registered = ws.instance_variable_get(:@listeners)
+      registered = stream.instance_variable_get(:@listeners)
       %w[logger_changed logger_deleted group_changed group_deleted loggers_changed].each do |event|
         expect(registered.keys).to include(event)
       end
+    end
+
+    it "registers the loggers_changed bulk-refresh path as the reconnect refetch" do
+      stub_bulk
+      stub_loggers_list(logger_resource("my.logger", level: "WARN"))
+      stub_groups_list
+      logging.register_adapter(adapter)
+      logging.install
+      adapter.applied.clear
+      events = []
+      logging.on_change { |e| events << [e.id, e.level, e.source] }
+      stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
+      stub_groups_list
+      stream.send(:run_refetch_callbacks)
+      expect(adapter.applied).to eq([["My.Logger", Smplkit::LogLevel::ERROR]])
+      expect(events).to eq([["my.logger", "ERROR", "push"]])
     end
 
     it "is idempotent — a second install does not re-hook or re-fetch" do
@@ -301,7 +317,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       expect(logging.adapters.map(&:name)).to include("stdlib-logger")
     end
 
-    it "swallows a fetch failure and still installs the WS handlers" do
+    it "swallows a fetch failure and still installs the stream handlers" do
       stub_bulk
       stub_request(:get, "#{base_url}/api/v1/loggers")
         .with(query: hash_including({}))
@@ -309,7 +325,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       stub_groups_list
       logging.register_adapter(adapter)
       expect { logging.install }.not_to raise_error
-      registered = ws.instance_variable_get(:@listeners)
+      registered = stream.instance_variable_get(:@listeners)
       expect(registered.keys).to include("logger_changed")
     end
 
@@ -515,10 +531,10 @@ RSpec.describe Smplkit::Logging::LoggingClient do
   end
 
   # ----------------------------------------------------------------
-  # WebSocket dispatch pipeline (after install)
+  # Event stream dispatch pipeline (after install)
   # ----------------------------------------------------------------
 
-  describe "WebSocket dispatch" do
+  describe "event stream dispatch" do
     # Install with one direct-level logger; clear applied/stubs afterward.
     def install_with_logger(level: "WARN", group: nil, name: "my.logger")
       adapter = TestAdapter.new([[name, nil, Smplkit::LogLevel::INFO]])
@@ -536,9 +552,9 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       events = []
       logging.on_change { |e| events << [e.id, e.level, e.source] }
       stub_logger_get("my.logger", logger_resource("my.logger", level: "ERROR"))
-      ws.dispatch("logger_changed", { "id" => "my.logger" })
+      stream.dispatch("logger_changed", { "id" => "my.logger" })
       expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::ERROR]])
-      expect(events).to eq([["my.logger", "ERROR", "websocket"]])
+      expect(events).to eq([["my.logger", "ERROR", "push"]])
     end
 
     it "logger_changed fires nothing when the effective level is unchanged" do
@@ -546,7 +562,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       events = []
       logging.on_change { |e| events << e.id }
       stub_logger_get("my.logger", logger_resource("my.logger", level: "WARN"))
-      ws.dispatch("logger_changed", { "id" => "my.logger" })
+      stream.dispatch("logger_changed", { "id" => "my.logger" })
       expect(events).to be_empty
       expect(adapter.applied).to be_empty
     end
@@ -556,7 +572,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       events = []
       logging.on_change { |e| events << e.id }
       stub_request(:get, "#{base_url}/api/v1/loggers/my.logger").to_return(status: 500, body: "boom")
-      expect { ws.dispatch("logger_changed", { "id" => "my.logger" }) }.not_to raise_error
+      expect { stream.dispatch("logger_changed", { "id" => "my.logger" }) }.not_to raise_error
       expect(events).to be_empty
       expect(adapter.applied).to be_empty
     end
@@ -564,7 +580,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     it "logger_changed with no id is a safe no-op (empty-key fetch)" do
       install_with_logger(level: "WARN")
       stub_request(:get, "#{base_url}/api/v1/loggers/").to_return(status: 500, body: "boom")
-      expect { ws.dispatch("logger_changed", {}) }.not_to raise_error
+      expect { stream.dispatch("logger_changed", {}) }.not_to raise_error
     end
 
     it "logger_deleted drops the logger and re-applies dependents" do
@@ -584,7 +600,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
 
       events = []
       logging.on_change { |e| events << [e.id, e.level] }
-      ws.dispatch("logger_deleted", { "id" => "com.acme" })
+      stream.dispatch("logger_deleted", { "id" => "com.acme" })
       # com.acme.x resolved to WARN via ancestry; after deletion falls back to INFO.
       expect(adapter.applied).to eq([["com.acme.x", Smplkit::LogLevel::INFO]])
       expect(events).to eq([["com.acme.x", "INFO"]])
@@ -603,7 +619,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       events = []
       logging.on_change { |e| events << [e.id, e.level] }
       stub_group_get("g1", group_resource("g1", level: "FATAL"))
-      ws.dispatch("group_changed", { "id" => "g1" })
+      stream.dispatch("group_changed", { "id" => "g1" })
       expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::FATAL]])
       expect(events).to eq([["my.logger", "FATAL"]])
     end
@@ -618,7 +634,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       adapter.applied.clear
 
       stub_request(:get, "#{base_url}/api/v1/log_groups/g1").to_return(status: 500, body: "boom")
-      expect { ws.dispatch("group_changed", { "id" => "g1" }) }.not_to raise_error
+      expect { stream.dispatch("group_changed", { "id" => "g1" }) }.not_to raise_error
       expect(adapter.applied).to be_empty
     end
 
@@ -633,7 +649,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
 
       events = []
       logging.on_change { |e| events << [e.id, e.level] }
-      ws.dispatch("group_deleted", { "id" => "g1" })
+      stream.dispatch("group_deleted", { "id" => "g1" })
       # my.logger resolved to WARN via g1; after deletion falls back to INFO.
       expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::INFO]])
       expect(events).to eq([["my.logger", "INFO"]])
@@ -652,7 +668,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       logging.on_change { |e| events << [e.id, e.level] }
       stub_loggers_list(logger_resource("my.logger", level: "ERROR"))
       stub_groups_list
-      ws.dispatch("loggers_changed", {})
+      stream.dispatch("loggers_changed", {})
       expect(adapter.applied).to eq([["my.logger", Smplkit::LogLevel::ERROR]])
       expect(events).to eq([["my.logger", "ERROR"]])
     end
@@ -662,7 +678,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       stub_request(:get, "#{base_url}/api/v1/loggers")
         .with(query: hash_including({}))
         .to_return(status: 500, body: "boom")
-      expect { ws.dispatch("loggers_changed", {}) }.not_to raise_error
+      expect { stream.dispatch("loggers_changed", {}) }.not_to raise_error
     end
 
     it "global + key-scoped listeners both receive each per-logger delta" do
@@ -683,7 +699,7 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       logging.on_change("app.db") { |e| key_db << e.id }
 
       stub_group_get("app", group_resource("app", level: "ERROR"))
-      ws.dispatch("group_changed", { "id" => "app" })
+      stream.dispatch("group_changed", { "id" => "app" })
 
       expect(global_a.length).to eq(2)
       expect(global_b.length).to eq(2)
@@ -696,21 +712,24 @@ RSpec.describe Smplkit::Logging::LoggingClient do
   # ----------------------------------------------------------------
 
   describe "#close" do
-    it "uninstalls adapter hooks and calls off for every WS handler" do
+    it "uninstalls adapter hooks and calls off for every stream handler and the refetch" do
       stub_bulk
       stub_loggers_list
       stub_groups_list
       logging.register_adapter(adapter)
       logging.install
-      listeners = ws.instance_variable_get(:@listeners)
+      listeners = stream.instance_variable_get(:@listeners)
       expect(listeners["logger_changed"]).not_to be_empty
 
-      allow(ws).to receive(:off).and_call_original
+      allow(stream).to receive(:off).and_call_original
+      allow(stream).to receive(:off_reconnect).and_call_original
       logging.close
       expect(adapter.uninstalled).to be(true)
       %w[logger_changed logger_deleted group_changed group_deleted loggers_changed].each do |event|
-        expect(ws).to have_received(:off).with(event, an_instance_of(Proc))
+        expect(stream).to have_received(:off).with(event, an_instance_of(Proc))
       end
+      expect(stream).to have_received(:off_reconnect).with(an_instance_of(Proc))
+      expect(stream.instance_variable_get(:@refetch_callbacks)).to be_empty
     end
 
     it "is a no-op before install and never raises" do
@@ -728,14 +747,14 @@ RSpec.describe Smplkit::Logging::LoggingClient do
       expect { logging.close }.not_to raise_error
     end
 
-    it "does not stop the parent's shared WebSocket (wired client)" do
+    it "does not stop the parent's shared event stream (wired client)" do
       stub_bulk
       stub_loggers_list
       stub_groups_list
       logging.register_adapter(adapter)
       logging.install
       logging.close
-      expect(ws.connection_status).to eq("disconnected")
+      expect(stream.connection_status).to eq("disconnected")
     end
 
     it "_close aliases close" do
@@ -1034,12 +1053,12 @@ RSpec.describe Smplkit::Logging::LoggingClient do
 
   describe "Smplkit::Logging::LoggerChangeEvent" do
     it "exposes id / level / source and compares structurally" do
-      a = Smplkit::Logging::LoggerChangeEvent.new(id: "x", level: "WARN", source: "ws")
-      b = Smplkit::Logging::LoggerChangeEvent.new(id: "x", level: "WARN", source: "ws")
-      c = Smplkit::Logging::LoggerChangeEvent.new(id: "x", level: "ERROR", source: "ws")
+      a = Smplkit::Logging::LoggerChangeEvent.new(id: "x", level: "WARN", source: "push")
+      b = Smplkit::Logging::LoggerChangeEvent.new(id: "x", level: "WARN", source: "push")
+      c = Smplkit::Logging::LoggerChangeEvent.new(id: "x", level: "ERROR", source: "push")
       expect(a.id).to eq("x")
       expect(a.level).to eq("WARN")
-      expect(a.source).to eq("ws")
+      expect(a.source).to eq("push")
       expect(a).to eq(b)
       expect(a).not_to eq(c)
       expect(a).not_to eq("not an event")
@@ -1049,8 +1068,8 @@ end
 
 # --- LoggingClient standalone construction -----------------------------
 #
-# The standalone shape builds + owns its own logging transport and WebSocket
-# (no parent). +close+ tears down only what it owns.
+# The standalone shape builds + owns its own logging transport and event
+# stream (no parent). +close+ tears down only what it owns.
 RSpec.describe "Smplkit::Logging::LoggingClient (standalone)" do
   subject(:logging) do
     Smplkit::Logging::LoggingClient.new(
@@ -1087,9 +1106,10 @@ RSpec.describe "Smplkit::Logging::LoggingClient (standalone)" do
     expect { logging.close }.not_to raise_error
   end
 
-  it "opens and owns its WebSocket on install, then tears it down on close" do
-    fake_ws = instance_double(Smplkit::SharedWebSocket, start: nil, stop: nil, on: nil, off: nil)
-    allow(Smplkit::SharedWebSocket).to receive(:new).and_return(fake_ws)
+  it "opens and owns its event stream on install, then tears it down on close" do
+    fake_stream = instance_double(Smplkit::EventStream, start: nil, stop: nil, on: nil, off: nil,
+                                                        on_reconnect: nil, off_reconnect: nil)
+    allow(Smplkit::EventStream).to receive(:new).and_return(fake_stream)
     custom = TestAdapter.new([])
     logging.register_adapter(custom)
     stub_request(:post, "https://logging.smplkit.test/api/v1/loggers/bulk")
@@ -1106,19 +1126,20 @@ RSpec.describe "Smplkit::Logging::LoggingClient (standalone)" do
                  headers: jsonapi_headers)
 
     logging.install
-    expect(fake_ws).to have_received(:start)
-    expect(fake_ws).to have_received(:on).with("logger_changed")
-    expect(fake_ws).to have_received(:on).with("loggers_changed")
+    expect(fake_stream).to have_received(:start)
+    expect(fake_stream).to have_received(:on).with("logger_changed")
+    expect(fake_stream).to have_received(:on).with("loggers_changed")
+    expect(fake_stream).to have_received(:on_reconnect)
 
     logging.close
-    expect(fake_ws).to have_received(:stop)
+    expect(fake_stream).to have_received(:stop)
   end
 end
 
 # --- LoggingClient stateless mode (streaming: false) --------------------
 #
 # The stateless shape still installs — adapters, discovery, one blocking
-# fetch-and-apply — but never opens a WebSocket or spawns a background
+# fetch-and-apply — but never opens an event stream or spawns a background
 # thread; +refresh+ re-fetches and re-applies on demand.
 RSpec.describe "Smplkit::Logging::LoggingClient (stateless, streaming: false)" do
   subject(:logging) do
@@ -1166,8 +1187,8 @@ RSpec.describe "Smplkit::Logging::LoggingClient (stateless, streaming: false)" d
       .to_return(status: 200, body: list_body, headers: jsonapi_headers)
   end
 
-  it "install applies levels once without ever creating a WebSocket" do
-    expect(Smplkit::SharedWebSocket).not_to receive(:new)
+  it "install applies levels once without ever creating an event stream" do
+    expect(Smplkit::EventStream).not_to receive(:new)
     stub_bulk
     stub_groups_list
     stub_request(:get, "#{base_url}/api/v1/loggers")

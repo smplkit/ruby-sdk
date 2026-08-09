@@ -13,10 +13,10 @@ RSpec.describe Smplkit::Client do
     }
   end
 
-  # A websocket stand-in with a controllable connection_status. The real
-  # SharedWebSocket is never constructed in these tests.
-  def ws_double(status: "connected")
-    instance_double(Smplkit::SharedWebSocket, start: nil, stop: nil, connection_status: status)
+  # An event stream stand-in with a controllable connection_status. The real
+  # EventStream is never constructed in these tests.
+  def stream_double(status: "connected")
+    instance_double(Smplkit::EventStream, start: nil, stop: nil, connection_status: status)
   end
 
   # Build a client and ensure its (possibly spawned) init thread has settled
@@ -188,27 +188,27 @@ RSpec.describe Smplkit::Client do
     end
   end
 
-  describe "#_ensure_ws" do
-    it "lazily constructs and starts the SharedWebSocket once" do
-      ws = ws_double
-      allow(Smplkit::SharedWebSocket).to receive(:new).and_return(ws)
+  describe "#_ensure_event_stream" do
+    it "lazily constructs and starts the EventStream once" do
+      stream = stream_double
+      allow(Smplkit::EventStream).to receive(:new).and_return(stream)
       with_client do |client|
         allow(client.platform.contexts).to receive(:register)
-        ws1 = client._ensure_ws
-        ws2 = client._ensure_ws
-        expect(ws1).to equal(ws)
-        expect(ws2).to equal(ws)
-        expect(ws).to have_received(:start).once
-        expect(Smplkit::SharedWebSocket).to have_received(:new).once
+        s1 = client._ensure_event_stream
+        s2 = client._ensure_event_stream
+        expect(s1).to equal(stream)
+        expect(s2).to equal(stream)
+        expect(stream).to have_received(:start).once
+        expect(Smplkit::EventStream).to have_received(:new).once
       end
     end
 
     it "starts the deferred machinery via _ensure_started" do
-      ws = ws_double
-      allow(Smplkit::SharedWebSocket).to receive(:new).and_return(ws)
+      stream = stream_double
+      allow(Smplkit::EventStream).to receive(:new).and_return(stream)
       with_client do |client|
         allow(client.platform.contexts).to receive(:register)
-        client._ensure_ws
+        client._ensure_event_stream
         expect(client.instance_variable_get(:@started)).to be(true)
       end
     end
@@ -277,36 +277,36 @@ RSpec.describe Smplkit::Client do
   end
 
   describe "#wait_until_ready" do
-    it "connects flags + config, opens the ws, and returns once connected" do
-      ws = ws_double(status: "connected")
+    it "connects flags + config, opens the event stream, and returns once connected" do
+      stream = stream_double(status: "connected")
       with_client do |client|
         allow(client.flags).to receive(:_ensure_connected)
         allow(client.config).to receive(:_ensure_connected)
-        allow(client).to receive(:_ensure_ws).and_return(ws)
+        allow(client).to receive(:_ensure_event_stream).and_return(stream)
         expect { client.wait_until_ready(timeout: 0.5) }.not_to raise_error
         expect(client.flags).to have_received(:_ensure_connected)
         expect(client.config).to have_received(:_ensure_connected)
       end
     end
 
-    it "polls until the websocket transitions to connected" do
+    it "polls until the event stream transitions to connected" do
       statuses = %w[connecting connecting connected]
-      ws = instance_double(Smplkit::SharedWebSocket, start: nil, stop: nil)
-      allow(ws).to receive(:connection_status) { statuses.shift || "connected" }
+      stream = instance_double(Smplkit::EventStream, start: nil, stop: nil)
+      allow(stream).to receive(:connection_status) { statuses.shift || "connected" }
       with_client do |client|
         allow(client.flags).to receive(:_ensure_connected)
         allow(client.config).to receive(:_ensure_connected)
-        allow(client).to receive(:_ensure_ws).and_return(ws)
+        allow(client).to receive(:_ensure_event_stream).and_return(stream)
         expect { client.wait_until_ready(timeout: 1.0) }.not_to raise_error
       end
     end
 
-    it "raises TimeoutError when the websocket never connects" do
-      ws = ws_double(status: "connecting")
+    it "raises TimeoutError when the event stream never connects" do
+      stream = stream_double(status: "connecting")
       with_client do |client|
         allow(client.flags).to receive(:_ensure_connected)
         allow(client.config).to receive(:_ensure_connected)
-        allow(client).to receive(:_ensure_ws).and_return(ws)
+        allow(client).to receive(:_ensure_event_stream).and_return(stream)
         expect { client.wait_until_ready(timeout: 0.05) }
           .to raise_error(Smplkit::TimeoutError, /did not connect within 0.05s/)
       end
@@ -317,8 +317,8 @@ RSpec.describe Smplkit::Client do
     it "tears everything down in order and is no-raise" do
       fake_metrics = instance_double(Smplkit::MetricsReporter, close: nil)
       allow(Smplkit::MetricsReporter).to receive(:new).and_return(fake_metrics)
-      ws = ws_double
-      allow(Smplkit::SharedWebSocket).to receive(:new).and_return(ws)
+      stream = stream_double
+      allow(Smplkit::EventStream).to receive(:new).and_return(stream)
 
       with_client(telemetry: true) do |client|
         allow(client.platform.contexts).to receive_messages(register: nil, flush: nil)
@@ -327,7 +327,7 @@ RSpec.describe Smplkit::Client do
         allow(client.logging).to receive(:_close)
         allow(client.config).to receive(:flush)
         allow(client.audit).to receive(:_close)
-        client._ensure_ws # so there is a ws_manager to stop
+        client._ensure_event_stream # so there is an event stream to stop
 
         expect { client.close }.not_to raise_error
 
@@ -336,8 +336,8 @@ RSpec.describe Smplkit::Client do
         expect(client.logging).to have_received(:_close)
         expect(client.flags).to have_received(:_close)
         expect(client.audit).to have_received(:_close)
-        expect(ws).to have_received(:stop)
-        expect(client.instance_variable_get(:@ws_manager)).to be_nil
+        expect(stream).to have_received(:stop)
+        expect(client.instance_variable_get(:@event_stream)).to be_nil
       end
     end
 

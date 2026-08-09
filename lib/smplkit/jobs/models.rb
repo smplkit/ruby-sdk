@@ -4,8 +4,8 @@ module Smplkit
   # Smpl Jobs surface — exposed through +client.jobs.*+.
   #
   # Unlike Config/Flags/Logging, Jobs has no live "phone-home" agent — no
-  # environment registration, no WebSocket — so its entire surface lives on a
-  # single client. A {Job} is an active record: build it with
+  # environment registration, no event stream — so its entire surface lives on
+  # a single client. A {Job} is an active record: build it with
   # +client.jobs.new_recurring_job(...)+ / +new_manual_job(...)+ /
   # +schedule(...)+, set fields, and call {Job#save} (create when new,
   # full-replace update when it already exists) or {Job#delete}. Runs are

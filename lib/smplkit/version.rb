@@ -26,8 +26,8 @@ module Smplkit
     spec ? spec.version.to_s : VERSION
   end
 
-  # The default User-Agent stamped on every outbound request (HTTP and the
-  # WebSocket handshake) when the caller has not supplied their own.
+  # The default User-Agent stamped on every outbound request (including the
+  # live-updates event stream) when the caller has not supplied their own.
   #
   # The platform sits behind a WAF that rejects requests carrying no
   # User-Agent, and an SDK-identifying value keeps support/telemetry able to

@@ -43,7 +43,7 @@ require_relative "smplkit/log_level"
 require_relative "smplkit/context"
 require_relative "smplkit/config_resolution"
 require_relative "smplkit/metrics"
-require_relative "smplkit/ws"
+require_relative "smplkit/event_stream"
 
 # Internal foundation shared by every product client.
 require_relative "smplkit/buffers"

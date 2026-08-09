@@ -65,7 +65,7 @@ module Smplkit
     #
     # Construction is side-effect-free: each transport connects lazily on its
     # first call. +app_url+ is carried alongside so the account settings client
-    # and the WebSocket can reach the app service. +close+ tears down the
+    # and the event stream can reach the app service. +close+ tears down the
     # underlying Faraday connection pools.
     #
     # @api private

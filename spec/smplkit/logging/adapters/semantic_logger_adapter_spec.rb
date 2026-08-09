@@ -85,9 +85,9 @@ RSpec.describe Smplkit::Logging::LoggingClient do
     )
   end
   let(:transport) { Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Logging, "logging", tcfg) }
-  let(:ws) { Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
+  let(:stream) { Smplkit::EventStream.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
   let(:parent) do
-    double(_service: "svc", _environment: "stg", _ensure_started: nil, _ensure_ws: ws)
+    double(_service: "svc", _environment: "stg", _ensure_started: nil, _ensure_event_stream: stream)
   end
 
   after { client.close }

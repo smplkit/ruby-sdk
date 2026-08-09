@@ -54,7 +54,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "async", ">= 2.6", "< 3"
   spec.add_dependency "async-http", ">= 0.79", "< 1"
-  spec.add_dependency "async-websocket", ">= 0.26", "< 1"
   spec.add_dependency "concurrent-ruby", "~> 1.2"
   spec.add_dependency "faraday", "~> 2.7"
   spec.add_dependency "faraday-multipart", "~> 1.0"

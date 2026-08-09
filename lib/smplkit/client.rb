@@ -102,7 +102,7 @@ module Smplkit
                    MetricsReporter.new(http_client: @app_http, environment: cfg.environment, service: cfg.service)
                  end
 
-      @ws_manager = nil
+      @event_stream = nil
       # Platform's cross-cutting CRUD on one client; wired into this parent so
       # it borrows the shared app transport, and owns the context-registration
       # buffer. Built BEFORE flags so the contexts seam below is available.
@@ -111,17 +111,17 @@ module Smplkit
       # (the settings sub-client uses Faraday directly).
       @account = Account::AccountClient.new(api_key: cfg.api_key, base_url: app_url, extra_headers: extra_headers)
       # Config's full surface on one client; wired into this parent so it
-      # borrows the shared config transport and WebSocket.
+      # borrows the shared config transport and event stream.
       @config = Config::ConfigClient.new(parent: self, transport: @transports.config_http, metrics: @metrics)
       # Flags' full surface on one client; wired into this parent so it borrows
-      # the shared flags transport and WebSocket. ``contexts`` is the injection
-      # seam for evaluation-context registration, wired to
+      # the shared flags transport and event stream. ``contexts`` is the
+      # injection seam for evaluation-context registration, wired to
       # ``client.platform.contexts``.
       @flags = Flags::FlagsClient.new(
         parent: self, transport: @transports.flags_http, contexts: @platform.contexts, metrics: @metrics
       )
       # Logging's full surface on one client; wired into this parent so it
-      # borrows the shared logging transport and WebSocket. The two management
+      # borrows the shared logging transport and event stream. The two management
       # sub-clients live at client.logging.loggers / client.logging.log_groups.
       @logging = Logging::LoggingClient.new(parent: self, transport: @transports.logging_http, metrics: @metrics)
       # Audit's full surface on one client; this runtime instance scopes audit
@@ -148,35 +148,35 @@ module Smplkit
       @init_thread = nil
     end
 
-    # Optionally pre-warm the SDK and block until the live socket is up.
+    # Optionally pre-warm the SDK and block until the live stream is up.
     #
     # Eagerly connects config and flags — flushing discovery, pre-fetching all
-    # flags and configs into the local cache, opening the live-updates WebSocket
-    # — and waits for the handshake to complete. After this returns, +flag.get+
-    # / +client.config.subscribe+ hit cache (no first-request connect tax) and
-    # any +on_change+ listeners receive every server event from this point
-    # forward.
+    # flags and configs into the local cache, opening the live-updates event
+    # stream — and waits for the connect to complete. After this returns,
+    # +flag.get+ / +client.config.subscribe+ hit cache (no first-request
+    # connect tax) and any +on_change+ listeners receive every server event
+    # from this point forward.
     #
     # Optional: config and flags connect lazily on first live use, so this is
-    # purely a pre-warm / WebSocket-ready barrier. Logging integration is *not*
+    # purely a pre-warm / stream-ready barrier. Logging integration is *not*
     # connected here — call +client.logging.install+ separately if you want it
     # (it installs adapters and hooks into your application's logger, which
     # should be opt-in).
     #
     # @param timeout [Float] Maximum seconds to wait for the live-updates
-    #   WebSocket handshake before giving up. Defaults to +10.0+.
+    #   event stream to connect before giving up. Defaults to +10.0+.
     # @return [void]
-    # @raise [Smplkit::TimeoutError] If the WebSocket fails to connect within
-    #   +timeout+ seconds.
+    # @raise [Smplkit::TimeoutError] If the event stream fails to connect
+    #   within +timeout+ seconds.
     def wait_until_ready(timeout: 10.0)
       @flags._ensure_connected
       @config._ensure_connected
-      ws = _ensure_ws
+      stream = _ensure_event_stream
       deadline = monotonic_now + timeout
-      while ws.connection_status != "connected"
+      while stream.connection_status != "connected"
         if monotonic_now >= deadline
-          raise TimeoutError, "Live-updates websocket did not connect within #{timeout}s " \
-                              "(status: #{ws.connection_status.inspect})"
+          raise TimeoutError, "Live-updates event stream did not connect within #{timeout}s " \
+                              "(status: #{stream.connection_status.inspect})"
         end
 
         sleep(0.05)
@@ -235,8 +235,8 @@ module Smplkit
       @logging._close
       @flags._close
       @audit._close
-      @ws_manager&.stop
-      @ws_manager = nil
+      @event_stream&.stop
+      @event_stream = nil
       # Close the shared per-service HTTP transports (app/config/flags/logging/
       # jobs). client.platform/account borrow the app transport and close
       # nothing; client.audit owns and closed its own transport above.
@@ -256,7 +256,7 @@ module Smplkit
     #
     # Idempotent and thread-safe (lock + flag); a no-op after +close+. Triggered
     # by the first config/flags/logging operation, +set_context+,
-    # +wait_until_ready+, or WebSocket open — never at construction.
+    # +wait_until_ready+, or event stream open — never at construction.
     def _ensure_started
       @start_lock.synchronize do
         return if @started || @closed
@@ -267,13 +267,13 @@ module Smplkit
       @init_thread = Thread.new { register_service_context }
     end
 
-    def _ensure_ws
+    def _ensure_event_stream
       _ensure_started
-      if @ws_manager.nil?
-        @ws_manager = SharedWebSocket.new(app_base_url: @app_base_url, api_key: @api_key, metrics: @metrics)
-        @ws_manager.start
+      if @event_stream.nil?
+        @event_stream = EventStream.new(app_base_url: @app_base_url, api_key: @api_key, metrics: @metrics)
+        @event_stream.start
       end
-      @ws_manager
+      @event_stream
     end
 
     private

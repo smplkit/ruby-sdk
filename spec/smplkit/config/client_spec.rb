@@ -10,13 +10,13 @@ require "spec_helper"
 #     discovery buffer (register_config / register_config_item / flush /
 #     pending_count)
 #   - ConfigClient live surface — lazy connect, subscribe, get_value, bind,
-#     on_change, refresh, the WebSocket dispatch pipeline, and close
+#     on_change, refresh, the event stream dispatch pipeline, and close
 #
 # The live surface makes real HTTP through the generated
 # +SmplkitGeneratedClient::Config::ConfigsApi+, so the client is wired with a
 # parent double plus an injected transport pointed at a WebMock host. The
-# parent's shared WebSocket is constructed but never +start+ed — dispatch is
-# driven directly via +SharedWebSocket#dispatch+, so no real socket opens.
+# parent's shared event stream is constructed but never +start+ed — dispatch
+# is driven directly via +EventStream#dispatch+, so no real connection opens.
 
 # --- Fixture types ----------------------------------------------------
 
@@ -205,9 +205,9 @@ RSpec.describe Smplkit::Config::ConfigChangeEvent do
   end
 
   it "compares structurally and hashes consistently" do
-    a = described_class.new(config_id: "c", item_key: "k", old_value: 1, new_value: 2, source: "ws")
-    b = described_class.new(config_id: "c", item_key: "k", old_value: 1, new_value: 2, source: "ws")
-    c = described_class.new(config_id: "c", item_key: "k", old_value: 1, new_value: 3, source: "ws")
+    a = described_class.new(config_id: "c", item_key: "k", old_value: 1, new_value: 2, source: "push")
+    b = described_class.new(config_id: "c", item_key: "k", old_value: 1, new_value: 2, source: "push")
+    c = described_class.new(config_id: "c", item_key: "k", old_value: 1, new_value: 3, source: "push")
     expect(a).to eq(b)
     expect(a.eql?(b)).to be true
     expect(a.hash).to eq(b.hash)
@@ -257,16 +257,16 @@ RSpec.describe Smplkit::Config::ConfigClient do
     )
   end
   let(:transport) { Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Config, "config", tcfg) }
-  let(:ws) { Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
+  let(:stream) { Smplkit::EventStream.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
   let(:parent) do
     double("Smplkit::Client",
            _environment: "staging", _service: "svc",
-           _ensure_started: nil, _ensure_ws: ws)
+           _ensure_started: nil, _ensure_event_stream: stream)
   end
   let(:metrics) { nil }
 
-  # Always release the (never-started) WebSocket / transport so no background
-  # thread leaks between examples.
+  # Always release the (never-started) event stream / transport so no
+  # background thread leaks between examples.
   after { config.close }
 
   # JSON:API config resource Hash for response bodies.
@@ -799,15 +799,26 @@ RSpec.describe Smplkit::Config::ConfigClient do
   end
 
   # ----------------------------------------------------------------
-  # Live surface: WebSocket dispatch pipeline
+  # Live surface: event stream dispatch pipeline
   # ----------------------------------------------------------------
 
-  describe "WebSocket dispatch" do
+  describe "event stream dispatch" do
     it "registers config_changed / config_deleted / configs_changed handlers on connect" do
       stub_list
       config._ensure_connected
-      registered = ws.instance_variable_get(:@listeners)
+      registered = stream.instance_variable_get(:@listeners)
       expect(registered.keys).to include("config_changed", "config_deleted", "configs_changed")
+    end
+
+    it "registers the configs_changed bulk-refresh path as the reconnect refetch" do
+      stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
+      config._ensure_connected
+      stub_list(cfg_resource("billing", items: { "max_seats" => 88 }))
+      events = []
+      config.on_change("billing") { |e| events << e }
+      stream.send(:run_refetch_callbacks)
+      expect(config.get_value("billing", "max_seats")).to eq(88)
+      expect(events.map(&:source)).to eq(["push"])
     end
 
     it "config_changed refetches a single config and updates the cache + bound object" do
@@ -815,7 +826,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
       instance = Billing.new(max_seats: 5)
       config.bind("billing", instance)
       stub_get("billing", cfg_resource("billing", items: { "max_seats" => 99 }))
-      ws.dispatch("config_changed", { "id" => "billing" })
+      stream.dispatch("config_changed", { "id" => "billing" })
       expect(config.get_value("billing", "max_seats")).to eq(99)
       expect(instance.max_seats).to eq(99)
     end
@@ -824,7 +835,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
       stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
       config._ensure_connected
       stub_get("billing", cfg_resource("billing", items: { "max_seats" => 42 }))
-      ws.dispatch("config_changed", { "key" => "billing" })
+      stream.dispatch("config_changed", { "key" => "billing" })
       expect(config.get_value("billing", "max_seats")).to eq(42)
     end
 
@@ -832,7 +843,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
       stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
       config._ensure_connected
       stub_list(cfg_resource("billing", items: { "max_seats" => 7 }))
-      ws.dispatch("config_changed", {})
+      stream.dispatch("config_changed", {})
       expect(config.get_value("billing", "max_seats")).to eq(7)
     end
 
@@ -840,7 +851,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
       stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
       config._ensure_connected
       stub_request(:get, "#{base_url}/api/v1/configs/billing").to_return(status: 500, body: "boom")
-      ws.dispatch("config_changed", { "id" => "billing" })
+      stream.dispatch("config_changed", { "id" => "billing" })
       expect(config.get_value("billing", "max_seats")).to eq(5)
     end
 
@@ -849,7 +860,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
       config._ensure_connected
       # fetch_config raises NotFoundError -> rescued -> cache unchanged.
       stub_get("billing", nil, status: 404)
-      ws.dispatch("config_changed", { "id" => "billing" })
+      stream.dispatch("config_changed", { "id" => "billing" })
       expect(config.get_value("billing", "max_seats")).to eq(5)
     end
 
@@ -864,7 +875,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
 
       stub_get("billing", cfg_resource("billing", items: { "max_seats" => 5 }, parent: "base"))
       stub_get("base", cfg_resource("base", items: { "region" => "us-east" }))
-      ws.dispatch("config_changed", { "id" => "billing" })
+      stream.dispatch("config_changed", { "id" => "billing" })
 
       expect(config.get_value("billing", "region")).to eq("us-east")
       expect(config.get_value("billing", "max_seats")).to eq(5)
@@ -879,7 +890,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
 
       stub_get("child", cfg_resource("child", items: { "max_seats" => 9 }, parent: "mid"))
       stub_get("mid", cfg_resource("mid", items: { "tier" => "pro" }, parent: "root"))
-      ws.dispatch("config_changed", { "id" => "child" })
+      stream.dispatch("config_changed", { "id" => "child" })
 
       expect(config.get_value("child", "max_seats")).to eq(9)
       expect(config.get_value("child", "tier")).to eq("pro")
@@ -889,7 +900,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
     it "config_deleted removes the config from the cache" do
       stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
       config._ensure_connected
-      ws.dispatch("config_deleted", { "id" => "billing" })
+      stream.dispatch("config_deleted", { "id" => "billing" })
       expect { config.get_value("billing", "max_seats") }.to raise_error(Smplkit::NotFoundError)
     end
 
@@ -897,14 +908,14 @@ RSpec.describe Smplkit::Config::ConfigClient do
       stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
       config._ensure_connected
       stub_list # refresh: now empty
-      ws.dispatch("config_deleted", {})
+      stream.dispatch("config_deleted", {})
       expect { config.get_value("billing", "max_seats") }.to raise_error(Smplkit::NotFoundError)
     end
 
     it "config_deleted is a no-op for an unknown config id" do
       stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
       config._ensure_connected
-      expect { ws.dispatch("config_deleted", { "id" => "unknown" }) }.not_to raise_error
+      expect { stream.dispatch("config_deleted", { "id" => "unknown" }) }.not_to raise_error
       expect(config.get_value("billing", "max_seats")).to eq(5)
     end
 
@@ -912,7 +923,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
       stub_list(cfg_resource("billing", items: { "max_seats" => 5 }))
       config._ensure_connected
       stub_list(cfg_resource("billing", items: { "max_seats" => 88 }))
-      ws.dispatch("configs_changed", {})
+      stream.dispatch("configs_changed", {})
       expect(config.get_value("billing", "max_seats")).to eq(88)
     end
 
@@ -922,7 +933,7 @@ RSpec.describe Smplkit::Config::ConfigClient do
       stub_request(:get, "#{base_url}/api/v1/configs")
         .with(query: hash_including({}))
         .to_return(status: 500, body: "boom")
-      expect { ws.dispatch("configs_changed", {}) }.not_to raise_error
+      expect { stream.dispatch("configs_changed", {}) }.not_to raise_error
     end
   end
 
@@ -938,11 +949,11 @@ RSpec.describe Smplkit::Config::ConfigClient do
       expect(list).to have_been_requested.once
     end
 
-    it "#close is a near no-op for a wired client (does not close the parent's WS)" do
+    it "#close is a near no-op for a wired client (does not close the parent's stream)" do
       stub_list
       config._ensure_connected
       expect { config.close }.not_to raise_error
-      expect(ws.connection_status).to eq("disconnected")
+      expect(stream.connection_status).to eq("disconnected")
     end
 
     it "_close aliases close" do
@@ -1021,11 +1032,11 @@ RSpec.describe "Smplkit::Config::ConfigClient (standalone)" do
     expect { config.close }.not_to raise_error
   end
 
-  it "opens and owns its WebSocket on first live use, then tears it down on close" do
-    # Replace the real socket with a double so ensure_ws can build + start it
-    # (and close can stop it) without opening a network connection.
-    fake_ws = instance_double(Smplkit::SharedWebSocket, start: nil, stop: nil, on: nil)
-    allow(Smplkit::SharedWebSocket).to receive(:new).and_return(fake_ws)
+  it "opens and owns its event stream on first live use, then tears it down on close" do
+    # Replace the real stream with a double so ensure_event_stream can build +
+    # start it (and close can stop it) without opening a network connection.
+    fake_stream = instance_double(Smplkit::EventStream, start: nil, stop: nil, on: nil, on_reconnect: nil)
+    allow(Smplkit::EventStream).to receive(:new).and_return(fake_stream)
     stub_request(:get, "https://config.smplkit.test/api/v1/configs")
       .with(query: hash_including({}))
       .to_return(
@@ -1035,13 +1046,14 @@ RSpec.describe "Smplkit::Config::ConfigClient (standalone)" do
       )
 
     config._ensure_connected
-    expect(fake_ws).to have_received(:start)
-    expect(fake_ws).to have_received(:on).with("config_changed")
-    expect(fake_ws).to have_received(:on).with("config_deleted")
-    expect(fake_ws).to have_received(:on).with("configs_changed")
+    expect(fake_stream).to have_received(:start)
+    expect(fake_stream).to have_received(:on).with("config_changed")
+    expect(fake_stream).to have_received(:on).with("config_deleted")
+    expect(fake_stream).to have_received(:on).with("configs_changed")
+    expect(fake_stream).to have_received(:on_reconnect)
 
     config.close
-    expect(fake_ws).to have_received(:stop)
+    expect(fake_stream).to have_received(:stop)
   end
 end
 
@@ -1083,15 +1095,15 @@ RSpec.describe "Smplkit::Config::ConfigClient (stateless, streaming: false)" do
       .to_return(status: 200, body: list_body(*resources), headers: jsonapi_headers)
   end
 
-  it "connects without ever creating a WebSocket and serves reads from the one-shot fetch" do
-    expect(Smplkit::SharedWebSocket).not_to receive(:new)
+  it "connects without ever creating an event stream and serves reads from the one-shot fetch" do
+    expect(Smplkit::EventStream).not_to receive(:new)
     stub_list(cfg_resource("billing", items: { "max_seats" => 50 }))
     expect(config.get_value("billing", "max_seats")).to eq(50)
     expect(config.subscribe("billing")["max_seats"]).to eq(50)
   end
 
   it "refresh re-fetches on demand and fires change listeners from deltas" do
-    expect(Smplkit::SharedWebSocket).not_to receive(:new)
+    expect(Smplkit::EventStream).not_to receive(:new)
     stub_request(:get, "https://config.smplkit.test/api/v1/configs")
       .with(query: hash_including({}))
       .to_return(
@@ -1162,7 +1174,7 @@ RSpec.describe "Smplkit::Config::ConfigClient (environment/service resolution)" 
 
   it "attaches the resolved service and environment to discovery declarations" do
     ENV["SMPLKIT_SERVICE"] = "svc-wire"
-    # streaming: false so the live call below never opens a real WebSocket.
+    # streaming: false so the live call below never opens a real event stream.
     client = standalone(environment: "env-wire", streaming: false)
     captured = nil
     stub_request(:post, "https://config.smplkit.test/api/v1/configs/bulk")

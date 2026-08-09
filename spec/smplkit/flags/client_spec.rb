@@ -7,11 +7,11 @@ require "spec_helper"
 # Tests for the fused +Smplkit::Flags::FlagsClient+ (one-client architecture).
 #
 # The client is constructed WIRED: a parent double supplies the environment,
-# service, and shared (non-started) WebSocket; an injected flags transport
+# service, and shared (non-started) event stream; an injected flags transport
 # points at a WebMock host; and a stubbed contexts seam stands in for
 # +client.platform.contexts+. The live surface (+boolean_flag+ etc.) connects
 # lazily on first use — the first call flushes discovery, fetches all flag
-# definitions over HTTP, and subscribes to the WebSocket.
+# definitions over HTTP, and subscribes to the event stream.
 RSpec.describe Smplkit::Flags::FlagsClient do
   subject(:flags) do
     described_class.new(parent: parent, transport: transport, contexts: contexts, metrics: metrics)
@@ -24,16 +24,16 @@ RSpec.describe Smplkit::Flags::FlagsClient do
     )
   end
   let(:transport) { Smplkit::Transport.build_api_client(SmplkitGeneratedClient::Flags, "flags", tcfg) }
-  # A non-started SharedWebSocket: dispatch() invokes registered listeners
-  # synchronously without opening a socket.
-  let(:ws) { Smplkit::SharedWebSocket.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
+  # A non-started EventStream: dispatch() invokes registered listeners
+  # synchronously without opening a stream.
+  let(:stream) { Smplkit::EventStream.new(app_base_url: "https://app.smplkit.test", api_key: "k") }
   let(:contexts) { instance_double(Smplkit::Platform::ContextsClient, register: nil) }
   let(:parent) do
     double(
       _environment: "staging",
       _service: nil,
       _ensure_started: nil,
-      _ensure_ws: ws
+      _ensure_event_stream: stream
     )
   end
   let(:metrics) { nil }
@@ -354,10 +354,10 @@ RSpec.describe Smplkit::Flags::FlagsClient do
   end
 
   # ----------------------------------------------------------------
-  # on_change + WebSocket dispatch
+  # on_change + event stream dispatch
   # ----------------------------------------------------------------
 
-  describe "#on_change and WebSocket dispatch" do
+  describe "#on_change and event stream dispatch" do
     before { stub_runtime([flag_resource("checkout-v2", environments: checkout_environments)]) }
 
     it "raises without a block" do
@@ -388,16 +388,16 @@ RSpec.describe Smplkit::Flags::FlagsClient do
         .to_return(status: 200, body: single_body(changed), headers: jsonapi_headers)
       events = []
       flags.on_change("checkout-v2") { |evt| events << evt }
-      ws.dispatch("flag_changed", { "id" => "checkout-v2" })
+      stream.dispatch("flag_changed", { "id" => "checkout-v2" })
       expect(events.map(&:id)).to eq(["checkout-v2"])
-      expect(events.first.source).to eq("websocket")
+      expect(events.first.source).to eq("push")
     end
 
     it "ignores flag_changed without an id" do
       flags._ensure_connected
       events = []
       flags.on_change { |evt| events << evt }
-      ws.dispatch("flag_changed", {})
+      stream.dispatch("flag_changed", {})
       expect(events).to be_empty
     end
 
@@ -408,7 +408,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
         .to_return(status: 200, body: single_body(same), headers: jsonapi_headers)
       events = []
       flags.on_change { |evt| events << evt }
-      ws.dispatch("flag_changed", { "id" => "checkout-v2" })
+      stream.dispatch("flag_changed", { "id" => "checkout-v2" })
       expect(events).to be_empty
     end
 
@@ -416,7 +416,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
       flags._ensure_connected
       events = []
       flags.on_change("checkout-v2") { |evt| events << evt }
-      ws.dispatch("flag_deleted", { "id" => "checkout-v2" })
+      stream.dispatch("flag_deleted", { "id" => "checkout-v2" })
       expect(events.size).to eq(1)
       expect(events.first).to be_deleted
     end
@@ -425,7 +425,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
       flags._ensure_connected
       events = []
       flags.on_change { |evt| events << evt }
-      ws.dispatch("flag_deleted", { "id" => "never-existed" })
+      stream.dispatch("flag_deleted", { "id" => "never-existed" })
       expect(events).to be_empty
     end
 
@@ -433,7 +433,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
       flags._ensure_connected
       events = []
       flags.on_change { |evt| events << evt }
-      ws.dispatch("flag_deleted", {})
+      stream.dispatch("flag_deleted", {})
       expect(events).to be_empty
     end
 
@@ -451,7 +451,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
       scoped = []
       flags.on_change { |evt| global << evt.id }
       flags.on_change("new-flag") { |evt| scoped << evt.id }
-      ws.dispatch("flags_changed", {})
+      stream.dispatch("flags_changed", {})
       expect(global).to eq(["new-flag"])
       expect(scoped).to eq(["new-flag"])
     end
@@ -464,7 +464,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
                                                                  headers: jsonapi_headers)
       global = []
       flags.on_change { |evt| global << evt.id }
-      ws.dispatch("flags_changed", {})
+      stream.dispatch("flags_changed", {})
       expect(global).to be_empty
     end
 
@@ -474,7 +474,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
                                                       .to_return(status: 200, body: list_body([]), headers: jsonapi_headers)
       events = []
       flags.on_change("checkout-v2") { |evt| events << evt }
-      ws.dispatch("flags_changed", {})
+      stream.dispatch("flags_changed", {})
       expect(events.size).to eq(1)
       expect(events.first).to be_deleted
     end
@@ -485,7 +485,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
                                                       .to_return(status: 500, body: "{}", headers: jsonapi_headers)
       global = []
       flags.on_change { |evt| global << evt.id }
-      expect { ws.dispatch("flags_changed", {}) }.not_to raise_error
+      expect { stream.dispatch("flags_changed", {}) }.not_to raise_error
       expect(global).to be_empty
     end
 
@@ -496,7 +496,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
                                                                  body: list_body([flag_resource("new-flag", environments: checkout_environments)]),
                                                                  headers: jsonapi_headers)
       flags.on_change { |_evt| raise "boom-global" }
-      expect { ws.dispatch("flags_changed", {}) }.not_to raise_error
+      expect { stream.dispatch("flags_changed", {}) }.not_to raise_error
     end
 
     it "swallows exceptions raised by scoped listeners during flags_changed" do
@@ -506,7 +506,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
                                                                  body: list_body([flag_resource("new-flag", environments: checkout_environments)]),
                                                                  headers: jsonapi_headers)
       flags.on_change("new-flag") { |_evt| raise "boom-scoped" }
-      expect { ws.dispatch("flags_changed", {}) }.not_to raise_error
+      expect { stream.dispatch("flags_changed", {}) }.not_to raise_error
     end
 
     it "swallows exceptions raised by listeners during fire_change_listeners" do
@@ -789,16 +789,38 @@ RSpec.describe Smplkit::Flags::FlagsClient do
   # ----------------------------------------------------------------
 
   describe "lazy connect" do
-    it "subscribes WebSocket handlers exactly once across repeated connects" do
+    it "subscribes event handlers and the reconnect refetch exactly once across repeated connects" do
       stub_runtime([])
       events = []
-      allow(ws).to receive(:on).and_wrap_original do |orig, name, &blk|
+      allow(stream).to receive(:on).and_wrap_original do |orig, name, &blk|
         events << name
         orig.call(name, &blk)
+      end
+      refetches = 0
+      allow(stream).to receive(:on_reconnect).and_wrap_original do |orig, &blk|
+        refetches += 1
+        orig.call(&blk)
       end
       flags._ensure_connected
       flags._ensure_connected
       expect(events).to eq(%w[flag_changed flag_deleted flags_changed])
+      expect(refetches).to eq(1)
+    end
+
+    it "reconnect refetch reuses the flags_changed bulk-refresh path" do
+      stub_runtime([flag_resource("checkout-v2", environments: checkout_environments)])
+      flags._ensure_connected
+      new_resources = [
+        flag_resource("checkout-v2", environments: checkout_environments),
+        flag_resource("new-flag", default: true,
+                                  environments: { "staging" => { "enabled" => true, "default" => nil, "rules" => [] } })
+      ]
+      stub_request(:get, "#{flags_host}/api/v1/flags").with(query: hash_including({}))
+                                                      .to_return(status: 200, body: list_body(new_resources), headers: jsonapi_headers)
+      seen = []
+      flags.on_change { |evt| seen << [evt.id, evt.source] }
+      stream.send(:run_refetch_callbacks)
+      expect(seen).to eq([%w[new-flag push]])
     end
 
     it "tolerates a discovery flush failure before connecting" do
@@ -824,16 +846,16 @@ RSpec.describe Smplkit::Flags::FlagsClient do
   # ----------------------------------------------------------------
 
   describe "#close" do
-    it "is a no-op for a wired client (borrows the parent WebSocket)" do
+    it "is a no-op for a wired client (borrows the parent event stream)" do
       stub_runtime([])
       flags._ensure_connected
       expect { flags.close }.not_to raise_error
     end
 
-    it "does not stop the borrowed parent WebSocket" do
+    it "does not stop the borrowed parent event stream" do
       stub_runtime([])
       flags._ensure_connected
-      expect(ws).not_to receive(:stop)
+      expect(stream).not_to receive(:stop)
       flags.close
     end
   end
@@ -843,22 +865,22 @@ RSpec.describe Smplkit::Flags::FlagsClient do
   # ----------------------------------------------------------------
 
   describe "standalone construction" do
-    it "builds its own transport + contexts client and owns its WebSocket" do
+    it "builds its own transport + contexts client and owns its event stream" do
       standalone = described_class.new(
         "sk_test", environment: "staging", base_url: "https://flags.smplkit.test"
       )
       stub_request(:get, "https://flags.smplkit.test/api/v1/flags").with(query: hash_including({}))
                                                                    .to_return(status: 200, body: list_body([flag_resource("checkout-v2", environments: checkout_environments)]),
                                                                               headers: jsonapi_headers)
-      # No parent: ensure_connected builds and starts its own WebSocket. Stub
-      # the WS manager so no socket opens.
-      fake_ws = instance_double(Smplkit::SharedWebSocket, start: nil, on: nil, stop: nil)
-      allow(Smplkit::SharedWebSocket).to receive(:new).and_return(fake_ws)
+      # No parent: ensure_connected builds and starts its own event stream.
+      # Stub the stream so no connection opens.
+      fake_stream = instance_double(Smplkit::EventStream, start: nil, on: nil, on_reconnect: nil, stop: nil)
+      allow(Smplkit::EventStream).to receive(:new).and_return(fake_stream)
       handle = standalone.boolean_flag("checkout-v2", default: false)
       ctx = [Smplkit::Context.new("user", "u-1", plan: "enterprise")]
       expect(handle.get(context: ctx)).to be(true)
       standalone.close
-      expect(fake_ws).to have_received(:stop)
+      expect(fake_stream).to have_received(:stop)
     end
   end
 
@@ -868,16 +890,16 @@ RSpec.describe Smplkit::Flags::FlagsClient do
 
   describe "stateless mode (streaming: false)" do
     # Override the wired subject: the after-hook +flags._close+ must tear down
-    # THIS standalone client (and never touch the parent/ws lets, whose
-    # construction would trip the no-WebSocket expectations below).
+    # THIS standalone client (and never touch the parent/stream lets, whose
+    # construction would trip the no-stream expectations below).
     subject(:flags) do
       described_class.new(
         "sk_test", environment: "staging", streaming: false, base_url: flags_host
       )
     end
 
-    it "connects and evaluates without ever creating a WebSocket" do
-      expect(Smplkit::SharedWebSocket).not_to receive(:new)
+    it "connects and evaluates without ever creating an event stream" do
+      expect(Smplkit::EventStream).not_to receive(:new)
       stub_runtime([flag_resource("checkout-v2", environments: checkout_environments)])
       handle = flags.boolean_flag("checkout-v2", default: false)
       ctx = [Smplkit::Context.new("user", "u-1", plan: "enterprise")]
@@ -885,7 +907,7 @@ RSpec.describe Smplkit::Flags::FlagsClient do
     end
 
     it "refresh re-fetches on demand and fires change listeners" do
-      expect(Smplkit::SharedWebSocket).not_to receive(:new)
+      expect(Smplkit::EventStream).not_to receive(:new)
       stub_request(:post, "#{flags_host}/api/v1/flags/bulk")
         .to_return(status: 200, body: bulk_body, headers: jsonapi_headers)
       stub_request(:get, "#{flags_host}/api/v1/flags").with(query: hash_including({}))
@@ -984,8 +1006,8 @@ RSpec.describe Smplkit::Flags::FlagsClient do
       # .open forwards only keyword args, so the api_key resolves from the
       # environment rather than the positional first argument.
       stub_runtime([])
-      fake_ws = instance_double(Smplkit::SharedWebSocket, start: nil, on: nil, stop: nil)
-      allow(Smplkit::SharedWebSocket).to receive(:new).and_return(fake_ws)
+      fake_stream = instance_double(Smplkit::EventStream, start: nil, on: nil, on_reconnect: nil, stop: nil)
+      allow(Smplkit::EventStream).to receive(:new).and_return(fake_stream)
       yielded = nil
       previous_key = ENV.fetch("SMPLKIT_API_KEY", nil)
       ENV["SMPLKIT_API_KEY"] = "sk_test"
@@ -994,14 +1016,14 @@ RSpec.describe Smplkit::Flags::FlagsClient do
           yielded = c
           expect(c).to be_a(described_class)
           # Force a live call so the standalone client opens (and thus owns)
-          # its WebSocket; close must then stop it.
+          # its event stream; close must then stop it.
           c.refresh
         end
       ensure
         ENV["SMPLKIT_API_KEY"] = previous_key
       end
       expect(yielded).to be_a(described_class)
-      expect(fake_ws).to have_received(:stop)
+      expect(fake_stream).to have_received(:stop)
     end
   end
 end
@@ -1065,9 +1087,9 @@ end
 
 RSpec.describe Smplkit::Flags::FlagChangeEvent do
   it "exposes id / source / deleted and a deleted? predicate" do
-    event = described_class.new(id: "f", source: "websocket", deleted: true)
+    event = described_class.new(id: "f", source: "push", deleted: true)
     expect(event.id).to eq("f")
-    expect(event.source).to eq("websocket")
+    expect(event.source).to eq("push")
     expect(event.deleted).to be(true)
     expect(event).to be_deleted
   end
@@ -1077,18 +1099,18 @@ RSpec.describe Smplkit::Flags::FlagChangeEvent do
   end
 
   it "is value-equal and hashes equally for identical fields" do
-    a = described_class.new(id: "f", source: "websocket")
-    b = described_class.new(id: "f", source: "websocket")
+    a = described_class.new(id: "f", source: "push")
+    b = described_class.new(id: "f", source: "push")
     expect(a).to eq(b)
     expect(a).to eql(b)
     expect(a.hash).to eq(b.hash)
   end
 
   it "is unequal for a different id, source, or deleted flag" do
-    base = described_class.new(id: "f", source: "websocket")
-    expect(base).not_to eq(described_class.new(id: "g", source: "websocket"))
+    base = described_class.new(id: "f", source: "push")
+    expect(base).not_to eq(described_class.new(id: "g", source: "push"))
     expect(base).not_to eq(described_class.new(id: "f", source: "manual"))
-    expect(base).not_to eq(described_class.new(id: "f", source: "websocket", deleted: true))
+    expect(base).not_to eq(described_class.new(id: "f", source: "push", deleted: true))
     expect(base).not_to eq("not an event")
   end
 end

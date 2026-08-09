@@ -18,18 +18,18 @@ require "digest"
 #   +json_flag+) whose +.get+ evaluates against the cached definitions, plus
 #   +refresh+ / +stats+ / +on_change+. The first live call transparently flushes
 #   discovery, fetches all flag definitions into the local cache, and opens the
-#   live-updates WebSocket — no explicit install step.
+#   live-updates event stream — no explicit install step.
 #
 # The client supports two construction shapes:
 #
 # * *Wired* into +Smplkit::Client+ — borrows the parent's flags transport for
-#   both runtime fetch and CRUD, the parent's shared WebSocket for the live
+#   both runtime fetch and CRUD, the parent's shared event stream for the live
 #   channel, and +client.platform.contexts+ for evaluation-context
 #   registration. This is the common path.
 # * *Standalone* — +FlagsClient.new(api_key: ..., base_url: ..., ...)+ builds
 #   and owns its own flags transport and a contexts client (against its own app
-#   transport), and on first live use opens and owns its own WebSocket. +close+
-#   tears down only the owned transports and owned WebSocket.
+#   transport), and on first live use opens and owns its own event stream.
+#   +close+ tears down only the owned transports and owned event stream.
 module Smplkit
   module Flags
     # Describes a flag definition change. Frozen — fields are set at construction.
@@ -37,7 +37,7 @@ module Smplkit
     # @!attribute [r] id
     #   @return [String] id of the flag whose definition changed.
     # @!attribute [r] source
-    #   @return [String] origin of the change (e.g. +"websocket"+ for a live
+    #   @return [String] origin of the change (e.g. +"push"+ for a live
     #     update or +"manual"+ for a refresh).
     # @!attribute [r] deleted
     #   @return [Boolean] whether the change was a deletion of the flag.
@@ -148,7 +148,7 @@ module Smplkit
     # defaults). +environment+/+service+ resolve the same way (constructor
     # argument wins). The app transport backs the standalone contexts client
     # (evaluation-context registration); the app base URL is returned so a
-    # standalone client can open its own WebSocket against the event gateway.
+    # standalone client can open its own event stream against the app service.
     #
     # @api private
     def self.flags_transport(api_key:, base_url:, profile:, base_domain:, scheme:,
@@ -186,8 +186,8 @@ module Smplkit
     # is pure CRUD. The live surface (+boolean_flag+ / +string_flag+ /
     # +number_flag+ / +json_flag+ / +refresh+ / +stats+ / +on_change+) connects
     # lazily on first use — the first call flushes discovery, fetches all flag
-    # definitions into the local cache, and opens the live-updates WebSocket. No
-    # explicit install step is required.
+    # definitions into the local cache, and opens the live-updates event
+    # stream. No explicit install step is required.
     class FlagsClient
       # @param api_key [String, nil] API key. When omitted, resolved from
       #   +SMPLKIT_API_KEY+ or +~/.smplkit+.
@@ -207,8 +207,8 @@ module Smplkit
       # @param debug [Boolean, nil] Enable SDK debug logging.
       # @param extra_headers [Hash{String => String}, nil] Extra headers
       #   attached to every request.
-      # @param streaming [Boolean] Live updates over WebSocket (default
-      #   +true+): the first live call opens a shared socket and flag changes
+      # @param streaming [Boolean] Live updates over the event stream (default
+      #   +true+): the first live call opens a shared stream and flag changes
       #   stream in. Set +false+ for the stateless read-through surface: the
       #   first live call still fetches all flag definitions once (blocking),
       #   evaluation stays local, +refresh+ re-fetches on demand, and NO socket
@@ -263,13 +263,13 @@ module Smplkit
         # Live-surface state.
         @flag_store = {}
         @connected = false
-        @ws_subscribed = false
+        @stream_subscribed = false
         @cache = ResolutionCache.new
         @handles = {}
         @global_listeners = []
         @key_listeners = Hash.new { |h, k| h[k] = [] }
-        @ws_manager = nil
-        @owns_ws = false
+        @event_stream = nil
+        @owns_stream = false
         @lock = Mutex.new
       end
 
@@ -566,16 +566,16 @@ module Smplkit
 
       # Release resources — only those this client owns.
       #
-      # Tears down the owned WebSocket (standalone install). A wired client
-      # borrows the parent's transport, WebSocket, and contexts client and
+      # Tears down the owned event stream (standalone install). A wired client
+      # borrows the parent's transport, event stream, and contexts client and
       # closes none of them.
       #
       # @return [void]
       def close
-        if @owns_ws && @ws_manager
-          @ws_manager.stop
-          @ws_manager = nil
-          @owns_ws = false
+        if @owns_stream && @event_stream
+          @event_stream.stop
+          @event_stream = nil
+          @owns_stream = false
         end
         # Owned flags/app transports (standalone construction) release their
         # Faraday connections on GC; there is no explicit shutdown to call.
@@ -680,29 +680,31 @@ module Smplkit
       end
 
       # ----------------------------------------------------------------
-      # Live surface: lazy connect + transport / WebSocket helpers
+      # Live surface: lazy connect + transport / event stream helpers
       # ----------------------------------------------------------------
 
-      def ensure_ws
-        return @parent._ensure_ws unless @parent.nil?
+      def ensure_event_stream
+        return @parent._ensure_event_stream unless @parent.nil?
 
-        if @ws_manager.nil?
-          @ws_manager = SharedWebSocket.new(
+        if @event_stream.nil?
+          @event_stream = EventStream.new(
             app_base_url: @app_base_url, api_key: @standalone_api_key, metrics: @metrics
           )
-          @ws_manager.start
-          @owns_ws = true
+          @event_stream.start
+          @owns_stream = true
         end
-        @ws_manager
+        @event_stream
       end
 
       # Open the live connection to the running Smpl Flags service.
       #
       # Flushes any buffered discovery declarations, fetches all flag
-      # definitions into the local cache, opens the shared WebSocket, and
+      # definitions into the local cache, opens the shared event stream, and
       # subscribes to +flag_changed+ / +flag_deleted+ / +flags_changed+ events.
-      # In stateless mode (+streaming: false+) no socket is ever created;
-      # +refresh+ re-fetches on demand.
+      # Also registers the bulk-refresh path as the stream's reconnect refetch,
+      # so a stream outage ends with a full re-sync. In stateless mode
+      # (+streaming: false+) no stream is ever created; +refresh+ re-fetches on
+      # demand.
       #
       # Idempotent and internal — every live method calls it on first use, so
       # the live surface auto-connects with no explicit step.
@@ -723,13 +725,14 @@ module Smplkit
         @connected = true
         return unless @streaming
 
-        @ws_manager = ensure_ws
-        return if @ws_subscribed
+        @event_stream = ensure_event_stream
+        return if @stream_subscribed
 
-        @ws_manager.on("flag_changed") { |data| handle_flag_changed(data) }
-        @ws_manager.on("flag_deleted") { |data| handle_flag_deleted(data) }
-        @ws_manager.on("flags_changed") { |data| handle_flags_changed(data) }
-        @ws_subscribed = true
+        @event_stream.on("flag_changed") { |data| handle_flag_changed(data) }
+        @event_stream.on("flag_deleted") { |data| handle_flag_deleted(data) }
+        @event_stream.on("flags_changed") { |data| handle_flags_changed(data) }
+        @event_stream.on_reconnect { handle_flags_changed({}) }
+        @stream_subscribed = true
       end
 
       def do_refresh(_source)
@@ -759,7 +762,7 @@ module Smplkit
       end
 
       # ----------------------------------------------------------------
-      # Internal: event handlers (called by SharedWebSocket)
+      # Internal: event handlers (called by EventStream)
       # ----------------------------------------------------------------
 
       def handle_flag_changed(data)
@@ -770,7 +773,7 @@ module Smplkit
         new_data = fetch_flag_single_data(key)
         @flag_store[key] = new_data
         @cache.clear
-        fire_change_listeners(key, "websocket") if pre != new_data
+        fire_change_listeners(key, "push") if pre != new_data
       end
 
       def handle_flag_deleted(data)
@@ -780,7 +783,7 @@ module Smplkit
         existed = @flag_store.key?(key)
         @flag_store.delete(key)
         @cache.clear
-        fire_change_listeners(key, "websocket", deleted: true) if existed
+        fire_change_listeners(key, "push", deleted: true) if existed
       end
 
       def handle_flags_changed(_data)
@@ -788,7 +791,7 @@ module Smplkit
         begin
           fetch_all_flags
         rescue StandardError => e
-          Smplkit.debug("ws", "flags refresh after flags_changed failed: #{e.message}")
+          Smplkit.debug("flags", "flags refresh after flags_changed failed: #{e.message}")
           return
         end
         @cache.clear
@@ -798,7 +801,7 @@ module Smplkit
         return if changed.empty?
 
         # Global listener fires once.
-        first_event = FlagChangeEvent.new(id: changed.first, source: "websocket")
+        first_event = FlagChangeEvent.new(id: changed.first, source: "push")
         @global_listeners.each do |cb|
           cb.call(first_event)
         rescue StandardError => e
@@ -808,7 +811,7 @@ module Smplkit
         # Per-key listeners fire for each changed key.
         changed.each do |k|
           deleted = pre_store.key?(k) && !post_store.key?(k)
-          event = FlagChangeEvent.new(id: k, source: "websocket", deleted: deleted)
+          event = FlagChangeEvent.new(id: k, source: "push", deleted: deleted)
           @key_listeners[k].each do |cb|
             cb.call(event)
           rescue StandardError => e
