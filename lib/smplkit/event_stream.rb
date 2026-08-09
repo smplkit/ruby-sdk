@@ -35,13 +35,22 @@ module Smplkit
   #
   # On disconnect the reactor reconnects with exponential backoff (base
   # delay doubling up to +MAX_BACKOFF+ seconds), resetting to the base on
-  # every successful connect. +stop+ closes the stream from the outer
-  # thread; the reader exits and the daemon thread terminates.
+  # every successful connect. +stop+ flips +@closed+ and waits; the reader
+  # re-checks the flag at least every +POLL_INTERVAL+, tears its own
+  # connection down in-reactor, and the daemon thread terminates.
   class EventStream
     # Seconds without any bytes from the server (events or keepalive
     # comments) before the connection is considered dead — two missed
     # 30-second server keepalives.
     READ_TIMEOUT = 45
+
+    # How long a single blocking read may park the reactor before it wakes
+    # to re-check +@closed+. Liveness is tracked as a deadline across
+    # polls (see +read_loop+), so this changes nothing on the wire — it
+    # exists so +stop+ never has to interrupt the reactor from a foreign
+    # thread: a cross-thread close cannot wake a fiber blocked in
+    # +body.read+, which left teardown hanging until the next keepalive.
+    POLL_INTERVAL = 1.0
 
     # Ceiling for the exponential reconnect backoff, in seconds.
     MAX_BACKOFF = 60
@@ -254,12 +263,19 @@ module Smplkit
     def stop
       Smplkit.debug("events", "stopping shared event stream")
       @closed = true
-      close_active_connection
       thread = @stream_thread
       @stream_thread = nil
       if thread
-        thread.join(2.0)
-        thread.kill if thread.alive?
+        # The reactor re-checks +@closed+ at least every POLL_INTERVAL and
+        # closes its own connection in-reactor on the way out — closing it
+        # from this thread instead would race the reactor and cannot wake
+        # a blocked read.
+        thread.join(POLL_INTERVAL + 1.0)
+        if thread.alive?
+          # Last resort: a connect attempt wedged before the read loop.
+          thread.kill
+          close_active_connection
+        end
       end
       # Set authoritatively after the thread is dead so a racing connect
       # call (which also sets "connecting") cannot clobber this value.
@@ -405,17 +421,31 @@ module Smplkit
     end
 
     # Read chunks until EOF, feeding the SSE parser and dispatching the
-    # events it completes. Each read is individually wrapped in the liveness
-    # timeout, so any received bytes — including keepalive comment frames —
-    # reset the clock.
+    # events it completes. Reads park for at most POLL_INTERVAL at a time
+    # so +stop+ is honored promptly; liveness is a rolling deadline — any
+    # received bytes, including keepalive comment frames, push it out by
+    # READ_TIMEOUT. A deadline breach raises into the reconnect path.
     def read_loop(task, body)
       parser = Parser.new
+      deadline = monotonic_now + READ_TIMEOUT
       until @closed
-        chunk = task.with_timeout(READ_TIMEOUT) { body.read }
+        begin
+          chunk = task.with_timeout(POLL_INTERVAL) { body.read }
+        rescue Async::TimeoutError
+          raise Async::TimeoutError, "no data for #{READ_TIMEOUT}s" if monotonic_now >= deadline
+
+          next
+        end
         break if chunk.nil?
 
+        deadline = monotonic_now + READ_TIMEOUT
         process_chunk(parser, chunk)
       end
+    end
+
+    # Seam for specs; the liveness deadline math needs a controllable clock.
+    def monotonic_now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
 
     def process_chunk(parser, chunk)

@@ -281,14 +281,35 @@ RSpec.describe Smplkit::EventStream do
       expect(stream.instance_variable_get(:@retry_base)).to eq(0.5)
     end
 
-    it "propagates a liveness timeout out of the read" do
+    it "raises a liveness timeout once the 45s deadline passes with no data" do
       body = double("ResponseBody")
       task = double("AsyncTask")
-      allow(task).to receive(:with_timeout).with(45).and_raise(Async::TimeoutError)
-      expect { stream.send(:read_loop, task, body) }.to raise_error(Async::TimeoutError)
+      allow(task).to receive(:with_timeout)
+        .with(Smplkit::EventStream::POLL_INTERVAL).and_raise(Async::TimeoutError)
+      # First poll: 10s elapsed — under the deadline, keep waiting.
+      # Second poll: 46s elapsed — deadline breached, raise to reconnect.
+      allow(stream).to receive(:monotonic_now).and_return(0.0, 10.0, 46.0)
+      expect { stream.send(:read_loop, task, body) }.to raise_error(
+        Async::TimeoutError, /no data for 45s/
+      )
     end
 
-    it "wraps every read in the 45s liveness timeout so any chunk resets the clock" do
+    it "keeps polling through idle reads while the liveness deadline holds" do
+      body = double("ResponseBody")
+      task = double("AsyncTask")
+      polls = 0
+      allow(task).to receive(:with_timeout) do
+        polls += 1
+        stream.instance_variable_set(:@closed, true) if polls == 3
+        raise Async::TimeoutError
+      end
+      allow(stream).to receive(:monotonic_now).and_return(0.0, 1.0, 2.0, 3.0)
+      # Never breaches the deadline; exits promptly when stop flips @closed.
+      stream.send(:read_loop, task, body)
+      expect(polls).to eq(3)
+    end
+
+    it "parks each read for at most the poll interval so stop is honored promptly" do
       timeouts = []
       task = double("AsyncTask")
       allow(task).to receive(:with_timeout) do |seconds, &block|
@@ -296,7 +317,27 @@ RSpec.describe Smplkit::EventStream do
         block.call
       end
       stream.send(:read_loop, task, fake_body(": keepalive\n\n", ": keepalive\n\n"))
-      expect(timeouts).to eq([45, 45, 45])
+      expect(timeouts).to eq([1.0, 1.0, 1.0])
+    end
+
+    it "pushes the liveness deadline out on every received chunk" do
+      body = double("ResponseBody")
+      task = double("AsyncTask")
+      reads = 0
+      allow(task).to receive(:with_timeout) do |_seconds, &block|
+        reads += 1
+        raise Async::TimeoutError if reads.odd? # idle poll between chunks
+
+        block.call
+      end
+      chunks = [": keepalive\n\n", ": keepalive\n\n", nil]
+      allow(body).to receive(:read) { chunks.shift }
+      # Clock advances 40s per step: any single gap is under 45s only
+      # because each chunk resets the deadline; without the reset the
+      # third poll would breach it.
+      clock = -40.0
+      allow(stream).to receive(:monotonic_now) { clock += 40.0 }
+      expect { stream.send(:read_loop, task, body) }.not_to raise_error
     end
   end
 
@@ -397,21 +438,45 @@ RSpec.describe Smplkit::EventStream do
   end
 
   describe "#stop with an active connection" do
-    it "closes the stored response and client" do
+    it "leaves the reactor's connection alone when its thread exits on its own" do
+      # The reactor closes its own response/client in-reactor on the way
+      # out; a cross-thread close from stop would race it (and cannot
+      # wake a blocked read — the hang this design exists to prevent).
       response = double("Response", close: nil)
       client = double("HTTPClient", close: nil)
       stream.instance_variable_set(:@response, response)
       stream.instance_variable_set(:@client, client)
+      thread = Thread.new { sleep(0.01) }
+      stream.instance_variable_set(:@stream_thread, thread)
       stream.stop
+      expect(response).not_to have_received(:close)
+      expect(client).not_to have_received(:close)
+      expect(stream.connection_status).to eq("disconnected")
+    end
+
+    it "kills a wedged thread and closes the connection as a last resort" do
+      response = double("Response", close: nil)
+      client = double("HTTPClient", close: nil)
+      stream.instance_variable_set(:@response, response)
+      stream.instance_variable_set(:@client, client)
+      thread = double("Thread")
+      allow(thread).to receive(:join)
+      allow(thread).to receive(:alive?).and_return(true)
+      allow(thread).to receive(:kill)
+      stream.instance_variable_set(:@stream_thread, thread)
+      stream.stop
+      expect(thread).to have_received(:kill)
       expect(response).to have_received(:close)
       expect(client).to have_received(:close)
       expect(stream.connection_status).to eq("disconnected")
     end
 
-    it "swallows exceptions raised by the underlying close" do
+    it "swallows exceptions raised by the last-resort close" do
       bad = double("Response")
       allow(bad).to receive(:close).and_raise("boom")
       stream.instance_variable_set(:@response, bad)
+      thread = double("Thread", join: nil, alive?: true, kill: nil)
+      stream.instance_variable_set(:@stream_thread, thread)
       expect { stream.stop }.not_to raise_error
     end
   end
