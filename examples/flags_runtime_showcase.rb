@@ -159,7 +159,7 @@ Smplkit::Client.open(environment: "production", service: "showcase-service") do 
   # simulate someone making changes to a flag to trigger listeners
   update_rules(client)
 
-  # wait a moment for the event to be delivered (typical WS round-trip is well
+  # wait a moment for the event to be delivered (typical push round-trip is well
   # under 200ms; 400ms is plenty of headroom and anything past that is a real
   # signal, not noise to absorb).
   sleep(0.4)
