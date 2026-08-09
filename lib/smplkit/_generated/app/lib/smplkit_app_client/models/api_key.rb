@@ -19,6 +19,9 @@ module SmplkitGeneratedClient::App
     # Human-readable name for the key.
     attr_accessor :name
 
+    # Credential class of the key, set at creation and immutable. `PRIVATE` (the default) keys carry full API access and must be kept secret — never expose one in a browser or client application. `PUBLIC` keys are browser-safe, read-only credentials for reading feature flags and configuration from client-side code; they must be scoped to exactly one environment with `permissions: [\"read\"]`. Accepted case-insensitively.
+    attr_accessor :kind
+
     # Lifecycle state of the key. `ACTIVE` keys may be used to authenticate; `REVOKED` keys are rejected.
     attr_accessor :status
 
@@ -43,10 +46,33 @@ module SmplkitGeneratedClient::App
     # When the key was last modified.
     attr_accessor :updated_at
 
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'name' => :'name',
+        :'kind' => :'kind',
         :'status' => :'status',
         :'key' => :'key',
         :'scopes' => :'scopes',
@@ -72,6 +98,7 @@ module SmplkitGeneratedClient::App
     def self.openapi_types
       {
         :'name' => :'String',
+        :'kind' => :'String',
         :'status' => :'String',
         :'key' => :'String',
         :'scopes' => :'Hash<String, Object>',
@@ -116,6 +143,12 @@ module SmplkitGeneratedClient::App
         self.name = attributes[:'name']
       else
         self.name = nil
+      end
+
+      if attributes.key?(:'kind')
+        self.kind = attributes[:'kind']
+      else
+        self.kind = 'PRIVATE'
       end
 
       if attributes.key?(:'status')
@@ -175,6 +208,8 @@ module SmplkitGeneratedClient::App
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @name.nil?
       return false if @name.to_s.length > 255
+      kind_validator = EnumAttributeValidator.new('String', ["PUBLIC", "PRIVATE"])
+      return false unless kind_validator.valid?(@kind)
       true
     end
 
@@ -192,12 +227,23 @@ module SmplkitGeneratedClient::App
       @name = name
     end
 
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] kind Object to be assigned
+    def kind=(kind)
+      validator = EnumAttributeValidator.new('String', ["PUBLIC", "PRIVATE"])
+      unless validator.valid?(kind)
+        fail ArgumentError, "invalid value for \"kind\", must be one of #{validator.allowable_values}."
+      end
+      @kind = kind
+    end
+
     # Checks equality by comparing each attribute.
     # @param [Object] Object to be compared
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
           name == o.name &&
+          kind == o.kind &&
           status == o.status &&
           key == o.key &&
           scopes == o.scopes &&
@@ -217,7 +263,7 @@ module SmplkitGeneratedClient::App
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [name, status, key, scopes, created_by, expires_at, last_used_at, created_at, updated_at].hash
+      [name, kind, status, key, scopes, created_by, expires_at, last_used_at, created_at, updated_at].hash
     end
 
     # Builds the object from hash
