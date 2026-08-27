@@ -67,5 +67,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "json_logic", "~> 0.0"
   # Required by the openapi-generator-produced clients in
   # +lib/smplkit/_generated+ for content-type sniffing on multipart bodies.
-  spec.add_dependency "marcel", "~> 1.0"
+  spec.add_dependency "marcel", ">= 1", "< 3"
 end
